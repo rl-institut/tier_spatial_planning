@@ -1,0 +1,6 @@
+fastapi
+aiofiles
+jinja2
+uvicorn
+celery
+redis

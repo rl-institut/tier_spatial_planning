@@ -1,0 +1,21 @@
+version: "3"
+services:
+  web:
+    build:
+      # `context` should be a path to a directory containing a Dockerfile
+      context: ./fastapi_app # ./flask_app #
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+     - "5001:5001"
+    depends_on:
+      - redis
+  worker:
+    build:
+      # context should be the name of the folder which define the tasks
+      context: task_queue
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+  redis:
+    image: redis

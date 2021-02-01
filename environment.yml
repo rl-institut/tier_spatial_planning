@@ -1,0 +1,5 @@
+name: wam_api_server_env
+dependencies:
+- python=3.7
+- pip:
+   - -r requirements.txt
