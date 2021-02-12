@@ -11,10 +11,8 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 mainMap.on('click', function(e) {
   var poplocation = e.latlng;
   console.log(poplocation)
-  var marker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(mainMap)
+  L.marker([e.latlng.lat, e.latlng.lng]).addTo(mainMap)
 });
 
 
-const numbers = [1, 2, 3, 5, 1, 2]
 
-console.log(numbers.indexOf(2))
