@@ -1,5 +1,5 @@
 
-var mainMap = L.map('leafletMap').setView([51.505, -0.09], 2);
+var mainMap = L.map('leafletMap').setView([9.07798, 7.704826], 5);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         tileSize: 512,
         zoomOffset: -1,
@@ -9,17 +9,23 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         crossOrigin: true,
       }).addTo(mainMap);
 
+var markers = [];
+
 mainMap.on('click', function(e) {
   var poplocation = e.latlng;
-  console.log(poplocation)
-  console.log("add node to database")
-  addNodeToDatBase(e.latlng.lat, e.latlng.lng, "household", false)
-  L.marker([e.latlng.lat, e.latlng.lng]).addTo(mainMap)
+
+  addNodeToDatBase(poplocation.lat, poplocation.lng, "household", false)
+  drawDefaultMarker(poplocation.lat, poplocation.lng)
 });
 
+function drawDefaultMarker(latitude, longitude) {
+  markers.push(
+    L.marker([latitude, longitude]).addTo(mainMap)
+  );
+}
+
 function addNodeToDatBase(latitude, longitude, node_type, fixed_type) {
-  console.log("add node to database")
-  
+
   $.ajax({
     url: "add_node",
     type: "POST",
@@ -34,6 +40,9 @@ function addNodeToDatBase(latitude, longitude, node_type, fixed_type) {
   });
 }
 
+function updateMarkers() {
+  
+}
 
 function refreshNodeTable() {
     var tbody_nodes = document.getElementById("tbody_nodes");
@@ -56,8 +65,15 @@ function refreshNodeTable() {
               <td>${node.node_type}</td>
               <td>${node.fixed_type}</td>
               </tr>`;
-        }
+            }
         tbody_nodes.innerHTML = html_node_table;
+        for (marker of markers){
+          mainMap.removeLayer(marker);
+        }
+        markers.length = 0;
+        for (node of nodes) {
+          markers.push(L.marker([node.latitude, node.longitude]).addTo(mainMap))
+        }
       }
     };
   }
@@ -66,6 +82,7 @@ function refreshNodeTable() {
     refreshNodeTable();
 
     setInterval(refreshNodeTable, 1000);
+    // setInterval(updateMarkers, 100);
 
     $("#button_add_node").click(function () {
       const latitude = new_node_lat.value;
