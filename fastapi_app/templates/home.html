@@ -1,0 +1,98 @@
+{% extends "layout.html" %} {% block content %}
+
+<div class="container">
+  <div class="box-header header">
+    <h1>Geospatial Optimization Tool</h1>
+  </div>
+  <div class="box-sidebar sidebar"></div>
+  <div class="box-map map"><div id="leafletMap"></div></div>
+  <div class="box-footer footer">
+    <div class="logo-box left-logo">
+      <img
+        class="logo"
+        src="static/images/PeopleSunLogo.png"
+        alt="PeopleSun logo"
+      />
+    </div>
+    <div class="logo-box right-logo">
+      <img
+        class="logo"
+        src="https://reiner-lemoine-institut.de//wp-content/uploads/2015/09/rlilogo.png"
+        alt="RLI logo"
+      />
+
+      <img
+        class="logo"
+        src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/TU-Berlin-Logo.svg/2000px-TU-Berlin-Logo.svg.png"
+        alt="logo TU Berlin"
+      />
+    </div>
+  </div>
+  <div class="box-table-nodes table_nodes">
+    <div class="nodes_table">
+      <div class="new_node_params">
+        <div id="node_input_box">
+          <div class="ui input">
+            <input
+              id="new_node_lat"
+              name="Latitude"
+              type="number"
+              placeholder="Latitude"
+              value=""
+            />
+          </div>
+
+          <div class="ui input">
+            <input
+              id="new_node_long"
+              name="Longitude"
+              type="number"
+              placeholder="Longitude"
+              value=""
+            />
+          </div>
+          <div class="ui input">
+            <input
+              id="new_node_type"
+              name="Node Type"
+              type="text"
+              placeholder="Node Type"
+              value="household"
+            />
+          </div>
+          <div class="ui input">
+            <input
+              id="new_node_type_fixed"
+              name="Type Fixed"
+              type="boolean"
+              placeholder="Type Fixed"
+              value="false"
+            />
+          </div>
+          <button id="button_add_node" type="submit" class="ui button primary">
+            Add Node
+          </button>
+        </div>
+      </div>
+
+      <table id="table_nodes">
+        <thead>
+          <tr>
+            <th>Index</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+            <th>Node Type</th>
+            <th>Type Fixed</th>
+          </tr>
+        </thead>
+        <tbody id="tbody_nodes"></tbody>
+      </table>
+      <button id="button_clear_node_db" type="submit" class="ui button primary">
+        Clear Nodes
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="static/script.js"></script>
+{% endblock %}

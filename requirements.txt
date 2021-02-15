@@ -1,3 +1,2 @@
 -r fastapi_app/requirements.txt
--r flask_app/requirements.txt
 -r task_queue/requirements.txt
