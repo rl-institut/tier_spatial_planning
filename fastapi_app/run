@@ -1,2 +1,4 @@
-source fastenv/bin/activate
+
+source venv/bin/activate
+cd fastapi_app
 uvicorn main:app --reload

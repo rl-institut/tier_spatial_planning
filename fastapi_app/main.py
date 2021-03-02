@@ -116,9 +116,20 @@ async def optimize_grid(optimize_grid_request: OptimizeGridRequest,
     sqliteConnection = sqlite3.connect('nodes.db')
     cursor = sqliteConnection.cursor()
 
+    # Empty links table
     sql_delete_query = """DELETE from links"""
     cursor.execute(sql_delete_query)
     sqliteConnection.commit()
+
+    # Update nodes types in database
+    for index in grid.get_hubs().index:
+        sql_delete_query = (
+            f"""UPDATE nodes
+            SET node_type = 'meterhub'
+            WHERE  id = {index};
+            """)
+        cursor.execute(sql_delete_query)
+        sqliteConnection.commit()
     cursor.close()
 
     conn = sqlite3.connect('nodes.db')

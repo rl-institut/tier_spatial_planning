@@ -9,6 +9,22 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         crossOrigin: true,
       }).addTo(mainMap);
 
+var householdMarker = new L.Icon({
+  // iconUrl: '/static/images/markers/marker-household.png',
+  iconUrl: 'https://www.vhv.rs/dpng/d/415-4150554_blue-circle-png-pictures-blue-circle-clipart-transparent.png',
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+  popupAnchor: [0, 0],
+});
+
+var hubMarker = new L.Icon({
+  // iconUrl: '/static/images/markers/marker-hub.png',
+  iconUrl: 'https://toppng.com/uploads/preview/red-circle-1155276042606ekqvli9k.png',
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+  popupAnchor: [0, 0],
+});
+
 var markers = [];
 var lines = [];
 
@@ -84,7 +100,16 @@ function refreshNodeTable() {
         }
         markers.length = 0;
         for (node of nodes) {
-          markers.push(L.marker([node.latitude, node.longitude]).addTo(mainMap))
+          if (node.node_type === "meterhub") {
+            markers.push(L.marker([node.latitude, node.longitude], {icon: hubMarker}).addTo(mainMap))
+          }
+          else if (node.node_type === "household") {
+            markers.push(L.marker([node.latitude, node.longitude], {icon: householdMarker}).addTo(mainMap))
+          }
+          else {
+            markers.push(L.marker([node.latitude, node.longitude]).addTo(mainMap))
+          }
+
         }
         
       }
