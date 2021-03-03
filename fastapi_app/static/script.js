@@ -9,6 +9,8 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         crossOrigin: true,
       }).addTo(mainMap);
 
+L.control.scale().addTo(mainMap);
+
 var householdMarker = new L.Icon({
   iconUrl: 'static/images/markers/marker-household.png',
   iconSize: [20, 20],
@@ -41,7 +43,7 @@ function drawDefaultMarker(latitude, longitude) {
 
 function addNodeToDatBase(latitude, longitude, node_type, fixed_type) {
   $.ajax({
-    url: "add_node",
+    url: "add_node/",
     type: "POST",
     contentType: "application/json",
     data: JSON.stringify({
@@ -56,7 +58,7 @@ function addNodeToDatBase(latitude, longitude, node_type, fixed_type) {
 
 function optimize_grid(price_meterhub, price_household, price_interhub_cable, price_distribution_cable) {
   $.ajax({
-    url: "optimize_grid",
+    url: "optimize_grid/",
     type: "POST",
     contentType: "application/json",
     data: JSON.stringify({
@@ -208,14 +210,14 @@ function refreshLinkTable() {
       const price_hub = hub_price.value;
       const price_household = household_price.value;
       const price_interhub_cable = interhub_cable_price.value;
-      const price_distribution_cable = interhub_cable_price.value;
+      const price_distribution_cable = distribution_cable_price.value;
       optimize_grid(price_hub, price_household, price_interhub_cable, price_distribution_cable)
       
     });
 
     $("#button_clear_node_db").click(function () {
       $.ajax({
-        url: "clear_node_db",
+        url: "clear_node_db/",
         type: "POST",
       });
     });
