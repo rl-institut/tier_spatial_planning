@@ -107,7 +107,7 @@ async def optimize_grid(optimize_grid_request: OptimizeGridRequest,
         grid.add_node(label=str(node[0]),
                       pixel_x_axis=x,
                       pixel_y_axis=y,
-                      node_type=str(node[3]),
+                      node_type="household",
                       type_fixed=bool(node[4]))
     number_of_hubs = opt.get_expected_hub_number_from_k_means(grid=grid)
     opt.nr_optimization(grid=grid, number_of_hubs=number_of_hubs, number_of_relaxation_step=10,
@@ -122,6 +122,15 @@ async def optimize_grid(optimize_grid_request: OptimizeGridRequest,
     sqliteConnection.commit()
 
     # Update nodes types in database
+    for index in grid.get_nodes().index:
+        sql_delete_query = (
+            f"""UPDATE nodes
+            SET node_type = '{grid.get_nodes().at[index, "node_type"]}'
+            WHERE  id = {index};
+            """)
+        cursor.execute(sql_delete_query)
+        sqliteConnection.commit()
+
     for index in grid.get_hubs().index:
         sql_delete_query = (
             f"""UPDATE nodes

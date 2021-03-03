@@ -10,16 +10,14 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       }).addTo(mainMap);
 
 var householdMarker = new L.Icon({
-  // iconUrl: '/static/images/markers/marker-household.png',
-  iconUrl: 'https://www.vhv.rs/dpng/d/415-4150554_blue-circle-png-pictures-blue-circle-clipart-transparent.png',
+  iconUrl: 'static/images/markers/marker-household.png',
   iconSize: [20, 20],
   iconAnchor: [10, 10],
   popupAnchor: [0, 0],
 });
 
 var hubMarker = new L.Icon({
-  // iconUrl: '/static/images/markers/marker-hub.png',
-  iconUrl: 'https://toppng.com/uploads/preview/red-circle-1155276042606ekqvli9k.png',
+  iconUrl: '/static/images/markers/marker-hub.png',
   iconSize: [20, 20],
   iconAnchor: [10, 10],
   popupAnchor: [0, 0],
@@ -31,7 +29,7 @@ var lines = [];
 mainMap.on('click', function(e) {
   var poplocation = e.latlng;
 
-  addNodeToDatBase(poplocation.lat, poplocation.lng, "household", false)
+  addNodeToDatBase(poplocation.lat, poplocation.lng, "undefinded", false)
   drawDefaultMarker(poplocation.lat, poplocation.lng)
 });
 
