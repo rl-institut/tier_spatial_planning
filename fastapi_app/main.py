@@ -101,9 +101,6 @@ async def optimize_grid(optimize_grid_request: OptimizeGridRequest,
         x = r * (longitude - longitude_0) * math.cos(latitude_0)
         y = r * (latitude - latitude_0)
 
-        longitude_recomputed = longitude_0 + x / (r * math.cos(latitude_0))
-        latitude_recomputed = latitude_0 + y / r
-
         grid.add_node(label=str(node[0]),
                       pixel_x_axis=x,
                       pixel_y_axis=y,
