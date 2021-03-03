@@ -9,12 +9,27 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         crossOrigin: true,
       }).addTo(mainMap);
 
+var householdMarker = new L.Icon({
+  iconUrl: 'static/images/markers/marker-household.png',
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+  popupAnchor: [0, 0],
+});
+
+var hubMarker = new L.Icon({
+  iconUrl: '/static/images/markers/marker-hub.png',
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+  popupAnchor: [0, 0],
+});
+
 var markers = [];
+var lines = [];
 
 mainMap.on('click', function(e) {
   var poplocation = e.latlng;
 
-  addNodeToDatBase(poplocation.lat, poplocation.lng, "household", false)
+  addNodeToDatBase(poplocation.lat, poplocation.lng, "undefinded", false)
   drawDefaultMarker(poplocation.lat, poplocation.lng)
 });
 
@@ -25,7 +40,6 @@ function drawDefaultMarker(latitude, longitude) {
 }
 
 function addNodeToDatBase(latitude, longitude, node_type, fixed_type) {
-
   $.ajax({
     url: "add_node",
     type: "POST",
@@ -40,9 +54,21 @@ function addNodeToDatBase(latitude, longitude, node_type, fixed_type) {
   });
 }
 
-function updateMarkers() {
-  
+function optimize_grid(price_meterhub, price_household, price_interhub_cable, price_distribution_cable) {
+  $.ajax({
+    url: "optimize_grid",
+    type: "POST",
+    contentType: "application/json",
+    data: JSON.stringify({
+      price_meterhub: price_meterhub,
+      price_household: price_household,
+      price_interhub_cable: price_interhub_cable,
+      price_distribution_cable: price_distribution_cable,
+    }),
+    dataType: "json",
+  });
 }
+
 
 function refreshNodeTable() {
     var tbody_nodes = document.getElementById("tbody_nodes");
@@ -72,17 +98,101 @@ function refreshNodeTable() {
         }
         markers.length = 0;
         for (node of nodes) {
-          markers.push(L.marker([node.latitude, node.longitude]).addTo(mainMap))
+          if (node.node_type === "meterhub") {
+            markers.push(L.marker([node.latitude, node.longitude], {icon: hubMarker}).addTo(mainMap))
+          }
+          else if (node.node_type === "household") {
+            markers.push(L.marker([node.latitude, node.longitude], {icon: householdMarker}).addTo(mainMap))
+          }
+          else {
+            markers.push(L.marker([node.latitude, node.longitude]).addTo(mainMap))
+          }
+
         }
+        
       }
     };
   }
 
+function drawLinkOnMap(latitude_from,
+                       longitude_from,
+                       latitude_to,
+                       longitude_to,
+                       color,
+                       map,
+                       weight=3,
+                       opacity=0.5) {
+  var pointA = new L.LatLng(latitude_from, longitude_from);
+  var pointB = new L.LatLng(latitude_to, longitude_to);
+  var pointList = [pointA, pointB];
+
+  var link_polyline = new L.Polyline(pointList, {
+      color: color,
+      weight: weight,
+      opacity: 0.5,
+      smoothFactor: 1
+    });
+  lines.push(
+    link_polyline.addTo(map)
+  );
+}
+
+function ereaseLinksFromMap(map) {
+  for (line of lines){
+    map.removeLayer(line);
+  }
+  lines.length = 0;
+}
+
+function refreshLinkTable() {
+    var tbody_links = document.getElementById("tbody_links");
+    var xhr = new XMLHttpRequest();
+    url = "links_db_html";
+    xhr.open("GET", url, true);
+    xhr.responseType = "json";
+    xhr.send();
+
+    xhr.onreadystatechange = function () {
+      if (this.readyState == 4 && this.status == 200) {
+        links = this.response;
+        html_link_table = "";
+        for (link of links) {
+          html_link_table += `
+              <tr>
+              <td>${link.id}</td>
+              <td>${link.lat_from}</td>
+              <td>${link.long_from}</td>
+              <td>${link.lat_to}</td>
+              <td>${link.long_to}</td>
+              <td>${link.cable_type}</td>
+              <td>${link.distance}</td>
+              </tr>`;
+            }
+        tbody_links.innerHTML = html_link_table;
+        ereaseLinksFromMap(mainMap)
+        for (link of links) {
+          var color = (link.cable_type === "interhub") ? "red":"green"
+          drawLinkOnMap(link.lat_from,
+                        link.long_from,
+                        link.lat_to,
+                        link.long_to,
+                        color,
+                        mainMap)
+        }
+        }
+      }
+    };
+  
+
+
+
   $(document).ready(function () {
     refreshNodeTable();
+    refreshLinkTable();
 
-    setInterval(refreshNodeTable, 1000);
-    // setInterval(updateMarkers, 100);
+    setInterval(refreshNodeTable, 3000);
+    setInterval(refreshLinkTable, 3000);
+    
 
     $("#button_add_node").click(function () {
       const latitude = new_node_lat.value;
@@ -91,6 +201,15 @@ function refreshNodeTable() {
       const fixed_type = new_node_type_fixed.value;
 
       addNodeToDatBase(latitude, longitude, node_type, fixed_type)
+      
+    });
+   
+    $("#button_optimize").click(function () {
+      const price_hub = hub_price.value;
+      const price_household = household_price.value;
+      const price_interhub_cable = interhub_cable_price.value;
+      const price_distribution_cable = interhub_cable_price.value;
+      optimize_grid(price_hub, price_household, price_interhub_cable, price_distribution_cable)
       
     });
 
