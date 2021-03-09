@@ -118,7 +118,7 @@ async def optimize_grid(optimize_grid_request: OptimizeGridRequest,
     cursor.execute(sql_delete_query)
     sqliteConnection.commit()
 
-    # Update nodes types in database
+    # Update nodes types in node database
     for index in grid.get_nodes().index:
         sql_delete_query = (
             f"""UPDATE nodes
