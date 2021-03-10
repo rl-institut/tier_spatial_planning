@@ -9,6 +9,14 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         crossOrigin: true,
       }).addTo(mainMap);
 
+var mapClickEvent = "add_default_node";
+
+var siteBoundaries = []
+
+siteBoundaryLines = []
+var boundaryMarkers = []
+
+
 L.control.scale().addTo(mainMap);
 var geojsonFeature = {
     "type": "FeatureCollection",
@@ -9260,16 +9268,79 @@ var hubMarker = new L.Icon({
 var markers = [];
 var lines = [];
 
+
 mainMap.on('click', function(e) {
   var poplocation = e.latlng;
 
-  addNodeToDatBase(poplocation.lat, poplocation.lng, "undefinded", false)
-  drawDefaultMarker(poplocation.lat, poplocation.lng)
+  if (mapClickEvent == "add_default_node") {
+    addNodeToDatBase(poplocation.lat, poplocation.lng, "undefinded", false)
+    drawDefaultMarker(poplocation.lat, poplocation.lng)
+  }
+  
+  if (mapClickEvent == "add_fixed_household") {
+    addNodeToDatBase(poplocation.lat, poplocation.lng, "household", true)
+    drawHouseholdMarker(poplocation.lat, poplocation.lng)
+  }
+
+  if (mapClickEvent == "add_fixed_meterhub") {
+    addNodeToDatBase(poplocation.lat, poplocation.lng, "meterhub", true)
+    drawMeterhubMarker(poplocation.lat, poplocation.lng)
+  }
+
+  if (mapClickEvent == "draw_boundaries") {
+    
+    siteBoundaries.push([poplocation.lat, poplocation.lng])
+    
+    if (boundaryMarkers.length > 0) {
+      boundaryMarkers[0].addTo(mainMap)
+    }
+    
+    boundaryMarkers.push(L.marker([siteBoundaries[0][0], siteBoundaries[0][1]]))
+    siteBoundaryLines.push(L.polyline(siteBoundaries, {color: "black"}))
+    // Close the polygone with dashed line
+    // siteBoundaryLines.push(L.polyline([siteBoundaries.slice(0, 1), siteBoundaries.slice(-1)], {color: "black", dashArray: '10, 10', dashOffset: '20'}))
+    
+    for (boundaryPolyline of siteBoundaryLines) {
+      boundaryPolyline.addTo(mainMap)
+    } 
+  }
+
+  
 });
+
+function getBuildingCoordinates(south, west, north, east) {
+  var xhr = new XMLHttpRequest();
+  url = `https://www.overpass-api.de/api/interpreter?data=[out:json][timeout:2500][bbox:${south},${west},${north},${east}];(way["building"];relation["building"];);out body;>;out skel qt;`;
+  console.log(url)
+  xhr.open("GET", url, true);
+  // xhr.responseType = "text";
+  console.log("sending request")
+  xhr.send();
+  console.log("request sent")
+  xhr.onreadystatechange = function () {
+    if (this.readyState == 4 && this.status == 200) {
+      console.log("answer received")
+      console.log(xhr.responseText);
+      }
+  
+  };
+}
 
 function drawDefaultMarker(latitude, longitude) {
   markers.push(
     L.marker([latitude, longitude]).addTo(mainMap)
+  );
+}
+
+function drawMeterhubMarker(latitude, longitude) {
+  markers.push(
+    L.marker([latitude, longitude], {icon: hubMarker}).addTo(mainMap)
+  );
+}
+
+function drawHouseholdMarker(latitude, longitude) {
+  markers.push(
+    L.marker([latitude, longitude], {icon: householdMarker}).addTo(mainMap)
   );
 }
 
@@ -9360,7 +9431,7 @@ function drawLinkOnMap(latitude_from,
   var pointB = new L.LatLng(latitude_to, longitude_to);
   var pointList = [pointA, pointB];
 
-  var link_polyline = new L.Polyline(pointList, {
+  var link_polyline = new L.polyline(pointList, {
       color: color,
       weight: weight,
       opacity: 0.5,
@@ -9428,16 +9499,30 @@ function refreshLinkTable() {
     setInterval(refreshLinkTable, 3000);
     
 
+
+   
+
+    $("#button_add_undefined_node").click(function () {
+      mapClickEvent = "add_default_node";
+    });
+
+    $("#button_add_household").click(function () {
+      mapClickEvent = "add_fixed_household";
+    });
+    
+    $("#button_add_meterhub").click(function () {
+      mapClickEvent = "add_fixed_meterhub";
+    });
+    
     $("#button_add_node").click(function () {
       const latitude = new_node_lat.value;
       const longitude = new_node_long.value;
       const node_type = new_node_type.value;
       const fixed_type = new_node_type_fixed.value;
-
-      addNodeToDatBase(latitude, longitude, node_type, fixed_type)
       
+      addNodeToDatBase(latitude, longitude, node_type, fixed_type)
     });
-   
+    
     $("#button_optimize").click(function () {
       const price_hub = hub_price.value;
       const price_household = household_price.value;
@@ -9446,11 +9531,19 @@ function refreshLinkTable() {
       optimize_grid(price_hub, price_household, price_interhub_cable, price_distribution_cable)
       
     });
-
+    
+    
     $("#button_clear_node_db").click(function () {
       $.ajax({
         url: "clear_node_db/",
         type: "POST",
       });
     });
+    
+    $("#button_select_boundaries").click(function () {
+      mapClickEvent = "draw_boundaries";
+    });
+    
   });
+  
+  

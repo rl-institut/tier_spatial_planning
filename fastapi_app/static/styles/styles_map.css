@@ -1,11 +1,12 @@
 .container {
   display: grid;
-  grid-template: 100px 400px 50px auto/ 20vw 60vw 20vw;
+  grid-template: 100px 400px 50px auto auto / 20vw 60vw 20vw;
   grid-template-areas:
     "header         header        header"
     "left-sidebar   map           right-sidebar"
     "footer         footer        footer"
-    "table_nodes    table_nodes   table_nodes";
+    "table_nodes    table_nodes   table_nodes"
+    "table_links    table_links   table_links";
   /* align items within the grid */
   justify-items: center;
   align-items: center;
@@ -56,7 +57,7 @@
   display: grid;
   grid-template: 33% 33% 33% auto/ 100%;
   grid-template-areas:
-    "."
+    "boundary_selection"
     "."
     "box_optimization";
   /* align items within the grid */
@@ -139,7 +140,7 @@
 .box-map {
   width: 100%;
   height: 100%;
-  background-color: rgb(204, 15, 15);
+  background-color: rgb(255, 255, 255);
   display: flex;
   flex-direction: row;
   justify-content: space-between;
