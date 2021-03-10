@@ -44,8 +44,8 @@ class OptimizeGridRequest(BaseModel):
     price_distribution_cable: float
 
 
-class Item(BaseModel):
-    name: str
-    description: Optional[str] = None
-    price: float
-    tax: Optional[float] = None
+class ValidateBoundariesRequest(BaseModel):
+    min_latitude: float
+    min_longitude: float
+    max_latitude: float
+    max_longitude: float

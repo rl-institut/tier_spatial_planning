@@ -4,12 +4,15 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from database import SessionLocal, engine
 import models
-from models import Nodes, Links, AddNodeRequest, OptimizeGridRequest
+from models import Nodes, AddNodeRequest, OptimizeGridRequest, ValidateBoundariesRequest
 from sqlalchemy.orm import Session
 import sqlite3
 from sgdot.grids import Grid
 from sgdot.tools.grid_optimizer import GridOptimizer
 import math
+import urllib.request
+import json
+import tools.convertion as convert
 
 
 app = FastAPI()
@@ -49,6 +52,28 @@ async def get_links(request: Request, db: Session = Depends(get_db)):
     res = db.execute("select * from links")
     result = res.fetchall()
     return result
+
+
+# @app.post("/validate_boundaries")
+# async def validate_boundaries(validateBoundariesRequest: ValidateBoundariesRequest):
+#     print("TESTING GET")
+#     return "test succeded"
+
+
+@app.post("/validate_boundaries")
+async def validate_boundaries(validateBoundariesRequest: ValidateBoundariesRequest):
+    print("entered validate_boundaries function")
+    min_latitude = validateBoundariesRequest.min_latitude
+    min_longitude = validateBoundariesRequest.min_longitude
+    max_latitude = validateBoundariesRequest.max_latitude
+    max_longitude = validateBoundariesRequest.max_longitude
+#
+    url = f'https://www.overpass-api.de/api/interpreter?data=[out:json][timeout:2500][bbox:{min_latitude},{min_longitude},{max_latitude},{max_longitude}];(way["building"];relation["building"];);out body;>;out skel qt;'
+    url_formated = url.replace(" ", "+")
+    with urllib.request.urlopen(url_formated) as url:
+        data = json.loads(url.read().decode())
+    formated_geojson = convert.convert_json_to_polygones_geojson(data)
+    return formated_geojson
 
 
 def compute_links():
