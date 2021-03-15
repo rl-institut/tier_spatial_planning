@@ -45,7 +45,4 @@ class OptimizeGridRequest(BaseModel):
 
 
 class ValidateBoundariesRequest(BaseModel):
-    min_latitude: float
-    min_longitude: float
-    max_latitude: float
-    max_longitude: float
+    boundary_coordinates: list

@@ -54,30 +54,22 @@ async def get_links(request: Request, db: Session = Depends(get_db)):
     return result
 
 
-# @app.post("/validate_boundaries")
-# async def validate_boundaries(validateBoundariesRequest: ValidateBoundariesRequest):
-#     print("TESTING GET")
-#     return "test succeded"
-
-
 @app.post("/validate_boundaries")
 async def validate_boundaries(validateBoundariesRequest: ValidateBoundariesRequest):
-    print("entered validate_boundaries function")
-    min_latitude = validateBoundariesRequest.min_latitude
-    min_longitude = validateBoundariesRequest.min_longitude
-    max_latitude = validateBoundariesRequest.max_latitude
-    max_longitude = validateBoundariesRequest.max_longitude
-#
+    boundary_coordinates = validateBoundariesRequest.boundary_coordinates
+    latitudes = [x[0] for x in boundary_coordinates]
+    longitudes = [x[1] for x in boundary_coordinates]
+    min_latitude = min(latitudes)
+    min_longitude = min(longitudes)
+    max_latitude = max(latitudes)
+    max_longitude = max(longitudes)
+
     url = f'https://www.overpass-api.de/api/interpreter?data=[out:json][timeout:2500][bbox:{min_latitude},{min_longitude},{max_latitude},{max_longitude}];(way["building"];relation["building"];);out body;>;out skel qt;'
     url_formated = url.replace(" ", "+")
     with urllib.request.urlopen(url_formated) as url:
         data = json.loads(url.read().decode())
     formated_geojson = convert.convert_json_to_polygones_geojson(data)
     return formated_geojson
-
-
-def compute_links():
-    pass
 
 
 @app.post("/add_node/")
@@ -93,8 +85,6 @@ async def add_node(add_node_request: AddNodeRequest,
 
     db.add(nodes)
     db.commit()
-
-    # background_tasks.add_task(compute_links)
 
     return {
         "code": "success",
