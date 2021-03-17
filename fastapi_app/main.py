@@ -4,12 +4,15 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from database import SessionLocal, engine
 import models
-from models import Nodes, Links, AddNodeRequest, OptimizeGridRequest
+from models import Nodes, AddNodeRequest, OptimizeGridRequest, ValidateBoundariesRequest
 from sqlalchemy.orm import Session
 import sqlite3
 from sgdot.grids import Grid
 from sgdot.tools.grid_optimizer import GridOptimizer
 import math
+import urllib.request
+import json
+import tools.boundary_identification as bi
 
 
 app = FastAPI()
@@ -51,8 +54,54 @@ async def get_links(request: Request, db: Session = Depends(get_db)):
     return result
 
 
-def compute_links():
-    pass
+@app.post("/validate_boundaries")
+async def validate_boundaries(
+        validateBoundariesRequest: ValidateBoundariesRequest,
+        db: Session = Depends(get_db)):
+
+    boundary_coordinates = validateBoundariesRequest.boundary_coordinates
+    latitudes = [x[0] for x in boundary_coordinates]
+    longitudes = [x[1] for x in boundary_coordinates]
+    min_latitude = min(latitudes)
+    min_longitude = min(longitudes)
+    max_latitude = max(latitudes)
+    max_longitude = max(longitudes)
+
+    url = f'https://www.overpass-api.de/api/interpreter?data=[out:json][timeout:2500][bbox:{min_latitude},{min_longitude},{max_latitude},{max_longitude}];(way["building"];relation["building"];);out body;>;out skel qt;'
+    url_formated = url.replace(" ", "+")
+    with urllib.request.urlopen(url_formated) as url:
+        data = json.loads(url.read().decode())
+    formated_geojson = bi.convert_json_to_polygones_geojson(data)
+
+    building_coord = bi.get_dict_with_mean_coordinate_from_geojson(
+        formated_geojson)
+
+    features = formated_geojson['features']
+    mask_building_within_boundaries = {
+        key: bi.is_point_in_boundaries(
+            value,
+            boundary_coordinates) for key, value in building_coord.items()}
+    filtered_features = [feature for feature in features
+                         if mask_building_within_boundaries[
+                             feature['property']['@id']]
+                         ]
+    formated_geojson['features'] = filtered_features
+    building_coordidates_within_boundaries = {
+        key: value for key, value in building_coord.items()
+        if mask_building_within_boundaries[key]
+    }
+    for label, coordinates in building_coordidates_within_boundaries.items():
+        nodes = Nodes()
+
+        nodes.latitude = coordinates[0]
+        nodes.longitude = coordinates[1]
+        nodes.node_type = "undefined"
+        nodes.fixed_type = False
+
+        db.add(nodes)
+        db.commit()
+
+    return formated_geojson
 
 
 @app.post("/add_node/")
@@ -69,8 +118,6 @@ async def add_node(add_node_request: AddNodeRequest,
     db.add(nodes)
     db.commit()
 
-    # background_tasks.add_task(compute_links)
-
     return {
         "code": "success",
         "message": "node added to db"
@@ -81,14 +128,19 @@ async def add_node(add_node_request: AddNodeRequest,
 async def optimize_grid(optimize_grid_request: OptimizeGridRequest,
                         background_tasks: BackgroundTasks,
                         db: Session = Depends(get_db)):
+    # Create GridOptimizer object
+    opt = GridOptimizer()
+
     res = db.execute("select * from nodes")
     nodes = res.fetchall()
-
+    # Create new grid object
     grid = Grid(price_meterhub=optimize_grid_request.price_meterhub,
                 price_household=optimize_grid_request.price_household,
                 price_interhub_cable_per_meter=optimize_grid_request.price_interhub_cable,
                 price_distribution_cable_per_meter=optimize_grid_request.price_distribution_cable)
-    opt = GridOptimizer(sa_runtime=20)
+    # Make sure that new grid object is empty before adding nodes to it
+    grid.clear_nodes_and_links()
+
     r = 6371000     # Radius of the earth [m]
     # use latitude of the node that is the most west to set origin of x coordinates
     latitude_0 = math.radians(min([node[1] for node in nodes]))
@@ -100,11 +152,17 @@ async def optimize_grid(optimize_grid_request: OptimizeGridRequest,
 
         x = r * (longitude - longitude_0) * math.cos(latitude_0)
         y = r * (latitude - latitude_0)
+        if node[3] == "meterhub":
+            node_type = "meterhub"
+        else:
+            node_type = "household"
+
+        node_type = "household"
 
         grid.add_node(label=str(node[0]),
                       pixel_x_axis=x,
                       pixel_y_axis=y,
-                      node_type="household",
+                      node_type=node_type,
                       type_fixed=bool(node[4]))
     number_of_hubs = opt.get_expected_hub_number_from_k_means(grid=grid)
     opt.nr_optimization(grid=grid, number_of_hubs=number_of_hubs, number_of_relaxation_step=10,
@@ -118,7 +176,7 @@ async def optimize_grid(optimize_grid_request: OptimizeGridRequest,
     cursor.execute(sql_delete_query)
     sqliteConnection.commit()
 
-    # Update nodes types in database
+    # Update nodes types in node database
     for index in grid.get_nodes().index:
         sql_delete_query = (
             f"""UPDATE nodes

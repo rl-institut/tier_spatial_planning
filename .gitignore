@@ -1,2 +1,9 @@
 .idea
 *.pyc
+.vscode/
+fastapi_app/data/
+fastapi_app/draft.ipynb
+fastapi_app/nodes.db
+nodes.db
+run
+venv/

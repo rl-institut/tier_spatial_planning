@@ -14,7 +14,7 @@
         name="hub price"
         type="number"
         placeholder="hub price"
-        value="600"
+        value="500000"
       />
       <p class="name_currency_1">₦</p>
       <p class="name_component_2">Household</p>
@@ -24,7 +24,7 @@
         name="household price"
         type="number"
         placeholder="household price"
-        value="50"
+        value="200000"
       />
       <p class="name_currency_2">₦</p>
     </div>
@@ -37,7 +37,7 @@
         name="interhub cable price"
         type="number"
         placeholder="hub price"
-        value="5"
+        value="2000"
       />
       <p class="name_currency_1">₦</p>
       <p class="name_component_2">Distribution</p>
@@ -47,12 +47,22 @@
         name="distribution cable price"
         type="number"
         placeholder="distribution cable price"
-        value="2"
+        value="750"
       />
       <p class="name_currency_2">₦</p>
     </div>
+    <div class="node_type_selection_buttons">
+      <h2>Add new node</h2>
+      <button id ="button_add_undefined_node">Undefined</button>
+      <button id ="button_add_household">Fixed household</button>
+      <button id ="button_add_meterhub">Fixed meterhub</button>
+    </div>
   </div>
   <div class="box-sidebar right-sidebar">
+    <div class="boundary_selection">
+      <button id="button_select_boundaries">Select boundaries</button>
+      <button id="button_validate_boundaries">Validate boundaries</button>
+    </div>
     <div class="box_optimization">
       <button id="button_optimize">Optimize</button>
     </div>
@@ -128,6 +138,9 @@
         </div>
       </div>
 
+      <button id="button_clear_node_db" type="submit" class="ui button primary">
+        Clear Nodes
+      </button>
       <table id="table_nodes">
         <thead>
           <tr>
@@ -140,9 +153,6 @@
         </thead>
         <tbody id="tbody_nodes"></tbody>
       </table>
-      <button id="button_clear_node_db" type="submit" class="ui button primary">
-        Clear Nodes
-      </button>
     </div>
   </div>
 </div>
