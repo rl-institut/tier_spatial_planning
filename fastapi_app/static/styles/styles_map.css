@@ -1,6 +1,6 @@
 .container {
   display: grid;
-  grid-template: 100px 400px 50px auto auto / 20vw 60vw 20vw;
+  grid-template: 20vh 70vh 10vh auto auto / 20vw 60vw 20vw;
   grid-template-areas:
     "header         header        header"
     "left-sidebar   map           right-sidebar"

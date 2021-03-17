@@ -22,15 +22,15 @@ L.control.scale().addTo(mainMap);
 
 var householdMarker = new L.Icon({
   iconUrl: "static/images/markers/marker-household.png",
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
+  iconSize: [10, 10],
+  iconAnchor: [5, 5],
   popupAnchor: [0, 0],
 });
 
 var hubMarker = new L.Icon({
   iconUrl: "/static/images/markers/marker-hub.png",
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
+  iconSize: [14, 14],
+  iconAnchor: [7, 7],
   popupAnchor: [0, 0],
 });
 
@@ -78,7 +78,13 @@ mainMap.on("click", function (e) {
   }
 });
 
-function getBuildingCoordinates(south, west, north, east, boundariesCoordinates) {
+function getBuildingCoordinates(
+  south,
+  west,
+  north,
+  east,
+  boundariesCoordinates
+) {
   var xhr = new XMLHttpRequest();
   url = "/validate_boundaries";
   xhr.open("POST", url, true);
@@ -86,13 +92,14 @@ function getBuildingCoordinates(south, west, north, east, boundariesCoordinates)
 
   xhr.send(
     JSON.stringify({
-      boundary_coordinates: boundariesCoordinates
+      boundary_coordinates: boundariesCoordinates,
     })
   );
   xhr.onreadystatechange = function () {
     if (this.readyState == 4 && this.status == 200) {
-      siteGeojson = JSON.parse(xhr.responseText);
-      L.geoJSON(siteGeojson).addTo(mainMap);
+      siteGeojson = L.geoJSON(JSON.parse(xhr.responseText));
+
+      siteGeojson.addTo(mainMap);
     }
   };
 }
@@ -336,6 +343,7 @@ $(document).ready(function () {
       "button_select_boundaries"
     );
     textSelectBoundaryButton.innerHTML = "Reset boundaries";
+
     removeBoundaries();
   });
 

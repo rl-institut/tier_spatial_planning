@@ -12,7 +12,7 @@ from sgdot.tools.grid_optimizer import GridOptimizer
 import math
 import urllib.request
 import json
-import tools.convertion as convert
+import tools.boundary_identification as bi
 
 
 app = FastAPI()
@@ -55,7 +55,10 @@ async def get_links(request: Request, db: Session = Depends(get_db)):
 
 
 @app.post("/validate_boundaries")
-async def validate_boundaries(validateBoundariesRequest: ValidateBoundariesRequest):
+async def validate_boundaries(
+        validateBoundariesRequest: ValidateBoundariesRequest,
+        db: Session = Depends(get_db)):
+
     boundary_coordinates = validateBoundariesRequest.boundary_coordinates
     latitudes = [x[0] for x in boundary_coordinates]
     longitudes = [x[1] for x in boundary_coordinates]
@@ -68,7 +71,36 @@ async def validate_boundaries(validateBoundariesRequest: ValidateBoundariesReque
     url_formated = url.replace(" ", "+")
     with urllib.request.urlopen(url_formated) as url:
         data = json.loads(url.read().decode())
-    formated_geojson = convert.convert_json_to_polygones_geojson(data)
+    formated_geojson = bi.convert_json_to_polygones_geojson(data)
+
+    building_coord = bi.get_dict_with_mean_coordinate_from_geojson(
+        formated_geojson)
+
+    features = formated_geojson['features']
+    mask_building_within_boundaries = {
+        key: bi.is_point_in_boundaries(
+            value,
+            boundary_coordinates) for key, value in building_coord.items()}
+    filtered_features = [feature for feature in features
+                         if mask_building_within_boundaries[
+                             feature['property']['@id']]
+                         ]
+    formated_geojson['features'] = filtered_features
+    building_coordidates_within_boundaries = {
+        key: value for key, value in building_coord.items()
+        if mask_building_within_boundaries[key]
+    }
+    for label, coordinates in building_coordidates_within_boundaries.items():
+        nodes = Nodes()
+
+        nodes.latitude = coordinates[0]
+        nodes.longitude = coordinates[1]
+        nodes.node_type = "undefined"
+        nodes.fixed_type = False
+
+        db.add(nodes)
+        db.commit()
+
     return formated_geojson
 
 
@@ -96,14 +128,19 @@ async def add_node(add_node_request: AddNodeRequest,
 async def optimize_grid(optimize_grid_request: OptimizeGridRequest,
                         background_tasks: BackgroundTasks,
                         db: Session = Depends(get_db)):
+    # Create GridOptimizer object
+    opt = GridOptimizer()
+
     res = db.execute("select * from nodes")
     nodes = res.fetchall()
-
+    # Create new grid object
     grid = Grid(price_meterhub=optimize_grid_request.price_meterhub,
                 price_household=optimize_grid_request.price_household,
                 price_interhub_cable_per_meter=optimize_grid_request.price_interhub_cable,
                 price_distribution_cable_per_meter=optimize_grid_request.price_distribution_cable)
-    opt = GridOptimizer(sa_runtime=20)
+    # Make sure that new grid object is empty before adding nodes to it
+    grid.clear_nodes_and_links()
+
     r = 6371000     # Radius of the earth [m]
     # use latitude of the node that is the most west to set origin of x coordinates
     latitude_0 = math.radians(min([node[1] for node in nodes]))
