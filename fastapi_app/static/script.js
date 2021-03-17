@@ -342,6 +342,9 @@ $(document).ready(function () {
     var textSelectBoundaryButton = document.getElementById(
       "button_select_boundaries"
     );
+    if (textSelectBoundaryButton.innerHTML === "Reset boundaries") {
+      mainMap.removeLayer(siteGeojson);
+    }
     textSelectBoundaryButton.innerHTML = "Reset boundaries";
 
     removeBoundaries();
