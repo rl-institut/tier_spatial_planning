@@ -23,6 +23,8 @@ models.Base.metadata.create_all(bind=engine)
 
 templates = Jinja2Templates(directory="templates")
 
+grid_db = "grid.db"
+
 
 def get_db():
     try:
@@ -166,7 +168,7 @@ async def optimize_grid(optimize_grid_request: OptimizeGridRequest,
     opt.nr_optimization(grid=grid, number_of_hubs=number_of_hubs, number_of_relaxation_step=10,
                         save_output=False, save_opt_video=False, plot_price_evolution=False)
 
-    sqliteConnection = sqlite3.connect('nodes.db')
+    sqliteConnection = sqlite3.connect(grid_db)
     cursor = sqliteConnection.cursor()
 
     # Empty links table
@@ -194,7 +196,7 @@ async def optimize_grid(optimize_grid_request: OptimizeGridRequest,
         sqliteConnection.commit()
     cursor.close()
 
-    conn = sqlite3.connect('nodes.db')
+    conn = sqlite3.connect(grid_db)
     cursor = conn.cursor()
     records = []
     count = 1
@@ -240,7 +242,7 @@ async def optimize_grid(optimize_grid_request: OptimizeGridRequest,
 
 @ app.post("/clear_node_db/")
 async def clear_nodes():
-    sqliteConnection = sqlite3.connect('nodes.db')
+    sqliteConnection = sqlite3.connect(grid_db)
     cursor = sqliteConnection.cursor()
 
     sql_delete_query = """DELETE from nodes"""
@@ -248,7 +250,7 @@ async def clear_nodes():
     sqliteConnection.commit()
     cursor.close()
 
-    sqliteConnection = sqlite3.connect('nodes.db')
+    sqliteConnection = sqlite3.connect(grid_db)
     cursor = sqliteConnection.cursor()
 
     sql_delete_query = """DELETE from links"""

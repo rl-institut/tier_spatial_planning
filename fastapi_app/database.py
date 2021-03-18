@@ -4,7 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # nodes database
-SQLALCHEMY_NODES_DATABASE_URL = "sqlite:///./nodes.db"
+SQLALCHEMY_NODES_DATABASE_URL = "sqlite:///./grid.db"
 
 engine = create_engine(
     SQLALCHEMY_NODES_DATABASE_URL, connect_args={"check_same_thread": False}
