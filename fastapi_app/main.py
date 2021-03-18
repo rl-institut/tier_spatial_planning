@@ -157,8 +157,6 @@ async def optimize_grid(optimize_grid_request: OptimizeGridRequest,
         else:
             node_type = "household"
 
-        node_type = "household"
-
         grid.add_node(label=str(node[0]),
                       pixel_x_axis=x,
                       pixel_y_axis=y,
