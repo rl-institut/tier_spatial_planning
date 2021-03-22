@@ -9,7 +9,7 @@ fastapi==0.63.0
 h11==0.12.0
 idna==2.10
 ipykernel==5.4.3
-ipython==7.20.0
+ipython==7.16.1
 ipython-genutils==0.2.0
 jedi==0.18.0
 Jinja2==2.11.3
