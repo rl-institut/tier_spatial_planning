@@ -18,7 +18,7 @@ jupyter-core==4.7.1
 lxml==4.6.2
 MarkupSafe==1.1.1
 multitasking==0.0.9
-numpy==1.20.1
+numpy==1.19.5
 pandas==1.2.1
 parso==0.8.1
 pexpect==4.8.0
