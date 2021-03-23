@@ -9,7 +9,7 @@ fastapi==0.63.0
 h11==0.12.0
 idna==2.10
 ipykernel==5.4.3
-ipython==7.20.0
+ipython==7.16.1
 ipython-genutils==0.2.0
 jedi==0.18.0
 Jinja2==2.11.3
@@ -18,7 +18,7 @@ jupyter-core==4.7.1
 lxml==4.6.2
 MarkupSafe==1.1.1
 multitasking==0.0.9
-numpy==1.20.1
+numpy==1.19.5
 pandas==1.2.1
 parso==0.8.1
 pexpect==4.8.0
