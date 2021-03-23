@@ -44,6 +44,18 @@ def home(request: Request, db: Session = Depends(get_db)):
 
 @app.get("/nodes_db_html")
 async def get_nodes(request: Request, db: Session = Depends(get_db)):
+    """
+    This funtcion access and returns the entries of the nodes table of the grid database
+
+    Parameters
+    ----------
+    request:
+        url get request called to invoke function
+
+    db:
+        database to be accessed
+
+    """
     res = db.execute("select * from nodes")
     result = res.fetchall()
     return result
