@@ -1,13 +1,36 @@
 // var mainMap = L.map("leafletMap").setView([9.07798, 7.704826], 5);
-var mainMap = L.map("leafletMap").setView([11.3929, 9.1248], 18);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+var osmLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   tileSize: 512,
   zoomOffset: -1,
   minZoom: 1,
   attribution:
-    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   crossOrigin: true,
-}).addTo(mainMap);
+})
+
+var osmMap = {
+  "osmBaseMap": osmLayer
+}
+
+var esriWorldImageryLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  tileSize: 512,
+  zoomOffset: -1,
+  minZoom: 1,
+  maxZoom: 18,
+  attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+});
+
+var esriSatelliteMap = {
+  "esriBaseMap": esriWorldImageryLayer
+}
+
+var mainMap = L.map("leafletMap", {
+  center: [11.3929, 9.1248],
+  zoom: 17,
+  layers: [osmLayer, esriWorldImageryLayer]
+});
+
+L.control.layers(osmMap, esriSatelliteMap).addTo(mainMap);
 
 var mapClickEvent = "add_default_node";
 
