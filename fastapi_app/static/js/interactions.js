@@ -39,7 +39,11 @@ var mainMap = L.map("leafletMap", {
 
 L.control.layers(osmMap, esriSatelliteMap).addTo(mainMap);
 
-var mapClickEvent = "add_default_node";
+var mapClickEvent = "add_node";
+
+function setMapClickEventToAddNode() {
+  mapClickEvent = "add_node";
+}
 
 var siteBoundaries = [];
 
@@ -70,19 +74,21 @@ var lines = [];
 mainMap.on("click", function (e) {
   var poplocation = e.latlng;
 
-  if (mapClickEvent == "add_default_node") {
-    addNodeToDatBase(poplocation.lat, poplocation.lng, "undefinded", false);
-    drawDefaultMarker(poplocation.lat, poplocation.lng);
-  }
+  if (mapClickEvent == "add_node") {
+    if (document.getElementsByName("radio_button_new_node_type")[0].checked) {
+      addNodeToDatBase(poplocation.lat, poplocation.lng, "undefinded", false);
+      drawDefaultMarker(poplocation.lat, poplocation.lng);
+    }
 
-  if (mapClickEvent == "add_fixed_household") {
-    addNodeToDatBase(poplocation.lat, poplocation.lng, "household", true);
-    drawHouseholdMarker(poplocation.lat, poplocation.lng);
-  }
+    if (document.getElementsByName("radio_button_new_node_type")[1].checked) {
+      addNodeToDatBase(poplocation.lat, poplocation.lng, "household", true);
+      drawHouseholdMarker(poplocation.lat, poplocation.lng);
+    }
 
-  if (mapClickEvent == "add_fixed_meterhub") {
-    addNodeToDatBase(poplocation.lat, poplocation.lng, "meterhub", true);
-    drawMeterhubMarker(poplocation.lat, poplocation.lng);
+    if (document.getElementsByName("radio_button_new_node_type")[2].checked) {
+      addNodeToDatBase(poplocation.lat, poplocation.lng, "meterhub", true);
+      drawMeterhubMarker(poplocation.lat, poplocation.lng);
+    }
   }
 
   if (mapClickEvent == "draw_boundaries") {
@@ -327,7 +333,7 @@ $(document).ready(function () {
   setInterval(refreshLinkTable, 3000);
 
   $("#button_add_undefined_node").click(function () {
-    mapClickEvent = "add_default_node";
+    mapClickEvent = "add_node";
   });
 
   $("#button_add_household").click(function () {
