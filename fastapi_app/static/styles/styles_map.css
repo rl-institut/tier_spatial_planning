@@ -1,22 +1,9 @@
-.container {
-  display: grid;
-  grid-template: 10vh 80vh 10vh auto auto / 20vw 60vw 20vw;
-  grid-template-areas:
-    "header         header        header"
-    "left-sidebar   map           right-sidebar"
-    "footer         footer        footer"
-    "table_nodes    table_nodes   table_nodes"
-    "table_links    table_links   table_links";
-  /* align items within the grid */
-  justify-items: center;
-  align-items: center;
-  /* align the grid within its container */
-  justify-content: center;
-  align-content: center;
-  /* gap between items */
-  row-gap: 0px;
-  column-gap: 0px;
-  height: auto;
+.home-container {
+  height: 100vh;
+}
+
+.box-body {
+  height: 80%;
 }
 
 .table_nodes {
@@ -24,36 +11,11 @@
   height: auto;
 }
 
-.header {
-  grid-area: header;
-}
-
-.footer {
-  grid-area: footer;
-}
-
 .left-sidebar {
-  grid-area: left-sidebar;
-  display: grid;
-  grid-template: 33% 33% 33% auto/ 100%;
-  grid-template-areas:
-    "mg_node_price_input"
-    "mg_cable_price_input"
-    ".        ";
-  /* align items within the grid */
-  justify-items: center;
-  align-items: center;
-  /* align the grid within its container */
-  justify-content: center;
-  align-content: center;
-  /* gap between items */
-  row-gap: 0px;
-  column-gap: 0px;
-  height: auto;
+  height: 80vh;
 }
 
 .right-sidebar {
-  grid-area: left-sidebar;
   display: grid;
   grid-template: 33% 33% 33% auto/ 100%;
   grid-template-areas:
@@ -89,62 +51,22 @@
   align-content: center;
 }
 
-.right-sidebar {
-  grid-area: right-sidebar;
-}
-
-.map {
-  grid-area: map;
-}
-
-.table_nodes {
-  grid-area: table_nodes;
-}
-
 .box_table_nodes {
-  width: 100%;
-  height: 100%;
   background-color: rgb(255, 0, 0);
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .box-footer {
-  width: 100%;
-  height: 100%;
+  height: 10%;
   background-color: lightgray;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .box-header {
-  width: 100%;
-  height: 100%;
+  height: 10%;
   background-color: lightgrey;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.box-sidebar {
-  width: 100%;
-  height: 100%;
-  background-color: rgb(148, 148, 148);
 }
 
 .box-map {
-  width: 100%;
-  height: 100%;
   background-color: rgb(255, 255, 255);
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .logo-box {
@@ -173,26 +95,26 @@
   justify-content: space-between;
 }
 
-.orange-box {
-  width: 100px;
-  height: 100px;
-  background-color: gold;
+.side_bar_box {
+  border: 1px solid rgb(0, 0, 0);
+  background-color: lightblue;
+  width: 100%;
+  margin: 0%;
+}
+
+.side_bar_button {
+  line-height: 0em;
 }
 
 .mg_component_price_input {
-  border: 1px solid rgb(0, 0, 0);
-  background-color: lightblue;
   display: grid;
   grid-template: 33% 33% 33% auto/ 40% 40% 20%;
   grid-template-areas:
     "mg_component_prices_title  mg_component_prices_title  mg_component_prices_title"
     "name_component_1           input_component_1          name_currency_1"
     "name_component_2           input_component_2          name_currency_2";
-  height: auto;
   justify-items: center;
   align-items: center;
-  width: 95%;
-  margin: 10%;
 }
 
 .name_component_1 {
@@ -229,4 +151,8 @@
   grid-area: button_optimize;
   width: 60%;
   height: 50%;
+}
+
+#side_bar_box-title {
+  font-size: large;
 }
