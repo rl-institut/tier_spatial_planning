@@ -2,6 +2,11 @@
   height: 100vh;
 }
 
+.application_title {
+  font-size: 2rem;
+  padding: 1%;
+}
+
 .box-body {
   height: 90%;
 }
@@ -39,30 +44,17 @@
   background-color: rgb(255, 255, 255);
 }
 
-.logo-box {
+.peoplesun-logo-box {
   height: 90%;
   width: 30%;
   display: flex;
-  align-self: center;
+  justify-content: center;
 }
 
 .logo {
   width: auto;
   height: 80%;
   align-self: center;
-}
-
-.left-logo {
-  justify-content: left;
-}
-
-.right-logo {
-  display: flex;
-  justify-content: space-evenly;
-}
-
-.right-logo {
-  justify-content: space-between;
 }
 
 .side_bar_box {
