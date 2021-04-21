@@ -3,7 +3,7 @@
 }
 
 .box-body {
-  height: 80%;
+  height: 90%;
 }
 
 .table_nodes {
@@ -12,43 +12,13 @@
 }
 
 .left-sidebar {
-  height: 80vh;
+  height: 90vh;
 }
 
-.right-sidebar {
-  display: grid;
-  grid-template: 33% 33% 33% auto/ 100%;
-  grid-template-areas:
-    "boundary_selection"
-    "."
-    "box_optimization";
-  /* align items within the grid */
-  justify-items: center;
-  align-items: center;
-  /* align the grid within its container */
-  justify-content: center;
-  align-content: center;
-  /* gap between items */
-  row-gap: 0px;
-  column-gap: 0px;
-  height: auto;
-}
-
-.box_optimization {
+.box_left_sidebar {
   grid-area: box_optimization;
   width: 95%;
   height: 100%;
-  display: grid;
-  grid-template: 50% 50% auto/ 100%;
-  grid-template-areas:
-    "button_optimize"
-    ".";
-  /* align items within the grid */
-  justify-items: center;
-  align-items: center;
-  /* align the grid within its container */
-  justify-content: center;
-  align-content: center;
 }
 
 .box_table_nodes {
@@ -100,10 +70,13 @@
   background-color: lightblue;
   width: 100%;
   margin: 0%;
+  display: flex;
+  justify-content: center;
+  text-align: center;
 }
 
 .side_bar_button {
-  line-height: 0em;
+  margin-inline: 10%;
 }
 
 .mg_component_price_input {
@@ -124,6 +97,7 @@
 .input_component_1 {
   grid-area: input_component_1;
   width: 100%;
+  height: 1.4375rem;
 }
 
 .name_component_2 {
@@ -132,6 +106,7 @@
 .input_component_2 {
   grid-area: input_component_2;
   width: 100%;
+  height: 1.4375rem;
 }
 
 .name_currency_1 {
@@ -149,8 +124,6 @@
 
 #button_optimize {
   grid-area: button_optimize;
-  width: 60%;
-  height: 50%;
 }
 
 #side_bar_box-title {
