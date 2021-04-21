@@ -18,7 +18,7 @@
         <p class="name_component_1">Hub</p>
         <input
           id="hub_price"
-          class="input_component_1"
+          class="input_sidebar input_component_1"
           name="hub price"
           type="number"
           placeholder="hub price"
@@ -28,7 +28,7 @@
         <p class="name_component_2">Household</p>
         <input
           id="household_price"
-          class="input_component_2"
+          class="input_sidebar input_component_2"
           name="household price"
           type="number"
           placeholder="household price"
@@ -41,7 +41,7 @@
         <p class="name_component_1">Interhub</p>
         <input
           id="interhub_cable_price"
-          class="input_component_1"
+          class="input_sidebar input_component_1"
           name="interhub cable price"
           type="number"
           placeholder="hub price"
@@ -51,7 +51,7 @@
         <p class="name_component_2">Distribution</p>
         <input
           id="distribution_cable_price"
-          class="input_component_2"
+          class="input_sidebar input_component_2"
           name="distribution cable price"
           type="number"
           placeholder="distribution cable price"
@@ -76,39 +76,52 @@
       </div>
       <div class="shs_identification side_bar_box cell small-3">
         <div class="box_shs_identification grid-y">
-          <div class="cell small-3">
+          <legend class="cell small-2 side_bar_box_title">Solar Home Sytem Identification</legend>
+          <div class="cell small-2 grid-x">
+            <p class="cell small-8">Avg cable price</p>
             <input
             id="cable_price_per_meter_for_shs_mst_identification"
-            class=""
+            class="cell small-2 input_sidebar"
             name="cable_price_per_meter_for_shs_mst_identification"
             type="number"
             placeholder="cable_price_per_meter_for_shs_mst_identification"
-            value="10001"
-          />
+            value="1000"
+            />
+            <p class="cell small-2">₦/m</p>
           </div>
-          <div class="cell small-3"></div>
-          <div class="cell small-3"></div>
-          <div class="cell small-3"></div>
-          <button id="button_shs_identification" class="ui button side_bar_button">Identify SHS</button>
-        </div>
+          <div class="cell small-2 grid-x">
+            <p class="cell small-8">Additional connection price</p>
+            <input
+            id="additional_connection_price_for_shs_mst_identification"
+            class="cell small-2 input_sidebar"
+            name="additional_connection_price_for_shs_mst_identification"
+            type="number"
+            placeholder="additional_connection_price_for_shs_mst_identification"
+            value="20000"
+            />
+            <p class="cell small-2">₦/m</p>
+          </div>
+          <div class="cell small-2">
+            <button id="set_shs_price_characteristics" class="ui button side_bar_button">Set SHS price Characteristics</button>
+          </div>
 
+          <div class="cell small-2">
+            <button id="button_shs_identification" class="ui button side_bar_button">Identify SHS</button>
+          </div>
+
+        </div>
       </div>
       <div class="optimization side_bar_box cell small-2">
         <div class="box_left_sidebar">
           <button id="button_optimize" class="ui button side_bar_button">Optimize</button>
         </div>
       </div>
-
     </div>
-
-      
     
-    <div class="box-map map cell small-9">
-      <div id="leafletMap"></div>
-    </div>  
-  </div>
-  
-</div>
+  <div class="box-map map cell small-9">
+    <div id="leafletMap"></div>
+  </div> 
+</div> 
 
 <div class="box-table-nodes table_nodes">
   <legend>Nodes table</legend>

@@ -69,6 +69,7 @@
 
 .side_bar_button {
   margin-inline: 10%;
+  padding-block: 1%;
 }
 
 .mg_component_price_input {
@@ -89,7 +90,6 @@
 .input_component_1 {
   grid-area: input_component_1;
   width: 100%;
-  height: 1.4375rem;
 }
 
 .name_component_2 {
@@ -98,7 +98,6 @@
 .input_component_2 {
   grid-area: input_component_2;
   width: 100%;
-  height: 1.4375rem;
 }
 
 .name_currency_1 {
@@ -107,6 +106,10 @@
 
 .name_currency_2 {
   grid-area: name_currency_2;
+}
+
+.input_sidebar {
+  height: 1.4375rem;
 }
 
 .mg_component_prices_title {
