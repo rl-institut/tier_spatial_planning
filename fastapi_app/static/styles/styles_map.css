@@ -111,13 +111,12 @@
 
 .mg_component_prices_title {
   grid-area: mg_component_prices_title;
-  font-size: 1.5rem;
 }
 
 #button_optimize {
   grid-area: button_optimize;
 }
 
-#side_bar_box-title {
-  font-size: large;
+.side_bar_box_title {
+  font-size: 1.2rem;
 }
