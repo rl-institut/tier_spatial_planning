@@ -114,13 +114,7 @@ mainMap.on("click", function (e) {
   }
 });
 
-function getBuildingCoordinates(
-  south,
-  west,
-  north,
-  east,
-  boundariesCoordinates
-) {
+function getBuildingCoordinates(boundariesCoordinates) {
   var xhr = new XMLHttpRequest();
   url = "/validate_boundaries";
   xhr.open("POST", url, true);
@@ -434,12 +428,6 @@ $(document).ready(function () {
 
     // TODO implement if close to check that area is not too large
 
-    getBuildingCoordinates(
-      (south = minLatitude),
-      (west = minLongitude),
-      (north = maxLatitude),
-      (east = maxLongitude),
-      (boundariesCoordinates = siteBoundaries)
-    );
+    getBuildingCoordinates((boundariesCoordinates = siteBoundaries));
   });
 });
