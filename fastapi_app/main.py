@@ -4,7 +4,6 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from database import SessionLocal, engine
 import models
-from models import *
 from sqlalchemy.orm import Session
 import sqlite3
 from sgdot.grids import Grid
@@ -36,7 +35,7 @@ def get_db():
 
 @app.get("/")
 def home(request: Request, db: Session = Depends(get_db)):
-    nodes = db.query(Nodes)
+    nodes = db.query(models.Nodes)
     return templates.TemplateResponse("home.html", {
         "request": request, "nodes": nodes
     })
@@ -70,7 +69,7 @@ async def get_links(request: Request, db: Session = Depends(get_db)):
 
 @app.post("/validate_boundaries")
 async def validate_boundaries(
-        validateBoundariesRequest: ValidateBoundariesRequest,
+        validateBoundariesRequest: models.ValidateBoundariesRequest,
         db: Session = Depends(get_db)):
 
     boundary_coordinates = validateBoundariesRequest.boundary_coordinates
@@ -119,10 +118,10 @@ async def validate_boundaries(
 
 
 @app.post("/add_node/")
-async def add_node(add_node_request: AddNodeRequest,
+async def add_node(add_node_request: models.AddNodeRequest,
                    background_tasks: BackgroundTasks,
                    db: Session = Depends(get_db)):
-    nodes = Nodes()
+    nodes = models.Nodes()
 
     nodes.latitude = add_node_request.latitude
     nodes.longitude = add_node_request.longitude
@@ -139,7 +138,7 @@ async def add_node(add_node_request: AddNodeRequest,
 
 
 @app.post("/optimize_grid/")
-async def optimize_grid(optimize_grid_request: OptimizeGridRequest,
+async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                         background_tasks: BackgroundTasks,
                         db: Session = Depends(get_db)):
     # Create GridOptimizer object
@@ -253,7 +252,7 @@ async def optimize_grid(optimize_grid_request: OptimizeGridRequest,
 
 
 @app.post("/shs_identification/")
-async def identify_shs(shs_identification_request: ShsIdentificationRequest):
+async def identify_shs(shs_identification_request: models.ShsIdentificationRequest):
     print("shs_identification_request:")
     print(shs_identification_request)
 
