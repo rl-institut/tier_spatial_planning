@@ -69,19 +69,23 @@
       </div>
       <div class="box-boundary-selection side_bar_box cell small-1 grid-y">
         <legend class="side_bar_box_title cell small-4">Site Boundary</legend>
-        <div class="cell small-8">
-          <button id="button_select_boundaries" class="ui button side_bar_button">Select</button>
-          <button id="button_validate_boundaries" class="ui button side_bar_button">Validate</button>
+        <div class="cell small-8 grid-x">
+          <div class="cell small-6">
+            <button id="button_select_boundaries" class="ui button side_bar_button">Select</button>
+          </div>
+          <div class="cell small-6">
+            <button id="button_validate_boundaries" class="ui button side_bar_button">Validate</button>
+          </div>
         </div>
       </div>
       <div class="shs_identification side_bar_box cell small-3">
         <div class="box_shs_identification grid-y">
           <legend class="cell small-2 side_bar_box_title">Solar Home Sytem Identification</legend>
           <div class="cell small-2 grid-x">
-            <p class="cell small-8">Avg cable price</p>
+            <p class="cell small-6">Avg cable price</p>
             <input
             id="cable_price_per_meter_for_shs_mst_identification"
-            class="cell small-2 input_sidebar"
+            class="cell small-4 input_sidebar"
             name="cable_price_per_meter_for_shs_mst_identification"
             type="number"
             placeholder="cable_price_per_meter_for_shs_mst_identification"
@@ -90,10 +94,10 @@
             <p class="cell small-2">₦/m</p>
           </div>
           <div class="cell small-2 grid-x">
-            <p class="cell small-8">Additional connection price</p>
+            <p class="cell small-6">Additional connection price</p>
             <input
             id="additional_connection_price_for_shs_mst_identification"
-            class="cell small-2 input_sidebar"
+            class="cell small-4 input_sidebar"
             name="additional_connection_price_for_shs_mst_identification"
             type="number"
             placeholder="additional_connection_price_for_shs_mst_identification"
@@ -106,7 +110,7 @@
           </div>
 
           <div class="cell small-2">
-            <button id="button_shs_identification" class="ui button side_bar_button">Identify SHS</button>
+            <button id="button_identify_shs" class="ui button side_bar_button">Identify SHS</button>
           </div>
 
         </div>

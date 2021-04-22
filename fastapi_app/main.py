@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from database import SessionLocal, engine
 import models
-from models import Nodes, AddNodeRequest, OptimizeGridRequest, ValidateBoundariesRequest
+from models import *
 from sqlalchemy.orm import Session
 import sqlite3
 from sgdot.grids import Grid
@@ -250,6 +250,12 @@ async def optimize_grid(optimize_grid_request: OptimizeGridRequest,
         "code": "success",
         "message": "grid optimized"
     }
+
+
+@app.post("/shs_identification/")
+async def identify_shs(shs_identification_request: ShsIdentificationRequest):
+    print("shs_identification_request:")
+    print(shs_identification_request)
 
 
 @ app.post("/clear_node_db/")

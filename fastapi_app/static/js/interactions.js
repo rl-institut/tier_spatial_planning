@@ -204,6 +204,19 @@ function optimize_grid(
   });
 }
 
+function identify_shs(cable_price_per_meter, additional_connection_price) {
+  $.ajax({
+    url: "shs_identification/",
+    type: "POST",
+    contentType: "application/json",
+    data: JSON.stringify({
+      cable_price_per_meter_for_shs_mst_identification: cable_price_per_meter,
+      additional_connection_price_for_shs_mst_identification: additional_connection_price,
+    }),
+    dataType: "json",
+  });
+}
+
 function refreshNodeTable() {
   var tbody_nodes = document.getElementById("tbody_nodes");
   var xhr = new XMLHttpRequest();
@@ -366,6 +379,15 @@ $(document).ready(function () {
     );
   });
 
+  $("#button_identify_shs").click(function () {
+    const cable_price_per_meter =
+      cable_price_per_meter_for_shs_mst_identification.value;
+    const additional_connection_price =
+      additional_connection_price_for_shs_mst_identification.value;
+
+    identify_shs(cable_price_per_meter, additional_connection_price);
+  });
+
   $("#button_clear_node_db").click(function () {
     $.ajax({
       url: "clear_node_db/",
@@ -378,10 +400,10 @@ $(document).ready(function () {
     var textSelectBoundaryButton = document.getElementById(
       "button_select_boundaries"
     );
-    if (textSelectBoundaryButton.innerHTML === "Reset boundaries") {
+    if (textSelectBoundaryButton.innerHTML === "Reset") {
       mainMap.removeLayer(siteGeojson);
     }
-    textSelectBoundaryButton.innerHTML = "Reset boundaries";
+    textSelectBoundaryButton.innerHTML = "Reset";
 
     removeBoundaries();
   });
