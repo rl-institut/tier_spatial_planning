@@ -1,4 +1,6 @@
-// var mainMap = L.map("leafletMap").setView([9.07798, 7.704826], 5);
+default_household_required_capacity = 10;
+default_household_max_power = 20;
+
 var osmLayer = L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   {
@@ -76,17 +78,38 @@ mainMap.on("click", function (e) {
 
   if (mapClickEvent == "add_node") {
     if (document.getElementsByName("radio_button_new_node_type")[0].checked) {
-      addNodeToDatBase(poplocation.lat, poplocation.lng, "undefinded", false);
+      addNodeToDatBase(
+        poplocation.lat,
+        poplocation.lng,
+        "undefinded",
+        false,
+        default_household_required_capacity,
+        default_household_max_power
+      );
       drawDefaultMarker(poplocation.lat, poplocation.lng);
     }
 
     if (document.getElementsByName("radio_button_new_node_type")[1].checked) {
-      addNodeToDatBase(poplocation.lat, poplocation.lng, "household", true);
+      addNodeToDatBase(
+        poplocation.lat,
+        poplocation.lng,
+        "household",
+        true,
+        default_household_required_capacity,
+        default_household_max_power
+      );
       drawHouseholdMarker(poplocation.lat, poplocation.lng);
     }
 
     if (document.getElementsByName("radio_button_new_node_type")[2].checked) {
-      addNodeToDatBase(poplocation.lat, poplocation.lng, "meterhub", true);
+      addNodeToDatBase(
+        poplocation.lat,
+        poplocation.lng,
+        "meterhub",
+        true,
+        2 * default_household_required_capacity,
+        2 * default_household_max_power
+      );
       drawMeterhubMarker(poplocation.lat, poplocation.lng);
     }
   }
@@ -123,6 +146,8 @@ function getBuildingCoordinates(boundariesCoordinates) {
   xhr.send(
     JSON.stringify({
       boundary_coordinates: boundariesCoordinates,
+      default_required_capacity: default_household_required_capacity,
+      default_max_power: default_household_max_power,
     })
   );
   xhr.onreadystatechange = function () {
@@ -150,7 +175,14 @@ function drawHouseholdMarker(latitude, longitude) {
   );
 }
 
-function addNodeToDatBase(latitude, longitude, node_type, fixed_type) {
+function addNodeToDatBase(
+  latitude,
+  longitude,
+  node_type,
+  fixed_type,
+  required_capacity,
+  max_power
+) {
   $.ajax({
     url: "add_node/",
     type: "POST",
@@ -160,6 +192,8 @@ function addNodeToDatBase(latitude, longitude, node_type, fixed_type) {
       longitude: longitude,
       node_type: node_type,
       fixed_type: fixed_type,
+      required_capacity: required_capacity,
+      max_power: max_power,
     }),
     dataType: "json",
   });
@@ -231,6 +265,8 @@ function refreshNodeTable() {
               <td>${node.longitude}</td>
               <td>${node.node_type}</td>
               <td>${node.fixed_type}</td>
+              <td>${node.required_capacity}</td>
+              <td>${node.max_power}</td>
               </tr>`;
       }
       tbody_nodes.innerHTML = html_node_table;
@@ -356,8 +392,17 @@ $(document).ready(function () {
     const longitude = new_node_long.value;
     const node_type = new_node_type.value;
     const fixed_type = new_node_type_fixed.value;
+    const required_capacity = default_household_required_capacity;
+    const max_power = default_household_max_power;
 
-    addNodeToDatBase(latitude, longitude, node_type, fixed_type);
+    addNodeToDatBase(
+      latitude,
+      longitude,
+      node_type,
+      fixed_type,
+      required_capacity,
+      max_power
+    );
   });
 
   $("#button_optimize").click(function () {

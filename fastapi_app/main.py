@@ -104,13 +104,16 @@ async def validate_boundaries(
         if mask_building_within_boundaries[key]
     }
     for label, coordinates in building_coordidates_within_boundaries.items():
-        nodes = Nodes()
+        nodes = models.Nodes()
 
         nodes.latitude = coordinates[0]
         nodes.longitude = coordinates[1]
         nodes.node_type = "undefined"
         nodes.fixed_type = False
-
+        # nodes.required_capacity = validateBoundariesRequest.default_required_capacity
+        # nodes.max_power = validateBoundariesRequest.default_max_power
+        nodes.required_capacity = validateBoundariesRequest.default_required_capacity
+        nodes.max_power = validateBoundariesRequest.default_max_power
         db.add(nodes)
         db.commit()
 
@@ -127,6 +130,8 @@ async def add_node(add_node_request: models.AddNodeRequest,
     nodes.longitude = add_node_request.longitude
     nodes.node_type = add_node_request.node_type
     nodes.fixed_type = add_node_request.fixed_type
+    nodes.required_capacity = add_node_request.required_capacity
+    nodes.max_power = add_node_request.max_power
 
     db.add(nodes)
     db.commit()
