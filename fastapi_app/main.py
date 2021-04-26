@@ -12,6 +12,9 @@ import math
 import urllib.request
 import json
 import tools.boundary_identification as bi
+import tools.shs_identification as shs_ident
+import pandas as pd
+import numpy as np
 
 
 app = FastAPI()
@@ -257,9 +260,85 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
 
 
 @app.post("/shs_identification/")
-async def identify_shs(shs_identification_request: models.ShsIdentificationRequest):
-    print("shs_identification_request:")
-    print(shs_identification_request)
+async def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
+                       db: Session = Depends(get_db)):
+    res = db.execute("select * from nodes")
+    nodes = res.fetchall()
+
+    r = 6371000     # Radius of the earth [m]
+    # use latitude of the node that is the most west to set origin of x coordinates
+    latitude_0 = math.radians(min([node[1] for node in nodes]))
+    # use latitude of the node that is the most south to set origin of y coordinates
+    longitude_0 = math.radians(min([node[2] for node in nodes]))
+
+    nodes_df = shs_ident.create_nodes_df()
+
+    cable_price_per_meter =\
+        shs_identification_request.cable_price_per_meter_for_shs_mst_identification
+    additional_price_for_connection_per_node =\
+        shs_identification_request.additional_connection_price_for_shs_mst_identification
+    shs_characteristics = pd.DataFrame(
+        {'price[$]': pd.Series([], dtype=float),
+         'capacity[Wh]': pd.Series([], dtype=np.dtype(float)),
+         'max_power[W]': pd.Series([], dtype=np.dtype(float))
+         }
+    )
+    shs_characteristics.loc[shs_characteristics.shape[0]] = [10, 100, 50000]
+    shs_characteristics.loc[shs_characteristics.shape[0]] = [20, 200, 150000]
+    shs_characteristics.loc[shs_characteristics.shape[0]] = [100, 1000, 5000000]
+
+    for node in nodes:
+        latitude = math.radians(node[1])
+        longitude = math.radians(node[2])
+
+        x = r * (longitude - longitude_0) * math.cos(latitude_0)
+        y = r * (latitude - latitude_0)
+
+        node_label = node[0]
+        required_capacity = node[4]
+        max_power = node[4]
+
+        shs_ident.add_node(nodes_df, node_label, x, y, required_capacity, max_power)
+    links_df = shs_ident.mst_links(nodes_df)
+
+    nodes_to_discard = shs_ident.nodes_and_links_to_discard(
+        nodes_df=nodes_df,
+        links_df=links_df,
+        cable_price_per_meter=cable_price_per_meter,
+        additional_price_for_connection_per_node=additional_price_for_connection_per_node,
+        shs_characteristics=shs_characteristics)[0]
+    print(nodes_to_discard)
+
+    sqliteConnection = sqlite3.connect(grid_db)
+    conn = sqlite3.connect(grid_db)
+    cursor = conn.cursor()
+
+    for index in nodes_df.index:
+        if index in nodes_to_discard:
+            sql_delete_query = (
+                f"""UPDATE nodes
+                SET node_type = 'shs'
+                WHERE  id = {index};
+                """)
+        else:
+            sql_delete_query = (
+                f"""UPDATE nodes
+                SET node_type = 'undefined'
+                WHERE  id = {index};
+                """)
+        cursor.execute(sql_delete_query)
+        sqliteConnection.commit()
+    cursor.close()
+
+    # commit the changes to db
+    conn.commit()
+    # close the connection
+    conn.close()
+
+    return {
+        "code": "success",
+        "message": "shs identified"
+    }
 
 
 @ app.post("/clear_node_db/")
