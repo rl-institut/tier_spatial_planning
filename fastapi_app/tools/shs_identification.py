@@ -43,7 +43,12 @@ def create_nodes_df():
     ).set_index('label')
 
 
-def add_node(nodes_df, x_coordinate, y_coordinate, required_capacity, max_power):
+def add_node(nodes_df,
+             node_label,
+             x_coordinate,
+             y_coordinate,
+             required_capacity,
+             max_power):
     """
     This function adds a node to a nodes DataFrame nodes_df:
 
@@ -70,10 +75,10 @@ def add_node(nodes_df, x_coordinate, y_coordinate, required_capacity, max_power)
 
     """
 
-    nodes_df.at[str(nodes_df.shape[0])] = (x_coordinate,
-                                           y_coordinate,
-                                           required_capacity,
-                                           max_power)
+    nodes_df.at[node_label] = (x_coordinate,
+                               y_coordinate,
+                               required_capacity,
+                               max_power)
 
 
 def shs_price_for_load(capacity, max_power, shs_characteristics):
@@ -296,7 +301,7 @@ def are_nodes_connected(node_a, node_b, links_df):
     for index_link, row_link in links_df.iterrows():
         if ((row_link['node_a'] == node_a and row_link['node_b'] == node_b)
                 or (row_link['node_a'] == node_b and row_link['node_b'] == node_a)
-                ):
+            ):
             return True
     return False
 

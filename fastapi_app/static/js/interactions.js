@@ -70,6 +70,13 @@ var hubMarker = new L.Icon({
   popupAnchor: [0, 0],
 });
 
+var shsMarker = new L.Icon({
+  iconUrl: "static/images/markers/marker-shs.png",
+  iconSize: [10, 10],
+  iconAnchor: [5, 5],
+  popupAnchor: [0, 0],
+});
+
 var markers = [];
 var lines = [];
 
@@ -285,6 +292,12 @@ function refreshNodeTable() {
           markers.push(
             L.marker([node.latitude, node.longitude], {
               icon: householdMarker,
+            }).addTo(mainMap)
+          );
+        } else if (node.node_type === "shs") {
+          markers.push(
+            L.marker([node.latitude, node.longitude], {
+              icon: shsMarker,
             }).addTo(mainMap)
           );
         } else {
