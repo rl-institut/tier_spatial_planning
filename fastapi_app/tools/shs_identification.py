@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import minimum_spanning_tree
+import networkx as nx
 
 
 def create_nodes_df():
@@ -9,7 +10,7 @@ def create_nodes_df():
     This function creates and returns an empty DataFrame represetning nodes of
     following form:
                     x_coordinate  y_coordinate   required_capacity  max_power
-        label                                                   
+        label
         a           0.0           0.0             3.0               3.0
         b           0.0           1.0             6.0               6.0
         c           1.0           1.0             10.0              200.0
@@ -57,7 +58,7 @@ def add_node(nodes_df,
         nodes_df (pandas. DataFrame):
             Pandas DataFrame containing the nodes composing the network. In the form
                             x_coordinate  y_coordinate   required_capacity  max_power
-                label                                                   
+                label
                 a           0.0           0.0             3.0               3.0
                 b           0.0           1.0             6.0               6.0
 
@@ -126,7 +127,7 @@ def distance_between_nodes(node1, node2, nodes_df):
         nodes_df (pandas.DataFrame):
         Pandas DataFrame containing the labels and coordinates of the nodes under the form:
                     x_coordinate  y_coordinate   required_capacity  max_power
-        label                                                   
+        label
         a           0.0           0.0             3.0               3.0
         b           0.0           1.0             6.0               6.0
         c           1.0           1.0             10.0              200.0
@@ -158,7 +159,7 @@ def mst_links(nodes_df):
     nodes_df (pandas.DataFrame):
         Pandas DataFrame containing the labels and coordinates of the nodes under the form:
                     x_coordinate  y_coordinate   required_capacity  max_power
-        label                                                   
+        label
         a           0.0           0.0             3.0               3.0
         b           0.0           1.0             6.0               6.0
         c           1.0           1.0             10.0              200.0
@@ -169,7 +170,7 @@ def mst_links(nodes_df):
         Pandas Dataframe containing the (undirected) links composing the MST network.
         Example output:
                             node_a     node_b  distance
-            label                                 
+            label
             node0, node1    node0  node1    2.2360
             (node1, node2)  node0  node2    2.8284
 
@@ -226,7 +227,7 @@ def count_number_of_connections(node_index, links_df):
     links_df (pandas.DataFrame)
         Pandas DataFrame containing the links connecting the network. In the form
                             node_a     node_b  distance
-            label                                 
+            label
             (node0, node1)  node0  node1    2.2360
             (node1, node2)  node0  node2    2.8284
 
@@ -252,9 +253,9 @@ def shs_price_of_node(node_index, nodes_df, shs_characteristics):
 
         nodes_df (pandas.DataFrame):
             DataFrame containing the nodes of the network in the form
-                            x_coordinate  y_coordinate 
+                            x_coordinate  y_coordinate
                    x_coordinate  y_coordinate    required_capacity  max_power
-            label                                                  
+            label
             node0  2.0           3.0             90.0               5.0
             node1  4.0           6.0             500.0              20.0
             node2  7.0           10.0            190.0              10.0
@@ -291,7 +292,7 @@ def are_nodes_connected(node_a, node_b, links_df):
         links_df (pandas.DataFrame)
             Pandas DataFrame containing the links connecting the network. In the form
                             node_a   node_b  distance
-            label                                 
+            label
             node0, node1    node0  node1    2.2360
             (node1, node2)  node0  node2    2.8284
     Output
@@ -300,8 +301,8 @@ def are_nodes_connected(node_a, node_b, links_df):
     """
     for index_link, row_link in links_df.iterrows():
         if ((row_link['node_a'] == node_a and row_link['node_b'] == node_b)
-                or (row_link['node_a'] == node_b and row_link['node_b'] == node_a)
-            ):
+                    or (row_link['node_a'] == node_b and row_link['node_b'] == node_a)
+                ):
             return True
     return False
 
@@ -318,7 +319,7 @@ def neighoring_nodes(node_index, links_df):
         links_df (pandas.DataFrame)
             Pandas DataFrame containing the links connecting the network. In the form
                             node_a     node_b  distance
-            label                                 
+            label
             node0, node1    node0  node1    2.2360
             (node1, node2)  node0  node2    2.8284
     Output
@@ -351,7 +352,7 @@ def nodes_on_branch(stam_node, branch_first_nodes, links_df, nodes_in_branch):
             Pandas DataFrame containing the links connecting the network.
             In the form
                             node_a     node_b  distance
-            label                                 
+            label
             node0, node1    node0  node1    2.2360
             (node1, node2)  node0  node2    2.8284
     nodes_in_branch (list):
@@ -388,12 +389,12 @@ def nodes_on_branch(stam_node, branch_first_nodes, links_df, nodes_in_branch):
     return nodes_in_branch
 
 
-def nodes_and_links_to_discard(nodes_df,
-                               links_df,
-                               cable_price_per_meter,
-                               additional_price_for_connection_per_node,
-                               shs_characteristics):
-
+def nodes_and_links_to_discard_old(nodes_df,
+                                   links_df,
+                                   cable_price_per_meter,
+                                   additional_price_for_connection_per_node,
+                                   shs_characteristics):
+    print("start nodes_and_links_to_discard_old")
     links_to_remove = []
     shs_nodes_selection = []
 
@@ -451,3 +452,65 @@ def nodes_and_links_to_discard(nodes_df,
                 links_to_remove += list(df_links_in_cluster_b.index)
 
     return set(shs_nodes_selection), set(links_to_remove)
+
+
+def nodes_and_links_to_discard(nodes_df,
+                               links_df,
+                               cable_price_per_meter,
+                               additional_price_for_connection_per_node,
+                               shs_characteristics):
+    print("start nodes_and_links_to_discard (v1)")
+
+    nodes_shs_price = {node: shs_price_of_node(
+        node,
+        nodes_df=nodes_df,
+        shs_characteristics=shs_characteristics)
+        for node in nodes_df.index}
+
+    # Create list of links subject to be disconnected to reduce price
+    # These links will be identified as the ones larger than the critical
+    # distance of both nodes it connects
+
+    links_subject_to_disconnection = set()
+    nodes_to_be_disconnected = {}
+
+    for link_index, link_row in links_df.iterrows():
+        node_a = link_row['node_a']
+        node_b = link_row['node_b']
+
+        critial_distance_node_a = (
+            nodes_shs_price[node_a] - additional_price_for_connection_per_node
+        ) / cable_price_per_meter
+
+        critial_distance_node_b = (
+            nodes_shs_price[node_b] - additional_price_for_connection_per_node
+        ) / cable_price_per_meter
+
+        # TODO Use for loop with zip for node_a and node_b
+        if link_row['distance'] > critial_distance_node_a:
+            links_subject_to_disconnection.add(link_index)
+            if count_number_of_connections(node_index=node_a, links_df=links_df) == 1:
+                # Compute nodes that are on branch a
+                nodes_on_branch_a = nodes_on_branch(
+                    stam_node=node_b,
+                    branch_first_nodes=node_a,
+                    links_df=links_df,
+                    nodes_in_branch=[])
+
+                # Compute price of shs for all nodes in cluster a
+                price_shs_on_branch = sum([nodes_shs_price[node] for node in nodes_on_branch_a])
+
+                # Compute links connecting the nodes of cluster a
+                links_on_branch_a_df = links_df[(links_df['node_a'].isin(nodes_on_branch_a)) | (
+                    links_df['node_b'].isin(nodes_on_branch_a))].index
+                price_links_in_cluster_a = links_df['distance'].sum() * cable_price_per_meter
+                price_connection_in_cluster_a = len(nodes_on_branch_a) * \
+                    additional_price_for_connection_per_node
+
+                nodes_to_be_disconnected[node_a] = []
+
+            print(
+                f"link: {link_index} distance {(link_row['distance'])} is larger than critial distances (a, b): {(critial_distance_node_a, critial_distance_node_b)}")
+    print(f"nodes to be disconnected: {nodes_to_be_disconnected}")
+    print(f"links_subject_to_disconnection: {links_subject_to_disconnection}")
+    return nodes_to_be_disconnected

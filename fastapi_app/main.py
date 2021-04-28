@@ -16,6 +16,8 @@ import tools.shs_identification as shs_ident
 import pandas as pd
 import numpy as np
 
+import time
+
 
 app = FastAPI()
 
@@ -300,14 +302,26 @@ async def identify_shs(shs_identification_request: models.ShsIdentificationReque
 
         shs_ident.add_node(nodes_df, node_label, x, y, required_capacity, max_power)
     links_df = shs_ident.mst_links(nodes_df)
+    start_time = time.time()
+    if shs_identification_request.version == 0:
+        nodes_to_discard = shs_ident.nodes_and_links_to_discard_old(
+            nodes_df=nodes_df,
+            links_df=links_df,
+            cable_price_per_meter=cable_price_per_meter,
+            additional_price_for_connection_per_node=additional_price_for_connection_per_node,
+            shs_characteristics=shs_characteristics)[0]
 
-    nodes_to_discard = shs_ident.nodes_and_links_to_discard(
-        nodes_df=nodes_df,
-        links_df=links_df,
-        cable_price_per_meter=cable_price_per_meter,
-        additional_price_for_connection_per_node=additional_price_for_connection_per_node,
-        shs_characteristics=shs_characteristics)[0]
-    print(nodes_to_discard)
+    elif shs_identification_request.version == 1:
+        nodes_to_discard = shs_ident.nodes_and_links_to_discard(
+            nodes_df=nodes_df,
+            links_df=links_df,
+            cable_price_per_meter=cable_price_per_meter,
+            additional_price_for_connection_per_node=additional_price_for_connection_per_node,
+            shs_characteristics=shs_characteristics)
+    else:
+        print("issue with version parameter of shs_identification_request")
+        return 0
+    print(f"execution time: {time.time() - start_time}")
 
     sqliteConnection = sqlite3.connect(grid_db)
     conn = sqlite3.connect(grid_db)

@@ -239,7 +239,11 @@ function optimize_grid(
   });
 }
 
-function identify_shs(cable_price_per_meter, additional_connection_price) {
+function identify_shs(
+  cable_price_per_meter,
+  additional_connection_price,
+  version
+) {
   $.ajax({
     url: "shs_identification/",
     type: "POST",
@@ -247,6 +251,7 @@ function identify_shs(cable_price_per_meter, additional_connection_price) {
     data: JSON.stringify({
       cable_price_per_meter_for_shs_mst_identification: cable_price_per_meter,
       additional_connection_price_for_shs_mst_identification: additional_connection_price,
+      version,
     }),
     dataType: "json",
   });
@@ -385,8 +390,8 @@ $(document).ready(function () {
   refreshNodeTable();
   refreshLinkTable();
 
-  setInterval(refreshNodeTable, 3000);
-  setInterval(refreshLinkTable, 3000);
+  setInterval(refreshNodeTable, 10000);
+  setInterval(refreshLinkTable, 10000);
 
   $("#button_add_undefined_node").click(function () {
     mapClickEvent = "add_node";
@@ -431,13 +436,22 @@ $(document).ready(function () {
     );
   });
 
+  $("#button_identify_shs_old").click(function () {
+    const cable_price_per_meter =
+      cable_price_per_meter_for_shs_mst_identification.value;
+    const additional_connection_price =
+      additional_connection_price_for_shs_mst_identification.value;
+
+    identify_shs(cable_price_per_meter, additional_connection_price, 0);
+  });
+
   $("#button_identify_shs").click(function () {
     const cable_price_per_meter =
       cable_price_per_meter_for_shs_mst_identification.value;
     const additional_connection_price =
       additional_connection_price_for_shs_mst_identification.value;
 
-    identify_shs(cable_price_per_meter, additional_connection_price);
+    identify_shs(cable_price_per_meter, additional_connection_price, 1);
   });
 
   $("#button_clear_node_db").click(function () {
