@@ -312,7 +312,7 @@ async def identify_shs(shs_identification_request: models.ShsIdentificationReque
             shs_characteristics=shs_characteristics)[0]
 
     elif shs_identification_request.version == 1:
-        nodes_to_discard = shs_ident.nodes_and_links_to_discard(
+        nodes_to_discard = shs_ident.nodes_to_discard(
             nodes_df=nodes_df,
             links_df=links_df,
             cable_price_per_meter=cable_price_per_meter,
