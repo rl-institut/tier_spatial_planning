@@ -301,8 +301,8 @@ def are_nodes_connected(node_a, node_b, links_df):
     """
     for index_link, row_link in links_df.iterrows():
         if ((row_link['node_a'] == node_a and row_link['node_b'] == node_b)
-                or (row_link['node_a'] == node_b and row_link['node_b'] == node_a)
-            ):
+                    or (row_link['node_a'] == node_b and row_link['node_b'] == node_a)
+                ):
             return True
     return False
 
@@ -358,7 +358,7 @@ def distance_to_clostest_neighbor(ref_node, links_df):
     return links_df[(links_df['node_a'] == ref_node) | (links_df['node_b'] == ref_node)]['distance'].min()
 
 
-def nodes_on_branch(stam_node, branch_first_nodes, links_df, nodes_in_branch, iteration=0, max_iteration=5):
+def nodes_on_branch(stam_node, branch_first_nodes, links_df, nodes_in_branch, iteration=0, max_iteration=10):
     """
     This function recursively explores the branch of a tree and returns a list
     of all the nodes on that branch.
@@ -484,11 +484,11 @@ def nodes_and_links_to_discard_old(nodes_df,
     return set(shs_nodes_selection), set(links_to_remove)
 
 
-def nodes_and_links_to_discard(nodes_df,
-                               links_df,
-                               cable_price_per_meter,
-                               additional_price_for_connection_per_node,
-                               shs_characteristics):
+def nodes_to_discard(nodes_df,
+                     links_df,
+                     cable_price_per_meter,
+                     additional_price_for_connection_per_node,
+                     shs_characteristics):
     if nodes_df.shape[0] == 0:
         return []
 
@@ -514,54 +514,39 @@ def nodes_and_links_to_discard(nodes_df,
         nodes_shs_price[node] - additional_price_for_connection_per_node
     ) / cable_price_per_meter for node in nodes_df.index}
 
+    print(f"nodes before removing lonely nodes: {list(nodes_df.index)}")
+    print(f"links before removing lonely nodes: {list(links_df.index)}\n\n")
+
     for node in nodes_df.index:
         links_connecting_node_df = links_df[(
             links_df['node_a'] == node) | (links_df['node_b'] == node)]
 
-        if distance_to_clostest_neighbor(node, links_df) > critial_distance_dict[node]:
+        # Identify if nodes is further away to nearest neighbor than critical
+        # distance, if so, discard it
+        if (distance_to_clostest_neighbor(node, links_df) > critial_distance_dict[node]
+                and (count_number_of_connections(node_index=node, links_df=links_df) == 1)):
             nodes_to_be_disconnected.add(node)
-            nodes_df.drop(node)
+            nodes_df = nodes_df.drop(node)
 
             for link_to_neighbors in links_connecting_node_df.index:
                 links_to_be_disconnected.add(link_to_neighbors)
-                links_df.drop(link_to_neighbors)
-            print(f"node: {node} is further away to nn than critical distance")
-            print(f"links: {links_connecting_node_df.index}")
+                links_df = links_df.drop(link_to_neighbors)
+            print(f"node: {node} is further away to nn than critical distance and only has one neighbor")
+            print(f"links to disconnect: {list(links_connecting_node_df.index)}")
 
-    #################
+    print(f"nodes after removing lonely nodes: {list(nodes_df.index)}")
+    print(f"links before removing lonely nodes: {list(links_df.index)}\n\n")
+
     for link_index, link_row in links_df.iterrows():
-        # The algorithm will explore the cluster A (branch with stam at node_a
-        # pointing outward relative to node_b).
-        # If node_b is a leaf-node, switch node_a & node_b
         node_a = link_row['node_a']
         node_b = link_row['node_b']
 
-        critial_distance_node_a = (
-            nodes_shs_price[node_a] - additional_price_for_connection_per_node
-        ) / cable_price_per_meter
-
-        critial_distance_node_b = (
-            nodes_shs_price[node_b] - additional_price_for_connection_per_node
-        ) / cable_price_per_meter
-
-        # First remove all nodes that are further away than respective critical
+        # Remove all nodes that are further away than respective critical
         # distance from nearest neighbor. Also remove related links.
 
         for node in [node_a, node_b]:
-            critial_distance_dict
-
-            distance_to_closest_neighbor_of_node = distance_to_clostest_neighbor(node, links_df)
-
-            if ((link_row['distance'] > critial_distance_dict[node])
-                    and (distance_to_closest_neighbor_of_node > critial_distance_dict[node])):
-                links_to_be_disconnected.add(link_index)
-                links_df.drop(link_index)
-                nodes_to_be_disconnected.add(node)
-                nodes_df.drop(node)
-            else:
+            if (link_row['distance'] > critial_distance_dict[node]):
                 links_subject_to_disconnection.add(link_index)
-
-    #################
 
     print(
         f"\n\n####### --->>>{len(links_subject_to_disconnection)}/{links_df.shape[0]} links_subject_to_disconnection: {links_subject_to_disconnection} before starting while loop\n\n\n")
@@ -592,8 +577,8 @@ def nodes_and_links_to_discard(nodes_df,
             # Explore branch a (clsuter containing node_a and all nodes
             # downstream from a relatve to node_b)
 
-            node_a = link_row['node_a']
-            node_b = link_row['node_b']
+            node_a = links_df['node_a'][link]
+            node_b = links_df['node_b'][link]
 
             betweenness_centrality_dic = betweenness_centrality(links_df=links_df)
             betweenness_centrality_a = betweenness_centrality_dic[node_a]
