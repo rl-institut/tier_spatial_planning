@@ -262,8 +262,10 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
 
 
 @app.post("/shs_identification/")
-async def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
-                       db: Session = Depends(get_db)):
+def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
+                 db: Session = Depends(get_db)):
+
+    print("starting shs_identification...")
     res = db.execute("select * from nodes")
     nodes = res.fetchall()
 
