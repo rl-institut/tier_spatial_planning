@@ -242,13 +242,15 @@ function optimize_grid(
 function identify_shs(
   cable_price_per_meter,
   additional_connection_price,
-  algo
+  algo,
+  shs_characteristics
 ) {
   console.log(
     JSON.stringify({
       cable_price_per_meter_for_shs_mst_identification: cable_price_per_meter,
       additional_connection_price_for_shs_mst_identification: additional_connection_price,
       algo,
+      shs_characteristics,
     })
   );
 
@@ -260,6 +262,7 @@ function identify_shs(
       cable_price_per_meter_for_shs_mst_identification: cable_price_per_meter,
       additional_connection_price_for_shs_mst_identification: additional_connection_price,
       algo,
+      shs_characteristics,
     }),
     dataType: "json",
   });
@@ -449,8 +452,15 @@ $(document).ready(function () {
       cable_price_per_meter_for_shs_mst_identification.value;
     const additional_connection_price =
       additional_connection_price_for_shs_mst_identification.value;
+    const algo = "mst1";
+    const shs_characteristics = logShsCharacteristics();
 
-    identify_shs(cable_price_per_meter, additional_connection_price, "mst1");
+    identify_shs(
+      cable_price_per_meter,
+      additional_connection_price,
+      algo,
+      shs_characteristics
+    );
   });
 
   $("#button_clear_node_db").click(function () {
@@ -502,3 +512,21 @@ $(document).ready(function () {
     getBuildingCoordinates((boundariesCoordinates = siteBoundaries));
   });
 });
+
+function logShsCharacteristics() {
+  shsCharacteristics = [];
+  for (var i = 0; i < 5; ++i) {
+    shsCapacity = document.getElementById(`shs_capacity_${i}`).value;
+    maxPower = document.getElementById(`shs_max_power_${i}`).value;
+    price = document.getElementById(`shs_price_${i}`).value;
+
+    if (shsCapacity > 0 && maxPower > 0 && price > 0) {
+      shsCharacteristics.push({
+        capacity: shsCapacity,
+        max_power: maxPower,
+        price: price,
+      });
+    }
+  }
+  return shsCharacteristics;
+}

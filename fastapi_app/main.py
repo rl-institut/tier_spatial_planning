@@ -266,6 +266,7 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
                  db: Session = Depends(get_db)):
 
     print("starting shs_identification...")
+
     res = db.execute("select * from nodes")
     nodes = res.fetchall()
 
@@ -290,6 +291,24 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
     shs_characteristics.loc[shs_characteristics.shape[0]] = [10, 100, 50000]
     shs_characteristics.loc[shs_characteristics.shape[0]] = [20, 200, 150000]
     shs_characteristics.loc[shs_characteristics.shape[0]] = [100, 1000, 5000000]
+
+    print(f"default shs_characteristics: {shs_characteristics}")
+
+    print(f"shs_Characteristics: {shs_identification_request.shs_characteristics}")
+
+    new_shs_characteristics = pd.DataFrame(
+        {'price[$]': pd.Series([], dtype=float),
+         'capacity[Wh]': pd.Series([], dtype=np.dtype(float)),
+         'max_power[W]': pd.Series([], dtype=np.dtype(float))
+         }
+    )
+    for shs_characteristic in shs_identification_request.shs_characteristics:
+        new_shs_characteristics.loc[new_shs_characteristics.shape[0]] = [
+            shs_characteristic['capacity'],
+            shs_characteristic['max_power'],
+            shs_characteristic['price']]
+
+    print(f"new_shs_Characteristics: {new_shs_characteristics}")
 
     for node in nodes:
         latitude = math.radians(node[1])

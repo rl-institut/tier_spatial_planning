@@ -122,3 +122,25 @@
 .side_bar_box_title {
   font-size: 1.2rem;
 }
+
+#shs_price_characteristics_box:hover {
+  background-color: grey;
+  z-index: 1;
+  height: 25vh;
+}
+
+#shs_price_characteristics_box:hover #shs_inputs {
+  display: block;
+}
+
+#shs_inputs {
+  display: none;
+}
+
+.box_shs_identification {
+  width: 100%;
+}
+
+#shs_price_characteristics_box {
+  width: 80%;
+}
