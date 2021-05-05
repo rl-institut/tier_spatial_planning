@@ -170,21 +170,24 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     # use latitude of the node that is the most south to set origin of y coordinates
     longitude_0 = math.radians(min([node[2] for node in nodes]))
     for node in nodes:
-        latitude = math.radians(node[1])
-        longitude = math.radians(node[2])
+        if not node[3] == "shs":
+            latitude = math.radians(node[1])
+            longitude = math.radians(node[2])
 
-        x = r * (longitude - longitude_0) * math.cos(latitude_0)
-        y = r * (latitude - latitude_0)
-        if node[3] == "meterhub":
-            node_type = "meterhub"
-        else:
-            node_type = "household"
+            x = r * (longitude - longitude_0) * math.cos(latitude_0)
+            y = r * (latitude - latitude_0)
+            if node[3] == "meterhub":
+                node_type = "meterhub"
 
-        grid.add_node(label=str(node[0]),
-                      pixel_x_axis=x,
-                      pixel_y_axis=y,
-                      node_type=node_type,
-                      type_fixed=bool(node[4]))
+            else:
+                node_type = "household"
+
+            grid.add_node(label=str(node[0]),
+                          pixel_x_axis=x,
+                          pixel_y_axis=y,
+                          node_type=node_type,
+                          type_fixed=bool(node[4]))
+
     number_of_hubs = opt.get_expected_hub_number_from_k_means(grid=grid)
     opt.nr_optimization(grid=grid, number_of_hubs=number_of_hubs, number_of_relaxation_step=10,
                         save_output=False, save_opt_video=False, plot_price_evolution=False)
