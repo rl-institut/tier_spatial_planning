@@ -424,8 +424,73 @@ def nodes_to_discard(nodes_df,
                      cable_price_per_meter,
                      additional_price_for_connection_per_node,
                      shs_characteristics):
+    """
+    This function computes the nodes that would be worth assigning to a solar
+    home system (shs) taking the price of the associated to a grid connection
+    to a simplified minimum spanning tree network and a shs.
+
+    The critical distance of each node is computed based on the price of shs
+    associated to the capacity and max_power requirement of the node. Each link
+    that is connecting a node and is larger than the critical distance of that
+    node will be added to a list of links_subject_to_disconnection.
+
+    Successively, each link from links_subject_to_disconnection is
+    studied before deciding if they and the links and nodes on the downstream
+    branch should be disconnected (or assigned to a shs). For each of these 
+    links, the mst network is divided in two cluster written A & B (that where)
+    formerly connected by that link. For each cluster, the price of connecting
+    all nodes to form a mst network is compared to the price of assigning a
+    shs to all nodes in the cluster and provides the saving of disconnecting
+    the cluster. For each link, the cluster leading to the highest saving is
+    retained.
+    The link corresponding to the highest saving (if provided with shs) is
+    disconnected from the grid (only for positive values of saving).
+
+    The restulting mst network is recomputed and the algorithm iterates to
+    find the next link to disconnect until there are no links to be
+    disconnected with positive saving.
+
+    Parameters
+    ----------
+        nodes_df (pandas.DataFrame):
+            Pandas DataFrame containing the labels and coordinates of the nodes under the form:
+                        x_coordinate  y_coordinate   required_capacity  max_power
+            label
+            a           0.0           0.0             3.0               3.0
+            b           0.0           1.0             6.0               6.0
+            c           1.0           1.0             10.0              200.0
+            d           2.0           0.0             2.0               2.0
+
+        links_df (pandas.DataFrame):
+            Pandas DataFrame containing the links connecting the network.
+            In the form
+                            node_a     node_b  distance
+            label
+            node0, node1    node0  node1    2.2360
+            (node1, node2)  node0  node2    2.8284
+
+        cable_price_per_meter (float):
+            Cable price per meter considered for the mst network.
+
+        additional_price_for_connection_per_node (float):
+            Additional price associated to grid connection (substracted from shs
+            price in computation).
+
+        shs_characteristics (pandasz.DataFrame):
+            Dataframe where each row contains the following inforamtions about the shs:
+                'price[$]'
+                'capacity[Wh]'
+                'max_power[W]'
+
+    Output
+    ------
+        type: list
+        List of nodes to to be assigned to shs.  
+
+    """
     if nodes_df.shape[0] == 0:
         return []
+    index_of_all_nodes = list(nodes_df.index)
 
     nodes_shs_price = {node: shs_price_of_node(
         node,
@@ -478,7 +543,7 @@ def nodes_to_discard(nodes_df,
                 links_subject_to_disconnection.add(link_index)
 
     if len(links_subject_to_disconnection) == links_df.shape[0]:
-        return list(nodes_df.index)
+        return index_of_all_nodes
     counter = 0
     max_counter = links_df.shape[0]
     while len(links_subject_to_disconnection) > 0 and counter < max_counter:
@@ -628,7 +693,7 @@ def betweenness_centrality(links_df):
     It relies on the networkx.betweenness_centrality of the networkx module.
     Parameters
     ----------
-        links_df (pandas.DataFrame)
+        links_df (pandas.DataFrame):
             Pandas DataFrame containing the links connecting the network. In the form
                             node_a   node_b  distance
             label                                 

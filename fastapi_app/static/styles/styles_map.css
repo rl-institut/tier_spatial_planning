@@ -151,3 +151,7 @@
 button#set_shs_price_characteristics {
   height: 100%;
 }
+
+.side_bar_button:hover {
+  background-color: cyan;
+}
