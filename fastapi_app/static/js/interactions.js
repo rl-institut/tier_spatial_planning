@@ -528,6 +528,15 @@ function logShsCharacteristics() {
       });
     }
   }
-
   return shsCharacteristics;
+}
+
+function displayShsCharacteristicsInput() {
+  console.log(document.getElementById("shs_inputs").style.display);
+
+  if (document.getElementById("shs_inputs").style.display === "block") {
+    document.getElementById("shs_inputs").style.display = "none";
+  } else {
+    document.getElementById("shs_inputs").style.display = "block";
+  }
 }

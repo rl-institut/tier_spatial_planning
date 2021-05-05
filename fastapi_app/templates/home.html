@@ -89,7 +89,7 @@
             name="cable_price_per_meter_for_shs_mst_identification"
             type="number"
             placeholder="cable_price_per_meter_for_shs_mst_identification"
-            value="0.1"
+            value="1000"
             />
             <p class="cell small-2">₦</p>
           </div>
@@ -107,7 +107,7 @@
           </div>
           <div id="shs_price_characteristics_box" class="cell small-2 grid-y">
             <div class="buttton_display_shs_price_characteristics">
-              <button id="set_shs_price_characteristics" class="ui button side_bar_button">Set SHS price Characteristics</button>
+              <button id="set_shs_price_characteristics" class="ui button side_bar_button" onclick="displayShsCharacteristicsInput()">Set SHS price Characteristics</button>
             </div>
             <div id="shs_inputs" class="cell small-8">
               <div
@@ -119,6 +119,7 @@
                 placeholder="capacity"
                 type="number"
                 id="shs_capacity_0"
+                value="100"
                 min="0"
               />
               <p class="cell small-1">kWh</p>
@@ -127,6 +128,7 @@
                 placeholder="max power"
                 type="number"
                 id="shs_max_power_0"
+                value="200"
                 min="0"
               />
               <p class="cell small-1">W</p>
@@ -135,6 +137,7 @@
                 class="cell small-3"
                 placeholder="price"
                 type="number"
+                value="20000"
                 min="0"
               />
               <p class="cell small-1">₦</p>
@@ -229,7 +232,7 @@
               />
               <p class="cell small-1">₦</p>
             </div>
-          
+            <button class="button" id="hide_shs_characteristics_inputs" onclick="displayShsCharacteristicsInput()">Close</button>
             </div>
           </div>
 
