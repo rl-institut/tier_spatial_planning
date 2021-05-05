@@ -170,21 +170,24 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     # use latitude of the node that is the most south to set origin of y coordinates
     longitude_0 = math.radians(min([node[2] for node in nodes]))
     for node in nodes:
-        latitude = math.radians(node[1])
-        longitude = math.radians(node[2])
+        if not node[3] == "shs":
+            latitude = math.radians(node[1])
+            longitude = math.radians(node[2])
 
-        x = r * (longitude - longitude_0) * math.cos(latitude_0)
-        y = r * (latitude - latitude_0)
-        if node[3] == "meterhub":
-            node_type = "meterhub"
-        else:
-            node_type = "household"
+            x = r * (longitude - longitude_0) * math.cos(latitude_0)
+            y = r * (latitude - latitude_0)
+            if node[3] == "meterhub":
+                node_type = "meterhub"
 
-        grid.add_node(label=str(node[0]),
-                      pixel_x_axis=x,
-                      pixel_y_axis=y,
-                      node_type=node_type,
-                      type_fixed=bool(node[4]))
+            else:
+                node_type = "household"
+
+            grid.add_node(label=str(node[0]),
+                          pixel_x_axis=x,
+                          pixel_y_axis=y,
+                          node_type=node_type,
+                          type_fixed=bool(node[4]))
+
     number_of_hubs = opt.get_expected_hub_number_from_k_means(grid=grid)
     opt.nr_optimization(grid=grid, number_of_hubs=number_of_hubs, number_of_relaxation_step=10,
                         save_output=False, save_opt_video=False, plot_price_evolution=False)
@@ -282,17 +285,8 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
         shs_identification_request.cable_price_per_meter_for_shs_mst_identification
     additional_price_for_connection_per_node =\
         shs_identification_request.additional_connection_price_for_shs_mst_identification
-    shs_characteristics = pd.DataFrame(
-        {'price[$]': pd.Series([], dtype=float),
-         'capacity[Wh]': pd.Series([], dtype=np.dtype(float)),
-         'max_power[W]': pd.Series([], dtype=np.dtype(float))
-         }
-    )
-    shs_characteristics.loc[shs_characteristics.shape[0]] = [10, 100, 50000]
-    shs_characteristics.loc[shs_characteristics.shape[0]] = [20, 200, 150000]
-    shs_characteristics.loc[shs_characteristics.shape[0]] = [100, 1000, 5000000]
 
-    new_shs_characteristics = pd.DataFrame(
+    shs_characteristics = pd.DataFrame(
         {'price[$]': pd.Series([], dtype=float),
          'capacity[Wh]': pd.Series([], dtype=np.dtype(float)),
          'max_power[W]': pd.Series([], dtype=np.dtype(float))
@@ -300,7 +294,7 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
     )
 
     for shs_characteristic in shs_identification_request.shs_characteristics:
-        new_shs_characteristics.loc[new_shs_characteristics.shape[0]] = [
+        shs_characteristics.loc[shs_characteristics.shape[0]] = [
             float(shs_characteristic['price']),
             float(shs_characteristic['capacity']),
             float(shs_characteristic['max_power'])]
@@ -313,20 +307,19 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
         y = r * (latitude - latitude_0)
 
         node_label = node[0]
-        required_capacity = node[4]
-        max_power = node[4]
+        required_capacity = node[5]
+        max_power = node[6]
 
         shs_ident.add_node(nodes_df, node_label, x, y, required_capacity, max_power)
     links_df = shs_ident.mst_links(nodes_df)
     start_time = time.time()
-
     if shs_identification_request.algo == "mst1":
-        nodes_to_discard = shs_ident.nodes_to_discard(
+        nodes_to_disconnect_from_grid = shs_ident.nodes_to_disconnect_from_grid(
             nodes_df=nodes_df,
             links_df=links_df,
             cable_price_per_meter=cable_price_per_meter,
             additional_price_for_connection_per_node=additional_price_for_connection_per_node,
-            shs_characteristics=new_shs_characteristics)
+            shs_characteristics=shs_characteristics)
         print(f"execution time for shs identification (mst1): {time.time() - start_time} s")
     else:
         print("issue with version parameter of shs_identification_request")
@@ -337,7 +330,7 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
     cursor = conn.cursor()
 
     for index in nodes_df.index:
-        if index in nodes_to_discard:
+        if index in nodes_to_disconnect_from_grid:
             sql_delete_query = (
                 f"""UPDATE nodes
                 SET node_type = 'shs'

@@ -5,6 +5,8 @@ from scipy.sparse.csgraph import minimum_spanning_tree
 import networkx as nx
 import time
 
+# --------------- EDIDTING nodes_df ----------------#
+
 
 def create_nodes_df():
     """
@@ -82,6 +84,8 @@ def add_node(nodes_df,
                                required_capacity,
                                max_power)
 
+# ---------------COMPUTE SHS PRICES ----------------#
+
 
 def shs_price_for_load(capacity, max_power, shs_characteristics):
     """
@@ -112,6 +116,43 @@ def shs_price_for_load(capacity, max_power, shs_characteristics):
         if row['capacity[Wh]'] >= capacity and row['max_power[W]'] >= max_power:
             return row['price[$]']
     return np.infty
+
+
+def shs_price_of_node(node_index, nodes_df, shs_characteristics):
+    """
+    This function returns the price of the shs coresponding to the building
+    represented by the node node_index of nodes_df.
+
+    Parameters
+    ----------
+        node_index (str):
+            Index of the node.
+
+        nodes_df (pandas.DataFrame):
+            DataFrame containing the nodes of the network in the form
+                            x_coordinate  y_coordinate
+                   x_coordinate  y_coordinate    required_capacity  max_power
+            label
+            node0  2.0           3.0             90.0               5.0
+            node1  4.0           6.0             500.0              20.0
+            node2  7.0           10.0            190.0              10.0
+            node3  1.0           2.0             1200.0             1000.0
+
+        shs_characteristics (pandas.DataFrame):
+            Dataframe where each row contains the following inforamtions about the shs:
+                'price[$]'
+                'capacity[Wh]'
+                'max_power[W]'
+
+    """
+
+    return shs_price_for_load(
+        capacity=nodes_df['required_capacity'][node_index],
+        max_power=nodes_df['max_power'][node_index],
+        shs_characteristics=shs_characteristics
+    )
+
+# ---------------PROPERTIES/FEATURES OF NODES --------------#
 
 
 def distance_between_nodes(node1, node2, nodes_df):
@@ -150,72 +191,6 @@ def distance_between_nodes(node1, node2, nodes_df):
                    )
 
 
-def mst_links(nodes_df):
-    """
-    This function computes the links connecting the set of nodes so that the
-    created network forms a minimum spanning tree (MST).
-
-    Parameters
-    ----------
-    nodes_df (pandas.DataFrame):
-        Pandas DataFrame containing the labels and coordinates of the nodes under the form:
-                    x_coordinate  y_coordinate   required_capacity  max_power
-        label
-        a           0.0           0.0             3.0               3.0
-        b           0.0           1.0             6.0               6.0
-        c           1.0           1.0             10.0              200.0
-        d           2.0           0.0             2.0               2.0
-
-    Output
-    ------
-        Pandas Dataframe containing the (undirected) links composing the MST network.
-        Example output:
-                            node_a     node_b  distance
-            label
-            node0, node1    node0  node1    2.2360
-            (node1, node2)  node0  node2    2.8284
-
-    """
-    X = np.zeros((nodes_df.shape[0], nodes_df.shape[0]))
-
-    for i in range(nodes_df.shape[0]):
-        for j in range(nodes_df.shape[0]):
-            if i > j:
-                index_node_i = nodes_df.index[i]
-                index_node_j = nodes_df.index[j]
-                X[j][i] = distance_between_nodes(
-                    node1=index_node_i,
-                    node2=index_node_j,
-                    nodes_df=nodes_df)
-    M = csr_matrix(X)
-
-    # run minimum_spanning_tree_function
-    Tcsr = minimum_spanning_tree(M)
-    A = Tcsr.toarray().astype(float)
-
-    # Create links DataFrame
-    links = pd.DataFrame(
-        {
-            'label': pd.Series([], dtype=str),
-            'node_a': pd.Series([], dtype=np.dtype(str)),
-            'node_b': pd.Series([], dtype=np.dtype(str)),
-            'distance': pd.Series([], dtype=np.dtype(float))
-        }
-    ).set_index('label')
-
-    for i in range(len(nodes_df.index)):
-        for j in range(len(nodes_df.index)):
-            if i > j:
-                if A[j][i] > 0:
-                    links.at[f"({nodes_df.index[i]}, {nodes_df.index[j]})"] = [
-                        nodes_df.index[i],
-                        nodes_df.index[j],
-                        distance_between_nodes(
-                            nodes_df.index[i], nodes_df.index[j], nodes_df)
-                    ]
-    return links
-
-
 def count_number_of_connections(node_index, links_df):
     """
     This function counts the number of links connected to a node.
@@ -240,41 +215,6 @@ def count_number_of_connections(node_index, links_df):
     return links_df[
         (links_df['node_a'] == node_index) | (links_df['node_b'] == node_index)
     ].shape[0]
-
-
-def shs_price_of_node(node_index, nodes_df, shs_characteristics):
-    """
-    This function returns the price of the shs coresponding to the building
-    represented by the node node_index of nodes_df.
-
-    Parameters
-    ----------
-        node_index (str):
-            Index of the node.
-
-        nodes_df (pandas.DataFrame):
-            DataFrame containing the nodes of the network in the form
-                            x_coordinate  y_coordinate
-                   x_coordinate  y_coordinate    required_capacity  max_power
-            label
-            node0  2.0           3.0             90.0               5.0
-            node1  4.0           6.0             500.0              20.0
-            node2  7.0           10.0            190.0              10.0
-            node3  1.0           2.0             1200.0             1000.0
-
-        shs_characteristics (pandas.DataFrame):
-            Dataframe where each row contains the following inforamtions about the shs:
-                'price[$]'
-                'capacity[Wh]'
-                'max_power[W]'
-
-    """
-
-    return shs_price_for_load(
-        capacity=nodes_df['required_capacity'][node_index],
-        max_power=nodes_df['max_power'][node_index],
-        shs_characteristics=shs_characteristics
-    )
 
 
 def are_nodes_connected(node_a, node_b, links_df):
@@ -302,8 +242,8 @@ def are_nodes_connected(node_a, node_b, links_df):
     """
     for index_link, row_link in links_df.iterrows():
         if ((row_link['node_a'] == node_a and row_link['node_b'] == node_b)
-            or (row_link['node_a'] == node_b and row_link['node_b'] == node_a)
-            ):
+                or (row_link['node_a'] == node_b and row_link['node_b'] == node_a)
+                ):
             return True
     return False
 
@@ -419,13 +359,172 @@ def nodes_on_branch(stam_node, branch_first_nodes, links_df, nodes_in_branch, it
     return nodes_in_branch
 
 
-def nodes_to_discard(nodes_df,
-                     links_df,
-                     cable_price_per_meter,
-                     additional_price_for_connection_per_node,
-                     shs_characteristics):
+def betweenness_centrality(links_df):
+    """
+    This method returns the betweeness centrality of the nodes composing the
+    network.
+    It relies on the networkx.betweenness_centrality of the networkx module.
+    Parameters
+    ----------
+        links_df (pandas.DataFrame):
+            Pandas DataFrame containing the links connecting the network. In the form
+                            node_a   node_b  distance
+            label                                 
+            node0, node1    node0  node1    2.2360
+            (node1, node2)  node0  node2    2.8284
+    Output
+    ------
+        Dictionnary with nodes indices as key and respective betweenness
+        centrality measure.
+    """
+    graph = nx.Graph()
+    for link_index, link_row in links_df.iterrows():
+        graph.add_edge(link_row['node_a'], link_row['node_b'])
+    return nx.betweenness_centrality(graph)
+
+# -----------------COMPUTE MST LINKS -----------------#
+
+
+def mst_links(nodes_df):
+    """
+    This function computes the links connecting the set of nodes so that the
+    created network forms a minimum spanning tree (MST).
+
+    Parameters
+    ----------
+    nodes_df (pandas.DataFrame):
+        Pandas DataFrame containing the labels and coordinates of the nodes under the form:
+                    x_coordinate  y_coordinate   required_capacity  max_power
+        label
+        a           0.0           0.0             3.0               3.0
+        b           0.0           1.0             6.0               6.0
+        c           1.0           1.0             10.0              200.0
+        d           2.0           0.0             2.0               2.0
+
+    Output
+    ------
+        Pandas Dataframe containing the (undirected) links composing the MST network.
+        Example output:
+                            node_a     node_b  distance
+            label
+            node0, node1    node0  node1    2.2360
+            (node1, node2)  node0  node2    2.8284
+
+    """
+    X = np.zeros((nodes_df.shape[0], nodes_df.shape[0]))
+
+    for i in range(nodes_df.shape[0]):
+        for j in range(nodes_df.shape[0]):
+            if i > j:
+                index_node_i = nodes_df.index[i]
+                index_node_j = nodes_df.index[j]
+                X[j][i] = distance_between_nodes(
+                    node1=index_node_i,
+                    node2=index_node_j,
+                    nodes_df=nodes_df)
+    M = csr_matrix(X)
+
+    # run minimum_spanning_tree_function
+    Tcsr = minimum_spanning_tree(M)
+    A = Tcsr.toarray().astype(float)
+
+    # Create links DataFrame
+    links = pd.DataFrame(
+        {
+            'label': pd.Series([], dtype=str),
+            'node_a': pd.Series([], dtype=np.dtype(str)),
+            'node_b': pd.Series([], dtype=np.dtype(str)),
+            'distance': pd.Series([], dtype=np.dtype(float))
+        }
+    ).set_index('label')
+
+    for i in range(len(nodes_df.index)):
+        for j in range(len(nodes_df.index)):
+            if i > j:
+                if A[j][i] > 0:
+                    links.at[f"({nodes_df.index[i]}, {nodes_df.index[j]})"] = [
+                        nodes_df.index[i],
+                        nodes_df.index[j],
+                        distance_between_nodes(
+                            nodes_df.index[i], nodes_df.index[j], nodes_df)
+                    ]
+    return links
+
+# ------------------IDENTIFY NODES TO DISCONNECT FROM GRID --------------#
+
+
+def nodes_to_disconnect_from_grid(nodes_df,
+                                  links_df,
+                                  cable_price_per_meter,
+                                  additional_price_for_connection_per_node,
+                                  shs_characteristics):
+    """
+    This function computes the nodes that would be worth assigning to a solar
+    home system (shs) taking the price of the associated to a grid connection
+    to a simplified minimum spanning tree network and a shs.
+
+    The critical distance of each node is computed based on the price of shs
+    associated to the capacity and max_power requirement of the node. Each link
+    that is connecting a node and is larger than the critical distance of that
+    node will be added to a list of links_subject_to_disconnection.
+
+    Successively, each link from links_subject_to_disconnection is
+    studied before deciding if they and the links and nodes on the downstream
+    branch should be disconnected (or assigned to a shs). For each of these 
+    links, the mst network is divided in two cluster written A & B (that where)
+    formerly connected by that link. For each cluster, the price of connecting
+    all nodes to form a mst network is compared to the price of assigning a
+    shs to all nodes in the cluster and provides the saving of disconnecting
+    the cluster. For each link, the cluster leading to the highest saving is
+    retained.
+    The link corresponding to the highest saving (if provided with shs) is
+    disconnected from the grid (only for positive values of saving).
+
+    The restulting mst network is recomputed and the algorithm iterates to
+    find the next link to disconnect until there are no links to be
+    disconnected with positive saving.
+
+    Parameters
+    ----------
+        nodes_df (pandas.DataFrame):
+            Pandas DataFrame containing the labels and coordinates of the nodes under the form:
+                        x_coordinate  y_coordinate   required_capacity  max_power
+            label
+            a           0.0           0.0             3.0               3.0
+            b           0.0           1.0             6.0               6.0
+            c           1.0           1.0             10.0              200.0
+            d           2.0           0.0             2.0               2.0
+
+        links_df (pandas.DataFrame):
+            Pandas DataFrame containing the links connecting the network.
+            In the form
+                            node_a     node_b  distance
+            label
+            node0, node1    node0  node1    2.2360
+            (node1, node2)  node0  node2    2.8284
+
+        cable_price_per_meter (float):
+            Cable price per meter considered for the mst network.
+
+        additional_price_for_connection_per_node (float):
+            Additional price associated to grid connection (substracted from shs
+            price in computation).
+
+        shs_characteristics (pandasz.DataFrame):
+            Dataframe where each row contains the following inforamtions about the shs:
+                'price[$]'
+                'capacity[Wh]'
+                'max_power[W]'
+
+    Output
+    ------
+        type: list
+        List of nodes to to be assigned to shs.  
+
+    """
     if nodes_df.shape[0] == 0:
         return []
+    index_of_all_nodes = list(nodes_df.index)
 
     nodes_shs_price = {node: shs_price_of_node(
         node,
@@ -478,7 +577,7 @@ def nodes_to_discard(nodes_df,
                 links_subject_to_disconnection.add(link_index)
 
     if len(links_subject_to_disconnection) == links_df.shape[0]:
-        return list(nodes_df.index)
+        return index_of_all_nodes
     counter = 0
     max_counter = links_df.shape[0]
     while len(links_subject_to_disconnection) > 0 and counter < max_counter:
@@ -619,27 +718,3 @@ def nodes_to_discard(nodes_df,
         # Recompute links_df from nodes_df
         links_df = mst_links(nodes_df=nodes_df)
     return nodes_to_be_disconnected
-
-
-def betweenness_centrality(links_df):
-    """
-    This method returns the betweeness centrality of the nodes composing the
-    network.
-    It relies on the networkx.betweenness_centrality of the networkx module.
-    Parameters
-    ----------
-        links_df (pandas.DataFrame)
-            Pandas DataFrame containing the links connecting the network. In the form
-                            node_a   node_b  distance
-            label                                 
-            node0, node1    node0  node1    2.2360
-            (node1, node2)  node0  node2    2.8284
-    Output
-    ------
-        Dictionnary with nodes indices as key and respective betweenness
-        centrality measure.
-    """
-    graph = nx.Graph()
-    for link_index, link_row in links_df.iterrows():
-        graph.add_edge(link_row['node_a'], link_row['node_b'])
-    return nx.betweenness_centrality(graph)
