@@ -515,18 +515,19 @@ $(document).ready(function () {
 
 function logShsCharacteristics() {
   shsCharacteristics = [];
-  for (var i = 0; i < 5; ++i) {
+  for (var i = 0; i < 4; ++i) {
     shsCapacity = document.getElementById(`shs_capacity_${i}`).value;
     maxPower = document.getElementById(`shs_max_power_${i}`).value;
     price = document.getElementById(`shs_price_${i}`).value;
 
     if (shsCapacity > 0 && maxPower > 0 && price > 0) {
       shsCharacteristics.push({
+        price: price,
         capacity: shsCapacity,
         max_power: maxPower,
-        price: price,
       });
     }
   }
+
   return shsCharacteristics;
 }

@@ -292,23 +292,18 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
     shs_characteristics.loc[shs_characteristics.shape[0]] = [20, 200, 150000]
     shs_characteristics.loc[shs_characteristics.shape[0]] = [100, 1000, 5000000]
 
-    print(f"default shs_characteristics: {shs_characteristics}")
-
-    print(f"shs_Characteristics: {shs_identification_request.shs_characteristics}")
-
     new_shs_characteristics = pd.DataFrame(
         {'price[$]': pd.Series([], dtype=float),
          'capacity[Wh]': pd.Series([], dtype=np.dtype(float)),
          'max_power[W]': pd.Series([], dtype=np.dtype(float))
          }
     )
+
     for shs_characteristic in shs_identification_request.shs_characteristics:
         new_shs_characteristics.loc[new_shs_characteristics.shape[0]] = [
-            shs_characteristic['capacity'],
-            shs_characteristic['max_power'],
-            shs_characteristic['price']]
-
-    print(f"new_shs_Characteristics: {new_shs_characteristics}")
+            float(shs_characteristic['price']),
+            float(shs_characteristic['capacity']),
+            float(shs_characteristic['max_power'])]
 
     for node in nodes:
         latitude = math.radians(node[1])
@@ -331,7 +326,7 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
             links_df=links_df,
             cable_price_per_meter=cable_price_per_meter,
             additional_price_for_connection_per_node=additional_price_for_connection_per_node,
-            shs_characteristics=shs_characteristics)
+            shs_characteristics=new_shs_characteristics)
         print(f"execution time for shs identification (mst1): {time.time() - start_time} s")
     else:
         print("issue with version parameter of shs_identification_request")
