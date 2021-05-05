@@ -314,7 +314,7 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
     links_df = shs_ident.mst_links(nodes_df)
     start_time = time.time()
     if shs_identification_request.algo == "mst1":
-        nodes_to_discard = shs_ident.nodes_to_discard(
+        nodes_to_disconnect_from_grid = shs_ident.nodes_to_disconnect_from_grid(
             nodes_df=nodes_df,
             links_df=links_df,
             cable_price_per_meter=cable_price_per_meter,
@@ -330,7 +330,7 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
     cursor = conn.cursor()
 
     for index in nodes_df.index:
-        if index in nodes_to_discard:
+        if index in nodes_to_disconnect_from_grid:
             sql_delete_query = (
                 f"""UPDATE nodes
                 SET node_type = 'shs'
