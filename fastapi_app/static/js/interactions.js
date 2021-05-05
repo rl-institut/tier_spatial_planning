@@ -1,4 +1,6 @@
-// var mainMap = L.map("leafletMap").setView([9.07798, 7.704826], 5);
+default_household_required_capacity = 10;
+default_household_max_power = 20;
+
 var osmLayer = L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   {
@@ -39,7 +41,11 @@ var mainMap = L.map("leafletMap", {
 
 L.control.layers(osmMap, esriSatelliteMap).addTo(mainMap);
 
-var mapClickEvent = "add_default_node";
+var mapClickEvent = "add_node";
+
+function setMapClickEventToAddNode() {
+  mapClickEvent = "add_node";
+}
 
 var siteBoundaries = [];
 
@@ -64,25 +70,55 @@ var hubMarker = new L.Icon({
   popupAnchor: [0, 0],
 });
 
+var shsMarker = new L.Icon({
+  iconUrl: "static/images/markers/marker-shs.png",
+  iconSize: [10, 10],
+  iconAnchor: [5, 5],
+  popupAnchor: [0, 0],
+});
+
 var markers = [];
 var lines = [];
 
 mainMap.on("click", function (e) {
   var poplocation = e.latlng;
 
-  if (mapClickEvent == "add_default_node") {
-    addNodeToDatBase(poplocation.lat, poplocation.lng, "undefinded", false);
-    drawDefaultMarker(poplocation.lat, poplocation.lng);
-  }
+  if (mapClickEvent == "add_node") {
+    if (document.getElementsByName("radio_button_new_node_type")[0].checked) {
+      addNodeToDatBase(
+        poplocation.lat,
+        poplocation.lng,
+        "undefinded",
+        false,
+        default_household_required_capacity,
+        default_household_max_power
+      );
+      drawDefaultMarker(poplocation.lat, poplocation.lng);
+    }
 
-  if (mapClickEvent == "add_fixed_household") {
-    addNodeToDatBase(poplocation.lat, poplocation.lng, "household", true);
-    drawHouseholdMarker(poplocation.lat, poplocation.lng);
-  }
+    if (document.getElementsByName("radio_button_new_node_type")[1].checked) {
+      addNodeToDatBase(
+        poplocation.lat,
+        poplocation.lng,
+        "household",
+        true,
+        default_household_required_capacity,
+        default_household_max_power
+      );
+      drawHouseholdMarker(poplocation.lat, poplocation.lng);
+    }
 
-  if (mapClickEvent == "add_fixed_meterhub") {
-    addNodeToDatBase(poplocation.lat, poplocation.lng, "meterhub", true);
-    drawMeterhubMarker(poplocation.lat, poplocation.lng);
+    if (document.getElementsByName("radio_button_new_node_type")[2].checked) {
+      addNodeToDatBase(
+        poplocation.lat,
+        poplocation.lng,
+        "meterhub",
+        true,
+        2 * default_household_required_capacity,
+        2 * default_household_max_power
+      );
+      drawMeterhubMarker(poplocation.lat, poplocation.lng);
+    }
   }
 
   if (mapClickEvent == "draw_boundaries") {
@@ -108,13 +144,7 @@ mainMap.on("click", function (e) {
   }
 });
 
-function getBuildingCoordinates(
-  south,
-  west,
-  north,
-  east,
-  boundariesCoordinates
-) {
+function getBuildingCoordinates(boundariesCoordinates) {
   var xhr = new XMLHttpRequest();
   url = "/validate_boundaries";
   xhr.open("POST", url, true);
@@ -123,6 +153,8 @@ function getBuildingCoordinates(
   xhr.send(
     JSON.stringify({
       boundary_coordinates: boundariesCoordinates,
+      default_required_capacity: default_household_required_capacity,
+      default_max_power: default_household_max_power,
     })
   );
   xhr.onreadystatechange = function () {
@@ -150,7 +182,14 @@ function drawHouseholdMarker(latitude, longitude) {
   );
 }
 
-function addNodeToDatBase(latitude, longitude, node_type, fixed_type) {
+function addNodeToDatBase(
+  latitude,
+  longitude,
+  node_type,
+  fixed_type,
+  required_capacity,
+  max_power
+) {
   $.ajax({
     url: "add_node/",
     type: "POST",
@@ -160,6 +199,8 @@ function addNodeToDatBase(latitude, longitude, node_type, fixed_type) {
       longitude: longitude,
       node_type: node_type,
       fixed_type: fixed_type,
+      required_capacity: required_capacity,
+      max_power: max_power,
     }),
     dataType: "json",
   });
@@ -198,6 +239,35 @@ function optimize_grid(
   });
 }
 
+function identify_shs(
+  cable_price_per_meter,
+  additional_connection_price,
+  algo,
+  shs_characteristics
+) {
+  console.log(
+    JSON.stringify({
+      cable_price_per_meter_for_shs_mst_identification: cable_price_per_meter,
+      additional_connection_price_for_shs_mst_identification: additional_connection_price,
+      algo,
+      shs_characteristics,
+    })
+  );
+
+  $.ajax({
+    url: "shs_identification/",
+    type: "POST",
+    contentType: "application/json",
+    data: JSON.stringify({
+      cable_price_per_meter_for_shs_mst_identification: cable_price_per_meter,
+      additional_connection_price_for_shs_mst_identification: additional_connection_price,
+      algo,
+      shs_characteristics,
+    }),
+    dataType: "json",
+  });
+}
+
 function refreshNodeTable() {
   var tbody_nodes = document.getElementById("tbody_nodes");
   var xhr = new XMLHttpRequest();
@@ -218,6 +288,8 @@ function refreshNodeTable() {
               <td>${node.longitude}</td>
               <td>${node.node_type}</td>
               <td>${node.fixed_type}</td>
+              <td>${node.required_capacity}</td>
+              <td>${node.max_power}</td>
               </tr>`;
       }
       tbody_nodes.innerHTML = html_node_table;
@@ -236,6 +308,12 @@ function refreshNodeTable() {
           markers.push(
             L.marker([node.latitude, node.longitude], {
               icon: householdMarker,
+            }).addTo(mainMap)
+          );
+        } else if (node.node_type === "shs") {
+          markers.push(
+            L.marker([node.latitude, node.longitude], {
+              icon: shsMarker,
             }).addTo(mainMap)
           );
         } else {
@@ -327,7 +405,7 @@ $(document).ready(function () {
   setInterval(refreshLinkTable, 3000);
 
   $("#button_add_undefined_node").click(function () {
-    mapClickEvent = "add_default_node";
+    mapClickEvent = "add_node";
   });
 
   $("#button_add_household").click(function () {
@@ -343,8 +421,17 @@ $(document).ready(function () {
     const longitude = new_node_long.value;
     const node_type = new_node_type.value;
     const fixed_type = new_node_type_fixed.value;
+    const required_capacity = default_household_required_capacity;
+    const max_power = default_household_max_power;
 
-    addNodeToDatBase(latitude, longitude, node_type, fixed_type);
+    addNodeToDatBase(
+      latitude,
+      longitude,
+      node_type,
+      fixed_type,
+      required_capacity,
+      max_power
+    );
   });
 
   $("#button_optimize").click(function () {
@@ -360,6 +447,22 @@ $(document).ready(function () {
     );
   });
 
+  $("#button_identify_shs").click(function () {
+    const cable_price_per_meter =
+      cable_price_per_meter_for_shs_mst_identification.value;
+    const additional_connection_price =
+      additional_connection_price_for_shs_mst_identification.value;
+    const algo = "mst1";
+    const shs_characteristics = logShsCharacteristics();
+
+    identify_shs(
+      cable_price_per_meter,
+      additional_connection_price,
+      algo,
+      shs_characteristics
+    );
+  });
+
   $("#button_clear_node_db").click(function () {
     $.ajax({
       url: "clear_node_db/",
@@ -372,10 +475,10 @@ $(document).ready(function () {
     var textSelectBoundaryButton = document.getElementById(
       "button_select_boundaries"
     );
-    if (textSelectBoundaryButton.innerHTML === "Reset boundaries") {
+    if (textSelectBoundaryButton.innerHTML === "Reset") {
       mainMap.removeLayer(siteGeojson);
     }
-    textSelectBoundaryButton.innerHTML = "Reset boundaries";
+    textSelectBoundaryButton.innerHTML = "Reset";
 
     removeBoundaries();
   });
@@ -406,12 +509,34 @@ $(document).ready(function () {
 
     // TODO implement if close to check that area is not too large
 
-    getBuildingCoordinates(
-      (south = minLatitude),
-      (west = minLongitude),
-      (north = maxLatitude),
-      (east = maxLongitude),
-      (boundariesCoordinates = siteBoundaries)
-    );
+    getBuildingCoordinates((boundariesCoordinates = siteBoundaries));
   });
 });
+
+function logShsCharacteristics() {
+  shsCharacteristics = [];
+  for (var i = 0; i < 4; ++i) {
+    shsCapacity = document.getElementById(`shs_capacity_${i}`).value;
+    maxPower = document.getElementById(`shs_max_power_${i}`).value;
+    price = document.getElementById(`shs_price_${i}`).value;
+
+    if (shsCapacity > 0 && maxPower > 0 && price > 0) {
+      shsCharacteristics.push({
+        price: price,
+        capacity: shsCapacity,
+        max_power: maxPower,
+      });
+    }
+  }
+  return shsCharacteristics;
+}
+
+function displayShsCharacteristicsInput() {
+  console.log(document.getElementById("shs_inputs").style.display);
+
+  if (document.getElementById("shs_inputs").style.display === "block") {
+    document.getElementById("shs_inputs").style.display = "none";
+  } else {
+    document.getElementById("shs_inputs").style.display = "block";
+  }
+}

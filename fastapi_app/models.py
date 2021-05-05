@@ -16,6 +16,8 @@ class Nodes(Base):
     longitude = Column(Numeric(10, 4))
     node_type = Column(String)
     fixed_type = Column(Boolean)
+    required_capacity = Column(Numeric(10, 4))
+    max_power = Column(Numeric(10, 4))
 
 
 class Links(Base):
@@ -35,6 +37,8 @@ class AddNodeRequest(BaseModel):
     longitude: float
     node_type: str
     fixed_type: bool
+    required_capacity: float
+    max_power: float
 
 
 class OptimizeGridRequest(BaseModel):
@@ -44,5 +48,14 @@ class OptimizeGridRequest(BaseModel):
     price_distribution_cable: float
 
 
+class ShsIdentificationRequest(BaseModel):
+    cable_price_per_meter_for_shs_mst_identification: float
+    additional_connection_price_for_shs_mst_identification: float
+    algo: str
+    shs_characteristics: list
+
+
 class ValidateBoundariesRequest(BaseModel):
     boundary_coordinates: list
+    default_required_capacity: float
+    default_max_power: float

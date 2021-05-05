@@ -4,7 +4,6 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from database import SessionLocal, engine
 import models
-from models import Nodes, AddNodeRequest, OptimizeGridRequest, ValidateBoundariesRequest
 from sqlalchemy.orm import Session
 import sqlite3
 from sgdot.grids import Grid
@@ -13,6 +12,11 @@ import math
 import urllib.request
 import json
 import tools.boundary_identification as bi
+import tools.shs_identification as shs_ident
+import pandas as pd
+import numpy as np
+
+import time
 
 
 app = FastAPI()
@@ -36,7 +40,7 @@ def get_db():
 
 @app.get("/")
 def home(request: Request, db: Session = Depends(get_db)):
-    nodes = db.query(Nodes)
+    nodes = db.query(models.Nodes)
     return templates.TemplateResponse("home.html", {
         "request": request, "nodes": nodes
     })
@@ -70,7 +74,7 @@ async def get_links(request: Request, db: Session = Depends(get_db)):
 
 @app.post("/validate_boundaries")
 async def validate_boundaries(
-        validateBoundariesRequest: ValidateBoundariesRequest,
+        validateBoundariesRequest: models.ValidateBoundariesRequest,
         db: Session = Depends(get_db)):
 
     boundary_coordinates = validateBoundariesRequest.boundary_coordinates
@@ -105,13 +109,16 @@ async def validate_boundaries(
         if mask_building_within_boundaries[key]
     }
     for label, coordinates in building_coordidates_within_boundaries.items():
-        nodes = Nodes()
+        nodes = models.Nodes()
 
         nodes.latitude = coordinates[0]
         nodes.longitude = coordinates[1]
         nodes.node_type = "undefined"
         nodes.fixed_type = False
-
+        # nodes.required_capacity = validateBoundariesRequest.default_required_capacity
+        # nodes.max_power = validateBoundariesRequest.default_max_power
+        nodes.required_capacity = validateBoundariesRequest.default_required_capacity
+        nodes.max_power = validateBoundariesRequest.default_max_power
         db.add(nodes)
         db.commit()
 
@@ -119,15 +126,17 @@ async def validate_boundaries(
 
 
 @app.post("/add_node/")
-async def add_node(add_node_request: AddNodeRequest,
+async def add_node(add_node_request: models.AddNodeRequest,
                    background_tasks: BackgroundTasks,
                    db: Session = Depends(get_db)):
-    nodes = Nodes()
+    nodes = models.Nodes()
 
     nodes.latitude = add_node_request.latitude
     nodes.longitude = add_node_request.longitude
     nodes.node_type = add_node_request.node_type
     nodes.fixed_type = add_node_request.fixed_type
+    nodes.required_capacity = add_node_request.required_capacity
+    nodes.max_power = add_node_request.max_power
 
     db.add(nodes)
     db.commit()
@@ -139,7 +148,7 @@ async def add_node(add_node_request: AddNodeRequest,
 
 
 @app.post("/optimize_grid/")
-async def optimize_grid(optimize_grid_request: OptimizeGridRequest,
+async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                         background_tasks: BackgroundTasks,
                         db: Session = Depends(get_db)):
     # Create GridOptimizer object
@@ -249,6 +258,109 @@ async def optimize_grid(optimize_grid_request: OptimizeGridRequest,
     return {
         "code": "success",
         "message": "grid optimized"
+    }
+
+
+@app.post("/shs_identification/")
+def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
+                 db: Session = Depends(get_db)):
+
+    print("starting shs_identification...")
+
+    res = db.execute("select * from nodes")
+    nodes = res.fetchall()
+
+    r = 6371000     # Radius of the earth [m]
+    # use latitude of the node that is the most west to set origin of x coordinates
+    latitude_0 = math.radians(min([node[1] for node in nodes]))
+    # use latitude of the node that is the most south to set origin of y coordinates
+    longitude_0 = math.radians(min([node[2] for node in nodes]))
+
+    nodes_df = shs_ident.create_nodes_df()
+
+    cable_price_per_meter =\
+        shs_identification_request.cable_price_per_meter_for_shs_mst_identification
+    additional_price_for_connection_per_node =\
+        shs_identification_request.additional_connection_price_for_shs_mst_identification
+    shs_characteristics = pd.DataFrame(
+        {'price[$]': pd.Series([], dtype=float),
+         'capacity[Wh]': pd.Series([], dtype=np.dtype(float)),
+         'max_power[W]': pd.Series([], dtype=np.dtype(float))
+         }
+    )
+    shs_characteristics.loc[shs_characteristics.shape[0]] = [10, 100, 50000]
+    shs_characteristics.loc[shs_characteristics.shape[0]] = [20, 200, 150000]
+    shs_characteristics.loc[shs_characteristics.shape[0]] = [100, 1000, 5000000]
+
+    new_shs_characteristics = pd.DataFrame(
+        {'price[$]': pd.Series([], dtype=float),
+         'capacity[Wh]': pd.Series([], dtype=np.dtype(float)),
+         'max_power[W]': pd.Series([], dtype=np.dtype(float))
+         }
+    )
+
+    for shs_characteristic in shs_identification_request.shs_characteristics:
+        new_shs_characteristics.loc[new_shs_characteristics.shape[0]] = [
+            float(shs_characteristic['price']),
+            float(shs_characteristic['capacity']),
+            float(shs_characteristic['max_power'])]
+
+    for node in nodes:
+        latitude = math.radians(node[1])
+        longitude = math.radians(node[2])
+
+        x = r * (longitude - longitude_0) * math.cos(latitude_0)
+        y = r * (latitude - latitude_0)
+
+        node_label = node[0]
+        required_capacity = node[4]
+        max_power = node[4]
+
+        shs_ident.add_node(nodes_df, node_label, x, y, required_capacity, max_power)
+    links_df = shs_ident.mst_links(nodes_df)
+    start_time = time.time()
+
+    if shs_identification_request.algo == "mst1":
+        nodes_to_discard = shs_ident.nodes_to_discard(
+            nodes_df=nodes_df,
+            links_df=links_df,
+            cable_price_per_meter=cable_price_per_meter,
+            additional_price_for_connection_per_node=additional_price_for_connection_per_node,
+            shs_characteristics=new_shs_characteristics)
+        print(f"execution time for shs identification (mst1): {time.time() - start_time} s")
+    else:
+        print("issue with version parameter of shs_identification_request")
+        return 0
+
+    sqliteConnection = sqlite3.connect(grid_db)
+    conn = sqlite3.connect(grid_db)
+    cursor = conn.cursor()
+
+    for index in nodes_df.index:
+        if index in nodes_to_discard:
+            sql_delete_query = (
+                f"""UPDATE nodes
+                SET node_type = 'shs'
+                WHERE  id = {index};
+                """)
+        else:
+            sql_delete_query = (
+                f"""UPDATE nodes
+                SET node_type = 'undefined'
+                WHERE  id = {index};
+                """)
+        cursor.execute(sql_delete_query)
+        sqliteConnection.commit()
+    cursor.close()
+
+    # commit the changes to db
+    conn.commit()
+    # close the connection
+    conn.close()
+
+    return {
+        "code": "success",
+        "message": "shs identified"
     }
 
 

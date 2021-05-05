@@ -20,4 +20,4 @@ RUN pip install gunicorn
 EXPOSE 5001
 
 # run the app server, the last argument match the app variable in the webapp.py file
-CMD ["uvicorn", "webapp:app", "--host", "0.0.0.0", "--port", "5001"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5001"]
