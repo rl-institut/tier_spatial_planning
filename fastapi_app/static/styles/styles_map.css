@@ -147,3 +147,7 @@
   height: 20vh;
   display: none;
 }
+
+button#set_shs_price_characteristics {
+  height: 100%;
+}
