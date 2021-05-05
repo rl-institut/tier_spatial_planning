@@ -89,7 +89,7 @@
             name="cable_price_per_meter_for_shs_mst_identification"
             type="number"
             placeholder="cable_price_per_meter_for_shs_mst_identification"
-            value="0.1"
+            value="1000"
             />
             <p class="cell small-2">₦</p>
           </div>
@@ -105,8 +105,135 @@
             />
             <p class="cell small-2">₦</p>
           </div>
-          <div class="cell small-2">
-            <button id="set_shs_price_characteristics" class="ui button side_bar_button">Set SHS price Characteristics</button>
+          <div id="shs_price_characteristics_box" class="cell small-2 grid-y">
+            <div class="buttton_display_shs_price_characteristics">
+              <button id="set_shs_price_characteristics" class="ui button side_bar_button" onclick="displayShsCharacteristicsInput()">Set SHS price Characteristics</button>
+            </div>
+            <div id="shs_inputs" class="cell small-8">
+              <div
+              id="shs-content-box-0"
+              class="shs-content-box grid-x cell small-2"
+            >
+              <input
+                class="cell small-3"
+                placeholder="capacity"
+                type="number"
+                id="shs_capacity_0"
+                value="100"
+                min="0"
+              />
+              <p class="cell small-1">kWh</p>
+              <input
+                class="cell small-3"
+                placeholder="max power"
+                type="number"
+                id="shs_max_power_0"
+                value="200"
+                min="0"
+              />
+              <p class="cell small-1">W</p>
+              <input
+                id="shs_price_0"
+                class="cell small-3"
+                placeholder="price"
+                type="number"
+                value="20000"
+                min="0"
+              />
+              <p class="cell small-1">₦</p>
+            </div>
+          
+            <div
+              id="shs-content-box-1"
+              class="shs-content-box grid-x cell small-2"
+            >
+              <input
+                class="cell small-3"
+                placeholder="capacity"
+                type="number"
+                id="shs_capacity_1"
+                min="0"
+              />
+              <p class="cell small-1">kWh</p>
+              <input
+                class="cell small-3"
+                placeholder="max power"
+                type="number"
+                id="shs_max_power_1"
+                min="0"
+              />
+              <p class="cell small-1">W</p>
+              <input
+                id="shs_price_1"
+                class="cell small-3"
+                placeholder="price"
+                type="number"
+                min="0"
+              />
+              <p class="cell small-1">₦</p>
+            </div>
+          
+            <div
+              id="shs-content-box-2"
+              class="shs-content-box grid-x cell small-2"
+            >
+              <input
+                class="cell small-3"
+                placeholder="capacity"
+                type="number"
+                id="shs_capacity_2"
+                min="0"
+              />
+              <p class="cell small-1">kWh</p>
+              <input
+                class="cell small-3"
+                placeholder="max power"
+                type="number"
+                id="shs_max_power_2"
+                min="0"
+              />
+              <p class="cell small-1">W</p>
+              <input
+                id="shs_price_2"
+                class="cell small-3"
+                placeholder="price"
+                type="number"
+                min="0"
+              />
+              <p class="cell small-1">₦</p>
+            </div>
+          
+            <div
+              id="shs-content-box-3"
+              class="shs-content-box grid-x cell small-2"
+            >
+              <input
+                class="cell small-3"
+                placeholder="capacity"
+                type="number"
+                id="shs_capacity_3"
+                min="0"
+              />
+              <p class="cell small-1">kWh</p>
+              <input
+                class="cell small-3"
+                placeholder="max power"
+                type="number"
+                id="shs_max_power_3"
+                min="0"
+              />
+              <p class="cell small-1">W</p>
+              <input
+                id="shs_price_3"
+                class="cell small-3"
+                placeholder="price"
+                type="number"
+                min="0"
+              />
+              <p class="cell small-1">₦</p>
+            </div>
+            <button class="button" id="hide_shs_characteristics_inputs" onclick="displayShsCharacteristicsInput()">Close</button>
+            </div>
           </div>
 
           <div class="cell small-2">
