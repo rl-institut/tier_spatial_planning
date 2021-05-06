@@ -6,8 +6,8 @@ from database import SessionLocal, engine
 import models
 from sqlalchemy.orm import Session
 import sqlite3
-from sgdot.grids import Grid
-from sgdot.tools.grid_optimizer import GridOptimizer
+from sgdot_lite.grids import Grid
+from sgdot_lite.tools.grid_optimizer import GridOptimizer
 import math
 import urllib.request
 import json
@@ -183,14 +183,14 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                 node_type = "household"
 
             grid.add_node(label=str(node[0]),
-                          pixel_x_axis=x,
-                          pixel_y_axis=y,
+                          x_coordinate=x,
+                          y_coordinate=y,
                           node_type=node_type,
                           type_fixed=bool(node[4]))
 
     number_of_hubs = opt.get_expected_hub_number_from_k_means(grid=grid)
     opt.nr_optimization(grid=grid, number_of_hubs=number_of_hubs, number_of_relaxation_step=10,
-                        save_output=False, save_opt_video=False, plot_price_evolution=False)
+                        save_output=False, plot_price_evolution=False)
 
     sqliteConnection = sqlite3.connect(grid_db)
     cursor = sqliteConnection.cursor()
@@ -225,11 +225,11 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     records = []
     count = 1
     for index, row in grid.get_links().iterrows():
-        x_from = grid.get_nodes().loc[row['from']]['pixel_x_axis']
-        y_from = grid.get_nodes().loc[row['from']]['pixel_y_axis']
+        x_from = grid.get_nodes().loc[row['from']]['x_coordinate']
+        y_from = grid.get_nodes().loc[row['from']]['y_coordinate']
 
-        x_to = grid.get_nodes().loc[row['to']]['pixel_x_axis']
-        y_to = grid.get_nodes().loc[row['to']]['pixel_y_axis']
+        x_to = grid.get_nodes().loc[row['to']]['x_coordinate']
+        y_to = grid.get_nodes().loc[row['to']]['y_coordinate']
 
         long_from = math.degrees(longitude_0 + x_from / (r * math.cos(latitude_0)))
 
