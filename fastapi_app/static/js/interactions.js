@@ -117,8 +117,14 @@ $(document).ready(function () {
   });
 });
 
+// --------------------VARIABLES DECLARATION----------------------//
+
 default_household_required_capacity = 10;
 default_household_max_power = 20;
+
+var markers = [];
+var lines = [];
+siteGeojson = "";
 
 var osmLayer = L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -171,8 +177,6 @@ var siteBoundaries = [];
 var siteBoundaryLines = [];
 var dashedBoundaryLine = null;
 
-siteGeojson = "";
-
 L.control.scale().addTo(mainMap);
 
 var householdMarker = new L.Icon({
@@ -195,9 +199,6 @@ var shsMarker = new L.Icon({
   iconAnchor: [5, 5],
   popupAnchor: [0, 0],
 });
-
-var markers = [];
-var lines = [];
 
 mainMap.on("click", function (e) {
   var poplocation = e.latlng;
@@ -263,6 +264,24 @@ mainMap.on("click", function (e) {
   }
 });
 
+// --------------------FUNCTIONS DECLARATION----------------------//
+
+function drawDefaultMarker(latitude, longitude) {
+  markers.push(L.marker([latitude, longitude]).addTo(mainMap));
+}
+
+function drawMeterhubMarker(latitude, longitude) {
+  markers.push(
+    L.marker([latitude, longitude], { icon: hubMarker }).addTo(mainMap)
+  );
+}
+
+function drawHouseholdMarker(latitude, longitude) {
+  markers.push(
+    L.marker([latitude, longitude], { icon: householdMarker }).addTo(mainMap)
+  );
+}
+
 function getBuildingCoordinates(boundariesCoordinates) {
   var xhr = new XMLHttpRequest();
   url = "/validate_boundaries";
@@ -284,22 +303,6 @@ function getBuildingCoordinates(boundariesCoordinates) {
       refreshNodeFromDataBase();
     }
   };
-}
-
-function drawDefaultMarker(latitude, longitude) {
-  markers.push(L.marker([latitude, longitude]).addTo(mainMap));
-}
-
-function drawMeterhubMarker(latitude, longitude) {
-  markers.push(
-    L.marker([latitude, longitude], { icon: hubMarker }).addTo(mainMap)
-  );
-}
-
-function drawHouseholdMarker(latitude, longitude) {
-  markers.push(
-    L.marker([latitude, longitude], { icon: householdMarker }).addTo(mainMap)
-  );
 }
 
 function addNodeToDatBase(
