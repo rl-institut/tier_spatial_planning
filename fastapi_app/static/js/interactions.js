@@ -120,6 +120,7 @@ $(document).ready(function () {
 default_household_required_capacity = 10;
 default_household_max_power = 20;
 
+// MAP RELATED VARIABLES
 var osmLayer = L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   {
