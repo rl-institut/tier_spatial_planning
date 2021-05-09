@@ -1,7 +1,3 @@
-#TEST: Changes done by Saeed ;P
-#2nd Test
-
-# WAM_server_API_template
 # WAM_server_API_template  
 Template repository for creating API server to dispatch simulation tasks to a queue of workers.
 The API typically recieves a post request with a json input file, sends this file to a parser which
