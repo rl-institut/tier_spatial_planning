@@ -120,6 +120,7 @@ $(document).ready(function () {
 default_household_required_capacity = 10;
 default_household_max_power = 20;
 
+// MAP RELATED VARIABLES
 var osmLayer = L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   {
@@ -390,6 +391,7 @@ function identify_shs(
     statusCode: {
       200: function () {
         refreshNodeFromDataBase();
+        clearLinksDataBase();
       },
     },
   });
@@ -522,6 +524,18 @@ function refreshLinksFromDatBase() {
       }
     }
   };
+}
+
+function clearLinksDataBase() {
+  $.ajax({
+    url: "clear_link_db/",
+    type: "POST",
+    statusCode: {
+      200: function () {
+        refreshLinksFromDatBase();
+      },
+    },
+  });
 }
 
 function logShsCharacteristics() {
