@@ -365,10 +365,6 @@ async def clear_nodes():
     sql_delete_query = """DELETE from nodes"""
     cursor.execute(sql_delete_query)
     sqliteConnection.commit()
-    cursor.close()
-
-    sqliteConnection = sqlite3.connect(grid_db)
-    cursor = sqliteConnection.cursor()
 
     sql_delete_query = """DELETE from links"""
     cursor.execute(sql_delete_query)
@@ -383,7 +379,7 @@ async def clear_nodes():
 
 @ app.post("/clear_link_db/")
 async def clear_links():
-    sqliteConnection = sqlite3.connect('nodes.db')
+    sqliteConnection = sqlite3.connect(grid_db)
     cursor = sqliteConnection.cursor()
 
     sql_delete_query = """DELETE from links"""
@@ -393,5 +389,5 @@ async def clear_links():
 
     return {
         "code": "success",
-        "message": "nodes cleared"
+        "message": "links cleared"
     }

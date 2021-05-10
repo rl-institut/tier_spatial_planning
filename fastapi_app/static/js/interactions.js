@@ -391,6 +391,7 @@ function identify_shs(
     statusCode: {
       200: function () {
         refreshNodeFromDataBase();
+        clearLinksDataBase();
       },
     },
   });
@@ -523,6 +524,18 @@ function refreshLinksFromDatBase() {
       }
     }
   };
+}
+
+function clearLinksDataBase() {
+  $.ajax({
+    url: "clear_link_db/",
+    type: "POST",
+    statusCode: {
+      200: function () {
+        refreshLinksFromDatBase();
+      },
+    },
+  });
 }
 
 function logShsCharacteristics() {
