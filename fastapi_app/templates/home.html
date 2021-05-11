@@ -71,10 +71,10 @@
         <legend class="side_bar_box_title cell small-4">Site Boundary</legend>
         <div class="cell small-8 grid-x">
           <div class="cell small-6">
-            <button id="button_select_boundaries" class="ui button side_bar_button">Select</button>
+            <button id="button_select_boundaries" class="ui button side_bar_button" onclick="selectBoundaries()">Select</button>
           </div>
           <div class="cell small-6">
-            <button id="button_validate_boundaries" class="ui button side_bar_button">Validate</button>
+            <button id="button_validate_boundaries" class="ui button side_bar_button" onclick="validateBoundaries()">Validate</button>
           </div>
         </div>
       </div>
@@ -237,14 +237,14 @@
           </div>
 
           <div class="cell small-2">
-            <button id="button_identify_shs" class="ui button side_bar_button">Identify SHS</button>
+            <button id="button_identify_shs" class="ui button side_bar_button" onclick="identify_shs()">Identify SHS</button>
           </div>
 
         </div>
       </div>
       <div class="optimization side_bar_box cell small-2">
         <div class="box_left_sidebar">
-          <button id="button_optimize" class="ui button side_bar_button">Optimize</button>
+          <button id="button_optimize" class="ui button side_bar_button" onclick="optimize_grid()">Optimize</button>
         </div>
       </div>
     </div>
@@ -302,7 +302,7 @@
       </div>
     </div>
 
-    <button id="button_clear_node_db" type="submit" class="ui button primary">
+    <button id="button_clear_node_db" type="submit" class="ui button primary" onclick="clear_node_db();">
       Clear Nodes
     </button>
     <table id="table_nodes">
@@ -342,4 +342,5 @@
 </div>
 
 <script src={{ url_for('static', path='js/interactions.js') }}></script>
+<script src={{ url_for('static', path='js/map.js') }}></script>
 {% endblock %}

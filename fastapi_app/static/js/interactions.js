@@ -1,120 +1,6 @@
 $(document).ready(function () {
   refreshNodeFromDataBase();
   refreshLinksFromDatBase();
-
-  $("#button_add_undefined_node").click(function () {
-    mapClickEvent = "add_node";
-  });
-
-  $("#button_add_household").click(function () {
-    mapClickEvent = "add_fixed_household";
-  });
-
-  $("#button_add_meterhub").click(function () {
-    mapClickEvent = "add_fixed_meterhub";
-  });
-
-  $("#button_add_node").click(function () {
-    const latitude = new_node_lat.value;
-    const longitude = new_node_long.value;
-    const node_type = new_node_type.value;
-    const fixed_type = new_node_type_fixed.value;
-    const required_capacity = default_household_required_capacity;
-    const max_power = default_household_max_power;
-
-    addNodeToDatBase(
-      latitude,
-      longitude,
-      node_type,
-      fixed_type,
-      required_capacity,
-      max_power
-    );
-  });
-
-  $("#button_optimize").click(function () {
-    const price_hub = hub_price.value;
-    const price_household = household_price.value;
-    const price_interhub_cable = interhub_cable_price.value;
-    const price_distribution_cable = distribution_cable_price.value;
-    optimize_grid(
-      price_hub,
-      price_household,
-      price_interhub_cable,
-      price_distribution_cable
-    );
-  });
-
-  $("#button_identify_shs").click(function () {
-    const cable_price_per_meter =
-      cable_price_per_meter_for_shs_mst_identification.value;
-    const additional_connection_price =
-      additional_connection_price_for_shs_mst_identification.value;
-    const algo = "mst1";
-    const shs_characteristics = logShsCharacteristics();
-
-    identify_shs(
-      cable_price_per_meter,
-      additional_connection_price,
-      algo,
-      shs_characteristics
-    );
-  });
-
-  $("#button_clear_node_db").click(function () {
-    $.ajax({
-      url: "clear_node_db/",
-      type: "POST",
-      statusCode: {
-        200: function () {
-          refreshNodeFromDataBase();
-          refreshLinksFromDatBase();
-        },
-      },
-    });
-  });
-
-  $("#button_select_boundaries").click(function () {
-    mapClickEvent = "draw_boundaries";
-    var textSelectBoundaryButton = document.getElementById(
-      "button_select_boundaries"
-    );
-    if (textSelectBoundaryButton.innerHTML === "Reset") {
-      mainMap.removeLayer(siteGeojson);
-    }
-    textSelectBoundaryButton.innerHTML = "Reset";
-
-    removeBoundaries();
-  });
-
-  $("#button_validate_boundaries").click(function () {
-    mapClickEvent = "select";
-
-    // Close polygone by changing dashed line to solid
-    if (dashedBoundaryLine != null) {
-      mainMap.removeLayer(dashedBoundaryLine);
-    }
-    siteBoundaryLines.push(
-      L.polyline([siteBoundaries[0], siteBoundaries.slice(-1)[0]], {
-        color: "black",
-      })
-    );
-    siteBoundaryLines[siteBoundaryLines.length - 1].addTo(mainMap);
-
-    // Find most extreme latitudes and longitudes
-    const latitudeList = siteBoundaries.map((x) => x[0]);
-    const longitudeList = siteBoundaries.map((x) => x[1]);
-
-    minLatitude = Math.min(...latitudeList);
-    maxLatitude = Math.max(...latitudeList);
-
-    minLongitude = Math.min(...longitudeList);
-    maxLongitude = Math.max(...longitudeList);
-
-    // TODO implement if close to check that area is not too large
-
-    getBuildingCoordinates((boundariesCoordinates = siteBoundaries));
-  });
 });
 
 // --------------------VARIABLES DECLARATION----------------------//
@@ -122,165 +8,41 @@ $(document).ready(function () {
 default_household_required_capacity = 10;
 default_household_max_power = 20;
 
-var markers = [];
-var lines = [];
-siteGeojson = "";
+// --------------------FUNCTIONS DECLARATION----------------------//
 
-var osmLayer = L.tileLayer(
-  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-  {
-    tileSize: 512,
-    zoomOffset: -1,
-    minZoom: 1,
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    crossOrigin: true,
-  }
-);
-
-var osmMap = {
-  osmBaseMap: osmLayer,
-};
-
-var esriWorldImageryLayer = L.tileLayer(
-  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-  {
-    tileSize: 512,
-    zoomOffset: -1,
-    minZoom: 1,
-    maxZoom: 18,
-    attribution:
-      "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
-  }
-);
-
-var esriSatelliteMap = {
-  esriBaseMap: esriWorldImageryLayer,
-};
-
-var mainMap = L.map("leafletMap", {
-  center: [11.3929, 9.1248],
-  zoom: 17,
-  layers: [osmLayer],
-});
-
-L.control.layers(osmMap, esriSatelliteMap).addTo(mainMap);
-
-var mapClickEvent = "add_node";
+// SET FUNCTIONS
 
 function setMapClickEventToAddNode() {
   mapClickEvent = "add_node";
 }
 
-var siteBoundaries = [];
+function displayShsCharacteristicsInput() {
+  if (document.getElementById("shs_inputs").style.display === "block") {
+    document.getElementById("shs_inputs").style.display = "none";
+  } else {
+    document.getElementById("shs_inputs").style.display = "block";
+  }
+}
 
-var siteBoundaryLines = [];
-var dashedBoundaryLine = null;
+function logShsCharacteristics() {
+  shsCharacteristics = [];
+  for (var i = 0; i < 4; ++i) {
+    shsCapacity = document.getElementById(`shs_capacity_${i}`).value;
+    maxPower = document.getElementById(`shs_max_power_${i}`).value;
+    price = document.getElementById(`shs_price_${i}`).value;
 
-L.control.scale().addTo(mainMap);
-
-var householdMarker = new L.Icon({
-  iconUrl: "fastapi_app/static/images/markers/marker-household.png",
-  iconSize: [10, 10],
-  iconAnchor: [5, 5],
-  popupAnchor: [0, 0],
-});
-
-var hubMarker = new L.Icon({
-  iconUrl: "fastapi_app/static/images/markers/marker-hub.png",
-  iconSize: [14, 14],
-  iconAnchor: [7, 7],
-  popupAnchor: [0, 0],
-});
-
-var shsMarker = new L.Icon({
-  iconUrl: "fastapi_app/static/images/markers/marker-shs.png",
-  iconSize: [10, 10],
-  iconAnchor: [5, 5],
-  popupAnchor: [0, 0],
-});
-
-mainMap.on("click", function (e) {
-  var poplocation = e.latlng;
-
-  if (mapClickEvent == "add_node") {
-    if (document.getElementsByName("radio_button_new_node_type")[0].checked) {
-      addNodeToDatBase(
-        poplocation.lat,
-        poplocation.lng,
-        "undefinded",
-        false,
-        default_household_required_capacity,
-        default_household_max_power
-      );
-      drawDefaultMarker(poplocation.lat, poplocation.lng);
-    }
-
-    if (document.getElementsByName("radio_button_new_node_type")[1].checked) {
-      addNodeToDatBase(
-        poplocation.lat,
-        poplocation.lng,
-        "household",
-        true,
-        default_household_required_capacity,
-        default_household_max_power
-      );
-      drawHouseholdMarker(poplocation.lat, poplocation.lng);
-    }
-
-    if (document.getElementsByName("radio_button_new_node_type")[2].checked) {
-      addNodeToDatBase(
-        poplocation.lat,
-        poplocation.lng,
-        "meterhub",
-        true,
-        2 * default_household_required_capacity,
-        2 * default_household_max_power
-      );
-      drawMeterhubMarker(poplocation.lat, poplocation.lng);
+    if (shsCapacity > 0 && maxPower > 0 && price > 0) {
+      shsCharacteristics.push({
+        price: price,
+        capacity: shsCapacity,
+        max_power: maxPower,
+      });
     }
   }
-
-  if (mapClickEvent == "draw_boundaries") {
-    siteBoundaries.push([poplocation.lat, poplocation.lng]);
-
-    // add new solid line to siteBoundaryLines and draw it on map
-    siteBoundaryLines.push(L.polyline(siteBoundaries, { color: "black" }));
-
-    siteBoundaryLines[siteBoundaryLines.length - 1].addTo(mainMap);
-    // Remove dashed line
-    if (dashedBoundaryLine) {
-      mainMap.removeLayer(dashedBoundaryLine);
-    }
-
-    // Create new dashed line closing the polygon
-    dashedBoundaryLine = L.polyline(
-      [siteBoundaries[0], siteBoundaries.slice(-1)[0]],
-      { color: "black", dashArray: "10, 10", dashOffset: "20" }
-    );
-
-    // Add new dashed line to map
-    dashedBoundaryLine.addTo(mainMap);
-  }
-});
-
-// --------------------FUNCTIONS DECLARATION----------------------//
-
-function drawDefaultMarker(latitude, longitude) {
-  markers.push(L.marker([latitude, longitude]).addTo(mainMap));
+  return shsCharacteristics;
 }
 
-function drawMeterhubMarker(latitude, longitude) {
-  markers.push(
-    L.marker([latitude, longitude], { icon: hubMarker }).addTo(mainMap)
-  );
-}
-
-function drawHouseholdMarker(latitude, longitude) {
-  markers.push(
-    L.marker([latitude, longitude], { icon: householdMarker }).addTo(mainMap)
-  );
-}
+// POST REQUESTS
 
 function getBuildingCoordinates(boundariesCoordinates) {
   var xhr = new XMLHttpRequest();
@@ -334,25 +96,11 @@ function addNodeToDatBase(
   });
 }
 
-function removeBoundaries() {
-  // Remove all boundary lines and markers
-  for (line of siteBoundaryLines) {
-    mainMap.removeLayer(line);
-  }
-  if (dashedBoundaryLine != null) {
-    mainMap.removeLayer(dashedBoundaryLine);
-  }
-  siteBoundaries.length = 0;
-  siteBoundaryLines.length = 0;
-  dashedBoundaryLine = null;
-}
-
-function optimize_grid(
-  price_meterhub,
-  price_household,
-  price_interhub_cable,
-  price_distribution_cable
-) {
+function optimize_grid() {
+  const price_meterhub = hub_price.value;
+  const price_household = household_price.value;
+  const price_interhub_cable = interhub_cable_price.value;
+  const price_distribution_cable = distribution_cable_price.value;
   $.ajax({
     url: "optimize_grid/",
     type: "POST",
@@ -373,12 +121,14 @@ function optimize_grid(
   });
 }
 
-function identify_shs(
-  cable_price_per_meter,
-  additional_connection_price,
-  algo,
-  shs_characteristics
-) {
+function identify_shs() {
+  const cable_price_per_meter =
+    cable_price_per_meter_for_shs_mst_identification.value;
+  const additional_connection_price =
+    additional_connection_price_for_shs_mst_identification.value;
+  const algo = "mst1";
+  const shs_characteristics = logShsCharacteristics();
+
   $.ajax({
     url: "shs_identification/",
     type: "POST",
@@ -458,36 +208,6 @@ function refreshNodeFromDataBase() {
   };
 }
 
-function drawLinkOnMap(
-  latitude_from,
-  longitude_from,
-  latitude_to,
-  longitude_to,
-  color,
-  map,
-  weight = 3,
-  opacity = 0.5
-) {
-  var pointA = new L.LatLng(latitude_from, longitude_from);
-  var pointB = new L.LatLng(latitude_to, longitude_to);
-  var pointList = [pointA, pointB];
-
-  var link_polyline = new L.polyline(pointList, {
-    color: color,
-    weight: weight,
-    opacity: 0.5,
-    smoothFactor: 1,
-  });
-  lines.push(link_polyline.addTo(map));
-}
-
-function ereaseLinksFromMap(map) {
-  for (line of lines) {
-    map.removeLayer(line);
-  }
-  lines.length = 0;
-}
-
 function refreshLinksFromDatBase() {
   var tbody_links = document.getElementById("tbody_links");
   var xhr = new XMLHttpRequest();
@@ -541,28 +261,57 @@ function clearLinksDataBase() {
   });
 }
 
-function logShsCharacteristics() {
-  shsCharacteristics = [];
-  for (var i = 0; i < 4; ++i) {
-    shsCapacity = document.getElementById(`shs_capacity_${i}`).value;
-    maxPower = document.getElementById(`shs_max_power_${i}`).value;
-    price = document.getElementById(`shs_price_${i}`).value;
-
-    if (shsCapacity > 0 && maxPower > 0 && price > 0) {
-      shsCharacteristics.push({
-        price: price,
-        capacity: shsCapacity,
-        max_power: maxPower,
-      });
-    }
-  }
-  return shsCharacteristics;
+function clear_node_db() {
+  $.ajax({
+    url: "clear_node_db/",
+    type: "POST",
+    statusCode: {
+      200: function () {
+        refreshNodeFromDataBase();
+        refreshLinksFromDatBase();
+      },
+    },
+  });
 }
 
-function displayShsCharacteristicsInput() {
-  if (document.getElementById("shs_inputs").style.display === "block") {
-    document.getElementById("shs_inputs").style.display = "none";
-  } else {
-    document.getElementById("shs_inputs").style.display = "block";
+function validateBoundaries() {
+  mapClickEvent = "select";
+
+  // Close polygone by changing dashed line to solid
+  if (dashedBoundaryLine != null) {
+    mainMap.removeLayer(dashedBoundaryLine);
   }
+  siteBoundaryLines.push(
+    L.polyline([siteBoundaries[0], siteBoundaries.slice(-1)[0]], {
+      color: "black",
+    })
+  );
+  siteBoundaryLines[siteBoundaryLines.length - 1].addTo(mainMap);
+
+  // Find most extreme latitudes and longitudes
+  const latitudeList = siteBoundaries.map((x) => x[0]);
+  const longitudeList = siteBoundaries.map((x) => x[1]);
+
+  minLatitude = Math.min(...latitudeList);
+  maxLatitude = Math.max(...latitudeList);
+
+  minLongitude = Math.min(...longitudeList);
+  maxLongitude = Math.max(...longitudeList);
+
+  // TODO implement if close to check that area is not too large
+
+  getBuildingCoordinates((boundariesCoordinates = siteBoundaries));
+}
+
+function selectBoundaries() {
+  mapClickEvent = "draw_boundaries";
+  var textSelectBoundaryButton = document.getElementById(
+    "button_select_boundaries"
+  );
+  if (textSelectBoundaryButton.innerHTML === "Reset") {
+    mainMap.removeLayer(siteGeojson);
+  }
+  textSelectBoundaryButton.innerHTML = "Reset";
+
+  removeBoundaries();
 }
