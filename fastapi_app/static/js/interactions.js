@@ -101,6 +101,7 @@ function optimize_grid() {
   const price_household = household_price.value;
   const price_interhub_cable = interhub_cable_price.value;
   const price_distribution_cable = distribution_cable_price.value;
+  const number_of_relaxation_steps_nr = number_of_relaxation_steps_nr.value;
   $.ajax({
     url: "optimize_grid/",
     type: "POST",
@@ -110,6 +111,7 @@ function optimize_grid() {
       price_household: price_household,
       price_interhub_cable: price_interhub_cable,
       price_distribution_cable: price_distribution_cable,
+      number_of_relaxation_steps_nr: number_of_relaxation_steps_nr,
     }),
     dataType: "json",
     statusCode: {
