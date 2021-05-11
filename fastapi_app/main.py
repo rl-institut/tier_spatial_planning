@@ -1,3 +1,4 @@
+import uvicorn
 import fastapi_app.tools.boundary_identification as bi
 import fastapi_app.tools.shs_identification as shs_ident
 import fastapi_app.models as models
@@ -394,3 +395,7 @@ async def clear_links():
         "code": "success",
         "message": "links cleared"
     }
+
+
+def debugging_mode():
+    uvicorn.run(app, host="0.0.0.0", port=8000)
