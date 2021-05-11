@@ -6,8 +6,8 @@ from database import SessionLocal, engine
 import models
 from sqlalchemy.orm import Session
 import sqlite3
-from sgdot_lite.grids import Grid
-from sgdot_lite.tools.grid_optimizer import GridOptimizer
+from sgdotlite.grids import Grid
+from sgdotlite.tools.grid_optimizer import GridOptimizer
 import math
 import urllib.request
 import json
