@@ -1,0 +1,4 @@
+
+source venv/bin/activate
+cd fastapi_app
+uvicorn fastapi_app.main:app --reload
