@@ -180,21 +180,21 @@ var dashedBoundaryLine = null;
 L.control.scale().addTo(mainMap);
 
 var householdMarker = new L.Icon({
-  iconUrl: "static/images/markers/marker-household.png",
+  iconUrl: "fastapi_app/static/images/markers/marker-household.png",
   iconSize: [10, 10],
   iconAnchor: [5, 5],
   popupAnchor: [0, 0],
 });
 
 var hubMarker = new L.Icon({
-  iconUrl: "/static/images/markers/marker-hub.png",
+  iconUrl: "fastapi_app/static/images/markers/marker-hub.png",
   iconSize: [14, 14],
   iconAnchor: [7, 7],
   popupAnchor: [0, 0],
 });
 
 var shsMarker = new L.Icon({
-  iconUrl: "static/images/markers/marker-shs.png",
+  iconUrl: "fastapi_app/static/images/markers/marker-shs.png",
   iconSize: [10, 10],
   iconAnchor: [5, 5],
   popupAnchor: [0, 0],
@@ -385,7 +385,8 @@ function identify_shs(
     contentType: "application/json",
     data: JSON.stringify({
       cable_price_per_meter_for_shs_mst_identification: cable_price_per_meter,
-      additional_connection_price_for_shs_mst_identification: additional_connection_price,
+      additional_connection_price_for_shs_mst_identification:
+        additional_connection_price,
       algo,
       shs_characteristics,
     }),

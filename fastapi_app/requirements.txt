@@ -6,6 +6,7 @@ click==7.1.2
 fastapi==0.63.0
 gunicorn==20.1.0
 h11==0.12.0
+httptools==0.2.0
 idna==2.10
 Jinja2==2.11.3
 lxml==4.6.2
@@ -24,3 +25,4 @@ toml==0.10.2
 typing-extensions==3.7.4.3
 urllib3==1.26.3
 uvicorn==0.13.3
+uvloop==0.15.2

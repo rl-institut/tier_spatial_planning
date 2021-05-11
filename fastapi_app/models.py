@@ -2,7 +2,7 @@ from sqlalchemy import Boolean, Column, Integer, String, Numeric
 from sqlalchemy.orm import relationship
 from pydantic import BaseModel
 from typing import Optional
-from database import Base
+from fastapi_app.database import Base
 
 # Models
 

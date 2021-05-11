@@ -1,9 +1,11 @@
+import fastapi_app.tools.boundary_identification as bi
+import fastapi_app.tools.shs_identification as shs_ident
+import fastapi_app.models as models
 from fastapi.param_functions import Query
 from fastapi import FastAPI, Request, Depends, BackgroundTasks
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from database import SessionLocal, engine
-import models
+from fastapi_app.database import SessionLocal, engine
 from sqlalchemy.orm import Session
 import sqlite3
 from sgdotlite.grids import Grid
@@ -11,21 +13,18 @@ from sgdotlite.tools.grid_optimizer import GridOptimizer
 import math
 import urllib.request
 import json
-import tools.boundary_identification as bi
-import tools.shs_identification as shs_ident
 import pandas as pd
 import numpy as np
-
 import time
-
 
 app = FastAPI()
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/fastapi_app/static",
+          StaticFiles(directory="fastapi_app/static"), name="static")
 
 models.Base.metadata.create_all(bind=engine)
 
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="fastapi_app/templates")
 
 grid_db = "grid.db"
 
@@ -231,7 +230,8 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
         x_to = grid.get_nodes().loc[row['to']]['x_coordinate']
         y_to = grid.get_nodes().loc[row['to']]['y_coordinate']
 
-        long_from = math.degrees(longitude_0 + x_from / (r * math.cos(latitude_0)))
+        long_from = math.degrees(
+            longitude_0 + x_from / (r * math.cos(latitude_0)))
 
         lat_from = math.degrees(latitude_0 + y_from / r)
 
@@ -251,7 +251,8 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                         distance))
         count += 1
 
-    cursor.executemany('INSERT INTO links VALUES(?, ?, ?, ?, ?, ?, ?)', records)
+    cursor.executemany(
+        'INSERT INTO links VALUES(?, ?, ?, ?, ?, ?, ?)', records)
 
     # commit the changes to db
     conn.commit()
@@ -310,7 +311,8 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
         required_capacity = node[5]
         max_power = node[6]
 
-        shs_ident.add_node(nodes_df, node_label, x, y, required_capacity, max_power)
+        shs_ident.add_node(nodes_df, node_label, x, y,
+                           required_capacity, max_power)
     links_df = shs_ident.mst_links(nodes_df)
     start_time = time.time()
     if shs_identification_request.algo == "mst1":
@@ -320,7 +322,8 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
             cable_price_per_meter=cable_price_per_meter,
             additional_price_for_connection_per_node=additional_price_for_connection_per_node,
             shs_characteristics=shs_characteristics)
-        print(f"execution time for shs identification (mst1): {time.time() - start_time} s")
+        print(
+            f"execution time for shs identification (mst1): {time.time() - start_time} s")
     else:
         print("issue with version parameter of shs_identification_request")
         return 0
