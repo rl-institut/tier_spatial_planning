@@ -46,6 +46,7 @@ class OptimizeGridRequest(BaseModel):
     price_household: float
     price_interhub_cable: float
     price_distribution_cable: float
+    number_of_relaxation_steps_nr: int
 
 
 class ShsIdentificationRequest(BaseModel):

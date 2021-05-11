@@ -97,19 +97,16 @@ function addNodeToDatBase(
 }
 
 function optimize_grid() {
-  const price_meterhub = hub_price.value;
-  const price_household = household_price.value;
-  const price_interhub_cable = interhub_cable_price.value;
-  const price_distribution_cable = distribution_cable_price.value;
   $.ajax({
     url: "optimize_grid/",
     type: "POST",
     contentType: "application/json",
     data: JSON.stringify({
-      price_meterhub: price_meterhub,
-      price_household: price_household,
-      price_interhub_cable: price_interhub_cable,
-      price_distribution_cable: price_distribution_cable,
+      price_meterhub: price_meterhub.value,
+      price_household: price_household.value,
+      price_interhub_cable: price_interhub_cable.value,
+      price_distribution_cable: price_distribution_cable.value,
+      number_of_relaxation_steps_nr: number_of_relaxation_steps_nr.value,
     }),
     dataType: "json",
     statusCode: {
