@@ -4,11 +4,7 @@
   <div class="box-header grid-x">
     <h1 class="application_title cell small-4">Geospatial Optimization Tool</h1>
     <div class="peoplesun-logo-box cell small-4">
-      <img
-        class="logo"
-        src={{ url_for('static', path='images/PeopleSunLogo.png') }}
-        alt="PeopleSun logo"
-      />
+      <img class="logo" src={{ url_for('static', path='images/PeopleSunLogo.png' ) }} alt="PeopleSun logo" />
     </div>
   </div>
   <div class="box-body grid-x">
@@ -16,65 +12,49 @@
       <div class="mg_component_price_input side_bar_box cell small-2">
         <legend class="side_bar_box_title mg_component_prices_title">MG node prices</legend>
         <p class="name_component_1">Hub</p>
-        <input
-          id="hub_price"
-          class="input_sidebar input_component_1"
-          name="hub price"
-          type="number"
-          placeholder="hub price"
-          value="500000"
-        />
+        <input id="price_meterhub" class="input_sidebar input_component_1" name="price_meterhub" type="number"
+          placeholder="price_meterhub" value="500000" />
         <p class="name_currency_1">₦</p>
         <p class="name_component_2">Household</p>
-        <input
-          id="household_price"
-          class="input_sidebar input_component_2"
-          name="household price"
-          type="number"
-          placeholder="household price"
-          value="200000"
-        />
+        <input id="price_household" class="input_sidebar input_component_2" name="price_household" type="number"
+          placeholder="price_household" value="200000" />
         <p class="name_currency_2">₦</p>
       </div>
       <div class="mg_component_price_input side_bar_box cell small-2">
         <legend class="side_bar_box_title mg_component_prices_title">MG cable prices</legend>
         <p class="name_component_1">Interhub</p>
-        <input
-          id="interhub_cable_price"
-          class="input_sidebar input_component_1"
-          name="interhub cable price"
-          type="number"
-          placeholder="hub price"
-          value="2000"
-        />
+        <input id="price_interhub_cable" class="input_sidebar input_component_1" name="price_interhub_cable"
+          type="number" placeholder="price_interhub_cable" value="2000" />
         <p class="name_currency_1">₦/m</p>
         <p class="name_component_2">Distribution</p>
-        <input
-          id="distribution_cable_price"
-          class="input_sidebar input_component_2"
-          name="distribution cable price"
-          type="number"
-          placeholder="distribution cable price"
-          value="750"
-        />
+        <input id="price_distribution_cable" class="input_sidebar input_component_2" name="price_distribution_cable"
+          type="number" placeholder="price_distribution_cable" value="750" />
         <p class="name_currency_2">₦/m</p>
       </div>
       <div class="box_add_node side_bar_box cell small-2 grid-y">
-          <legend class="side_bar_box_title cell small-3">Add new node</legend>
+        <legend class="side_bar_box_title cell small-3">Add new node</legend>
         <div class="cell small-9">
-          <input type="radio" name="radio_button_new_node_type" value="undefined" id="new_node_undefined" onclick="setMapClickEventToAddNode();"><label for="new_node_undefined">undefined</label>
-          <input type="radio" name="radio_button_new_node_type" value="household" id="new_node_household" onclick="setMapClickEventToAddNode();"><label for="new_node_household">household <img src={{ url_for('static', path='images/markers/marker-household.png') }} alt="marker_household" width="12"></label>
-          <input type="radio" name="radio_button_new_node_type" value="meterhub" id="new_node_meterhub" onclick="setMapClickEventToAddNode();"><label for="new_node_meterhub">meterhub <img src={{ url_for('static', path='images/markers/marker-hub.png') }} alt="marker_hub" width="12"></label>
+          <input type="radio" name="radio_button_new_node_type" value="undefined" id="new_node_undefined"
+            onclick="setMapClickEventToAddNode();"><label for="new_node_undefined">undefined</label>
+          <input type="radio" name="radio_button_new_node_type" value="household" id="new_node_household"
+            onclick="setMapClickEventToAddNode();"><label for="new_node_household">household <img src={{
+              url_for('static', path='images/markers/marker-household.png' ) }} alt="marker_household"
+              width="12"></label>
+          <input type="radio" name="radio_button_new_node_type" value="meterhub" id="new_node_meterhub"
+            onclick="setMapClickEventToAddNode();"><label for="new_node_meterhub">meterhub <img src={{ url_for('static',
+              path='images/markers/marker-hub.png' ) }} alt="marker_hub" width="12"></label>
         </div>
       </div>
       <div class="box-boundary-selection side_bar_box cell small-1 grid-y">
         <legend class="side_bar_box_title cell small-4">Site Boundary</legend>
         <div class="cell small-8 grid-x">
           <div class="cell small-6">
-            <button id="button_select_boundaries" class="ui button side_bar_button">Select</button>
+            <button id="button_select_boundaries" class="ui button side_bar_button"
+              onclick="selectBoundaries()">Select</button>
           </div>
           <div class="cell small-6">
-            <button id="button_validate_boundaries" class="ui button side_bar_button">Validate</button>
+            <button id="button_validate_boundaries" class="ui button side_bar_button"
+              onclick="validateBoundaries()">Validate</button>
           </div>
         </div>
       </div>
@@ -83,263 +63,155 @@
           <legend class="cell small-2 side_bar_box_title">Solar Home Sytem Identification</legend>
           <div class="cell small-2 grid-x">
             <p class="cell small-6">Cable price</p>
-            <input
-            id="cable_price_per_meter_for_shs_mst_identification"
-            class="cell small-4 input_sidebar"
-            name="cable_price_per_meter_for_shs_mst_identification"
-            type="number"
-            placeholder="cable_price_per_meter_for_shs_mst_identification"
-            value="1000"
-            />
+            <input id="cable_price_per_meter_for_shs_mst_identification" class="cell small-4 input_sidebar"
+              name="cable_price_per_meter_for_shs_mst_identification" type="number"
+              placeholder="cable_price_per_meter_for_shs_mst_identification" value="1000" />
             <p class="cell small-2">₦</p>
           </div>
           <div class="cell small-2 grid-x">
             <p class="cell small-6">Connection</p>
-            <input
-            id="additional_connection_price_for_shs_mst_identification"
-            class="cell small-4 input_sidebar"
-            name="additional_connection_price_for_shs_mst_identification"
-            type="number"
-            placeholder="additional_connection_price_for_shs_mst_identification"
-            value="0"
-            />
+            <input id="additional_connection_price_for_shs_mst_identification" class="cell small-4 input_sidebar"
+              name="additional_connection_price_for_shs_mst_identification" type="number"
+              placeholder="additional_connection_price_for_shs_mst_identification" value="0" />
             <p class="cell small-2">₦</p>
           </div>
           <div id="shs_price_characteristics_box" class="cell small-2 grid-y">
             <div class="buttton_display_shs_price_characteristics">
-              <button id="set_shs_price_characteristics" class="ui button side_bar_button" onclick="displayShsCharacteristicsInput()">Set SHS price Characteristics</button>
+              <button id="set_shs_price_characteristics" class="ui button side_bar_button"
+                onclick="displayShsCharacteristicsInput()">Set SHS price Characteristics</button>
             </div>
             <div id="shs_inputs">
-              <div
-              id="shs-content-box-0"
-              class="shs-content-box grid-x cell small-2"
-            >
-              <input
-                class="cell small-3"
-                placeholder="capacity"
-                type="number"
-                id="shs_capacity_0"
-                value="100"
-                min="0"
-              />
-              <p class="cell small-1">kWh</p>
-              <input
-                class="cell small-3"
-                placeholder="max power"
-                type="number"
-                id="shs_max_power_0"
-                value="200"
-                min="0"
-              />
-              <p class="cell small-1">W</p>
-              <input
-                id="shs_price_0"
-                class="cell small-3"
-                placeholder="price"
-                type="number"
-                value="20000"
-                min="0"
-              />
-              <p class="cell small-1">₦</p>
-            </div>
-          
-            <div
-              id="shs-content-box-1"
-              class="shs-content-box grid-x cell small-2"
-            >
-              <input
-                class="cell small-3"
-                placeholder="capacity"
-                type="number"
-                id="shs_capacity_1"
-                min="0"
-              />
-              <p class="cell small-1">kWh</p>
-              <input
-                class="cell small-3"
-                placeholder="max power"
-                type="number"
-                id="shs_max_power_1"
-                min="0"
-              />
-              <p class="cell small-1">W</p>
-              <input
-                id="shs_price_1"
-                class="cell small-3"
-                placeholder="price"
-                type="number"
-                min="0"
-              />
-              <p class="cell small-1">₦</p>
-            </div>
-          
-            <div
-              id="shs-content-box-2"
-              class="shs-content-box grid-x cell small-2"
-            >
-              <input
-                class="cell small-3"
-                placeholder="capacity"
-                type="number"
-                id="shs_capacity_2"
-                min="0"
-              />
-              <p class="cell small-1">kWh</p>
-              <input
-                class="cell small-3"
-                placeholder="max power"
-                type="number"
-                id="shs_max_power_2"
-                min="0"
-              />
-              <p class="cell small-1">W</p>
-              <input
-                id="shs_price_2"
-                class="cell small-3"
-                placeholder="price"
-                type="number"
-                min="0"
-              />
-              <p class="cell small-1">₦</p>
-            </div>
-          
-            <div
-              id="shs-content-box-3"
-              class="shs-content-box grid-x cell small-2"
-            >
-              <input
-                class="cell small-3"
-                placeholder="capacity"
-                type="number"
-                id="shs_capacity_3"
-                min="0"
-              />
-              <p class="cell small-1">kWh</p>
-              <input
-                class="cell small-3"
-                placeholder="max power"
-                type="number"
-                id="shs_max_power_3"
-                min="0"
-              />
-              <p class="cell small-1">W</p>
-              <input
-                id="shs_price_3"
-                class="cell small-3"
-                placeholder="price"
-                type="number"
-                min="0"
-              />
-              <p class="cell small-1">₦</p>
-            </div>
-            <button class="button" id="hide_shs_characteristics_inputs" onclick="displayShsCharacteristicsInput()">Close</button>
+              <div id="shs-content-box-0" class="shs-content-box grid-x cell small-2">
+                <input class="cell small-3" placeholder="capacity" type="number" id="shs_capacity_0" value="100"
+                  min="0" />
+                <p class="cell small-1">kWh</p>
+                <input class="cell small-3" placeholder="max power" type="number" id="shs_max_power_0" value="200"
+                  min="0" />
+                <p class="cell small-1">W</p>
+                <input id="shs_price_0" class="cell small-3" placeholder="price" type="number" value="20000" min="0" />
+                <p class="cell small-1">₦</p>
+              </div>
+
+              <div id="shs-content-box-1" class="shs-content-box grid-x cell small-2">
+                <input class="cell small-3" placeholder="capacity" type="number" id="shs_capacity_1" min="0" />
+                <p class="cell small-1">kWh</p>
+                <input class="cell small-3" placeholder="max power" type="number" id="shs_max_power_1" min="0" />
+                <p class="cell small-1">W</p>
+                <input id="shs_price_1" class="cell small-3" placeholder="price" type="number" min="0" />
+                <p class="cell small-1">₦</p>
+              </div>
+
+              <div id="shs-content-box-2" class="shs-content-box grid-x cell small-2">
+                <input class="cell small-3" placeholder="capacity" type="number" id="shs_capacity_2" min="0" />
+                <p class="cell small-1">kWh</p>
+                <input class="cell small-3" placeholder="max power" type="number" id="shs_max_power_2" min="0" />
+                <p class="cell small-1">W</p>
+                <input id="shs_price_2" class="cell small-3" placeholder="price" type="number" min="0" />
+                <p class="cell small-1">₦</p>
+              </div>
+
+              <div id="shs-content-box-3" class="shs-content-box grid-x cell small-2">
+                <input class="cell small-3" placeholder="capacity" type="number" id="shs_capacity_3" min="0" />
+                <p class="cell small-1">kWh</p>
+                <input class="cell small-3" placeholder="max power" type="number" id="shs_max_power_3" min="0" />
+                <p class="cell small-1">W</p>
+                <input id="shs_price_3" class="cell small-3" placeholder="price" type="number" min="0" />
+                <p class="cell small-1">₦</p>
+              </div>
+              <button class="button" id="hide_shs_characteristics_inputs"
+                onclick="displayShsCharacteristicsInput()">Close</button>
             </div>
           </div>
 
           <div class="cell small-2">
-            <button id="button_identify_shs" class="ui button side_bar_button">Identify SHS</button>
+            <button id="button_identify_shs" class="ui button side_bar_button" onclick="identify_shs()">Identify
+              SHS</button>
           </div>
 
         </div>
       </div>
       <div class="optimization side_bar_box cell small-2">
         <div class="box_left_sidebar">
-          <button id="button_optimize" class="ui button side_bar_button">Optimize</button>
+          <legend class="cell small-2 side_bar_box_title">Network Optimization</legend>
+          <div class="cell small-2 grid-x">
+            <p class="cell small-6">Relaxation Steps</p>
+            <input id="number_of_relaxation_steps_nr" class="cell small-4 input_sidebar"
+              name="number_of_relaxation_steps_nr" type="number" placeholder="number_of_relaxation_steps_nr" value="10"
+              min="0" step="1" />
+          </div>
+          <button id="button_optimize" class="ui button side_bar_button" onclick="optimize_grid()">Optimize</button>
         </div>
       </div>
     </div>
-    
-  <div class="box-map map cell small-9">
-    <div id="leafletMap"></div>
-  </div> 
-</div> 
 
-<div class="box-table-nodes table_nodes">
-  <legend>Nodes table</legend>
-  <div class="nodes_table">
-    <div class="new_node_params">
-      <div id="node_input_box">
-        <div class="ui input">
-          <input
-            id="new_node_lat"
-            name="Latitude"
-            type="number"
-            placeholder="Latitude"
-            value=""
-          />
-        </div>
-
-        <div class="ui input">
-          <input
-            id="new_node_long"
-            name="Longitude"
-            type="number"
-            placeholder="Longitude"
-            value=""
-          />
-        </div>
-        <div class="ui input">
-          <input
-            id="new_node_type"
-            name="Node Type"
-            type="text"
-            placeholder="Node Type"
-            value="undefined"
-          />
-        </div>
-        <div class="ui input">
-          <input
-            id="new_node_type_fixed"
-            name="Type Fixed"
-            type="boolean"
-            placeholder="Type Fixed"
-            value="false"
-          />
-        </div>
-        <button id="button_add_node" type="submit" class="ui button primary">
-          Add Node
-        </button>
-      </div>
+    <div class="box-map map cell small-9">
+      <div id="leafletMap"></div>
     </div>
-
-    <button id="button_clear_node_db" type="submit" class="ui button primary">
-      Clear Nodes
-    </button>
-    <table id="table_nodes">
-      <thead>
-        <tr>
-          <th>Index</th>
-          <th>Latitude</th>
-          <th>Longitude</th>
-          <th>Node Type</th>
-          <th>Type Fixed</th>
-          <th>Required Capacity</th>
-          <th>Max Power</th>
-        </tr>
-      </thead>
-      <tbody id="tbody_nodes"></tbody>
-    </table>
   </div>
-</div>
-<div class="box-table-links table_links">
-  <legend>Links table</legend>
-  <div class="links_table">
-    <table id="table_links">
-      <thead>
-        <tr>
-          <th>Index</th>
-          <th>Latitude from</th>
-          <th>Longitude from</th>
-          <th>Lattitude to</th>
-          <th>Longitude to</th>
-          <th>Type</th>
-          <th>Distance</th>
-        </tr>
-      </thead>
-      <tbody id="tbody_links"></tbody>
-    </table>
-  </div>
-</div>
 
-<script src={{ url_for('static', path='js/interactions.js') }}></script>
-{% endblock %}
+  <div class="box-table-nodes table_nodes">
+    <legend>Nodes table</legend>
+    <div class="nodes_table">
+      <div class="new_node_params">
+        <div id="node_input_box">
+          <div class="ui input">
+            <input id="new_node_lat" name="Latitude" type="number" placeholder="Latitude" value="" />
+          </div>
+
+          <div class="ui input">
+            <input id="new_node_long" name="Longitude" type="number" placeholder="Longitude" value="" />
+          </div>
+          <div class="ui input">
+            <input id="new_node_type" name="Node Type" type="text" placeholder="Node Type" value="undefined" />
+          </div>
+          <div class="ui input">
+            <input id="new_node_type_fixed" name="Type Fixed" type="boolean" placeholder="Type Fixed" value="false" />
+          </div>
+          <button id="button_add_node" type="submit" class="ui button primary">
+            Add Node
+          </button>
+        </div>
+      </div>
+
+      <button id="button_clear_node_db" type="submit" class="ui button primary" onclick="clear_node_db();">
+        Clear Nodes
+      </button>
+      <table id="table_nodes">
+        <thead>
+          <tr>
+            <th>Index</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+            <th>Node Type</th>
+            <th>Type Fixed</th>
+            <th>Required Capacity</th>
+            <th>Max Power</th>
+          </tr>
+        </thead>
+        <tbody id="tbody_nodes"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="box-table-links table_links">
+    <legend>Links table</legend>
+    <div class="links_table">
+      <table id="table_links">
+        <thead>
+          <tr>
+            <th>Index</th>
+            <th>Latitude from</th>
+            <th>Longitude from</th>
+            <th>Lattitude to</th>
+            <th>Longitude to</th>
+            <th>Type</th>
+            <th>Distance</th>
+          </tr>
+        </thead>
+        <tbody id="tbody_links"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src={{ url_for('static', path='js/interactions.js' ) }}></script>
+  <script src={{ url_for('static', path='js/map.js' ) }}></script>
+  {% endblock %}

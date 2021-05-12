@@ -2,7 +2,7 @@ from sqlalchemy import Boolean, Column, Integer, String, Numeric
 from sqlalchemy.orm import relationship
 from pydantic import BaseModel
 from typing import Optional
-from database import Base
+from fastapi_app.database import Base
 
 # Models
 
@@ -46,6 +46,7 @@ class OptimizeGridRequest(BaseModel):
     price_household: float
     price_interhub_cable: float
     price_distribution_cable: float
+    number_of_relaxation_steps_nr: int
 
 
 class ShsIdentificationRequest(BaseModel):
