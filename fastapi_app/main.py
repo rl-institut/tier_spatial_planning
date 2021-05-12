@@ -39,11 +39,12 @@ def get_db():
     finally:
         db.close()
 
+
 @app.get("/favicon.ico")
 async def redirect():
     response = RedirectResponse(url='/fastapi_app/static/favicon.ico')
     return response
-    
+
 
 @app.get("/")
 def home(request: Request, db: Session = Depends(get_db)):
