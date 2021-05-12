@@ -4,6 +4,7 @@ import fastapi_app.tools.shs_identification as shs_ident
 import fastapi_app.models as models
 from fastapi.param_functions import Query
 from fastapi import FastAPI, Request, Depends, BackgroundTasks
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi_app.database import SessionLocal, engine
@@ -19,6 +20,7 @@ import numpy as np
 import time
 
 app = FastAPI()
+
 
 app.mount("/fastapi_app/static",
           StaticFiles(directory="fastapi_app/static"), name="static")
@@ -37,6 +39,11 @@ def get_db():
     finally:
         db.close()
 
+@app.get("/favicon.ico")
+async def redirect():
+    response = RedirectResponse(url='/fastapi_app/static/favicon.ico')
+    return response
+    
 
 @app.get("/")
 def home(request: Request, db: Session = Depends(get_db)):
