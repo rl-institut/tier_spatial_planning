@@ -197,7 +197,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
 
     number_of_hubs = opt.get_expected_hub_number_from_k_means(grid=grid)
     number_of_relaxation_steps_nr = optimize_grid_request.number_of_relaxation_steps_nr
-    opt.nr_optimization(grid=grid, number_of_hubs=number_of_hubs, number_of_relaxation_step=number_of_relaxation_steps_nr,
+    opt.nr_optimization(grid=grid, number_of_hubs=number_of_hubs, number_of_relaxation_steps=number_of_relaxation_steps_nr,
                         save_output=False, plot_price_evolution=False)
     sqliteConnection = sqlite3.connect(grid_db)
     cursor = sqliteConnection.cursor()
