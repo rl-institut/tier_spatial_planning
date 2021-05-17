@@ -4,7 +4,7 @@ import fastapi_app.tools.shs_identification as shs_ident
 import fastapi_app.models as models
 from fastapi.param_functions import Query
 from fastapi import FastAPI, Request, Depends, BackgroundTasks
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi_app.database import SessionLocal, engine
@@ -18,6 +18,7 @@ import json
 import pandas as pd
 import numpy as np
 import time
+import os
 
 app = FastAPI()
 
@@ -31,6 +32,10 @@ templates = Jinja2Templates(directory="fastapi_app/templates")
 
 grid_db = "grid.db"
 
+path = "/fastapi_app"
+
+# ---------------------------- SET UP grid.db DATABASE -----------------------#
+
 
 def get_db():
     try:
@@ -39,17 +44,37 @@ def get_db():
     finally:
         db.close()
 
+# --------------------- REDIRECT REQUEST TO FAVICON LOG ----------------------#
+
+
 @app.get("/favicon.ico")
 async def redirect():
     response = RedirectResponse(url='/fastapi_app/static/favicon.ico')
     return response
-    
+
+# --------------------------- IMPORT/EXPORT FEATURE --------------------------#
+
+
+@app.get("/export",
+         responses={200: {"description": "xlsx file containing the information about the configuration.",
+                          "content": {"static/io/test_excel_node.xlsx": {"example": "No example available."}}}})
+def export():
+    file_path = os.path.join(path, "static/io/test_excel_node.xlsx")
+    print(f"file_path: {file_path}")
+    print(f"files : {os.listdir()}")
+
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename="layout.xlsx")
+    return {"error": "File not found!"}
+
+
+# ------------------------------ HANDLE REQUEST ------------------------------#
+
 
 @app.get("/")
 def home(request: Request, db: Session = Depends(get_db)):
-    nodes = db.query(models.Nodes)
     return templates.TemplateResponse("home.html", {
-        "request": request, "nodes": nodes
+        "request": request
     })
 
 
@@ -404,5 +429,6 @@ async def clear_links():
     }
 
 
+# -------------------------- FUNCTION FOR DEBUGGING-------------------------- #
 def debugging_mode():
     uvicorn.run(app, host="0.0.0.0", port=8000)

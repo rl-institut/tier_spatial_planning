@@ -12,6 +12,7 @@ Jinja2==2.11.3
 lxml==4.6.2
 multitasking==0.0.9
 networkx==2.5.1
+openpyxl==3.0.7
 pickleshare==0.7.5
 pycodestyle==2.6.0
 pydantic==1.7.3
