@@ -162,9 +162,6 @@ async def import_config(file: bytes = File(...)):
         float(nodes_df.iloc[i]['max_power'])
     ) for i in range(nodes_df.shape[0])]
 
-    records1 = [(10, 11.39379254444444, 9.1201091, 'household', 0, 10, 20),
-                (100, -12, 3, 'household', 0, 10, 20)]
-
     cursor.executemany(
         'INSERT INTO nodes VALUES(?, ?, ?, ?, ?, ?, ?)', records)
 
