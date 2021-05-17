@@ -17,6 +17,7 @@ pickleshare==0.7.5
 pycodestyle==2.6.0
 pydantic==1.7.3
 python-dateutil==2.8.1
+python-multipart==0.0.5
 requests==2.25.1
 six==1.15.0
 sgdotlite==1.0.7

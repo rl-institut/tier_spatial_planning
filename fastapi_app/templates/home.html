@@ -149,6 +149,12 @@
     </div>
   </div>
 
+<div class="import-export">
+  <input id="config_upload" name="config_upload" type="file">
+  <button class="button" id="upload-button" onclick="uploadConfig()">Upload</button>
+</div>
+
+
   <div class="box-table-nodes table_nodes">
     <legend>Nodes table</legend>
     <div class="nodes_table">
@@ -211,7 +217,9 @@
       </table>
     </div>
   </div>
+</div>
 
   <script src={{ url_for('static', path='js/interactions.js' ) }}></script>
   <script src={{ url_for('static', path='js/map.js' ) }}></script>
+  <script src={{ url_for('static', path='js/import_export.js' ) }}></script>
   {% endblock %}

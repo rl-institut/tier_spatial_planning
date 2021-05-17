@@ -3,7 +3,7 @@ import fastapi_app.tools.boundary_identification as bi
 import fastapi_app.tools.shs_identification as shs_ident
 import fastapi_app.models as models
 from fastapi.param_functions import Query
-from fastapi import FastAPI, Request, Depends, BackgroundTasks
+from fastapi import FastAPI, Request, Depends, BackgroundTasks, File, UploadFile
 from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -32,7 +32,7 @@ templates = Jinja2Templates(directory="fastapi_app/templates")
 
 grid_db = "grid.db"
 
-path = "/fastapi_app"
+path = "fastapi_app"
 
 # ---------------------------- SET UP grid.db DATABASE -----------------------#
 
@@ -55,20 +55,127 @@ async def redirect():
 # --------------------------- IMPORT/EXPORT FEATURE --------------------------#
 
 
-@app.get("/export",
+def empty_nodes_df():
+    return pd.DataFrame(
+        {
+            'label':
+            pd.Series([], dtype=str),
+            'latitude':
+            pd.Series([], dtype=np.dtype(float)),
+            'longitude':
+            pd.Series([], dtype=np.dtype(float)),
+            'node_type':
+            pd.Series([], dtype=np.dtype(str)),
+            'type_fixed':
+            pd.Series([], dtype=np.dtype(bool)),
+            'required_capacity':
+            pd.Series([], dtype=np.dtype(float)),
+            'max_power':
+            pd.Series([], dtype=np.dtype(float))
+        }
+    ).set_index('label')
+
+
+def empty_links_df():
+    return pd.DataFrame(
+        {
+            'label':
+            pd.Series([], dtype=str),
+            'Latitude from':
+            pd.Series([], dtype=np.dtype(float)),
+            'Longitude from':
+            pd.Series([], dtype=np.dtype(float)),
+            'Latitude to':
+            pd.Series([], dtype=np.dtype(float)),
+            'Longitude to':
+            pd.Series([], dtype=np.dtype(float)),
+            'Type':
+            pd.Series([], dtype=np.dtype(str)),
+            'Distance':
+            pd.Series([], dtype=np.dtype(float)),
+        }
+    ).set_index('label')
+
+
+@app.get("/export_config",
          responses={200: {"description": "xlsx file containing the information about the configuration.",
                           "content": {"static/io/test_excel_node.xlsx": {"example": "No example available."}}}})
-def export():
-    file_path = os.path.join(path, "static/io/test_excel_node.xlsx")
-    print(f"file_path: {file_path}")
-    print(f"files : {os.listdir()}")
+async def export(db: Session = Depends(get_db)):
+
+    # CREATE NODES DATAFRAME FROM DATABASE
+    res_nodes = db.execute("select * from nodes")
+    nodes_table = res_nodes.fetchall()
+
+    nodes_df = empty_nodes_df()
+
+    for node in nodes_table:
+        nodes_df.at[node[0]] = node[1:]
+
+    # CREATE LINKS DATAFRAME FROM DATABASE
+    res_links = db.execute("select * from links")
+    links_table = res_links.fetchall()
+
+    links_df = empty_links_df()
+
+    for link in links_table:
+        links_df.at[link[0]] = link[1:]
+
+    # Create xlsx file with sheets for nodes and for links
+    file_name = 'export_file.xlsx'
+    with pd.ExcelWriter(f'{path}/import_export/{file_name}') as writer:
+        nodes_df.to_excel(excel_writer=writer, sheet_name='nodes', header=nodes_df.columns)
+        links_df.to_excel(excel_writer=writer, sheet_name='links', header=links_df.columns)
+
+    # Download xlsx file
+    file_path = os.path.join(path, f"import_export/{file_name}")
 
     if os.path.exists(file_path):
-        return FileResponse(file_path, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename="layout.xlsx")
+        return FileResponse(file_path, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename="backup.xlsx")
     return {"error": "File not found!"}
 
 
-# ------------------------------ HANDLE REQUEST ------------------------------#
+@app.post("/import_config")
+async def import_config(file: bytes = File(...)):
+
+    # Upload file to server
+    out_file = open(f"{path}/import_export/import.xlsx", "wb")  # open for [w]riting as [b]inary
+    out_file.write(file)
+    out_file.close()
+
+    # Empty Database and load it from file
+    clear_nodes_table()
+    # clear_links()
+
+    nodes_df = pd.read_excel(f"{path}/import_export/import.xlsx",
+                             sheet_name="nodes")
+
+    conn = sqlite3.connect(grid_db)
+    cursor = conn.cursor()
+
+    records = [(
+        str(nodes_df.iloc[i]['label']),
+        float(nodes_df.iloc[i]['latitude']),
+        float(nodes_df.iloc[i]['longitude']),
+        str(nodes_df.iloc[i]['node_type']),
+        bool(nodes_df.iloc[i]['type_fixed']),
+        float(nodes_df.iloc[i]['required_capacity']),
+        float(nodes_df.iloc[i]['max_power'])
+    ) for i in range(nodes_df.shape[0])]
+
+    records1 = [(10, 11.39379254444444, 9.1201091, 'household', 0, 10, 20),
+                (100, -12, 3, 'household', 0, 10, 20)]
+
+    cursor.executemany(
+        'INSERT INTO nodes VALUES(?, ?, ?, ?, ?, ?, ?)', records)
+
+    # commit the changes to db
+    conn.commit()
+    # close the connection
+    conn.close()
+
+    # ------------------------------ HANDLE REQUEST ------------------------------#
+
+# -----------------------------------------------------------------------------#
 
 
 @app.get("/")
@@ -393,8 +500,7 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
     }
 
 
-@ app.post("/clear_node_db/")
-async def clear_nodes():
+def clear_nodes_table():
     sqliteConnection = sqlite3.connect(grid_db)
     cursor = sqliteConnection.cursor()
 
@@ -406,6 +512,11 @@ async def clear_nodes():
     cursor.execute(sql_delete_query)
     sqliteConnection.commit()
     cursor.close()
+
+
+@ app.post("/clear_node_db/")
+async def clear_nodes():
+    clear_nodes_table()
 
     return {
         "code": "success",
