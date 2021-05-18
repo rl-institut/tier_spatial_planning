@@ -1,69 +1,40 @@
-# WAM_server_API_template  
-Template repository for creating API server to dispatch simulation tasks to a queue of workers.
-The API typically recieves a post request with a json input file, sends this file to a parser which
-initiate a long simulation (like [oemof](https://github.com/oemof/oemof)). Once the simulation
- is done a json response is sent back. The json results can also be retrieved with the task id.
+# PeopleSun WP4 geospatial tool
+
+This geospatial computer tool is part PeopleSun project (peoplesun.org).
+The project contains a webapp that wraps tools to optimize off-grid systems based on a webmapp.
+
+The features of the tool are the following:
+
+- Identification of the buildings from OSM (overpass) API.
+- Optimization of network layout of mini-grids with a hub structure. The optimization is based on the Python sgdotlite package.
+- Identification of buildings that are located far enough to the rest of the buildings so that it makes sense to provide them with idividual solar-home systems.
+
+The app is using
 
 ## Get started
 
-Run `sudo docker-compose up -d --build` to run the task queue and the webapp simulaneously.
+### Installation
 
-Now the webapp is available at `127.0.0.1:5001`
+1. From the root of the repository, first create a virtual environment (here called venv) using the following command:
+   python3 -m venv venv
 
-Run `sudo docker-compose down` to shut the services down.
+Note that conda can also be used to set up a virtual environment
 
-## Develop while services are running
+2. Activate the virtual environment running the following command:
 
-### Using [redis](https://redis.io/documentation)
+i. On Linux, MacOs
+source venv/bin/activate
 
-You have to start redis-server
-`service redis-server start`
-(to stop it use `service redis-server stop`)
-Move to `task_queue` and run `. setup_redis.sh` to start the celery queue with redis a message
- broker.
+ii. On Windows
+venv\Scripts\bin\activate
 
-### Using [RabbitMQ](https://www.rabbitmq.com/getstarted.html)
+3. Install the required packages using the following command:
+   pip install -r requirements.txt
 
+### Launching of the app
 
-### Using [flask](https://fastapi.tiangolo.com/)
+1. Run the following command to start the FastAPI server:
+   uvicorn fastapi_app.main:app
 
-In another terminal go the the root of the repo and run `python flask_run.py`
-
-Now the flask app is available at `127.0.0.1:5001`
-
-### Using [fastapi](https://fastapi.tiangolo.com/)
-
-In another terminal go the the root of the repo and run `. fastapi_run.sh`
-
-Now the flask app is available at `127.0.0.1:5001`
-
-While docker runs :
-https://vsupalov.com/rebuilding-docker-image-development/
-
-RabbitMQ:
-https://www.rabbitmq.com/getstarted.html
-
-https://riptutorial.com/flask/example/5831/return-a-json-response-from-flask-api
-
-https://docs.celeryproject.org/en/3.1/getting-started/first-steps-with-celery.html#application
-
-## Docs
-
-To build the docs simply go to the `docs` folder
-
-    cd docs
-
-Install the requirements
-
-    pip install -r docs_requirements.txt
-
-and run
-
-    make html
-
-The output will then be located in `docs/_build/html` and can be opened with your favorite browser
-
-## Code linting
-
-Use `black .` to lint the python files inside the repo
-
+2. Open the following URL in a browser (preferably on Chrome or Firefox):
+   http://127.0.0.1:8000/

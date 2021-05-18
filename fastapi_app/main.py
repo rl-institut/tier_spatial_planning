@@ -193,8 +193,6 @@ async def import_config(file: UploadFile = File(...)):
 
     # ------------------------------ HANDLE REQUEST ------------------------------#
 
-# -----------------------------------------------------------------------------#
-
 
 @app.get("/")
 def home(request: Request, db: Session = Depends(get_db)):
@@ -431,6 +429,12 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
 
     res = db.execute("select * from nodes")
     nodes = res.fetchall()
+
+    if len(nodes) == 0:
+        return {
+            "code": "success",
+            "message": "No nodes in table, no identification to be performed"
+        }
 
     r = 6371000     # Radius of the earth [m]
     # use latitude of the node that is the most west to set origin of x coordinates
