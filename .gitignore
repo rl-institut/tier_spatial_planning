@@ -7,3 +7,4 @@ fastapi_app/draft.ipynb
 *.db
 run
 venv/
+fastapi_app/import_export/
