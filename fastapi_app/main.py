@@ -98,11 +98,10 @@ def empty_links_df():
     ).set_index('label')
 
 
-@app.get("/export_config",
-         responses={200: {"description": "xlsx file containing the information about the configuration.",
-                          "content": {"static/io/test_excel_node.xlsx": {"example": "No example available."}}}})
-async def export(db: Session = Depends(get_db)):
-
+@app.post("/generate_export_file/")
+async def generate_export_file(
+        generate_export_file_request: models.GenerateExportFileRequest,
+        db: Session = Depends(get_db)):
     # CREATE NODES DATAFRAME FROM DATABASE
     res_nodes = db.execute("select * from nodes")
     nodes_table = res_nodes.fetchall()
@@ -121,12 +120,24 @@ async def export(db: Session = Depends(get_db)):
     for link in links_table:
         links_df.at[link[0]] = link[1:]
 
+    settings = [element for element in generate_export_file_request]
+
+    settings_df = pd.DataFrame({"Setting": [x[0] for x in settings],
+                                "value": [x[1] for x in settings]}).set_index('Setting')
+
     # Create xlsx file with sheets for nodes and for links
     file_name = 'temp.xlsx'
     with pd.ExcelWriter(f'{path}/import_export/{file_name}') as writer:
         nodes_df.to_excel(excel_writer=writer, sheet_name='nodes', header=nodes_df.columns)
         links_df.to_excel(excel_writer=writer, sheet_name='links', header=links_df.columns)
+        settings_df.to_excel(excel_writer=writer, sheet_name='settings')
 
+
+@app.get("/download_export_file",
+         responses={200: {"description": "xlsx file containing the information about the configuration.",
+                          "content": {"static/io/test_excel_node.xlsx": {"example": "No example available."}}}})
+async def download_export_file(db: Session = Depends(get_db)):
+    file_name = 'temp.xlsx'
     # Download xlsx file
     file_path = os.path.join(path, f"import_export/{file_name}")
 
@@ -134,7 +145,6 @@ async def export(db: Session = Depends(get_db)):
         return FileResponse(
             path=file_path, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename="backup.xlsx")
     else:
-        os.remove(file_path)
         return {"error": "File not found!"}
 
 
@@ -191,17 +201,23 @@ async def import_config(file: UploadFile = File(...)):
     # close the connection
     conn.close()
 
+    # Collect settings for settings tab and return them as a dict
+    settings_df = pd.read_excel(f"{path}/import_export/backup.xlsx",
+                                sheet_name="settings").set_index('Setting')
+    settings = {index: row['value'].item() for index, row in settings_df.iterrows()}
+
+    return settings
     # ------------------------------ HANDLE REQUEST ------------------------------#
 
 
-@app.get("/")
+@ app.get("/")
 def home(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse("home.html", {
         "request": request
     })
 
 
-@app.get("/nodes_db_html")
+@ app.get("/nodes_db_html")
 async def get_nodes(request: Request, db: Session = Depends(get_db)):
     """
     This funtcion access and returns the entries of the nodes table of the grid database
@@ -220,14 +236,14 @@ async def get_nodes(request: Request, db: Session = Depends(get_db)):
     return result
 
 
-@app.get("/links_db_html")
+@ app.get("/links_db_html")
 async def get_links(request: Request, db: Session = Depends(get_db)):
     res = db.execute("select * from links")
     result = res.fetchall()
     return result
 
 
-@app.post("/validate_boundaries")
+@ app.post("/validate_boundaries")
 async def validate_boundaries(
         validateBoundariesRequest: models.ValidateBoundariesRequest,
         db: Session = Depends(get_db)):
@@ -280,7 +296,7 @@ async def validate_boundaries(
     return formated_geojson
 
 
-@app.post("/add_node/")
+@ app.post("/add_node/")
 async def add_node(add_node_request: models.AddNodeRequest,
                    background_tasks: BackgroundTasks,
                    db: Session = Depends(get_db)):
