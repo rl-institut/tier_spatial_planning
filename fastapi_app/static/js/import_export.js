@@ -1,4 +1,4 @@
-async function importConfig() {
+async function importConfig(include_settings) {
   let formData = new FormData();
   formData.append("file", config_import.files[0]);
 
@@ -12,17 +12,20 @@ async function importConfig() {
       200: function (result) {
         refreshNodeFromDataBase();
         refreshLinksFromDatBase();
-        setSettings(
-          (price_meterhub = result.price_meterhub),
-          (price_household = result.price_household),
-          (price_interhub_cable = result.price_interhub_cable),
-          (price_distribution_cable = result.price_distribution_cable),
-          (shs_identification_cable_price =
-            result.shs_identification_cable_price),
-          (shs_identification_connection_price =
-            result.shs_identification_connection_price),
-          (number_of_relaxation_steps_nr = result.number_of_relaxation_steps_nr)
-        );
+        if (include_settings === true) {
+          setSettings(
+            (price_meterhub = result.price_meterhub),
+            (price_household = result.price_household),
+            (price_interhub_cable = result.price_interhub_cable),
+            (price_distribution_cable = result.price_distribution_cable),
+            (shs_identification_cable_price =
+              result.shs_identification_cable_price),
+            (shs_identification_connection_price =
+              result.shs_identification_connection_price),
+            (number_of_relaxation_steps_nr =
+              result.number_of_relaxation_steps_nr)
+          );
+        }
       },
     },
   });
