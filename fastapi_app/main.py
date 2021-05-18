@@ -19,6 +19,7 @@ import pandas as pd
 import numpy as np
 import time
 import os
+import aiofiles
 
 app = FastAPI()
 
@@ -81,17 +82,17 @@ def empty_links_df():
         {
             'label':
             pd.Series([], dtype=str),
-            'Latitude from':
+            'latitude_from':
             pd.Series([], dtype=np.dtype(float)),
-            'Longitude from':
+            'longitude_from':
             pd.Series([], dtype=np.dtype(float)),
-            'Latitude to':
+            'latitude_to':
             pd.Series([], dtype=np.dtype(float)),
-            'Longitude to':
+            'longitude_to':
             pd.Series([], dtype=np.dtype(float)),
-            'Type':
+            'type':
             pd.Series([], dtype=np.dtype(str)),
-            'Distance':
+            'distance':
             pd.Series([], dtype=np.dtype(float)),
         }
     ).set_index('label')
@@ -121,7 +122,7 @@ async def export(db: Session = Depends(get_db)):
         links_df.at[link[0]] = link[1:]
 
     # Create xlsx file with sheets for nodes and for links
-    file_name = 'export_file.xlsx'
+    file_name = 'temp.xlsx'
     with pd.ExcelWriter(f'{path}/import_export/{file_name}') as writer:
         nodes_df.to_excel(excel_writer=writer, sheet_name='nodes', header=nodes_df.columns)
         links_df.to_excel(excel_writer=writer, sheet_name='links', header=links_df.columns)
@@ -130,23 +131,26 @@ async def export(db: Session = Depends(get_db)):
     file_path = os.path.join(path, f"import_export/{file_name}")
 
     if os.path.exists(file_path):
-        return FileResponse(file_path, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename="backup.xlsx")
-    return {"error": "File not found!"}
+        return FileResponse(
+            path=file_path, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename="backup.xlsx")
+    else:
+        os.remove(file_path)
+        return {"error": "File not found!"}
 
 
 @app.post("/import_config")
-async def import_config(file: bytes = File(...)):
+async def import_config(file: UploadFile = File(...)):
 
-    # Upload file to server
-    out_file = open(f"{path}/import_export/import.xlsx", "wb")  # open for [w]riting as [b]inary
-    out_file.write(file)
-    out_file.close()
+    content_file = await file.read()
+    async with aiofiles.open(f"{path}/import_export/backup.xlsx", 'wb') as out_file:
+        await out_file.write(content_file)
 
-    # Empty Database and load it from file
+    # Empty Database tables
     clear_nodes_table()
-    # clear_links()
+    clear_links_table()
 
-    nodes_df = pd.read_excel(f"{path}/import_export/import.xlsx",
+    # Populate nodes table from nodes sheet of file
+    nodes_df = pd.read_excel(f"{path}/import_export/backup.xlsx",
                              sheet_name="nodes")
 
     conn = sqlite3.connect(grid_db)
@@ -164,6 +168,23 @@ async def import_config(file: bytes = File(...)):
 
     cursor.executemany(
         'INSERT INTO nodes VALUES(?, ?, ?, ?, ?, ?, ?)', records)
+
+    # Populate links table from links sheet of file
+    links_df = pd.read_excel(f"{path}/import_export/backup.xlsx",
+                             sheet_name="links")
+
+    records = [(
+        str(links_df.iloc[i]['label']),
+        float(links_df.iloc[i]['latitude_from']),
+        float(links_df.iloc[i]['longitude_from']),
+        float(links_df.iloc[i]['latitude_to']),
+        float(links_df.iloc[i]['longitude_to']),
+        str(links_df.iloc[i]['type']),
+        float(links_df.iloc[i]['distance'])
+    ) for i in range(links_df.shape[0])]
+
+    cursor.executemany(
+        'INSERT INTO links VALUES(?, ?, ?, ?, ?, ?, ?)', records)
 
     # commit the changes to db
     conn.commit()
@@ -498,6 +519,9 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
 
 
 def clear_nodes_table():
+    """
+    This function clears the nodes table of the grid.db database.
+    """
     sqliteConnection = sqlite3.connect(grid_db)
     cursor = sqliteConnection.cursor()
 
@@ -521,8 +545,7 @@ async def clear_nodes():
     }
 
 
-@ app.post("/clear_link_db/")
-async def clear_links():
+def clear_links_table():
     sqliteConnection = sqlite3.connect(grid_db)
     cursor = sqliteConnection.cursor()
 
@@ -531,6 +554,10 @@ async def clear_links():
     sqliteConnection.commit()
     cursor.close()
 
+
+@ app.post("/clear_link_db/")
+async def clear_links():
+    clear_links_table()
     return {
         "code": "success",
         "message": "links cleared"

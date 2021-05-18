@@ -1,26 +1,22 @@
-async function uploadConfig() {
-  //   let formData = new FormData();
-  //   formData.append("file", config_upload.files[0]);
+async function importConfig() {
+  let formData = new FormData();
+  formData.append("file", config_import.files[0]);
 
-  //   $.ajax({
-  //     url: "upload_config/",
-  //     type: "POST",
-  //     data: formData,
-  //     statusCode: {
-  //       200: function () {
-  //         refreshNodeFromDataBase();
-  //       },
-  //     },
-  //   });
+  $.ajax({
+    url: "import_config",
+    type: "POST",
+    data: formData,
+    processData: false,
+    contentType: false,
+    statusCode: {
+      200: function () {
+        refreshNodeFromDataBase();
+        refreshLinksFromDatBase();
+      },
+    },
+  });
+}
 
-  var file = config_upload.files[0];
-  var reader = new FileReader();
-  reader.onload = function () {
-    $.ajax({
-      url: "import_config/",
-      type: "POST",
-      data: reader.result,
-    });
-  };
-  reader.readAsBinaryString(file);
+function exportConfig() {
+  window.open("export_config");
 }
