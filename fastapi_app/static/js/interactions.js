@@ -43,33 +43,49 @@ function logShsCharacteristics() {
 }
 
 // POST REQUESTS
-
 function getBuildingCoordinates(boundariesCoordinates) {
-  var xhr = new XMLHttpRequest();
-  url = "/validate_boundaries";
-  xhr.open("POST", url, true);
-  xhr.setRequestHeader("Content-Type", "application/json");
-
-  xhr.send(
-    JSON.stringify({
+  $("#loading").show();
+  $.ajax({
+    url: "select_boundaries_add/",
+    type: "POST",
+    contentType: "application/json",
+    data: JSON.stringify({
       boundary_coordinates: boundariesCoordinates,
-      default_required_capacity: default_household_required_capacity,
-      default_max_power: default_household_max_power,
-    })
-  );
-  xhr.onreadystatechange = function () {
-    if (this.readyState == 4 && this.status == 200) {
-      siteGeojson = L.geoJSON(JSON.parse(xhr.responseText));
+    }),
+    dataType: "json",
+    statusCode: {
+      200: function () {
+        refreshNodeFromDataBase();
+        $("#loading").hide();
+      },
+    },
+  });
+}
 
-      siteGeojson.addTo(mainMap);
-      refreshNodeFromDataBase();
-    }
-  };
+function removeBuildingsInsideBoundary(boundariesCoordinates) {
+  $("#loading").show();
+  $.ajax({
+    url: "select_boundaries_remove/",
+    type: "POST",
+    contentType: "application/json",
+    data: JSON.stringify({
+      boundary_coordinates: boundariesCoordinates,
+    }),
+    dataType: "json",
+    statusCode: {
+      200: function () {
+        refreshNodeFromDataBase();
+        refreshLinksFromDatBase();
+        $("#loading").hide();
+      },
+    },
+  });
 }
 
 function addNodeToDatBase(
   latitude,
   longitude,
+  area,
   node_type,
   fixed_type,
   required_capacity,
@@ -82,6 +98,7 @@ function addNodeToDatBase(
     data: JSON.stringify({
       latitude: latitude,
       longitude: longitude,
+      area: area,
       node_type: node_type,
       fixed_type: fixed_type,
       required_capacity: required_capacity,
@@ -97,6 +114,7 @@ function addNodeToDatBase(
 }
 
 function optimize_grid() {
+  $("#loading").show();
   $.ajax({
     url: "optimize_grid/",
     type: "POST",
@@ -113,6 +131,7 @@ function optimize_grid() {
       200: function () {
         refreshNodeFromDataBase();
         refreshLinksFromDatBase();
+        $("#loading").hide();
       },
     },
   });
@@ -126,6 +145,7 @@ function identify_shs() {
   const algo = "mst1";
   const shs_characteristics = logShsCharacteristics();
 
+  $("#loading").show();
   $.ajax({
     url: "shs_identification/",
     type: "POST",
@@ -142,6 +162,7 @@ function identify_shs() {
       200: function () {
         refreshNodeFromDataBase();
         clearLinksDataBase();
+        $("#loading").hide();
       },
     },
   });
@@ -165,6 +186,7 @@ function refreshNodeFromDataBase() {
               <td>${node.id}</td>
               <td>${node.latitude}</td>
               <td>${node.longitude}</td>
+              <td>${node.area}</td>
               <td>${node.node_type}</td>
               <td>${node.fixed_type}</td>
               <td>${node.required_capacity}</td>
@@ -196,10 +218,24 @@ function refreshNodeFromDataBase() {
             }).addTo(mainMap)
           );
         } else {
+          peak_demand_per_sq_meter = 4
+          total_demand = node.area * peak_demand_per_sq_meter
+          if (total_demand >= 100) {
+            icon = markerHighDemand;
+          } else if (total_demand < 100 && total_demand > 40) {
+            icon = markerMediumDemand;
+          } else {
+            icon = markerLowDemand;
+          }
           markers.push(
-            L.marker([node.latitude, node.longitude]).addTo(mainMap)
+            L.marker([node.latitude, node.longitude],
+              { icon: icon },
+            ).addTo(mainMap)
           );
         }
+      }
+      if (mapClickEvent === "draw_boundaries") {
+        zoomAll(mainMap);
       }
     }
   };
@@ -271,13 +307,24 @@ function clear_node_db() {
   });
 }
 
-function validateBoundaries() {
-  mapClickEvent = "select";
+// selecting boundaries of the site for adding new nodes
+function selectBoundariesAdd() {
+  mapClickEvent = "draw_boundaries";
+  var textButtonDrawBoundariesAdd = document.getElementById(
+    "button_draw_boundaries_add"
+  );
+  textButtonDrawBoundariesAdd.innerHTML = "Select";
 
-  // Close polygone by changing dashed line to solid
-  if (dashedBoundaryLine != null) {
-    mainMap.removeLayer(dashedBoundaryLine);
+  // changing the type of the button (primary <-> success)
+  if ($(textButtonDrawBoundariesAdd).hasClass("primary")) {
+    $(textButtonDrawBoundariesAdd).removeClass("primary");
+    $(textButtonDrawBoundariesAdd).addClass("success");
+  } else {
+    $(textButtonDrawBoundariesAdd).removeClass("success");
+    $(textButtonDrawBoundariesAdd).addClass("primary");
   }
+
+  // adding a line to the list of lines inside the polyline object
   siteBoundaryLines.push(
     L.polyline([siteBoundaries[0], siteBoundaries.slice(-1)[0]], {
       color: "black",
@@ -285,30 +332,47 @@ function validateBoundaries() {
   );
   siteBoundaryLines[siteBoundaryLines.length - 1].addTo(mainMap);
 
-  // Find most extreme latitudes and longitudes
-  const latitudeList = siteBoundaries.map((x) => x[0]);
-  const longitudeList = siteBoundaries.map((x) => x[1]);
-
-  minLatitude = Math.min(...latitudeList);
-  maxLatitude = Math.max(...latitudeList);
-
-  minLongitude = Math.min(...longitudeList);
-  maxLongitude = Math.max(...longitudeList);
-
   // TODO implement if close to check that area is not too large
-
-  getBuildingCoordinates((boundariesCoordinates = siteBoundaries));
-}
-
-function selectBoundaries() {
-  mapClickEvent = "draw_boundaries";
-  var textSelectBoundaryButton = document.getElementById(
-    "button_select_boundaries"
-  );
-  if (textSelectBoundaryButton.innerHTML === "Reset") {
-    mainMap.removeLayer(siteGeojson);
-  }
-  textSelectBoundaryButton.innerHTML = "Reset";
+  // TODO if clicking of Draw Lines, but without clicking on the map again choosing Select ...
+  getBuildingCoordinates(siteBoundaries);
 
   removeBoundaries();
+
+  textButtonDrawBoundariesAdd.innerHTML = "Draw Lines";
+
+}
+
+// selecting boundaries of the site for removing new nodes
+function selectBoundariesRemove() {
+  mapClickEvent = "draw_boundaries";
+  var textButtonDrawBoundariesRemove = document.getElementById(
+    "button_draw_boundaries_remove"
+  );
+  textButtonDrawBoundariesRemove.innerHTML = "Remove";
+
+  // changing the type of the button (primary <-> alert)
+  if ($(textButtonDrawBoundariesRemove).hasClass("primary")) {
+    $(textButtonDrawBoundariesRemove).removeClass("primary");
+    $(textButtonDrawBoundariesRemove).addClass("alert");
+  } else {
+    $(textButtonDrawBoundariesRemove).removeClass("alert");
+    $(textButtonDrawBoundariesRemove).addClass("primary");
+  }
+
+  // adding a line to the list of lines inside the polyline object
+  siteBoundaryLines.push(
+    L.polyline([siteBoundaries[0], siteBoundaries.slice(-1)[0]], {
+      color: "black",
+    })
+  );
+  siteBoundaryLines[siteBoundaryLines.length - 1].addTo(mainMap);
+
+  // TODO implement if close to check that area is not too large
+  // TODO if clicking of Draw Lines, but without clicking on the map again choosing Select ...
+  removeBuildingsInsideBoundary(siteBoundaries);
+
+  removeBoundaries();
+
+  textButtonDrawBoundariesRemove.innerHTML = "Draw Lines";
+
 }

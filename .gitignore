@@ -7,3 +7,4 @@ fastapi_app/draft.ipynb
 *.db
 run
 venv/
+*.DS_Store

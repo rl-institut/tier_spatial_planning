@@ -14,6 +14,7 @@ class Nodes(Base):
 
     latitude = Column(Numeric(10, 4))
     longitude = Column(Numeric(10, 4))
+    area = Column(Numeric(10, 4))
     node_type = Column(String)
     fixed_type = Column(Boolean)
     required_capacity = Column(Numeric(10, 4))
@@ -35,6 +36,7 @@ class Links(Base):
 class AddNodeRequest(BaseModel):
     latitude: float
     longitude: float
+    area: float
     node_type: str
     fixed_type: bool
     required_capacity: float
@@ -56,7 +58,5 @@ class ShsIdentificationRequest(BaseModel):
     shs_characteristics: list
 
 
-class ValidateBoundariesRequest(BaseModel):
+class SelectBoundariesRequest(BaseModel):
     boundary_coordinates: list
-    default_required_capacity: float
-    default_max_power: float

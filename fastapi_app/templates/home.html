@@ -1,17 +1,56 @@
 {% extends "layout.html" %} {% block content %}
 
 <div class="home-container">
+  <div id="loading" style="display: none;">
+    <img id="img-spinner" src="fastapi_app/static/images/loading.gif" alt=" loading" />
+  </div>
   <div class="box-header grid-x">
-    <h1 class="application_title cell small-10">PeopleSuN Project: Optimizing off-grid electricity supply systems in
-      Nigeria.</h1>
-    <div class="peoplesun-logo-box cell small-2">
-      <img class="logo" src={{ url_for('static', path='images/PeopleSunLogo.png' ) }} alt="PeopleSun logo" />
+    <div class="cell small-9 grid-y" style="line-height: 4px">
+      <span class="application_title cell shrink">PYNEST: Python-Based Network and Energy Supply Optimization
+        Tool</span>
+      <span class="application_subtitle cell shrink">Application: Off-Grid Electricity Supply Systems in Nigeria</span>
+      <span class="application_subtitle cell shrink">Developed by: Reiner Lemoine Institute gGmbH & TU Berlin, Institute
+        for Energy Engineering</span>
+      <span class="application_subtitle cell shrink">Sponsored by: The German Federal Ministry of Education and Research
+        (BMBF)</span>
+    </div>
+    <div class="logo-box cell small-1 align-middle grid-padding-x">
+      <img class="logo" src={{ url_for('static', path='images/LogoRLI.png' ) }} alt="RLI logo" />
+    </div>
+    <div class="logo-box cell small-1 align-middle grid-padding-x">
+      <img class="logo" src={{ url_for('static', path='images/LogoTUB.png' ) }} alt="TUB logo" />
+    </div>
+    <div class="logo-box cell small-1 align-middle grid-padding-x">
+      <img class="logo" src={{ url_for('static', path='images/LogoBMBF.png' ) }} alt="BMBF logo" />
     </div>
   </div>
   <div class="box-body grid-x">
-    <div class="left-sidebar cell small-3 grid-y">
-      <div class="mg_component_price_input side_bar_box cell small-2">
-        <legend class="side_bar_box_title mg_component_prices_title">MG node prices</legend>
+    <div class="sidebar-general cell small-3 grid-y">
+      <div class="sidebar-box cell small-2 grid-y align-middle">
+        <div class="sidebar-box-title cell shrink">Nodes</div>
+        <div class="sidebar-box-text cell shrink" style="height: 4vh;"><strong>Specifying
+            Boundaries:</strong>
+        </div>
+        <div class="sidebar-box-text cell shrink grid-x grid-margin-x" style="height: 3vh;">
+          <div class="cell small-6 small-offset-1">Adding Nodes</div>
+          <div class="cell small-5">
+            <button id="button_draw_boundaries_add" class="ui button sidebar-button primary"
+              onclick="selectBoundariesAdd()">Draw Lines</button>
+          </div>
+        </div>
+        <div class="sidebar-box-text cell shrink grid-x grid-margin-x">
+          <div class="cell small-6 small-offset-1">Removing Nodes</div>
+          <div class="cell small-5">
+            <button id="button_draw_boundaries_remove" class="ui button sidebar-button primary"
+              onclick="selectBoundariesRemove()">Draw Lines</button>
+          </div>
+        </div>
+      </div>
+
+
+
+      <div class="mg_component_price_input sidebar-box cell small-2">
+        <legend class="sidebar-box-title mg_component_prices_title">MG node prices</legend>
         <p class="name_component_1">Hub</p>
         <input id="price_meterhub" class="input_sidebar input_component_1" name="price_meterhub" type="number"
           placeholder="price_meterhub" value="500000" />
@@ -21,8 +60,8 @@
           placeholder="price_household" value="200000" />
         <p class="name_currency_2">₦</p>
       </div>
-      <div class="mg_component_price_input side_bar_box cell small-2">
-        <legend class="side_bar_box_title mg_component_prices_title">MG cable prices</legend>
+      <div class="mg_component_price_input sidebar-box cell small-2">
+        <legend class="sidebar-box-title mg_component_prices_title">MG cable prices</legend>
         <p class="name_component_1">Interhub</p>
         <input id="price_interhub_cable" class="input_sidebar input_component_1" name="price_interhub_cable"
           type="number" placeholder="price_interhub_cable" value="2000" />
@@ -32,36 +71,23 @@
           type="number" placeholder="price_distribution_cable" value="750" />
         <p class="name_currency_2">₦/m</p>
       </div>
-      <div class="box_add_node side_bar_box cell small-2 grid-y">
-        <legend class="side_bar_box_title cell small-3">Add new node</legend>
+      <div class="box_add_node sidebar-box cell small-2 grid-y">
+        <legend class="sidebar-box-title cell small-3">Add new node</legend>
         <div class="cell small-9">
-          <input type="radio" name="radio_button_new_node_type" value="undefined" id="new_node_undefined"
+          <input type="radio" name="radio_button_new_node_type" value="undefined" checked id="new_node_undefined"
             onclick="setMapClickEventToAddNode();"><label for="new_node_undefined">undefined</label>
           <input type="radio" name="radio_button_new_node_type" value="household" id="new_node_household"
             onclick="setMapClickEventToAddNode();"><label for="new_node_household">household <img src={{
-              url_for('static', path='images/markers/marker-household.png' ) }} alt="marker_household"
-              width="12"></label>
+              url_for('static', path='images/markers/MarkerHousehold.png' ) }} alt="marker_household"
+              width="18"></label>
           <input type="radio" name="radio_button_new_node_type" value="meterhub" id="new_node_meterhub"
             onclick="setMapClickEventToAddNode();"><label for="new_node_meterhub">meterhub <img src={{ url_for('static',
               path='images/markers/marker-hub.png' ) }} alt="marker_hub" width="12"></label>
         </div>
       </div>
-      <div class="box-boundary-selection side_bar_box cell small-1 grid-y">
-        <legend class="side_bar_box_title cell small-4">Site Boundary</legend>
-        <div class="cell small-8 grid-x">
-          <div class="cell small-6">
-            <button id="button_select_boundaries" class="ui button side_bar_button"
-              onclick="selectBoundaries()">Select</button>
-          </div>
-          <div class="cell small-6">
-            <button id="button_validate_boundaries" class="ui button side_bar_button"
-              onclick="validateBoundaries()">Validate</button>
-          </div>
-        </div>
-      </div>
-      <div class="shs_identification side_bar_box cell small-3">
+      <div class="shs_identification sidebar-box cell small-3">
         <div class="box_shs_identification grid-y">
-          <legend class="cell small-2 side_bar_box_title">Solar Home Sytem Identification</legend>
+          <legend class="cell small-2 sidebar-box-title">Solar Home Sytem Identification</legend>
           <div class="cell small-2 grid-x">
             <p class="cell small-6">Cable price</p>
             <input id="cable_price_per_meter_for_shs_mst_identification" class="cell small-4 input_sidebar"
@@ -78,7 +104,7 @@
           </div>
           <div id="shs_price_characteristics_box" class="cell small-2 grid-y">
             <div class="buttton_display_shs_price_characteristics">
-              <button id="set_shs_price_characteristics" class="ui button side_bar_button"
+              <button id="set_shs_price_characteristics" class="ui button sidebar-button"
                 onclick="displayShsCharacteristicsInput()">Set SHS price Characteristics</button>
             </div>
             <div id="shs_inputs">
@@ -125,22 +151,22 @@
           </div>
 
           <div class="cell small-2">
-            <button id="button_identify_shs" class="ui button side_bar_button" onclick="identify_shs()">Identify
+            <button id="button_identify_shs" class="ui button sidebar-button" onclick="identify_shs()">Identify
               SHS</button>
           </div>
 
         </div>
       </div>
-      <div class="optimization side_bar_box cell small-2">
+      <div class="optimization sidebar-box cell small-2">
         <div class="box_left_sidebar">
-          <legend class="cell small-2 side_bar_box_title">Network Optimization</legend>
+          <legend class="cell small-2 sidebar-box-title">Network Optimization</legend>
           <div class="cell small-2 grid-x">
             <p class="cell small-6">Relaxation Steps</p>
             <input id="number_of_relaxation_steps_nr" class="cell small-4 input_sidebar"
               name="number_of_relaxation_steps_nr" type="number" placeholder="number_of_relaxation_steps_nr" value="10"
               min="0" step="1" />
           </div>
-          <button id="button_optimize" class="ui button side_bar_button" onclick="optimize_grid()">Optimize</button>
+          <button id="button_optimize" class="ui button sidebar-button" onclick="optimize_grid()">Optimize</button>
         </div>
       </div>
     </div>
@@ -183,6 +209,7 @@
             <th>Index</th>
             <th>Latitude</th>
             <th>Longitude</th>
+            <th>Area</th>
             <th>Node Type</th>
             <th>Type Fixed</th>
             <th>Required Capacity</th>

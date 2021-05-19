@@ -1,0 +1,29 @@
+.box-header {
+  height: 13vh;
+  background-color: rgb(233, 216, 166);
+  border: 1px solid black;
+}
+
+.application_title {
+  font-size: 1.25vw;
+  font-weight: bold;
+  padding: 1%;
+}
+
+.application_subtitle {
+  font-size: 1.0vw;
+  padding: 1%;
+}
+
+.logo-box {
+  height: 100%;
+  width: auto;
+  display: flex;
+  justify-content: center;
+}
+
+.logo {
+  width: auto;
+  height: 80%;
+  align-self: center;
+}
