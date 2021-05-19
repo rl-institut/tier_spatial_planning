@@ -8,3 +8,4 @@ fastapi_app/draft.ipynb
 run
 venv/
 *.DS_Store
+fastapi_app/import_export/

@@ -93,7 +93,8 @@ def get_dict_with_mean_coordinate_from_geojson(geojson: dict):
 
 def are_segment_crossing(segment1, segment2):
     """
-    Function that checks weather two 2D segments are crossing/intersecting
+    Function that checks weather two 2D segments are crossing/intersecting.
+    Inspired from https://algorithmtutor.com/Computational-Geometry/Check-if-two-line-segment-intersect/
 
     Parameters
     ----------

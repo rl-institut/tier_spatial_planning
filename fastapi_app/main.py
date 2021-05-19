@@ -3,8 +3,8 @@ import fastapi_app.tools.boundary_identification as bi
 import fastapi_app.tools.shs_identification as shs_ident
 import fastapi_app.models as models
 from fastapi.param_functions import Query
-from fastapi import FastAPI, Request, Depends, BackgroundTasks
-from fastapi.responses import RedirectResponse
+from fastapi import FastAPI, Request, Depends, BackgroundTasks, File, UploadFile
+from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi_app.database import SessionLocal, engine
@@ -18,6 +18,8 @@ import json
 import pandas as pd
 import numpy as np
 import time
+import os
+import aiofiles
 
 app = FastAPI()
 
@@ -30,6 +32,10 @@ templates = Jinja2Templates(directory="fastapi_app/templates")
 
 grid_db = "grid.db"
 
+path = "fastapi_app"
+
+# ---------------------------- SET UP grid.db DATABASE -----------------------#
+
 
 def get_db():
     try:
@@ -38,18 +44,175 @@ def get_db():
     finally:
         db.close()
 
+# --------------------- REDIRECT REQUEST TO FAVICON LOG ----------------------#
+
 
 @app.get("/favicon.ico")
 async def redirect():
     response = RedirectResponse(url='/fastapi_app/static/favicon.ico')
     return response
 
+# --------------------------- IMPORT/EXPORT FEATURE --------------------------#
+
+
+def empty_nodes_df():
+    return pd.DataFrame(
+        {
+            'label':
+            pd.Series([], dtype=str),
+            'latitude':
+            pd.Series([], dtype=np.dtype(float)),
+            'longitude':
+            pd.Series([], dtype=np.dtype(float)),
+            'node_type':
+            pd.Series([], dtype=np.dtype(str)),
+            'type_fixed':
+            pd.Series([], dtype=np.dtype(bool)),
+            'required_capacity':
+            pd.Series([], dtype=np.dtype(float)),
+            'max_power':
+            pd.Series([], dtype=np.dtype(float))
+        }
+    ).set_index('label')
+
+
+def empty_links_df():
+    return pd.DataFrame(
+        {
+            'label':
+            pd.Series([], dtype=str),
+            'latitude_from':
+            pd.Series([], dtype=np.dtype(float)),
+            'longitude_from':
+            pd.Series([], dtype=np.dtype(float)),
+            'latitude_to':
+            pd.Series([], dtype=np.dtype(float)),
+            'longitude_to':
+            pd.Series([], dtype=np.dtype(float)),
+            'type':
+            pd.Series([], dtype=np.dtype(str)),
+            'distance':
+            pd.Series([], dtype=np.dtype(float)),
+        }
+    ).set_index('label')
+
+
+@app.post("/generate_export_file/")
+async def generate_export_file(
+        generate_export_file_request: models.GenerateExportFileRequest,
+        db: Session = Depends(get_db)):
+    # CREATE NODES DATAFRAME FROM DATABASE
+    res_nodes = db.execute("select * from nodes")
+    nodes_table = res_nodes.fetchall()
+
+    nodes_df = empty_nodes_df()
+
+    for node in nodes_table:
+        nodes_df.at[node[0]] = node[1:]
+
+    # CREATE LINKS DATAFRAME FROM DATABASE
+    res_links = db.execute("select * from links")
+    links_table = res_links.fetchall()
+
+    links_df = empty_links_df()
+
+    for link in links_table:
+        links_df.at[link[0]] = link[1:]
+
+    settings = [element for element in generate_export_file_request]
+
+    settings_df = pd.DataFrame({"Setting": [x[0] for x in settings],
+                                "value": [x[1] for x in settings]}).set_index('Setting')
+
+    # Create xlsx file with sheets for nodes and for links
+    file_name = 'temp.xlsx'
+    with pd.ExcelWriter(f'{path}/import_export/{file_name}') as writer:
+        nodes_df.to_excel(excel_writer=writer, sheet_name='nodes', header=nodes_df.columns)
+        links_df.to_excel(excel_writer=writer, sheet_name='links', header=links_df.columns)
+        settings_df.to_excel(excel_writer=writer, sheet_name='settings')
+
+
+@app.get("/download_export_file",
+         responses={200: {"description": "xlsx file containing the information about the configuration.",
+                          "content": {"static/io/test_excel_node.xlsx": {"example": "No example available."}}}})
+async def download_export_file(db: Session = Depends(get_db)):
+    file_name = 'temp.xlsx'
+    # Download xlsx file
+    file_path = os.path.join(path, f"import_export/{file_name}")
+
+    if os.path.exists(file_path):
+        return FileResponse(
+            path=file_path, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename="backup.xlsx")
+    else:
+        return {"error": "File not found!"}
+
+
+@app.post("/import_config")
+async def import_config(file: UploadFile = File(...)):
+
+    content_file = await file.read()
+    async with aiofiles.open(f"{path}/import_export/backup.xlsx", 'wb') as out_file:
+        await out_file.write(content_file)
+
+    # Empty Database tables
+    clear_nodes_table()
+    clear_links_table()
+
+    # Populate nodes table from nodes sheet of file
+    nodes_df = pd.read_excel(f"{path}/import_export/backup.xlsx",
+                             sheet_name="nodes")
+
+    conn = sqlite3.connect(grid_db)
+    cursor = conn.cursor()
+
+    records = [(
+        str(nodes_df.iloc[i]['label']),
+        float(nodes_df.iloc[i]['latitude']),
+        float(nodes_df.iloc[i]['longitude']),
+        str(nodes_df.iloc[i]['node_type']),
+        bool(nodes_df.iloc[i]['type_fixed']),
+        float(nodes_df.iloc[i]['required_capacity']),
+        float(nodes_df.iloc[i]['max_power'])
+    ) for i in range(nodes_df.shape[0])]
+
+    cursor.executemany(
+        'INSERT INTO nodes VALUES(?, ?, ?, ?, ?, ?, ?)', records)
+
+    # Populate links table from links sheet of file
+    links_df = pd.read_excel(f"{path}/import_export/backup.xlsx",
+                             sheet_name="links")
+
+    records = [(
+        str(links_df.iloc[i]['label']),
+        float(links_df.iloc[i]['latitude_from']),
+        float(links_df.iloc[i]['longitude_from']),
+        float(links_df.iloc[i]['latitude_to']),
+        float(links_df.iloc[i]['longitude_to']),
+        str(links_df.iloc[i]['type']),
+        float(links_df.iloc[i]['distance'])
+    ) for i in range(links_df.shape[0])]
+
+    cursor.executemany(
+        'INSERT INTO links VALUES(?, ?, ?, ?, ?, ?, ?)', records)
+
+    # commit the changes to db
+    conn.commit()
+    # close the connection
+    conn.close()
+
+    # Collect settings for settings tab and return them as a dict
+    settings_df = pd.read_excel(f"{path}/import_export/backup.xlsx",
+                                sheet_name="settings").set_index('Setting')
+    settings = {index: row['value'].item() for index, row in settings_df.iterrows()}
+
+    return settings
+    # ------------------------------ HANDLE REQUEST ------------------------------#
+
 
 @app.get("/")
 def home(request: Request, db: Session = Depends(get_db)):
-    nodes = db.query(models.Nodes)
     return templates.TemplateResponse("home.html", {
-        "request": request, "nodes": nodes
+        "request": request
     })
 
 
@@ -72,7 +235,8 @@ async def get_nodes(request: Request, db: Session = Depends(get_db)):
     return result
 
 
-@app.get("/links_db_html")
+
+  .get("/links_db_html")
 async def get_links(request: Request, db: Session = Depends(get_db)):
     res = db.execute("select * from links")
     result = res.fetchall()
@@ -224,7 +388,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
 
     number_of_hubs = opt.get_expected_hub_number_from_k_means(grid=grid)
     number_of_relaxation_steps_nr = optimize_grid_request.number_of_relaxation_steps_nr
-    opt.nr_optimization(grid=grid, number_of_hubs=number_of_hubs, number_of_relaxation_step=number_of_relaxation_steps_nr,
+    opt.nr_optimization(grid=grid, number_of_hubs=number_of_hubs, number_of_relaxation_steps=number_of_relaxation_steps_nr,
                         save_output=False, plot_price_evolution=False)
     sqliteConnection = sqlite3.connect(grid_db)
     cursor = sqliteConnection.cursor()
@@ -308,6 +472,12 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
 
     res = db.execute("select * from nodes")
     nodes = res.fetchall()
+
+    if len(nodes) == 0:
+        return {
+            "code": "success",
+            "message": "No nodes in table, no identification to be performed"
+        }
 
     r = 6371000     # Radius of the earth [m]
     # use latitude of the node that is the most west to set origin of x coordinates
@@ -395,8 +565,10 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
     }
 
 
-@ app.post("/clear_node_db/")
-async def clear_nodes():
+def clear_nodes_table():
+    """
+    This function clears the nodes table of the grid.db database.
+    """
     sqliteConnection = sqlite3.connect(grid_db)
     cursor = sqliteConnection.cursor()
 
@@ -409,14 +581,18 @@ async def clear_nodes():
     sqliteConnection.commit()
     cursor.close()
 
+
+@app.post("/clear_node_db/")
+async def clear_nodes():
+    clear_nodes_table()
+
     return {
         "code": "success",
         "message": "nodes cleared"
     }
 
 
-@ app.post("/clear_link_db/")
-async def clear_links():
+def clear_links_table():
     sqliteConnection = sqlite3.connect(grid_db)
     cursor = sqliteConnection.cursor()
 
@@ -425,11 +601,16 @@ async def clear_links():
     sqliteConnection.commit()
     cursor.close()
 
+
+@app.post("/clear_link_db/")
+async def clear_links():
+    clear_links_table()
     return {
         "code": "success",
         "message": "links cleared"
     }
 
 
+# -------------------------- FUNCTION FOR DEBUGGING-------------------------- #
 def debugging_mode():
     uvicorn.run(app, host="0.0.0.0", port=8000)

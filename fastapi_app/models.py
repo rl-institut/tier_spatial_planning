@@ -60,3 +60,13 @@ class ShsIdentificationRequest(BaseModel):
 
 class SelectBoundariesRequest(BaseModel):
     boundary_coordinates: list
+      
+
+class GenerateExportFileRequest(BaseModel):
+    price_meterhub: float
+    price_household: float
+    price_interhub_cable: float
+    price_distribution_cable: float
+    shs_identification_cable_price: float
+    shs_identification_connection_price: float
+    number_of_relaxation_steps_nr: int
