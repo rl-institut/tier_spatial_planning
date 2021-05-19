@@ -1,6 +1,10 @@
 import numpy as np
 import datetime
 import time
+import math
+from shapely.geometry import Point
+from shapely.geometry.polygon import Polygon
+#from shapely.geos import L
 
 
 def convert_json_to_polygones_geojson(json_dict):
@@ -18,7 +22,7 @@ def convert_json_to_polygones_geojson(json_dict):
     ts = time.time()
     timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 
-    node_coordinates = {element["id"]:  [element["lon"], element["lat"]]
+    node_coordinates = {element["id"]:  [element["lat"], element["lon"]]
                         for element in json_dict["elements"] if element["type"] == "node"}
 
     geojson = {
@@ -58,16 +62,33 @@ def get_dict_with_mean_coordinate_from_geojson(geojson: dict):
 
     Returns
     -------
+        (1)
         Dict containing the @id of each building as a key
         and the mean loaction of the building as value in the form [long, lat].
+
+        (2)
+        Dict containing the @id of each building as a key
+        and the surface area of the buildings.
     """
 
     building_mean_coordinates = {}
-    for building in geojson["features"]:
-        mean_coord = [np.mean([coord[1] for coord in building["geometry"]["coordinates"][0]]), np.mean(
-            [coord[0] for coord in building["geometry"]["coordinates"][0]])]
-        building_mean_coordinates[building["property"]["@id"]] = mean_coord
-    return building_mean_coordinates
+    building_surface_areas = {}
+    if len(geojson["features"]) != 0:
+        reference_coordinate = geojson["features"][0]["geometry"]["coordinates"][0][0]
+        for building in geojson["features"]:
+            xy_coordinates = []
+            latitudes_longitudes = [coord for coord in building["geometry"]["coordinates"][0]]
+            latitudes = [x[0] for x in latitudes_longitudes]
+            longitudes = [x[1] for x in latitudes_longitudes]
+            mean_coord = [np.mean(latitudes), np.mean(longitudes)]
+            for edge in range(len(latitudes)):
+                xy_coordinates.append(latitude_longitude_to_meters(
+                    lat_lon=latitudes_longitudes[edge], lat_lon_ref=reference_coordinate))
+            surface_area = Polygon(xy_coordinates).area
+            building_mean_coordinates[building["property"]["@id"]] = mean_coord
+            building_surface_areas[building["property"]["@id"]] = surface_area
+
+    return building_mean_coordinates, building_surface_areas
 
 
 def are_segment_crossing(segment1, segment2):
@@ -193,3 +214,15 @@ def is_point_in_boundaries(coordinates: tuple,
             ref_point1=[x + 0.0023 for x in ref_point1],
             ref_point2=[x - 0.0001 for x in ref_point2],
             counter=counter + 1)
+
+
+def latitude_longitude_to_meters(lat_lon, lat_lon_ref):
+    r = 6371000     # Radius of the earth [m]
+    latitude = lat_lon[0]
+    longitude = lat_lon[1]
+    latitude_ref = lat_lon_ref[0]
+    longitude_ref = lat_lon_ref[1]
+
+    x = math.radians(r) * (longitude - longitude_ref) * math.cos(math.radians(latitude_ref))
+    y = math.radians(r) * (latitude - latitude_ref)
+    return x, y

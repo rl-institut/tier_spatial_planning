@@ -1,0 +1,112 @@
+.sidebar-general {
+  height: 87vh;
+  background-color: rgb(115, 184, 205);
+  border: 1px solid black;
+  border-top: 0;
+}
+
+.sidebar-box {
+  border: 1px solid rgb(0, 0, 0);
+  border-top: 0;
+  border-right: 0;
+  border-left: 0;
+  width: 100%;
+  margin: 0%;
+  display: flex;
+  justify-content: center;
+  text-align: center;
+}
+
+.sidebar-box-title {
+  background-color: rgb(34, 87, 122);
+  font-size: 1.2vw;
+  font-weight: bold;
+  color: aliceblue;
+}
+
+.sidebar-box-text {
+  font-size: 1.1vw;
+  text-align: left;
+}
+
+.sidebar-button {
+  padding-block: 1.5%;
+}
+
+.sidebar-button:hover {
+  font-weight: bold;
+}
+
+
+
+
+
+.box_left_sidebar {
+  grid-area: box_optimization;
+  width: 95%;
+  height: 100%;
+}
+
+
+.mg_component_price_input {
+  display: grid;
+  grid-template: 33% 33% 33% auto/ 40% 40% 20%;
+  grid-template-areas:
+    "mg_component_prices_title  mg_component_prices_title  mg_component_prices_title"
+    "name_component_1           input_component_1          name_currency_1"
+    "name_component_2           input_component_2          name_currency_2";
+  justify-items: center;
+  align-items: center;
+}
+
+.name_component_1 {
+  grid-area: name_component_1;
+}
+
+.input_component_1 {
+  grid-area: input_component_1;
+  width: 100%;
+}
+
+.name_component_2 {
+  grid-area: name_component_2;
+}
+.input_component_2 {
+  grid-area: input_component_2;
+  width: 100%;
+}
+
+.name_currency_1 {
+  grid-area: name_currency_1;
+}
+
+.name_currency_2 {
+  grid-area: name_currency_2;
+}
+
+.input_sidebar {
+  height: 1.4375rem;
+}
+
+.mg_component_prices_title {
+  grid-area: mg_component_prices_title;
+}
+
+#button_optimize {
+  grid-area: button_optimize;
+}
+
+.box_shs_identification {
+  width: 100%;
+}
+
+#shs_inputs {
+  background-color: lightgray;
+  z-index: 1;
+  height: 20vh;
+  display: none;
+}
+
+button#set_shs_price_characteristics {
+  height: 100%;
+}

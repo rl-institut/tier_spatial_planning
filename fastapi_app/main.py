@@ -23,7 +23,6 @@ import aiofiles
 
 app = FastAPI()
 
-
 app.mount("/fastapi_app/static",
           StaticFiles(directory="fastapi_app/static"), name="static")
 
@@ -210,14 +209,14 @@ async def import_config(file: UploadFile = File(...)):
     # ------------------------------ HANDLE REQUEST ------------------------------#
 
 
-@ app.get("/")
+@app.get("/")
 def home(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse("home.html", {
         "request": request
     })
 
 
-@ app.get("/nodes_db_html")
+@app.get("/nodes_db_html")
 async def get_nodes(request: Request, db: Session = Depends(get_db)):
     """
     This funtcion access and returns the entries of the nodes table of the grid database
@@ -236,19 +235,20 @@ async def get_nodes(request: Request, db: Session = Depends(get_db)):
     return result
 
 
-@ app.get("/links_db_html")
+
+  .get("/links_db_html")
 async def get_links(request: Request, db: Session = Depends(get_db)):
     res = db.execute("select * from links")
     result = res.fetchall()
     return result
 
 
-@ app.post("/validate_boundaries")
-async def validate_boundaries(
-        validateBoundariesRequest: models.ValidateBoundariesRequest,
+@app.post("/select_boundaries_add")
+async def select_boundaries_add(
+        selectBoundariesRequest: models.SelectBoundariesRequest,
         db: Session = Depends(get_db)):
 
-    boundary_coordinates = validateBoundariesRequest.boundary_coordinates
+    boundary_coordinates = selectBoundariesRequest.boundary_coordinates
     latitudes = [x[0] for x in boundary_coordinates]
     longitudes = [x[1] for x in boundary_coordinates]
     min_latitude = min(latitudes)
@@ -256,13 +256,13 @@ async def validate_boundaries(
     max_latitude = max(latitudes)
     max_longitude = max(longitudes)
 
-    url = f'https://www.overpass-api.de/api/interpreter?data=[out:json][timeout:2500][bbox:{min_latitude},{min_longitude},{max_latitude},{max_longitude}];(way["building"];relation["building"];);out body;>;out skel qt;'
+    url = f'https://www.overpass-api.de/api/interpreter?data=[out:json][timeout:2500][bbox:{min_latitude},{min_longitude},{max_latitude},{max_longitude}];(way["building"="yes"];relation["building"];);out body;>;out skel qt;'
     url_formated = url.replace(" ", "+")
     with urllib.request.urlopen(url_formated) as url:
         data = json.loads(url.read().decode())
     formated_geojson = bi.convert_json_to_polygones_geojson(data)
 
-    building_coord = bi.get_dict_with_mean_coordinate_from_geojson(
+    building_coord, building_area = bi.get_dict_with_mean_coordinate_from_geojson(
         formated_geojson)
 
     features = formated_geojson['features']
@@ -284,19 +284,45 @@ async def validate_boundaries(
 
         nodes.latitude = coordinates[0]
         nodes.longitude = coordinates[1]
+        nodes.area = building_area[label]
         nodes.node_type = "undefined"
         nodes.fixed_type = False
-        # nodes.required_capacity = validateBoundariesRequest.default_required_capacity
-        # nodes.max_power = validateBoundariesRequest.default_max_power
-        nodes.required_capacity = validateBoundariesRequest.default_required_capacity
-        nodes.max_power = validateBoundariesRequest.default_max_power
+        nodes.required_capacity = nodes.area * 4
+        nodes.max_power = nodes.area * 4
         db.add(nodes)
         db.commit()
 
     return formated_geojson
 
 
-@ app.post("/add_node/")
+@app.post("/select_boundaries_remove")
+async def select_boundaries_remove(
+        selectBoundariesRequest: models.SelectBoundariesRequest,
+        db: Session = Depends(get_db)):
+
+    boundary_coordinates = selectBoundariesRequest.boundary_coordinates
+
+    sqliteConnection = sqlite3.connect(grid_db)
+    cursor = sqliteConnection.cursor()
+
+    res = db.execute("select * from nodes")
+    nodes = res.fetchall()
+
+    for node in nodes:
+        if bi.is_point_in_boundaries(coordinates=(node[1], node[2]), boundaries=boundary_coordinates):
+            sql_delete_query = (
+                f"""DELETE FROM nodes WHERE id = {node[0]};""")
+            cursor.execute(sql_delete_query)
+            sqliteConnection.commit()
+    cursor.close()
+
+    return {
+        "code": "success",
+        "message": "node deleted from db"
+    }
+
+
+@app.post("/add_node/")
 async def add_node(add_node_request: models.AddNodeRequest,
                    background_tasks: BackgroundTasks,
                    db: Session = Depends(get_db)):
@@ -304,6 +330,7 @@ async def add_node(add_node_request: models.AddNodeRequest,
 
     nodes.latitude = add_node_request.latitude
     nodes.longitude = add_node_request.longitude
+    nodes.area = add_node_request.area
     nodes.node_type = add_node_request.node_type
     nodes.fixed_type = add_node_request.fixed_type
     nodes.required_capacity = add_node_request.required_capacity
@@ -345,8 +372,8 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
             latitude = math.radians(node[1])
             longitude = math.radians(node[2])
 
-            x = r * (longitude - longitude_0) * math.cos(latitude_0)
-            y = r * (latitude - latitude_0)
+            x, y = bi.latitude_longitude_to_meters(
+                lat_lon=[latitude, longitude], lat_lon_ref=[latitude_0, longitude_0])
             if node[3] == "meterhub":
                 node_type = "meterhub"
 
@@ -486,8 +513,8 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
         y = r * (latitude - latitude_0)
 
         node_label = node[0]
-        required_capacity = node[5]
-        max_power = node[6]
+        required_capacity = node[6]
+        max_power = node[7]
 
         shs_ident.add_node(nodes_df, node_label, x, y,
                            required_capacity, max_power)
@@ -555,7 +582,7 @@ def clear_nodes_table():
     cursor.close()
 
 
-@ app.post("/clear_node_db/")
+@app.post("/clear_node_db/")
 async def clear_nodes():
     clear_nodes_table()
 
@@ -575,7 +602,7 @@ def clear_links_table():
     cursor.close()
 
 
-@ app.post("/clear_link_db/")
+@app.post("/clear_link_db/")
 async def clear_links():
     clear_links_table()
     return {
