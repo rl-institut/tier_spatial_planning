@@ -1,6 +1,7 @@
 import uvicorn
 import fastapi_app.tools.boundary_identification as bi
 import fastapi_app.tools.shs_identification as shs_ident
+import fastapi_app.tools.io as io
 import fastapi_app.models as models
 from fastapi.param_functions import Query
 from fastapi import FastAPI, Request, Depends, BackgroundTasks, File, UploadFile
@@ -49,63 +50,34 @@ def get_db():
 
 @app.get("/favicon.ico")
 async def redirect():
+    """ Redirects request to location of favicon.ico logo in static folder """
     response = RedirectResponse(url='/fastapi_app/static/favicon.ico')
     return response
 
 # --------------------------- IMPORT/EXPORT FEATURE --------------------------#
 
 
-def empty_nodes_df():
-    return pd.DataFrame(
-        {
-            'label':
-            pd.Series([], dtype=str),
-            'latitude':
-            pd.Series([], dtype=np.dtype(float)),
-            'longitude':
-            pd.Series([], dtype=np.dtype(float)),
-            'node_type':
-            pd.Series([], dtype=np.dtype(str)),
-            'type_fixed':
-            pd.Series([], dtype=np.dtype(bool)),
-            'required_capacity':
-            pd.Series([], dtype=np.dtype(float)),
-            'max_power':
-            pd.Series([], dtype=np.dtype(float))
-        }
-    ).set_index('label')
-
-
-def empty_links_df():
-    return pd.DataFrame(
-        {
-            'label':
-            pd.Series([], dtype=str),
-            'latitude_from':
-            pd.Series([], dtype=np.dtype(float)),
-            'longitude_from':
-            pd.Series([], dtype=np.dtype(float)),
-            'latitude_to':
-            pd.Series([], dtype=np.dtype(float)),
-            'longitude_to':
-            pd.Series([], dtype=np.dtype(float)),
-            'type':
-            pd.Series([], dtype=np.dtype(str)),
-            'distance':
-            pd.Series([], dtype=np.dtype(float)),
-        }
-    ).set_index('label')
-
-
 @app.post("/generate_export_file/")
 async def generate_export_file(
         generate_export_file_request: models.GenerateExportFileRequest,
         db: Session = Depends(get_db)):
+    f"""
+    Generates an Excel file from the grid.db database tables and from the
+    webapp setting. The file is stored in fastapi_app/import_export/temp.xlsx
+
+    Parameters
+    ----------
+    generate_export_file_request (fastapi_app.models.GenerateExportFileRequest):
+        Basemodel request object containing the data send to the request as attributes.
+
+    db (sqlalchemy.orm.Session):
+         Establishes conversation with the {grid_db} database.
+    """
     # CREATE NODES DATAFRAME FROM DATABASE
     res_nodes = db.execute("select * from nodes")
     nodes_table = res_nodes.fetchall()
 
-    nodes_df = empty_nodes_df()
+    nodes_df = io.create_empty_nodes_df()
 
     for node in nodes_table:
         nodes_df.at[node[0]] = node[1:]
@@ -114,7 +86,7 @@ async def generate_export_file(
     res_links = db.execute("select * from links")
     links_table = res_links.fetchall()
 
-    links_df = empty_links_df()
+    links_df = io.create_empty_links_df()
 
     for link in links_table:
         links_df.at[link[0]] = link[1:]
@@ -235,8 +207,7 @@ async def get_nodes(request: Request, db: Session = Depends(get_db)):
     return result
 
 
-
-  .get("/links_db_html")
+@app.get("/links_db_html")
 async def get_links(request: Request, db: Session = Depends(get_db)):
     res = db.execute("select * from links")
     result = res.fetchall()
