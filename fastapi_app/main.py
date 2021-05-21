@@ -235,8 +235,7 @@ async def get_nodes(request: Request, db: Session = Depends(get_db)):
     return result
 
 
-
-  .get("/links_db_html")
+@app.get("/links_db_html")
 async def get_links(request: Request, db: Session = Depends(get_db)):
     res = db.execute("select * from links")
     result = res.fetchall()
