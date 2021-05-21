@@ -42,6 +42,21 @@ var mainMap = L.map("leafletMap", {
   layers: [osmLayer],
 });
 
+// add the search box to the map
+const provider = new GeoSearch.OpenStreetMapProvider();
+const search = new GeoSearch.GeoSearchControl({
+  provider: new GeoSearch.OpenStreetMapProvider(),
+  position: 'topleft',
+  style: 'button',
+  searchLabel: 'Enter a Location...',
+  autoComplete: true,
+  updateMap: true,
+  showMarker: false,
+  autoClose: true,
+  keepResult: true,
+});
+mainMap.addControl(search);
+
 L.control.layers(osmMap, esriSatelliteMap).addTo(mainMap);
 
 // custom zoom bar control that includes a Zoom Home function
