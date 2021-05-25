@@ -1,7 +1,8 @@
 import numpy as np
 import datetime
 import time
-import math
+
+import fastapi_app.tools.convertion as conv
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 #from shapely.geos import L
@@ -82,8 +83,11 @@ def get_dict_with_mean_coordinate_from_geojson(geojson: dict):
             longitudes = [x[1] for x in latitudes_longitudes]
             mean_coord = [np.mean(latitudes), np.mean(longitudes)]
             for edge in range(len(latitudes)):
-                xy_coordinates.append(latitude_longitude_to_meters(
-                    lat_lon=latitudes_longitudes[edge], lat_lon_ref=reference_coordinate))
+                xy_coordinates.append(conv.xy_coordinates_from_latitude_longitude(
+                    latitude=latitudes_longitudes[edge][0],
+                    longitude=latitudes_longitudes[edge][1],
+                    ref_latitude=reference_coordinate[0],
+                    ref_longitude=reference_coordinate[1]))
             surface_area = Polygon(xy_coordinates).area
             building_mean_coordinates[building["property"]["@id"]] = mean_coord
             building_surface_areas[building["property"]["@id"]] = surface_area
@@ -214,15 +218,3 @@ def is_point_in_boundaries(coordinates: tuple,
             ref_point1=[x + 0.0023 for x in ref_point1],
             ref_point2=[x - 0.0001 for x in ref_point2],
             counter=counter + 1)
-
-
-def latitude_longitude_to_meters(lat_lon, lat_lon_ref):
-    r = 6371000     # Radius of the earth [m]
-    latitude = lat_lon[0]
-    longitude = lat_lon[1]
-    latitude_ref = lat_lon_ref[0]
-    longitude_ref = lat_lon_ref[1]
-
-    x = math.radians(r) * (longitude - longitude_ref) * math.cos(math.radians(latitude_ref))
-    y = math.radians(r) * (latitude - latitude_ref)
-    return x, y

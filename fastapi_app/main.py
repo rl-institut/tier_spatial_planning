@@ -1,5 +1,6 @@
 import uvicorn
 import fastapi_app.tools.boundary_identification as bi
+import fastapi_app.tools.convertion as conv
 import fastapi_app.tools.shs_identification as shs_ident
 import fastapi_app.tools.io as io
 import fastapi_app.models as models
@@ -329,45 +330,60 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     grid = Grid(price_meterhub=optimize_grid_request.price_meterhub,
                 price_household=optimize_grid_request.price_household,
                 price_interhub_cable_per_meter=optimize_grid_request.price_interhub_cable,
-                price_distribution_cable_per_meter=optimize_grid_request.price_distribution_cable)
+                price_distribution_cable_per_meter=optimize_grid_request.price_distribution_cable,
+                default_hub_capacity=5)
     # Make sure that new grid object is empty before adding nodes to it
     grid.clear_nodes_and_links()
 
     r = 6371000     # Radius of the earth [m]
     # use latitude of the node that is the most west to set origin of x coordinates
-    latitude_0 = math.radians(min([node[1] for node in nodes]))
+    ref_latitude = math.radians(min([node[1] for node in nodes]))
     # use latitude of the node that is the most south to set origin of y coordinates
-    longitude_0 = math.radians(min([node[2] for node in nodes]))
+    ref_longitude = math.radians(min([node[2] for node in nodes]))
     for node in nodes:
         if not node[3] == "shs":
-            latitude = math.radians(node[1])
-            longitude = math.radians(node[2])
+            node_index = node[0]
+            latitude = node[1]
+            longitude = node[2]
+            node_type = node[4]
+            type_fixed = node[5]
 
-            x, y = bi.latitude_longitude_to_meters(
-                lat_lon=[latitude, longitude], lat_lon_ref=[latitude_0, longitude_0])
-            if node[3] == "meterhub":
+            x, y = conv.xy_coordinates_from_latitude_longitude(
+                latitude=latitude,
+                longitude=longitude,
+                ref_latitude=ref_latitude,
+                ref_longitude=ref_longitude)
+            if node_type == "meterhub":
                 node_type = "meterhub"
+                allocation_capacity = grid.get_default_hub_capacity()
 
             else:
                 node_type = "household"
+                allocation_capacity = 0
 
-            grid.add_node(label=str(node[0]),
+            grid.add_node(label=str(node_index),
                           x_coordinate=x,
                           y_coordinate=y,
                           node_type=node_type,
-                          type_fixed=bool(node[4]))
+                          type_fixed=bool(type_fixed),
+                          allocation_capacity=allocation_capacity)
 
-    number_of_hubs = opt.get_expected_hub_number_from_k_means(grid=grid)
+    min_number_of_hubs = int(
+        np.ceil(grid.get_nodes().shape[0]/grid.get_default_hub_capacity())
+    )
+    number_of_hubs = max(opt.get_expected_hub_number_from_k_means(grid=grid),
+                         min_number_of_hubs)
+
     number_of_relaxation_steps_nr = optimize_grid_request.number_of_relaxation_steps_nr
-    opt.nr_optimization(grid=grid, number_of_hubs=number_of_hubs, number_of_relaxation_steps=number_of_relaxation_steps_nr,
+
+    opt.nr_optimization(grid=grid,
+                        number_of_hubs=number_of_hubs,
+                        number_of_relaxation_steps=number_of_relaxation_steps_nr,
                         save_output=False, plot_price_evolution=False)
+
+    conn = sqlite3.connect(grid_db)
     sqliteConnection = sqlite3.connect(grid_db)
     cursor = sqliteConnection.cursor()
-
-    # Empty links table
-    sql_delete_query = """DELETE from links"""
-    cursor.execute(sql_delete_query)
-    sqliteConnection.commit()
 
     # Update nodes types in node database
     for index in grid.get_nodes().index:
@@ -387,9 +403,14 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
             """)
         cursor.execute(sql_delete_query)
         sqliteConnection.commit()
-    cursor.close()
 
-    conn = sqlite3.connect(grid_db)
+    # Empty links table
+    sql_delete_query = """DELETE from links"""
+    cursor.execute(sql_delete_query)
+    sqliteConnection.commit()
+
+    # Add newly computed links to database
+
     cursor = conn.cursor()
     records = []
     count = 1
@@ -400,14 +421,19 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
         x_to = grid.get_nodes().loc[row['to']]['x_coordinate']
         y_to = grid.get_nodes().loc[row['to']]['y_coordinate']
 
-        long_from = math.degrees(
-            longitude_0 + x_from / (r * math.cos(latitude_0)))
+        lat_from, long_from = conv.latitude_longitude_from_xy_coordinates(
+            x_coord=x_from,
+            y_coord=y_from,
+            ref_latitude=ref_latitude,
+            ref_longitude=ref_longitude
+        )
 
-        lat_from = math.degrees(latitude_0 + y_from / r)
-
-        long_to = math.degrees(longitude_0 + x_to / (r * math.cos(latitude_0)))
-
-        lat_to = math.degrees(latitude_0 + y_to / r)
+        lat_to, long_to = conv.latitude_longitude_from_xy_coordinates(
+            x_coord=x_to,
+            y_coord=y_to,
+            ref_latitude=ref_latitude,
+            ref_longitude=ref_longitude
+        )
 
         cable_type = row['type']
         distance = row['distance']
@@ -427,7 +453,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     # commit the changes to db
     conn.commit()
     # close the connection
-    conn.close()
+    cursor.close()
 
     return {
         "code": "success",
@@ -452,9 +478,9 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
 
     r = 6371000     # Radius of the earth [m]
     # use latitude of the node that is the most west to set origin of x coordinates
-    latitude_0 = math.radians(min([node[1] for node in nodes]))
+    ref_latitude = math.radians(min([node[1] for node in nodes]))
     # use latitude of the node that is the most south to set origin of y coordinates
-    longitude_0 = math.radians(min([node[2] for node in nodes]))
+    ref_longitude = math.radians(min([node[2] for node in nodes]))
 
     nodes_df = shs_ident.create_nodes_df()
 
@@ -480,8 +506,8 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
         latitude = math.radians(node[1])
         longitude = math.radians(node[2])
 
-        x = r * (longitude - longitude_0) * math.cos(latitude_0)
-        y = r * (latitude - latitude_0)
+        x = r * (longitude - ref_longitude) * math.cos(ref_latitude)
+        y = r * (latitude - ref_latitude)
 
         node_label = node[0]
         required_capacity = node[6]
