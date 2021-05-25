@@ -60,7 +60,7 @@ class ShsIdentificationRequest(BaseModel):
 
 class SelectBoundariesRequest(BaseModel):
     boundary_coordinates: list
-      
+
 
 class GenerateExportFileRequest(BaseModel):
     price_meterhub: float
