@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 
 def create_empty_nodes_df():
