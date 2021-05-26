@@ -163,7 +163,7 @@ $.getJSON('http://server/path.geojson', function (data) {
   layer.addData(data);
 });
 
-var mapClickEvent = "add_node";
+var mapClickEvent = "node";
 
 var siteBoundaries = [];
 
@@ -194,11 +194,16 @@ var markerLowDemand = new L.Icon({
   iconSize: [14, 14],
 });
 
+var markerPole = new L.Icon({
+  iconUrl: "fastapi_app/static/images/markers/markerPole.png",
+  iconSize: [16, 16],
+});
+
 var legend = L.control({ position: 'bottomright' });
 legend.onAdd = function (map) {
   var div = L.DomUtil.create('div', 'info legend'),
-    description = ["High Demand", "Medium Demand", "Low Demand"],
-    image = ["fastapi_app/static/images/markers/markerHighDemand.png", "fastapi_app/static/images/markers/markerMediumDemand.png", "fastapi_app/static/images/markers/markerLowDemand.png"];
+    description = ["High Demand", "Medium Demand", "Low Demand", "Pole"],
+    image = ["fastapi_app/static/images/markers/markerHighDemand.png", "fastapi_app/static/images/markers/markerMediumDemand.png", "fastapi_app/static/images/markers/markerLowDemand.png", "fastapi_app/static/images/markers/markerPole.png"];
 
   // loop through our density intervals and generate a label with a colored square for each interval
   for (var i = 0; i < description.length; i++) {
@@ -209,72 +214,63 @@ legend.onAdd = function (map) {
 };
 legend.addTo(mainMap);
 
-var householdMarker = new L.Icon({
-  iconUrl: "fastapi_app/static/images/markers/MarkerHousehold.png",
-  iconSize: [15, 15],
-  iconAnchor: [7.5, 7.5],
-  popupAnchor: [0, 0],
-});
-
-var hubMarker = new L.Icon({
-  iconUrl: "fastapi_app/static/images/markers/marker-hub.png",
-  iconSize: [14, 14],
-  iconAnchor: [7, 7],
-  popupAnchor: [0, 0],
-});
-
-var shsMarker = new L.Icon({
-  iconUrl: "fastapi_app/static/images/markers/marker-shs.png",
-  iconSize: [10, 10],
-  iconAnchor: [5, 5],
-  popupAnchor: [0, 0],
-});
-
 mainMap.on("click", function (e) {
   var poplocation = e.latlng;
 
-  if (mapClickEvent == "add_node") {
-    if (document.getElementsByName("radio_button_new_node_type")[0].checked) {
+  if (mapClickEvent == "node") {
+    if (document.getElementsByName("radio_button_nodes_manually")[0].checked) {
       addNodeToDatBase(
         poplocation.lat,
         poplocation.lng,
         0,
-        "undefinded",
-        false,
-        default_household_required_capacity,
-        default_household_max_power
-      );
-      drawDefaultMarker(poplocation.lat, poplocation.lng);
-    }
-
-    if (document.getElementsByName("radio_button_new_node_type")[1].checked) {
-      addNodeToDatBase(
-        poplocation.lat,
-        poplocation.lng,
-        0,
-        "household",
+        "high-demand",
         true,
         default_household_required_capacity,
         default_household_max_power
       );
-      drawHouseholdMarker(poplocation.lat, poplocation.lng);
+      drawMarker(poplocation.lat, poplocation.lng, "high-demand");
     }
 
-    if (document.getElementsByName("radio_button_new_node_type")[2].checked) {
+    if (document.getElementsByName("radio_button_nodes_manually")[1].checked) {
       addNodeToDatBase(
         poplocation.lat,
         poplocation.lng,
         0,
-        "meterhub",
+        "medium-demand",
+        true,
+        default_household_required_capacity,
+        default_household_max_power
+      );
+      drawMarker(poplocation.lat, poplocation.lng, "medium-demand");
+    }
+
+    if (document.getElementsByName("radio_button_nodes_manually")[2].checked) {
+      addNodeToDatBase(
+        poplocation.lat,
+        poplocation.lng,
+        0,
+        "low-demand",
         true,
         2 * default_household_required_capacity,
         2 * default_household_max_power
       );
-      drawMeterhubMarker(poplocation.lat, poplocation.lng);
+      drawMarker(poplocation.lat, poplocation.lng, "low-demand");
+    }
+    if (document.getElementsByName("radio_button_nodes_manually")[3].checked) {
+      addNodeToDatBase(
+        poplocation.lat,
+        poplocation.lng,
+        0,
+        "pole",
+        true,
+        2 * default_household_required_capacity,
+        2 * default_household_max_power
+      );
+      drawMarker(poplocation.lat, poplocation.lng, "pole");
     }
   }
 
-  if (mapClickEvent == "draw_boundaries") {
+  if (mapClickEvent == "boundary") {
     siteBoundaries.push([poplocation.lat, poplocation.lng]);
 
     // adding the new solid line to siteBoundaryLines and draw it on the map
@@ -301,20 +297,20 @@ mainMap.on("click", function (e) {
 
 // INTERACTION WITH LEAFLET MAP
 
-function drawDefaultMarker(latitude, longitude) {
-  markers.push(L.marker([latitude, longitude], { icon: markerDefault }).addTo(mainMap));
-}
-
-function drawMeterhubMarker(latitude, longitude) {
-  markers.push(
-    L.marker([latitude, longitude], { icon: hubMarker }).addTo(mainMap)
-  );
-}
-
-function drawHouseholdMarker(latitude, longitude) {
-  markers.push(
-    L.marker([latitude, longitude], { icon: householdMarker }).addTo(mainMap)
-  );
+function drawMarker(latitude, longitude, type) {
+  if (type === "high-demand") {
+    icon_type = markerHighDemand
+  }
+  else if (type === "medium-demand") {
+    icon_type = markerMediumDemand
+  }
+  else if (type === "low-demand") {
+    icon_type = markerLowDemand
+  }
+  else if (type === "pole") {
+    icon_type = markerPole
+  }
+  markers.push(L.marker([latitude, longitude], { icon: icon_type }).addTo(mainMap));
 }
 
 function drawLinkOnMap(

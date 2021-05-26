@@ -12,8 +12,23 @@ default_household_max_power = 20;
 
 // SET FUNCTIONS
 
-function setMapClickEventToAddNode() {
-  mapClickEvent = "add_node";
+function setMapClickEvent(mapClickEvent) {
+  if (mapClickEvent === "node") {
+    $(document.getElementById("button_draw_boundaries_add")).attr('disabled', true);
+    $(document.getElementById("button_draw_boundaries_remove")).attr('disabled', true);
+    $(document.getElementById("radio_button_node_high_demand")).attr('disabled', false);
+    $(document.getElementById("radio_button_node_medium_demand")).attr('disabled', false);
+    $(document.getElementById("radio_button_node_low_demand")).attr('disabled', false);
+    $(document.getElementById("radio_button_node_pole")).attr('disabled', false);
+  }
+  else if (mapClickEvent === "boundary") {
+    $(document.getElementById("button_draw_boundaries_add")).attr('disabled', false);
+    $(document.getElementById("button_draw_boundaries_remove")).attr('disabled', false);
+    $(document.getElementById("radio_button_node_high_demand")).attr('disabled', true);
+    $(document.getElementById("radio_button_node_medium_demand")).attr('disabled', true);
+    $(document.getElementById("radio_button_node_low_demand")).attr('disabled', true);
+    $(document.getElementById("radio_button_node_pole")).attr('disabled', true);
+  }
 }
 
 function displayShsCharacteristicsInput() {
@@ -199,22 +214,28 @@ function refreshNodeFromDataBase() {
       }
       markers.length = 0;
       for (node of nodes) {
-        if (node.node_type === "meterhub") {
+        if (node.node_type === "high-demand") {
           markers.push(
             L.marker([node.latitude, node.longitude], {
-              icon: hubMarker,
+              icon: markerHighDemand,
             }).addTo(mainMap)
           );
-        } else if (node.node_type === "household") {
+        } else if (node.node_type === "medium-demand") {
           markers.push(
             L.marker([node.latitude, node.longitude], {
-              icon: householdMarker,
+              icon: markerMediumDemand,
             }).addTo(mainMap)
           );
-        } else if (node.node_type === "shs") {
+        } else if (node.node_type === "low-demand") {
           markers.push(
             L.marker([node.latitude, node.longitude], {
-              icon: shsMarker,
+              icon: markerLowDemand,
+            }).addTo(mainMap)
+          );
+        } else if (node.node_type === "pole") {
+          markers.push(
+            L.marker([node.latitude, node.longitude], {
+              icon: markerPole,
             }).addTo(mainMap)
           );
         } else {
@@ -234,7 +255,7 @@ function refreshNodeFromDataBase() {
           );
         }
       }
-      if (mapClickEvent === "draw_boundaries") {
+      if (mapClickEvent === "boundary") {
         zoomAll(mainMap);
       }
     }
@@ -309,7 +330,7 @@ function clear_node_db() {
 
 // selecting boundaries of the site for adding new nodes
 function selectBoundariesAdd() {
-  mapClickEvent = "draw_boundaries";
+  mapClickEvent = "boundary";
   var textButtonDrawBoundariesAdd = document.getElementById(
     "button_draw_boundaries_add"
   );
@@ -344,7 +365,7 @@ function selectBoundariesAdd() {
 
 // selecting boundaries of the site for removing new nodes
 function selectBoundariesRemove() {
-  mapClickEvent = "draw_boundaries";
+  mapClickEvent = "boundary";
   var textButtonDrawBoundariesRemove = document.getElementById(
     "button_draw_boundaries_remove"
   );
