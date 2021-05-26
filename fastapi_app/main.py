@@ -368,9 +368,8 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                           type_fixed=bool(type_fixed),
                           allocation_capacity=allocation_capacity)
 
-    min_number_of_hubs = int(
-        np.ceil(grid.get_nodes().shape[0]/grid.get_default_hub_capacity())
-    )
+    min_number_of_hubs = grid.get_default_hub_capacity()
+
     number_of_hubs = max(opt.get_expected_hub_number_from_k_means(grid=grid),
                          min_number_of_hubs)
 
@@ -379,7 +378,9 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     opt.nr_optimization(grid=grid,
                         number_of_hubs=number_of_hubs,
                         number_of_relaxation_steps=number_of_relaxation_steps_nr,
-                        save_output=False, plot_price_evolution=False)
+                        save_output=False,
+                        plot_price_evolution=False,
+                        number_of_hill_climbers_runs=1)
 
     conn = sqlite3.connect(grid_db)
     sqliteConnection = sqlite3.connect(grid_db)
