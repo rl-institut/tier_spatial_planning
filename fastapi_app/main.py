@@ -274,19 +274,12 @@ async def select_boundaries_remove(
 
     boundary_coordinates = selectBoundariesRequest.boundary_coordinates
 
-    sqliteConnection = sqlite3.connect(grid_db)
-    cursor = sqliteConnection.cursor()
-
     res = db.execute("select * from nodes")
     nodes = res.fetchall()
 
     for node in nodes:
         if bi.is_point_in_boundaries(coordinates=(node[1], node[2]), boundaries=boundary_coordinates):
-            sql_delete_query = (
-                f"""DELETE FROM nodes WHERE id = {node[0]};""")
-            cursor.execute(sql_delete_query)
-            sqliteConnection.commit()
-    cursor.close()
+            clear_single_node(node[0])
 
     return {
         "code": "success",
@@ -326,6 +319,15 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
 
     res = db.execute("select * from nodes")
     nodes = res.fetchall()
+
+    for node in nodes:
+        node_index = node[0]
+        node_type = node[4]
+        type_fixed = node[5]
+
+        if (node_type == 'pole') and (not type_fixed):
+            clear_single_node(node_index)
+
     # Create new grid object
     grid = Grid(price_meterhub=optimize_grid_request.price_meterhub,
                 price_household=optimize_grid_request.price_household,
@@ -341,7 +343,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     # use latitude of the node that is the most south to set origin of y coordinates
     ref_longitude = math.radians(min([node[2] for node in nodes]))
     for node in nodes:
-        if not node[3] == "shs":
+        if not ((node[4] == "shs") or (node[4] == "pole")):
             node_index = node[0]
             latitude = node[1]
             longitude = node[2]
@@ -357,7 +359,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                 node_type = "meterhub"
                 allocation_capacity = grid.get_default_hub_capacity()
 
-            if node_type == "household":
+            else:
                 node_type = "household"
                 allocation_capacity = 0
 
@@ -378,7 +380,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     opt.nr_optimization(grid=grid,
                         number_of_hubs=number_of_hubs,
                         number_of_relaxation_steps=number_of_relaxation_steps_nr,
-                        locate_new_hubs_freely=True,
+                        locate_new_hubs_freely=False,
                         save_output=False,
                         plot_price_evolution=False,
                         number_of_hill_climbers_runs=0)
@@ -579,6 +581,22 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
         "code": "success",
         "message": "shs identified"
     }
+
+
+def clear_single_node(index):
+    """
+    This function clears the node from the grid.db database.
+    """
+    sqliteConnection = sqlite3.connect(grid_db)
+    cursor = sqliteConnection.cursor()
+
+    sql_delete_query = (
+        f"""DELETE FROM nodes WHERE id = {index};"""
+    )
+    cursor.execute(sql_delete_query)
+    sqliteConnection.commit()
+
+    cursor.close()
 
 
 def clear_nodes_table():
