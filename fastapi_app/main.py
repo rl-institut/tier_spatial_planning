@@ -333,7 +333,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                 price_household=optimize_grid_request.price_household,
                 price_interhub_cable_per_meter=optimize_grid_request.price_interhub_cable,
                 price_distribution_cable_per_meter=optimize_grid_request.price_distribution_cable,
-                default_hub_capacity=4)
+                default_hub_capacity=10)
     # Make sure that new grid object is empty before adding nodes to it
     grid.clear_nodes_and_links()
 
@@ -370,7 +370,9 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                           type_fixed=bool(type_fixed),
                           allocation_capacity=allocation_capacity)
 
-    min_number_of_hubs = grid.get_default_hub_capacity()
+    min_number_of_hubs = (
+        grid.number_of_hubs_required_to_meet_allocation_capacity_constraint()
+    )
 
     number_of_hubs = max(opt.get_expected_hub_number_from_k_means(grid=grid),
                          min_number_of_hubs)
@@ -380,7 +382,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     opt.nr_optimization(grid=grid,
                         number_of_hubs=number_of_hubs,
                         number_of_relaxation_steps=number_of_relaxation_steps_nr,
-                        locate_new_hubs_freely=False,
+                        locate_new_hubs_freely=True,
                         save_output=False,
                         plot_price_evolution=False,
                         number_of_hill_climbers_runs=0)
