@@ -17,6 +17,8 @@ def create_empty_nodes_df():
             pd.Series([], dtype=np.dtype(float)),
             'longitude':
             pd.Series([], dtype=np.dtype(float)),
+            'area':
+            pd.Series([], dtype=np.dtype(float)),
             'node_type':
             pd.Series([], dtype=np.dtype(str)),
             'type_fixed':
