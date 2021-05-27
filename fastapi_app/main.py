@@ -124,7 +124,7 @@ async def download_export_file(db: Session = Depends(get_db)):
 async def import_config(file: UploadFile = File(...)):
 
     content_file = await file.read()
-    async with aiofiles.open(f"{path}/import_export/backup.xlsx", 'wb') as out_file:
+    async with aiofiles.open(f"{path}/import_export/import.xlsx", 'wb') as out_file:
         await out_file.write(content_file)
 
     # Empty Database tables
@@ -132,8 +132,9 @@ async def import_config(file: UploadFile = File(...)):
     clear_links_table()
 
     # Populate nodes table from nodes sheet of file
-    nodes_df = pd.read_excel(f"{path}/import_export/backup.xlsx",
-                             sheet_name="nodes")
+    nodes_df = pd.read_excel(f"{path}/import_export/import.xlsx",
+                             sheet_name="nodes",
+                             engine="openpyxl")
 
     conn = sqlite3.connect(grid_db)
     cursor = conn.cursor()
@@ -153,7 +154,7 @@ async def import_config(file: UploadFile = File(...)):
         'INSERT INTO nodes VALUES(?, ?, ?, ?, ?, ?, ?, ?)', records)
 
     # Populate links table from links sheet of file
-    links_df = pd.read_excel(f"{path}/import_export/backup.xlsx",
+    links_df = pd.read_excel(f"{path}/import_export/import.xlsx",
                              sheet_name="links")
 
     records = [(
@@ -175,7 +176,7 @@ async def import_config(file: UploadFile = File(...)):
     conn.close()
 
     # Collect settings for settings tab and return them as a dict
-    settings_df = pd.read_excel(f"{path}/import_export/backup.xlsx",
+    settings_df = pd.read_excel(f"{path}/import_export/import.xlsx",
                                 sheet_name="settings").set_index('Setting')
     settings = {index: row['value'].item() for index, row in settings_df.iterrows()}
 
