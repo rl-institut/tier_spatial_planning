@@ -344,7 +344,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                 price_household=optimize_grid_request.price_household,
                 price_interhub_cable_per_meter=optimize_grid_request.price_interhub_cable,
                 price_distribution_cable_per_meter=optimize_grid_request.price_distribution_cable,
-                default_hub_capacity=4)
+                default_hub_capacity=10)
     # Make sure that new grid object is empty before adding nodes to it
     grid.clear_nodes_and_links()
 
@@ -399,7 +399,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                         locate_new_hubs_freely=True,
                         first_guess_strategy='random',
                         save_output=False,
-                        number_of_hill_climbers_runs=0)
+                        number_of_hill_climbers_runs=4)
 
     conn = sqlite3.connect(grid_db)
     sqliteConnection = sqlite3.connect(grid_db)

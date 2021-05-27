@@ -42,7 +42,7 @@
         <div class="sidebar-box-text cell shrink" style="height: 4vh;">
           <!-- sidebar/nodes: drawing boundaries -->
           <input type="radio" id="radio_button_nodes_boundaries" checked name="radio_button_nodes"
-            onclick="setMapClickEvent('boundary');"><label for="radio_button_nodes_boundaries"><strong>Specifying
+            onclick="setVisibilityNodeBox();"><label for="radio_button_nodes_boundaries"><strong>Specifying
               Boundaries:</strong></label>
           <div class="sidebar-box-text cell shrink grid-x grid-margin-x" style="height: 3vh;">
             <div class="cell small-6 small-offset-1">Adding Nodes</div>
@@ -60,24 +60,24 @@
           </div>
           <!-- sidebar/nodes: adding nodes to the map manually -->
           <input type="radio" id="radio_button_nodes_manually" name="radio_button_nodes" value="-"
-            onclick="setMapClickEvent('node');"><label for="radio_button_nodes_manually"><strong>Adding Nodes
+            onclick="setVisibilityNodeBox();"><label for="radio_button_nodes_manually"><strong>Adding Nodes
               Manually</strong></label>
           <div class="sidebar-box-text cell shrink small-offset-1">
             <input type="radio" id="radio_button_node_high_demand" disabled name="radio_button_nodes_manually"
-              value="high_demand" onclick="setMapClickEvent('node');"><label for="radio_button_node_high_demand"
+              value="high_demand" onclick="setVisibilityNodeBox();"><label for="radio_button_node_high_demand"
               title="High-Demand Consumers"><img src={{ url_for('static', path='images/markers/markerHighDemand.png' )
                 }} alt="marker_high_demand" width="20"></label>
             <input type="radio" id="radio_button_node_medium_demand" disabled name="radio_button_nodes_manually"
-              value="medium_demand" onclick="setMapClickEvent('node');"><label for="radio_button_node_medium_demand"
+              value="medium_demand" onclick="setVisibilityNodeBox();"><label for="radio_button_node_medium_demand"
               title="Medium-Demand Consumers"><img src={{ url_for('static', path='images/markers/markerMediumDemand.png'
                 ) }} alt="marker_medium_demand" width="20"></label>
             <input type="radio" id="radio_button_node_low_demand" disabled name="radio_button_nodes_manually"
-              value="low_demand" onclick="setMapClickEvent('node');"><label for="radio_button_node_low_demand"
+              value="low_demand" onclick="setVisibilityNodeBox();"><label for="radio_button_node_low_demand"
               title="Low-Demand Consumers">
               <img src={{ url_for('static', path='images/markers/markerLowDemand.png' ) }} alt="marker_low_demand"
                 width="20"></label>
             <input type="radio" id="radio_button_node_pole" disabled name="radio_button_nodes_manually" value="pole"
-              onclick="setMapClickEvent('node');"><label for="radio_button_node_pole" title="Poles">
+              onclick="setVisibilityNodeBox();"><label for="radio_button_node_pole" title="Poles">
               <img src={{ url_for('static', path='images/markers/markerPole.png' ) }} alt="marker_pole"
                 width="20"></label>
           </div>

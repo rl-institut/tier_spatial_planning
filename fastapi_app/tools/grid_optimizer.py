@@ -3141,7 +3141,8 @@ class GridOptimizer:
                     relaxation_df) * meter_per_default_unit
             if print_progress_bar:
                 self.printProgressBar(
-                    n + 1, number_of_relaxation_steps + 1,
+                    n + 1,
+                    number_of_relaxation_steps + 1,
                     price=(grid_copy.price() - (number_of_virtual_hubs
                                                 * price_household)))
             list_resulting_vectors_previous_step =\
