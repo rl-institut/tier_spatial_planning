@@ -12,8 +12,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi_app.database import SessionLocal, engine
 from sqlalchemy.orm import Session
 import sqlite3
-from sgdotlite.grids import Grid
-from sgdotlite.tools.grid_optimizer import GridOptimizer
+from fastapi_app.tools.grids import Grid
+from fastapi_app.tools.grid_optimizer import GridOptimizer
 import math
 import urllib.request
 import json
@@ -395,7 +395,6 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                         number_of_relaxation_steps=number_of_relaxation_steps_nr,
                         locate_new_hubs_freely=True,
                         save_output=False,
-                        plot_price_evolution=False,
                         number_of_hill_climbers_runs=0)
 
     conn = sqlite3.connect(grid_db)
