@@ -321,6 +321,13 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     res = db.execute("select * from nodes")
     nodes = res.fetchall()
 
+    # if nodes db is empty, do not perform optimization
+    if len(nodes) == 0:
+        return {
+            "code": "success",
+            "message": "empty grid cannot be optimized"
+        }
+
     for node in nodes:
         node_index = node[0]
         node_type = node[4]
