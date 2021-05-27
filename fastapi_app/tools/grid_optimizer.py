@@ -2447,80 +2447,7 @@ class GridOptimizer:
                 initial_price = grid.price()
                 return 'bad swap rejected'
 
-    # SA Progress bar
-
-    def printProgressBar(self,
-                         iteration,
-                         total,
-                         prefix='',
-                         suffix='',
-                         decimals=1,
-                         length=100,
-                         fill='█',
-                         printEnd="\r",
-                         price=None):
-        """
-        Call in a loop to create terminal progress bar.
-
-        Parameters
-        ----------
-            iteration   - Required  : current iteration (Int)
-            total       - Required  : total iterations (Int)
-            prefix      - Optional  : prefix string (Str)
-            suffix      - Optional  : suffix string (Str)
-            decimals    - Optional  : positive number of decimals in percent
-                                    complete (Int)
-            length      - Optional  : character length of bar (Int)
-            fill        - Optional  : bar fill character (Str)
-            printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
-
-            Notes
-            -----
-                Funtion inspired from https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console/30740258 # noqa: E501
-        """
-        percent = ("{0:." + str(decimals) + "f}").format(
-            100 * (iteration / float(total)))
-        filledLength = int(length * iteration // total)
-        bar = fill * filledLength + '-' * (length - filledLength)
-        if price is None:
-            print(f'\r{prefix} |{bar}| {percent}% {suffix}',
-                  end=printEnd)
-        else:
-            print(f'\r{prefix} |{bar}| {percent}% {suffix}, price: {price} $',
-                  end=printEnd)
-        # Print New Line on Complete
-        if iteration == total:
-            print()
-
-    def display_progress_bar(self, current, final, message=''):
-        """
-        This method displays a progress bar on the console. The progress is
-        displayed in percent and corresponds to current/final. The message
-        parameter is appended  after the progress bar.
-
-        Parameters
-        ----------
-        current: float
-            Current iteration.
-
-        final: float
-            Final iteration.
-
-        message (str):
-            Diplayed after the progress bar.
-
-        """
-        if current > final:
-            final = current
-
-        current_in_percent = int(current / final * 50)
-        remaining = 50 - current_in_percent
-
-        bar = '█' * current_in_percent + '-' * remaining
-        print(f"\r|{bar}|  {int(current / final * 100)}%   {message}",
-              end='')
-
-    # --------------- LINEAR PROGRAMMING SOLVER BASED METHODS --------------- #
+        # --------------- LINEAR PROGRAMMING SOLVER BASED METHODS --------------- #
 
     # Main Linear Programming (LP) method
 
@@ -3580,3 +3507,78 @@ class GridOptimizer:
         grid.set_nodes(nodes)
         grid.set_links(links)
         self.connect_nodes(grid)
+
+
+# Progress bar
+
+
+    def printProgressBar(self,
+                         iteration,
+                         total,
+                         prefix='',
+                         suffix='',
+                         decimals=1,
+                         length=50,
+                         fill='█',
+                         printEnd="\r",
+                         price=None):
+        """
+        Call in a loop to create terminal progress bar.
+
+        Parameters
+        ----------
+            iteration   - Required  : current iteration (Int)
+            total       - Required  : total iterations (Int)
+            prefix      - Optional  : prefix string (Str)
+            suffix      - Optional  : suffix string (Str)
+            decimals    - Optional  : positive number of decimals in percent
+                                    complete (Int)
+            length      - Optional  : character length of bar (Int)
+            fill        - Optional  : bar fill character (Str)
+            printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+
+            Notes
+            -----
+                Funtion inspired from https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console/30740258 # noqa: E501
+        """
+        percent = ("{0:." + str(decimals) + "f}").format(
+            100 * (iteration / float(total)))
+        filledLength = int(length * iteration // total)
+        bar = fill * filledLength + '-' * (length - filledLength)
+        if price is None:
+            print(f'\r{prefix} |{bar}| {percent}% {suffix}',
+                  end=printEnd)
+        else:
+            print(f'\r{prefix} |{bar}| {percent}% {suffix}, price: {price} $',
+                  end=printEnd)
+        # Print New Line on Complete
+        if iteration == total:
+            print()
+
+    def display_progress_bar(self, current, final, message=''):
+        """
+        This method displays a progress bar on the console. The progress is
+        displayed in percent and corresponds to current/final. The message
+        parameter is appended  after the progress bar.
+
+        Parameters
+        ----------
+        current: float
+            Current iteration.
+
+        final: float
+            Final iteration.
+
+        message (str):
+            Diplayed after the progress bar.
+
+        """
+        if current > final:
+            final = current
+
+        current_in_percent = int(current / final * 50)
+        remaining = 50 - current_in_percent
+
+        bar = '█' * current_in_percent + '-' * remaining
+        print(f"\r|{bar}|  {int(current / final * 100)}%   {message}",
+              end='')
