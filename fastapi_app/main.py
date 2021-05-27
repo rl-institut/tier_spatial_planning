@@ -155,7 +155,8 @@ async def import_config(file: UploadFile = File(...)):
 
     # Populate links table from links sheet of file
     links_df = pd.read_excel(f"{path}/import_export/import.xlsx",
-                             sheet_name="links")
+                             sheet_name="links",
+                             engine="openpyxl")
 
     records = [(
         str(links_df.iloc[i]['label']),
@@ -177,7 +178,8 @@ async def import_config(file: UploadFile = File(...)):
 
     # Collect settings for settings tab and return them as a dict
     settings_df = pd.read_excel(f"{path}/import_export/import.xlsx",
-                                sheet_name="settings").set_index('Setting')
+                                sheet_name="settings",
+                                engine="openpyxl").set_index('Setting')
     settings = {index: row['value'].item() for index, row in settings_df.iterrows()}
 
     return settings
