@@ -7,13 +7,12 @@ $(document).ready(function () {
 
 default_household_required_capacity = 10;
 default_household_max_power = 20;
-mapClickEvent = "node";
 // --------------------FUNCTIONS DECLARATION----------------------//
 
 // SET FUNCTIONS
 
-function setMapClickEvent(mapClickEvent) {
-  if (mapClickEvent === "node") {
+function setVisibilityNodeBox() {
+  if (document.getElementById("radio_button_nodes_manually").checked) {
     $(document.getElementById("button_draw_boundaries_add")).attr(
       "disabled",
       true
@@ -38,7 +37,7 @@ function setMapClickEvent(mapClickEvent) {
       "disabled",
       false
     );
-  } else if (mapClickEvent === "boundary") {
+  } else if (document.getElementById("radio_button_nodes_boundaries").checked) {
     $(document.getElementById("button_draw_boundaries_add")).attr(
       "disabled",
       false
@@ -287,7 +286,7 @@ function refreshNodeFromDataBase() {
           );
         }
       }
-      if (mapClickEvent === "boundary") {
+      if (document.getElementById("radio_button_nodes_boundaries").checked) {
         zoomAll(mainMap);
       }
     }
@@ -362,7 +361,6 @@ function clear_node_db() {
 
 // selecting boundaries of the site for adding new nodes
 function selectBoundariesAdd() {
-  mapClickEvent = "boundary";
   var textButtonDrawBoundariesAdd = document.getElementById(
     "button_draw_boundaries_add"
   );
@@ -396,7 +394,6 @@ function selectBoundariesAdd() {
 
 // selecting boundaries of the site for removing new nodes
 function selectBoundariesRemove() {
-  mapClickEvent = "boundary";
   var textButtonDrawBoundariesRemove = document.getElementById(
     "button_draw_boundaries_remove"
   );
