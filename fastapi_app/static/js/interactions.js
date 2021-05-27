@@ -7,27 +7,59 @@ $(document).ready(function () {
 
 default_household_required_capacity = 10;
 default_household_max_power = 20;
-
+mapClickEvent = "node";
 // --------------------FUNCTIONS DECLARATION----------------------//
 
 // SET FUNCTIONS
 
 function setMapClickEvent(mapClickEvent) {
   if (mapClickEvent === "node") {
-    $(document.getElementById("button_draw_boundaries_add")).attr('disabled', true);
-    $(document.getElementById("button_draw_boundaries_remove")).attr('disabled', true);
-    $(document.getElementById("radio_button_node_high_demand")).attr('disabled', false);
-    $(document.getElementById("radio_button_node_medium_demand")).attr('disabled', false);
-    $(document.getElementById("radio_button_node_low_demand")).attr('disabled', false);
-    $(document.getElementById("radio_button_node_pole")).attr('disabled', false);
-  }
-  else if (mapClickEvent === "boundary") {
-    $(document.getElementById("button_draw_boundaries_add")).attr('disabled', false);
-    $(document.getElementById("button_draw_boundaries_remove")).attr('disabled', false);
-    $(document.getElementById("radio_button_node_high_demand")).attr('disabled', true);
-    $(document.getElementById("radio_button_node_medium_demand")).attr('disabled', true);
-    $(document.getElementById("radio_button_node_low_demand")).attr('disabled', true);
-    $(document.getElementById("radio_button_node_pole")).attr('disabled', true);
+    $(document.getElementById("button_draw_boundaries_add")).attr(
+      "disabled",
+      true
+    );
+    $(document.getElementById("button_draw_boundaries_remove")).attr(
+      "disabled",
+      true
+    );
+    $(document.getElementById("radio_button_node_high_demand")).attr(
+      "disabled",
+      false
+    );
+    $(document.getElementById("radio_button_node_medium_demand")).attr(
+      "disabled",
+      false
+    );
+    $(document.getElementById("radio_button_node_low_demand")).attr(
+      "disabled",
+      false
+    );
+    $(document.getElementById("radio_button_node_pole")).attr(
+      "disabled",
+      false
+    );
+  } else if (mapClickEvent === "boundary") {
+    $(document.getElementById("button_draw_boundaries_add")).attr(
+      "disabled",
+      false
+    );
+    $(document.getElementById("button_draw_boundaries_remove")).attr(
+      "disabled",
+      false
+    );
+    $(document.getElementById("radio_button_node_high_demand")).attr(
+      "disabled",
+      true
+    );
+    $(document.getElementById("radio_button_node_medium_demand")).attr(
+      "disabled",
+      true
+    );
+    $(document.getElementById("radio_button_node_low_demand")).attr(
+      "disabled",
+      true
+    );
+    $(document.getElementById("radio_button_node_pole")).attr("disabled", true);
   }
 }
 
@@ -239,8 +271,8 @@ function refreshNodeFromDataBase() {
             }).addTo(mainMap)
           );
         } else {
-          peak_demand_per_sq_meter = 4
-          total_demand = node.area * peak_demand_per_sq_meter
+          peak_demand_per_sq_meter = 4;
+          total_demand = node.area * peak_demand_per_sq_meter;
           if (total_demand >= 100) {
             icon = markerHighDemand;
           } else if (total_demand < 100 && total_demand > 40) {
@@ -249,9 +281,9 @@ function refreshNodeFromDataBase() {
             icon = markerLowDemand;
           }
           markers.push(
-            L.marker([node.latitude, node.longitude],
-              { icon: icon },
-            ).addTo(mainMap)
+            L.marker([node.latitude, node.longitude], { icon: icon }).addTo(
+              mainMap
+            )
           );
         }
       }
@@ -360,7 +392,6 @@ function selectBoundariesAdd() {
   removeBoundaries();
 
   textButtonDrawBoundariesAdd.innerHTML = "Draw Lines";
-
 }
 
 // selecting boundaries of the site for removing new nodes
@@ -395,5 +426,4 @@ function selectBoundariesRemove() {
   removeBoundaries();
 
   textButtonDrawBoundariesRemove.innerHTML = "Draw Lines";
-
 }
