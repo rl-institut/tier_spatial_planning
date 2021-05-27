@@ -394,6 +394,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                         number_of_hubs=number_of_hubs,
                         number_of_relaxation_steps=number_of_relaxation_steps_nr,
                         locate_new_hubs_freely=True,
+                        first_guess_strategy='random',
                         save_output=False,
                         number_of_hill_climbers_runs=0)
 
