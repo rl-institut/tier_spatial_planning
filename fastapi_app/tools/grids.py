@@ -1206,7 +1206,7 @@ class Grid:
 
             Parameters
             ----------
-            grid: :class:`~sgdot_lite.grids.Grid`
+            grid: :class:`~grids.Grid`
                     Grid object.
             folder: str
                 Path of the folder the grid should be saved in
@@ -1256,7 +1256,7 @@ def export_grid(grid,
 
     Parameters
     ----------
-    grid: :class:`~sgdot_lite.grids.Grid`
+    grid: :class:`~grids.Grid`
             Grid object.
     folder: str
         Path of the folder the grid should be saved in
