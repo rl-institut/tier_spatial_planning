@@ -142,6 +142,7 @@ async def import_config(file: UploadFile = File(...)):
         str(nodes_df.iloc[i]['label']),
         float(nodes_df.iloc[i]['latitude']),
         float(nodes_df.iloc[i]['longitude']),
+        float(nodes_df.iloc[i]['area']),
         str(nodes_df.iloc[i]['node_type']),
         bool(nodes_df.iloc[i]['type_fixed']),
         float(nodes_df.iloc[i]['required_capacity']),
@@ -149,7 +150,7 @@ async def import_config(file: UploadFile = File(...)):
     ) for i in range(nodes_df.shape[0])]
 
     cursor.executemany(
-        'INSERT INTO nodes VALUES(?, ?, ?, ?, ?, ?, ?)', records)
+        'INSERT INTO nodes VALUES(?, ?, ?, ?, ?, ?, ?, ?)', records)
 
     # Populate links table from links sheet of file
     links_df = pd.read_excel(f"{path}/import_export/backup.xlsx",

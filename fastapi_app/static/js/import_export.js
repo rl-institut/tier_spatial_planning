@@ -18,8 +18,6 @@ async function importConfig(include_settings) {
             (price_household = result.price_household),
             (price_interhub_cable = result.price_interhub_cable),
             (price_distribution_cable = result.price_distribution_cable),
-            (shs_identification_cable_price =
-              result.shs_identification_cable_price),
             (shs_identification_connection_price =
               result.shs_identification_connection_price),
             (number_of_relaxation_steps_nr =
@@ -45,9 +43,6 @@ function setSettings(
   document.getElementById("price_interhub_cable").value = price_interhub_cable;
   document.getElementById("price_distribution_cable").value =
     price_distribution_cable;
-  document.getElementById(
-    "cable_price_per_meter_for_shs_mst_identification"
-  ).value = shs_identification_cable_price;
   document.getElementById(
     "additional_connection_price_for_shs_mst_identification"
   ).value = shs_identification_connection_price;
