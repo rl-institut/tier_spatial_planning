@@ -333,7 +333,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                 price_household=optimize_grid_request.price_household,
                 price_interhub_cable_per_meter=optimize_grid_request.price_interhub_cable,
                 price_distribution_cable_per_meter=optimize_grid_request.price_distribution_cable,
-                default_hub_capacity=10)
+                default_hub_capacity=4)
     # Make sure that new grid object is empty before adding nodes to it
     grid.clear_nodes_and_links()
 
@@ -343,19 +343,20 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     # use latitude of the node that is the most south to set origin of y coordinates
     ref_longitude = math.radians(min([node[2] for node in nodes]))
     for node in nodes:
-        if not ((node[4] == "shs") or (node[4] == "pole")):
-            node_index = node[0]
-            latitude = node[1]
-            longitude = node[2]
-            node_type = node[4]
-            type_fixed = node[5]
+        node_index = node[0]
+        latitude = node[1]
+        longitude = node[2]
+        node_type = node[4]
+        type_fixed = bool(node[5])
+
+        if ((not node_type == 'pole') or (node_type == "pole" and type_fixed == True)):
 
             x, y = conv.xy_coordinates_from_latitude_longitude(
                 latitude=latitude,
                 longitude=longitude,
                 ref_latitude=ref_latitude,
                 ref_longitude=ref_longitude)
-            if node_type == "meterhub":
+            if (node_type == 'pole'):
                 node_type = "meterhub"
                 allocation_capacity = grid.get_default_hub_capacity()
 
@@ -367,7 +368,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                           x_coordinate=x,
                           y_coordinate=y,
                           node_type=node_type,
-                          type_fixed=bool(type_fixed),
+                          type_fixed=type_fixed,
                           allocation_capacity=allocation_capacity)
 
     min_number_of_hubs = (
@@ -419,6 +420,8 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
             db.commit()
         else:
             node_type = grid.get_nodes().at[index, "node_type"]
+            if node_type == 'meterhub':
+                node_type = 'pole'
             sql_delete_query = (
                 f"""UPDATE nodes
                 SET node_type = '{node_type}'
