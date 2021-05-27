@@ -2962,7 +2962,7 @@ class GridOptimizer:
 
         # import and  initialize parameters
 
-        allocation_capacity = grid.get_default_hub_capacity() + 1
+        allocation_capacity = grid.get_default_hub_capacity()
         price_household = grid.get_price_household()
 
         if save_output:
