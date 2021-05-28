@@ -216,7 +216,6 @@ function identify_shs() {
 }
 
 function refreshNodeFromDataBase() {
-  var tbody_nodes = document.getElementById("tbody_nodes");
   var xhr = new XMLHttpRequest();
   url = "nodes_db_html";
   xhr.open("GET", url, true);
@@ -240,7 +239,6 @@ function refreshNodeFromDataBase() {
               <td>${node.max_power}</td>
               </tr>`;
       }
-      tbody_nodes.innerHTML = html_node_table;
       for (marker of markers) {
         mainMap.removeLayer(marker);
       }
@@ -295,7 +293,6 @@ function refreshNodeFromDataBase() {
 }
 
 function refreshLinksFromDatBase() {
-  var tbody_links = document.getElementById("tbody_links");
   var xhr = new XMLHttpRequest();
   url = "links_db_html";
   xhr.open("GET", url, true);
@@ -318,7 +315,6 @@ function refreshLinksFromDatBase() {
               <td>${link.distance}</td>
               </tr>`;
       }
-      tbody_links.innerHTML = html_link_table;
       ereaseLinksFromMap(mainMap);
       for (link of links) {
         var color = link.cable_type === "interhub" ? "red" : "green";
@@ -365,7 +361,16 @@ function selectBoundariesAdd() {
   var textButtonDrawBoundariesAdd = document.getElementById(
     "button_draw_boundaries_add"
   );
-  textButtonDrawBoundariesAdd.innerHTML = "Select";
+
+  // changing the label of the button
+  if (textButtonDrawBoundariesAdd.innerHTML === "Select") {
+    textButtonDrawBoundariesAdd.innerHTML = "Draw Lines";
+    textButtonDrawBoundariesAdd.setAttribute('title', 'Draw a polygon on the map to add nodes');
+
+  } else {
+    textButtonDrawBoundariesAdd.innerHTML = "Select";
+    textButtonDrawBoundariesAdd.setAttribute('title', 'Select all nodes inside the drawn polygon');
+  }
 
   // changing the type of the button (primary <-> success)
   if ($(textButtonDrawBoundariesAdd).hasClass("primary")) {
@@ -384,13 +389,13 @@ function selectBoundariesAdd() {
   );
   siteBoundaryLines[siteBoundaryLines.length - 1].addTo(mainMap);
 
-  // TODO implement if close to check that area is not too large
-  // TODO if clicking of Draw Lines, but without clicking on the map again choosing Select ...
-  getBuildingCoordinates(siteBoundaries);
+  // only when a boundary is drawn, the next steps will be executed
+  if (siteBoundaryLines.length > 0) {
+    getBuildingCoordinates(siteBoundaries);
+    removeBoundaries();
+    textButtonDrawBoundariesAdd.innerHTML = "Draw Lines";
+  }
 
-  removeBoundaries();
-
-  textButtonDrawBoundariesAdd.innerHTML = "Draw Lines";
 }
 
 // selecting boundaries of the site for removing new nodes
@@ -398,7 +403,15 @@ function selectBoundariesRemove() {
   var textButtonDrawBoundariesRemove = document.getElementById(
     "button_draw_boundaries_remove"
   );
-  textButtonDrawBoundariesRemove.innerHTML = "Remove";
+
+  // changing the label of the button
+  if (textButtonDrawBoundariesRemove.innerHTML === "Remove") {
+    textButtonDrawBoundariesRemove.innerHTML = "Draw Lines";
+    textButtonDrawBoundariesRemove.setAttribute('title', 'Draw a polygon on the map to remove nodes');
+  } else {
+    textButtonDrawBoundariesRemove.innerHTML = "Remove";
+    textButtonDrawBoundariesRemove.setAttribute('title', 'Remove all nodes inside the drawn polygon');
+  }
 
   // changing the type of the button (primary <-> alert)
   if ($(textButtonDrawBoundariesRemove).hasClass("primary")) {
@@ -417,11 +430,11 @@ function selectBoundariesRemove() {
   );
   siteBoundaryLines[siteBoundaryLines.length - 1].addTo(mainMap);
 
-  // TODO implement if close to check that area is not too large
-  // TODO if clicking of Draw Lines, but without clicking on the map again choosing Select ...
-  removeBuildingsInsideBoundary(siteBoundaries);
+  // only when a boundary is drawn, the next steps will be executed
+  if (siteBoundaryLines.length > 0) {
+    removeBuildingsInsideBoundary(siteBoundaries);
+    removeBoundaries();
+    textButtonDrawBoundariesRemove.innerHTML = "Draw Lines";
+  }
 
-  removeBoundaries();
-
-  textButtonDrawBoundariesRemove.innerHTML = "Draw Lines";
 }

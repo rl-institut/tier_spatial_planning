@@ -261,7 +261,7 @@ async def select_boundaries_add(
         nodes.latitude = coordinates[0]
         nodes.longitude = coordinates[1]
         nodes.area = building_area[label]
-        nodes.node_type = "undefined"
+        nodes.node_type = ""
         nodes.fixed_type = False
         nodes.required_capacity = nodes.area * 4
         nodes.max_power = nodes.area * 4
@@ -282,7 +282,7 @@ async def select_boundaries_remove(
     nodes = res.fetchall()
 
     for node in nodes:
-        if bi.is_point_in_boundaries(coordinates=(node[1], node[2]), boundaries=boundary_coordinates):
+        if bi.is_point_in_boundaries(point_coordinates=(node[1], node[2]), boundaries=boundary_coordinates):
             clear_single_node(node[0])
 
     return {
