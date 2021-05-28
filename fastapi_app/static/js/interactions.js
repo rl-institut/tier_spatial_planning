@@ -172,6 +172,7 @@ function optimize_grid() {
       price_interhub_cable: price_interhub_cable.value,
       price_distribution_cable: price_distribution_cable.value,
       number_of_relaxation_steps_nr: number_of_relaxation_steps_nr.value,
+      max_connection_poles: max_connection_poles.value,
     }),
     dataType: "json",
     statusCode: {
