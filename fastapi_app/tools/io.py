@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import os
 
 
 def create_empty_nodes_df():
@@ -16,6 +17,8 @@ def create_empty_nodes_df():
             'latitude':
             pd.Series([], dtype=np.dtype(float)),
             'longitude':
+            pd.Series([], dtype=np.dtype(float)),
+            'area':
             pd.Series([], dtype=np.dtype(float)),
             'node_type':
             pd.Series([], dtype=np.dtype(str)),
@@ -48,3 +51,23 @@ def create_empty_links_df():
             pd.Series([], dtype=np.dtype(float)),
         }
     ).set_index('label')
+
+
+def make_folder(folder):
+    """
+    If no folder of the given name already exists, create new one.
+
+    Parameters
+    ----------
+    folder: str
+        Name of the folder to be created.
+    """
+
+    if not os.path.exists(folder):
+        parent_folders = folder.split('/')
+        for i in range(1, len(parent_folders) + 1):
+            path = ''
+            for x in parent_folders[0:i]:
+                path += x + '/'
+            if not os.path.exists(path[0:-1]):
+                os.mkdir(path[0:-1])

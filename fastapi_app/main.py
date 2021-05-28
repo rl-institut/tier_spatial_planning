@@ -12,8 +12,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi_app.database import SessionLocal, engine
 from sqlalchemy.orm import Session
 import sqlite3
-from sgdotlite.grids import Grid
-from sgdotlite.tools.grid_optimizer import GridOptimizer
+from fastapi_app.tools.grids import Grid
+from fastapi_app.tools.grid_optimizer import GridOptimizer
 import math
 import urllib.request
 import json
@@ -124,7 +124,7 @@ async def download_export_file(db: Session = Depends(get_db)):
 async def import_config(file: UploadFile = File(...)):
 
     content_file = await file.read()
-    async with aiofiles.open(f"{path}/import_export/backup.xlsx", 'wb') as out_file:
+    async with aiofiles.open(f"{path}/import_export/import.xlsx", 'wb') as out_file:
         await out_file.write(content_file)
 
     # Empty Database tables
@@ -132,8 +132,9 @@ async def import_config(file: UploadFile = File(...)):
     clear_links_table()
 
     # Populate nodes table from nodes sheet of file
-    nodes_df = pd.read_excel(f"{path}/import_export/backup.xlsx",
-                             sheet_name="nodes")
+    nodes_df = pd.read_excel(f"{path}/import_export/import.xlsx",
+                             sheet_name="nodes",
+                             engine="openpyxl")
 
     conn = sqlite3.connect(grid_db)
     cursor = conn.cursor()
@@ -142,6 +143,7 @@ async def import_config(file: UploadFile = File(...)):
         str(nodes_df.iloc[i]['label']),
         float(nodes_df.iloc[i]['latitude']),
         float(nodes_df.iloc[i]['longitude']),
+        float(nodes_df.iloc[i]['area']),
         str(nodes_df.iloc[i]['node_type']),
         bool(nodes_df.iloc[i]['type_fixed']),
         float(nodes_df.iloc[i]['required_capacity']),
@@ -149,11 +151,12 @@ async def import_config(file: UploadFile = File(...)):
     ) for i in range(nodes_df.shape[0])]
 
     cursor.executemany(
-        'INSERT INTO nodes VALUES(?, ?, ?, ?, ?, ?, ?)', records)
+        'INSERT INTO nodes VALUES(?, ?, ?, ?, ?, ?, ?, ?)', records)
 
     # Populate links table from links sheet of file
-    links_df = pd.read_excel(f"{path}/import_export/backup.xlsx",
-                             sheet_name="links")
+    links_df = pd.read_excel(f"{path}/import_export/import.xlsx",
+                             sheet_name="links",
+                             engine="openpyxl")
 
     records = [(
         str(links_df.iloc[i]['label']),
@@ -174,8 +177,9 @@ async def import_config(file: UploadFile = File(...)):
     conn.close()
 
     # Collect settings for settings tab and return them as a dict
-    settings_df = pd.read_excel(f"{path}/import_export/backup.xlsx",
-                                sheet_name="settings").set_index('Setting')
+    settings_df = pd.read_excel(f"{path}/import_export/import.xlsx",
+                                sheet_name="settings",
+                                engine="openpyxl").set_index('Setting')
     settings = {index: row['value'].item() for index, row in settings_df.iterrows()}
 
     return settings
@@ -320,6 +324,13 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     res = db.execute("select * from nodes")
     nodes = res.fetchall()
 
+    # if nodes db is empty, do not perform optimization
+    if len(nodes) == 0:
+        return {
+            "code": "success",
+            "message": "empty grid cannot be optimized"
+        }
+
     for node in nodes:
         node_index = node[0]
         node_type = node[4]
@@ -333,7 +344,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                 price_household=optimize_grid_request.price_household,
                 price_interhub_cable_per_meter=optimize_grid_request.price_interhub_cable,
                 price_distribution_cable_per_meter=optimize_grid_request.price_distribution_cable,
-                default_hub_capacity=4)
+                default_hub_capacity=10)
     # Make sure that new grid object is empty before adding nodes to it
     grid.clear_nodes_and_links()
 
@@ -343,19 +354,20 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     # use latitude of the node that is the most south to set origin of y coordinates
     ref_longitude = math.radians(min([node[2] for node in nodes]))
     for node in nodes:
-        if not ((node[4] == "shs") or (node[4] == "pole")):
-            node_index = node[0]
-            latitude = node[1]
-            longitude = node[2]
-            node_type = node[4]
-            type_fixed = node[5]
+        node_index = node[0]
+        latitude = node[1]
+        longitude = node[2]
+        node_type = node[4]
+        type_fixed = bool(node[5])
+
+        if ((not node_type == 'pole') or (node_type == "pole" and type_fixed == True)):
 
             x, y = conv.xy_coordinates_from_latitude_longitude(
                 latitude=latitude,
                 longitude=longitude,
                 ref_latitude=ref_latitude,
                 ref_longitude=ref_longitude)
-            if node_type == "meterhub":
+            if (node_type == 'pole'):
                 node_type = "meterhub"
                 allocation_capacity = grid.get_default_hub_capacity()
 
@@ -367,10 +379,14 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                           x_coordinate=x,
                           y_coordinate=y,
                           node_type=node_type,
-                          type_fixed=bool(type_fixed),
+                          type_fixed=type_fixed,
                           allocation_capacity=allocation_capacity)
-
-    min_number_of_hubs = grid.get_default_hub_capacity()
+    if grid.get_default_hub_capacity() == 0:
+        min_number_of_hubs = 1
+    else:
+        min_number_of_hubs = (
+            int(np.ceil(grid.get_nodes().shape[0]/(1 * grid.get_default_hub_capacity())))
+        )
 
     number_of_hubs = max(opt.get_expected_hub_number_from_k_means(grid=grid),
                          min_number_of_hubs)
@@ -380,10 +396,10 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     opt.nr_optimization(grid=grid,
                         number_of_hubs=number_of_hubs,
                         number_of_relaxation_steps=number_of_relaxation_steps_nr,
-                        locate_new_hubs_freely=False,
+                        locate_new_hubs_freely=True,
+                        first_guess_strategy='random',
                         save_output=False,
-                        plot_price_evolution=False,
-                        number_of_hill_climbers_runs=0)
+                        number_of_hill_climbers_runs=4)
 
     conn = sqlite3.connect(grid_db)
     sqliteConnection = sqlite3.connect(grid_db)
@@ -417,6 +433,8 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
             db.commit()
         else:
             node_type = grid.get_nodes().at[index, "node_type"]
+            if node_type == 'meterhub':
+                node_type = 'pole'
             sql_delete_query = (
                 f"""UPDATE nodes
                 SET node_type = '{node_type}'

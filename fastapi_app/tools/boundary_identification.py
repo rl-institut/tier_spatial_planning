@@ -2,10 +2,10 @@ import numpy as np
 import datetime
 import time
 
+from shapely.geometry.base import geometry_type_name
+
 import fastapi_app.tools.convertion as conv
-from shapely.geometry import Point
-from shapely.geometry.polygon import Polygon
-#from shapely.geos import L
+from shapely import geometry
 
 
 def convert_json_to_polygones_geojson(json_dict):
@@ -88,7 +88,7 @@ def get_dict_with_mean_coordinate_from_geojson(geojson: dict):
                     longitude=latitudes_longitudes[edge][1],
                     ref_latitude=reference_coordinate[0],
                     ref_longitude=reference_coordinate[1]))
-            surface_area = Polygon(xy_coordinates).area
+            surface_area = geometry.Polygon(xy_coordinates).area
             building_mean_coordinates[building["property"]["@id"]] = mean_coord
             building_surface_areas[building["property"]["@id"]] = surface_area
 
@@ -137,13 +137,9 @@ def are_segment_crossing(segment1, segment2):
         return False
 
 
-def is_point_in_boundaries(coordinates: tuple,
-                           boundaries: tuple,
-                           ref_point1=[0, 0],
-                           ref_point2=[9999999.23, 999999.23],
-                           counter=0):
-    """
-    Function that checks whether or not 2D point lies within boundaries
+def is_point_in_boundaries(point_coordinates: tuple,
+                           boundaries: tuple):
+    """ Function that checks whether or not 2D point lies within boundaries
 
     Parameter
     ---------
@@ -153,68 +149,8 @@ def is_point_in_boundaries(coordinates: tuple,
     boundaries (list or tuple):
         Coordinates of the angle of the polygon forming the boundaries in format
         [[x1, y1], [x2, y2], ..., [xn, yn]] for a polygon with n vertices.
+ """
+    polygon = geometry.Polygon(boundaries)
+    point = geometry.Point(point_coordinates)
 
-    ref_point1 (list or tuple):
-        Coordinates of the first reference point. The reference points have
-        to be chosen to be outside of the boundaries.
-
-    ref_point2 (list or tuple):
-        Coordinates of the second reference point. The reference points have
-        to be chosen to be outside of the boundaries.
-
-    Counter (int):
-        Counter variable that ensures that the recursive call of the function
-        doesn't lead to infinite loops.
-
-
-    Output
-    ------
-        Returns True if the point given by the coordiantes is within boundaries
-
-    Notes
-    -----
-        In order to determine if a point P is within the boudary, a reference
-        point O known to be outside of the boundaries is selected. The number
-        of times n the segment OP crosses the boundaries indicates whether or
-        not the point P is within the boundaries. If n is even, the point P is
-        outside of the boundaries, if n is even, P is within the boundaries.
-        The reference points ref_point1 and ref_point2 should be chosen to be
-        outside of the boundaries. 
-    """
-
-    if counter > 10:
-        return False
-    if len(boundaries) <= 2:
-        return False
-    ref_points = [ref_point1, ref_point2]
-    record = []
-
-    for ref_point in ref_points:
-        segment_from_ref_to_point = [ref_point, coordinates]
-        boundaries_segments = [[boundaries[i],
-                                boundaries[(i + 1) % len(boundaries)]]
-                               for i in range(len(boundaries))]
-        number_of_boundaries_segments_crossed = 0
-        for segment_boundary in boundaries_segments:
-            if are_segment_crossing(segment_from_ref_to_point, segment_boundary):
-                number_of_boundaries_segments_crossed += 1
-        if number_of_boundaries_segments_crossed % 2 == 1:
-            record.append(True)
-        else:
-            record.append(False)
-
-    if record[0] == record[1]:
-        if record[0] == True:
-            return True
-        else:
-            return False
-    else:
-        # if two ref points returned diff results (what might happen if segment
-        # from ref_point to coordinates crosses angle of the polygone boundary,
-        # recompute with slightly shifted ref_point)
-        return is_point_in_boundaries(
-            coordinates=coordinates,
-            boundaries=boundaries,
-            ref_point1=[x + 0.0023 for x in ref_point1],
-            ref_point2=[x - 0.0001 for x in ref_point2],
-            counter=counter + 1)
+    return polygon.contains(point)
