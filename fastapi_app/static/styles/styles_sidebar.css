@@ -1,5 +1,4 @@
 .sidebar-general {
-  height: 87vh;
   background-color: rgb(115, 184, 205);
   border: 1px solid black;
   border-top: 0;
@@ -25,88 +24,48 @@
 }
 
 .sidebar-box-text {
-  font-size: 1.1vw;
+  font-size: 1.0vw;
   text-align: left;
+  padding: 0%;
+  margin: 0%;
 }
 
-.sidebar-button {
-  padding-block: 1.5%;
+.sidebar-padding {
+  padding-block: 1.75%;
 }
 
 .sidebar-button:hover {
   font-weight: bold;
 }
 
-
-
-
-
-.box_left_sidebar {
-  grid-area: box_optimization;
-  width: 95%;
-  height: 100%;
+.sidebar-input {
+  height: 3vh;
+  width: 7vw
 }
 
-
-.mg_component_price_input {
-  display: grid;
-  grid-template: 33% 33% 33% auto/ 40% 40% 20%;
-  grid-template-areas:
-    "mg_component_prices_title  mg_component_prices_title  mg_component_prices_title"
-    "name_component_1           input_component_1          name_currency_1"
-    "name_component_2           input_component_2          name_currency_2";
-  justify-items: center;
-  align-items: center;
+.sidebar-fieldset {
+  padding: 0%;
+  margin: 1%;
+  border: 1px solid rgb(34, 87, 122);
 }
 
-.name_component_1 {
-  grid-area: name_component_1;
-}
+.sidebar-fieldset legend {
+  margin: 0;
+  margin-left: 2%;
+  font-weight: bold;
+  color: rgb(34, 87, 122);
+ }
 
-.input_component_1 {
-  grid-area: input_component_1;
-  width: 100%;
-}
-
-.name_component_2 {
-  grid-area: name_component_2;
-}
-.input_component_2 {
-  grid-area: input_component_2;
-  width: 100%;
-}
-
-.name_currency_1 {
-  grid-area: name_currency_1;
-}
-
-.name_currency_2 {
-  grid-area: name_currency_2;
-}
-
-.input_sidebar {
-  height: 1.4375rem;
-}
-
-.mg_component_prices_title {
-  grid-area: mg_component_prices_title;
-}
-
-#button_optimize {
-  grid-area: button_optimize;
-}
-
-.box_shs_identification {
-  width: 100%;
-}
-
-#shs_inputs {
-  background-color: lightgray;
-  z-index: 1;
-  height: 20vh;
-  display: none;
-}
-
-button#set_shs_price_characteristics {
-  height: 100%;
-}
+ .sidebar-dropdown-list {
+  list-style-type: none;
+  margin: 0;
+  margin-left: 8px;
+  line-height: 2vh;
+  font-size: 1.0vw;
+ }
+ 
+ .sidebar-dropdown {
+  margin: 0;
+  padding: 0;
+  width: 9vw;
+ }

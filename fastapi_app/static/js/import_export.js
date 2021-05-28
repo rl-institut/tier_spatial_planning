@@ -40,7 +40,7 @@ function setSettings(
   shs_identification_connection_price,
   number_of_relaxation_steps_nr
 ) {
-  document.getElementById("price_meterhub").value = price_meterhub;
+  document.getElementById("price_pole").value = price_meterhub;
   document.getElementById("price_household").value = price_household;
   document.getElementById("price_interhub_cable").value = price_interhub_cable;
   document.getElementById("price_distribution_cable").value =

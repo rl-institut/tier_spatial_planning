@@ -1,103 +1,235 @@
 {% extends "layout.html" %} {% block content %}
 
-<div class="home-container">
-  <!-- spinner representing the loading -->
-  <div id="loading" style="display: none;">
-    <img id="img-spinner" src="fastapi_app/static/images/loading.gif" alt=" loading" />
-  </div>
+<!-- spinner representing the loading -->
+<div id="loading" style="display: none;">
+  <img id="img-spinner" src="fastapi_app/static/images/loading.gif" alt=" loading" />
+</div>
 
-  <!-- information about the tool (the headear) -->
-  <div class="box-header grid-x">
-    <!-- texts -->
-    <div class="cell small-9 grid-y" style="line-height: 4px">
-      <span class="application_title cell shrink">PYNEST: Python-Based Network and Energy Supply Optimization
-        Tool</span>
-      <span class="application_subtitle cell shrink">Application: Off-Grid Electricity Supply Systems in Nigeria</span>
-      <span class="application_subtitle cell shrink">Developed by: Reiner Lemoine Institute gGmbH & TU Berlin, Institute
-        for Energy Engineering</span>
-      <span class="application_subtitle cell shrink">Sponsored by: The German Federal Ministry of Education and Research
-        (BMBF)</span>
-    </div>
-    <!-- logos -->
-    <div class="logo-box cell small-1 align-middle grid-padding-x">
-      <img class="logo" src={{ url_for('static', path='images/LogoRLI.png' ) }} alt="RLI logo" />
-    </div>
-    <div class="logo-box cell small-1 align-middle grid-padding-x">
-      <img class="logo" src={{ url_for('static', path='images/LogoTUB.png' ) }} alt="TUB logo" />
-    </div>
-    <div class="logo-box cell small-1 align-middle grid-padding-x">
-      <img class="logo" src={{ url_for('static', path='images/LogoBMBF.png' ) }} alt="BMBF logo" />
-    </div>
-  </div>
+<!-- the entire page (sidebar, title, and map) -->
+<div class="home-container grid-x">
 
-  <!-- main body including the sidebar and the map -->
-  <div class="box-body grid-x">
+  <!-- sidebar: nodes, costs, settings, and import/export -->
+  <div class="sidebar-general cell small-4 grid-y">
 
-    <!-- sidebar: nodes, costs, settings, and import/export -->
-    <div class="sidebar-general cell small-3 grid-y">
+    <!-- sidebar: nodes -->
+    <div class="cell shrink grid-y">
+      <div class="sidebar-box sidebar-box-title cell shrink">NODES</div>
 
-      <!-- sidebar: nodes -->
-      <div class="sidebar-box cell small-10 grid-y align-middel">
-        <div class="sidebar-box-title cell shrink">NODES</div>
-        <div class="sidebar-box-text cell shrink" style="height: 4vh;">
-          <!-- sidebar/nodes: drawing boundaries -->
-          <input type="radio" id="radio_button_nodes_boundaries" checked name="radio_button_nodes"
-            onclick="setMapClickEvent('boundary');"><label for="radio_button_nodes_boundaries"><strong>Specifying
-              Boundaries:</strong></label>
-          <div class="sidebar-box-text cell shrink grid-x grid-margin-x" style="height: 3vh;">
-            <div class="cell small-6 small-offset-1">Adding Nodes</div>
-            <div class="cell small-5">
-              <button id="button_draw_boundaries_add" class="ui button sidebar-button primary"
-                onclick="selectBoundariesAdd()">Draw Lines</button>
-            </div>
+      <!-- sidebar/nodes: drawing boundaries -->
+      <div class="sidebar-box-text cell shrink grid-padding-x">
+        <input type="radio" id="radio_button_nodes_boundaries" checked name="radio_button_nodes"
+          onclick="setMapClickEvent('boundary');">
+        <label for="radio_button_nodes_boundaries" class="sidebar-box-text"><strong>Specifying
+            Boundaries:</strong>
+        </label>
+      </div>
+      <div class="sidebar-box-text cell shrink grid-x">
+        <div class="cell small-6 grid-x grid-margin-x">
+          <div class="cell small-2 small-offset-3">Add</div>
+          <div class="cell small-7">
+            <button id="button_draw_boundaries_add" class="ui button sidebar-padding primary"
+              onclick="selectBoundariesAdd()">Draw Lines</button>
           </div>
-          <div class="sidebar-box-text cell shrink grid-x grid-margin-x">
-            <div class="cell small-6 small-offset-1">Removing Nodes</div>
-            <div class="cell small-5">
-              <button id="button_draw_boundaries_remove" class="ui button sidebar-button primary"
-                onclick="selectBoundariesRemove()">Draw Lines</button>
-            </div>
+        </div>
+
+        <div class="cell small-6 grid-x grid-margin-x">
+          <div class="cell small-3 small-offset-2">Remove</div>
+          <div class="cell small-7">
+            <button id="button_draw_boundaries_remove" class="ui button sidebar-padding primary"
+              onclick="selectBoundariesRemove()">Draw Lines</button>
           </div>
-          <!-- sidebar/nodes: adding nodes to the map manually -->
-          <input type="radio" id="radio_button_nodes_manually" name="radio_button_nodes" value="-"
-            onclick="setMapClickEvent('node');"><label for="radio_button_nodes_manually"><strong>Adding Nodes
-              Manually</strong></label>
-          <div class="sidebar-box-text cell shrink small-offset-1">
+        </div>
+
+      </div>
+
+      <!-- sidebar/nodes: adding nodes to the map manually -->
+      <div class="sidebar-box-text cell shrink grid-padding-x">
+        <input type="radio" id="radio_button_nodes_manually" name="radio_button_nodes" value="-"
+          onclick="setMapClickEvent('node');">
+        <label for="radio_button_nodes_manually"><strong>Adding Nodes Manually</strong></label>
+      </div>
+      <div class="sidebar-box-text cell shrink grid-y">
+        <div class="cell small-6 grid-x grid-margin-x">
+          <div class="cell small-5 small-offset-1">
             <input type="radio" id="radio_button_node_high_demand" disabled name="radio_button_nodes_manually"
-              value="high_demand" onclick="setMapClickEvent('node');"><label for="radio_button_node_high_demand"
-              title="High-Demand Consumers"><img src={{ url_for('static', path='images/markers/markerHighDemand.png' )
-                }} alt="marker_high_demand" width="20"></label>
+              value="high_demand" onclick="setMapClickEvent('node');">
+            <label for="radio_button_node_high_demand" title="High-Demand Consumers">High Demand <img src={{
+                url_for('static', path='images/markers/markerHighDemand.png' )}} alt="marker_high_demand" width="20">
+            </label>
+          </div>
+          <div class="cell small-6">
             <input type="radio" id="radio_button_node_medium_demand" disabled name="radio_button_nodes_manually"
-              value="medium_demand" onclick="setMapClickEvent('node');"><label for="radio_button_node_medium_demand"
-              title="Medium-Demand Consumers"><img src={{ url_for('static', path='images/markers/markerMediumDemand.png'
-                ) }} alt="marker_medium_demand" width="20"></label>
-            <input type="radio" id="radio_button_node_low_demand" disabled name="radio_button_nodes_manually"
-              value="low_demand" onclick="setMapClickEvent('node');"><label for="radio_button_node_low_demand"
-              title="Low-Demand Consumers">
-              <img src={{ url_for('static', path='images/markers/markerLowDemand.png' ) }} alt="marker_low_demand"
-                width="20"></label>
-            <input type="radio" id="radio_button_node_pole" disabled name="radio_button_nodes_manually" value="pole"
-              onclick="setMapClickEvent('node');"><label for="radio_button_node_pole" title="Poles">
-              <img src={{ url_for('static', path='images/markers/markerPole.png' ) }} alt="marker_pole"
+              value="medium_demand" onclick="setMapClickEvent('node');">
+            <label for="radio_button_node_medium_demand" title="Medium-Demand Consumers">Medium Demand <img src={{
+                url_for('static', path='images/markers/markerMediumDemand.png' ) }} alt="marker_medium_demand"
                 width="20"></label>
           </div>
         </div>
+
+        <div class="cell small-6 grid-x grid-margin-x">
+          <div class="cell small-5 small-offset-1">
+            <input type="radio" id="radio_button_node_low_demand" disabled name="radio_button_nodes_manually"
+              value="low_demand" onclick="setMapClickEvent('node');">
+            <label for="radio_button_node_low_demand" title="Low-Demand Consumers">Low Demand
+              <img src={{ url_for('static', path='images/markers/markerLowDemand.png' ) }} alt="marker_low_demand"
+                width="20"></label>
+          </div>
+          <div class="cell small-6">
+            <input type="radio" id="radio_button_node_pole" disabled name="radio_button_nodes_manually" value="pole"
+              onclick="setMapClickEvent('node');">
+            <label for="radio_button_node_pole" title="Poles">Pole <img src={{ url_for('static',
+                path='images/markers/markerPole.png' ) }} alt="marker_pole" width="20"></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- sidebar: costs -->
+    <div class="cell shrink grid-y">
+      <div class="sidebar-box sidebar-box-title cell shrink">COSTS</div>
+
+      <div class="sidebar-box-text cell shrink grid-padding-x">
+
+        <!-- sidebar/costs: mini-grid main components -->
+        <fieldset class="fieldset sidebar-fieldset">
+          <legend>Main Components of Mini-Grid</legend>
+          <div class="cell shrink grid-x">
+            <label class="cell small-3">Poles ($)
+              <input id="price_pole" class="sidebar-input" name="price_pole" type="number" placeholder="price_pole"
+                value="500" />
+            </label>
+            <label class="cell small-3">Connections ($)
+              <input id="price_connection" class="sidebar-input" name="price_connection" type="number"
+                placeholder="price_connection" value="200" />
+            </label>
+            <label class="cell small-3">LV Cables ($/m)
+              <input id="price_cable_consumers" class="sidebar-input" name="price_cable_consumers" type="number"
+                placeholder="price_cable_consumers" value="200" />
+            </label>
+            <label class="cell small-3">HV Cables ($/m)
+              <input id="price_cable_poles" class="sidebar-input" name="price_cable_poles" type="number"
+                placeholder="price_cable_poles" value="200" />
+            </label>
+          </div>
+        </fieldset>
+
+        <!-- sidebar/costs: solar home system components -->
+        <fieldset class="fieldset sidebar-fieldset">
+          <legend>Solar Home Systems</legend>
+          <div class="cell shrink grid-x">
+            <label class="cell small-4">High Demand ($)
+              <input id="price_shs_hd" class="sidebar-input" name="price_shs_hd" type="number"
+                placeholder="price_shs_hd" value="200" />
+            </label>
+            <label class="cell small-4">Medium Demand ($)
+              <input id="price_shs_md" class="sidebar-input" name="price_shs_md" type="number"
+                placeholder="price_shs_md" value="200" />
+            </label>
+            <label class="cell small-4">Low Demand ($)
+              <input id="price_shs_ld" class="sidebar-input" name="price_shs_ld" type="number"
+                placeholder="price_shs_ld" value="200" />
+            </label>
+          </div>
+        </fieldset>
+      </div>
+    </div>
+
+    <!-- sidebar: optimization -->
+    <div class="cell shrink grid-y">
+      <div class="sidebar-box sidebar-box-title cell shrink">OPTIMIZATION</div>
+
+      <div class="sidebar-box-text cell shrink grid-x grid-margin-x align-bottom">
+        <div class="cell small-4">
+          <label>Relaxation Steps
+            <input id="number_of_relaxation_steps_nr" class="sidebar-input" name="number_of_relaxation_steps_nr"
+              type="number" placeholder="number_of_relaxation_steps_nr" value="10" min="0" step="1" />
+          </label>
+        </div>
+        <div class="cell small-4">
+          <label class="cell small-3">Max. Connections
+            <input id="max_connection_poles" class="sidebar-input" name="max_connection_poles" type="number"
+              placeholder="max_connection_poles" value="4" min="1" step="1" />
+          </label>
+        </div>
+        <div class="cell small-4">
+          <button id="button_optimize" class="ui button sidebar-padding" onclick="optimize_grid()">Optimize</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- sidebar: import/export -->
+    <div class="cell auto">
+      <div class="sidebar-box sidebar-box-title cell shrink">IMPORT / EXPORT</div>
+
+      <div class="sidebar-box-text cell shrink grid-padding-x">
+        <label for="file">Choose the Excel file to import</label>
+        <input id="config_import" name="config_import" type="file" accept=".xls, .xlsx">
       </div>
 
+      <div class="sidebar-box-text cell shrink grid-x">
+        <div class="cell small-6">
+          <button class="ui button dropdown sidebar-padding primary" id="button_import"
+            data-toggle="import_options">Import
+            Data</button>
+          <div class="dropdown-pane sidebar-dropdown" id="import_options" data-dropdown data-close-on-click="true">
+            <ul class="sidebar-dropdown-list">
+              <li class="ui sidebar-padding" onclick="importConfig(false)"><a>Only Network</a></li>
+              <li class="ui sidebar-padding" onclick="importConfig(true)"><a>With All Settings</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="cell small-6">
+          <button class="ui button sidebar-padding primary" id="button_export" onclick="generateExportFile()">Export
+            Data</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
 
 
-      <!-- <div class="mg_component_price_input sidebar-box cell shrink">
-        <legend class="sidebar-box-title mg_component_prices_title">MG node prices</legend>
-        <p class="name_component_1">Hub</p>
-        <input id="price_meterhub" class="input_sidebar input_component_1" name="price_meterhub" type="number"
-          placeholder="price_meterhub" value="500000" />
-        <p class="name_currency_1">₦</p>
-        <p class="name_component_2">Household</p>
-        <input id="price_household" class="input_sidebar input_component_2" name="price_household" type="number"
-          placeholder="price_household" value="200000" />
-        <p class="name_currency_2">₦</p>
-      </div> -->
-      <!-- <div class="mg_component_price_input sidebar-box cell shrink">
+  <!-- header and map -->
+  <div class="cell small-8 grid-y">
+    <!-- information about the tool (the headear) -->
+    <div class="box-header cell shrink grid-x">
+      <!-- texts -->
+      <div class="cell small-8 grid-y">
+        <span class="application_title cell shrink">PYNEST: Python-Based Network and Energy Supply Optimization
+          Tool</span>
+        <span class="application_subtitle cell shrink">Application: Off-Grid Electricity Supply Systems in
+          Nigeria</span>
+        <span class="application_subtitle cell shrink">Developed by: TU Berlin, Institute for Energy Engineering &
+          Reiner Lemoine Institute gGmbH</span>
+        <span class="application_subtitle cell shrink">Sponsored by: The German Federal Ministry of Education and
+          Research
+          (BMBF)</span>
+      </div>
+      <!-- logos -->
+      <div class="logo-box cell small-4 grid-x align-middle">
+        <div class="cell small-4">
+          <img class="logo" src={{ url_for('static', path='images/LogoTUB.png' ) }} alt="TUB logo" />
+        </div>
+        <div class=" cell small-4">
+          <img class="logo" src={{ url_for('static', path='images/LogoRLI.png' ) }} alt="RLI logo" />
+        </div>
+        <div class="cell small-4">
+          <img class="logo" src={{ url_for('static', path='images/LogoBMBF.png' ) }} alt="BMBF logo" />
+        </div>
+      </div>
+
+    </div>
+
+    <div class="box-map map cell auto">
+      <div id="leafletMap"></div>
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- <div class="mg_component_price_input sidebar-box cell shrink">
         <legend class="sidebar-box-title mg_component_prices_title">MG cable prices</legend>
         <p class="name_component_1">Interhub</p>
         <input id="price_interhub_cable" class="input_sidebar input_component_1" name="price_interhub_cable"
@@ -108,7 +240,7 @@
           type="number" placeholder="price_distribution_cable" value="750" />
         <p class="name_currency_2">₦/m</p>
       </div> -->
-      <!-- <div class="box_add_node sidebar-box cell shrink grid-y">
+<!-- <div class="box_add_node sidebar-box cell shrink grid-y">
         <legend class="sidebar-box-title cell small-3">Add new node</legend>
         <div class="cell small-9">
           <input type="radio" name="radio_button_new_node_type" value="undefined" checked id="new_node_undefined"
@@ -122,7 +254,7 @@
               path='images/markers/marker-hub.png' ) }} alt="marker_hub" width="12"></label>
         </div>
       </div> -->
-      <!-- <div class="shs_identification sidebar-box cell small-3">
+<!-- <div class="shs_identification sidebar-box cell small-3">
         <div class="box_shs_identification grid-y">
           <legend class="cell small-2 sidebar-box-title">Solar Home Sytem Identification</legend>
           <div class="cell small-2 grid-x">
@@ -141,7 +273,7 @@
           </div>
           <div id="shs_price_characteristics_box" class="cell small-2 grid-y">
             <div class="buttton_display_shs_price_characteristics">
-              <button id="set_shs_price_characteristics" class="ui button sidebar-button"
+              <button id="set_shs_price_characteristics" class="ui button sidebar-padding"
                 onclick="displayShsCharacteristicsInput()">Set SHS price Characteristics</button>
             </div>
             <div id="shs_inputs">
@@ -188,42 +320,15 @@
           </div>
 
           <div class="cell small-2">
-            <button id="button_identify_shs" class="ui button sidebar-button" onclick="identify_shs()">Identify
+            <button id="button_identify_shs" class="ui button sidebar-padding" onclick="identify_shs()">Identify
               SHS</button>
           </div>
 
         </div>
       </div> -->
-      <div class="sidebar-box cell small-2">
-        <div class="box_left_sidebar">
-          <legend class="cell small-2 sidebar-box-title">Network Optimization</legend>
-          <div class="cell small-2 grid-x">
-            <p class="cell small-6">Relaxation Steps</p>
-            <input id="number_of_relaxation_steps_nr" class="cell small-4 input_sidebar"
-              name="number_of_relaxation_steps_nr" type="number" placeholder="number_of_relaxation_steps_nr" value="10"
-              min="0" step="1" />
-          </div>
-          <button id="button_optimize" class="ui button sidebar-button" onclick="optimize_grid()">Optimize</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- map -->
-    <div class="box-map map cell small-9">
-      <div id="leafletMap"></div>
-    </div>
-  </div>
-
-  <div class="import-export">
-    <button class="button" id="export-button" onclick="generateExportFile()">Export</button>
-    <input id="config_import" name="config_import" type="file">
-    <button class="button" id="import-button" onclick="importConfig(false)">Import without settings</button>
-    <button class="button" id="import-button" onclick="importConfig(true)">Import with settings</button>
-
-  </div>
 
 
-  <div class="box-table-nodes table_nodes">
+<!-- <div class="box-table-nodes table_nodes">
     <legend>Nodes table</legend>
     <div class="nodes_table">
       <div class="new_node_params">
@@ -285,8 +390,8 @@
         <tbody id="tbody_links"></tbody>
       </table>
     </div>
-  </div>
-</div>
+  </div> -->
+
 
 <script src={{ url_for('static', path='js/interactions.js' ) }}></script>
 <script src={{ url_for('static', path='js/map.js' ) }}></script>
