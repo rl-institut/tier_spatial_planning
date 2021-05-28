@@ -60,10 +60,12 @@ async function generateExportFile() {
       price_household: price_household.value,
       price_interhub_cable: price_interhub_cable.value,
       price_distribution_cable: price_distribution_cable.value,
-      shs_identification_cable_price:
-        cable_price_per_meter_for_shs_mst_identification.value,
-      shs_identification_connection_price:
-        additional_connection_price_for_shs_mst_identification.value,
+      shs_identification_cable_price: price_distribution_cable.value,
+      //      shs_identification_cable_price:
+      //        cable_price_per_meter_for_shs_mst_identification.value,
+      //shs_identification_connection_price:
+      //additional_connection_price_for_shs_mst_identification.value,
+      shs_identification_connection_price: 0,
       number_of_relaxation_steps_nr: number_of_relaxation_steps_nr.value,
     }),
     dataType: "json",

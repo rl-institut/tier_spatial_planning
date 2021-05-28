@@ -62,7 +62,7 @@ async def redirect():
 async def generate_export_file(
         generate_export_file_request: models.GenerateExportFileRequest,
         db: Session = Depends(get_db)):
-    f"""
+    """
     Generates an Excel file from the grid.db database tables and from the
     webapp setting. The file is stored in fastapi_app/import_export/temp.xlsx
 
