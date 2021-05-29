@@ -226,21 +226,6 @@ function refreshNodeFromDataBase() {
   xhr.onreadystatechange = function () {
     if (this.readyState == 4 && this.status == 200) {
       nodes = this.response;
-      html_node_table = "";
-      for (node of nodes) {
-        html_node_table += `
-              <tr>
-              <td>${node.id}</td>
-              <td>${node.latitude}</td>
-              <td>${node.longitude}</td>
-              <td>${node.area}</td>
-              <td>${node.node_type}</td>
-              <td>${node.fixed_type}</td>
-              <td>${node.required_capacity}</td>
-              <td>${node.max_power}</td>
-              </tr>`;
-      }
-      tbody_nodes.innerHTML = html_node_table;
       for (marker of markers) {
         mainMap.removeLayer(marker);
       }
@@ -305,20 +290,6 @@ function refreshLinksFromDatBase() {
   xhr.onreadystatechange = function () {
     if (this.readyState == 4 && this.status == 200) {
       links = this.response;
-      html_link_table = "";
-      for (link of links) {
-        html_link_table += `
-              <tr>
-              <td>${link.id}</td>
-              <td>${link.lat_from}</td>
-              <td>${link.long_from}</td>
-              <td>${link.lat_to}</td>
-              <td>${link.long_to}</td>
-              <td>${link.cable_type}</td>
-              <td>${link.distance}</td>
-              </tr>`;
-      }
-      tbody_links.innerHTML = html_link_table;
       ereaseLinksFromMap(mainMap);
       for (link of links) {
         var color = link.cable_type === "interhub" ? "red" : "green";
