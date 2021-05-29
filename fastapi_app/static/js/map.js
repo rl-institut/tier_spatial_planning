@@ -298,7 +298,9 @@ mainMap.on("click", function (e) {
     }
   }
 
-  if (document.getElementById("radio_button_nodes_boundaries").checked) {
+  if ((document.getElementById("radio_button_nodes_boundaries").checked) &&
+    ((document.getElementById("button_draw_boundaries_add").innerHTML === "Select") ||
+      (document.getElementById("button_draw_boundaries_remove").innerHTML === "Remove"))) {
     siteBoundaries.push([poplocation.lat, poplocation.lng]);
 
     // adding the new solid line to siteBoundaryLines and draw it on the map

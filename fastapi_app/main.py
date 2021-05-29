@@ -62,7 +62,7 @@ async def redirect():
 async def generate_export_file(
         generate_export_file_request: models.GenerateExportFileRequest,
         db: Session = Depends(get_db)):
-    f"""
+    """
     Generates an Excel file from the grid.db database tables and from the
     webapp setting. The file is stored in fastapi_app/import_export/temp.xlsx
 
@@ -261,7 +261,7 @@ async def select_boundaries_add(
         nodes.latitude = coordinates[0]
         nodes.longitude = coordinates[1]
         nodes.area = building_area[label]
-        nodes.node_type = "undefined"
+        nodes.node_type = ""
         nodes.fixed_type = False
         nodes.required_capacity = nodes.area * 4
         nodes.max_power = nodes.area * 4
@@ -282,7 +282,7 @@ async def select_boundaries_remove(
     nodes = res.fetchall()
 
     for node in nodes:
-        if bi.is_point_in_boundaries(coordinates=(node[1], node[2]), boundaries=boundary_coordinates):
+        if bi.is_point_in_boundaries(point_coordinates=(node[1], node[2]), boundaries=boundary_coordinates):
             clear_single_node(node[0])
 
     return {
@@ -344,7 +344,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                 price_household=optimize_grid_request.price_household,
                 price_interhub_cable_per_meter=optimize_grid_request.price_interhub_cable,
                 price_distribution_cable_per_meter=optimize_grid_request.price_distribution_cable,
-                default_hub_capacity=10)
+                default_hub_capacity=4)
     # Make sure that new grid object is empty before adding nodes to it
     grid.clear_nodes_and_links()
 
@@ -399,7 +399,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                         locate_new_hubs_freely=True,
                         first_guess_strategy='random',
                         save_output=False,
-                        number_of_hill_climbers_runs=4)
+                        number_of_hill_climbers_runs=0)
 
     conn = sqlite3.connect(grid_db)
     sqliteConnection = sqlite3.connect(grid_db)
