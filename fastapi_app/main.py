@@ -528,19 +528,6 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
     additional_price_for_connection_per_node =\
         shs_identification_request.additional_connection_price_for_shs_mst_identification
 
-    shs_characteristics = pd.DataFrame(
-        {'price[$]': pd.Series([], dtype=float),
-         'capacity[Wh]': pd.Series([], dtype=np.dtype(float)),
-         'max_power[W]': pd.Series([], dtype=np.dtype(float))
-         }
-    )
-
-    for shs_characteristic in shs_identification_request.shs_characteristics:
-        shs_characteristics.loc[shs_characteristics.shape[0]] = [
-            float(shs_characteristic['price']),
-            float(shs_characteristic['capacity']),
-            float(shs_characteristic['max_power'])]
-
     for node in nodes:
         latitude = math.radians(node[1])
         longitude = math.radians(node[2])
@@ -551,9 +538,10 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
         node_label = node[0]
         required_capacity = node[6]
         max_power = node[7]
+        shs_price = 200     # default value for shs price
 
         shs_ident.add_node(nodes_df, node_label, x, y,
-                           required_capacity, max_power)
+                           required_capacity, max_power, shs_price=shs_price)
     links_df = shs_ident.mst_links(nodes_df)
     start_time = time.time()
     if shs_identification_request.algo == "mst1":
@@ -561,8 +549,7 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
             nodes_df=nodes_df,
             links_df=links_df,
             cable_price_per_meter=cable_price_per_meter,
-            additional_price_for_connection_per_node=additional_price_for_connection_per_node,
-            shs_characteristics=shs_characteristics)
+            additional_price_for_connection_per_node=additional_price_for_connection_per_node)
         print(
             f"execution time for shs identification (mst1): {time.time() - start_time} s")
     else:
@@ -583,7 +570,7 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
         else:
             sql_delete_query = (
                 f"""UPDATE nodes
-                SET node_type = 'undefined'
+                SET node_type = 'household'
                 WHERE  id = {index};
                 """)
         cursor.execute(sql_delete_query)

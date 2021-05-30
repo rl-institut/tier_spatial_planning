@@ -55,7 +55,6 @@ class ShsIdentificationRequest(BaseModel):
     cable_price_per_meter_for_shs_mst_identification: float
     additional_connection_price_for_shs_mst_identification: float
     algo: str
-    shs_characteristics: list
 
 
 class SelectBoundariesRequest(BaseModel):

@@ -63,32 +63,6 @@ function setVisibilityNodeBox() {
   }
 }
 
-function displayShsCharacteristicsInput() {
-  if (document.getElementById("shs_inputs").style.display === "block") {
-    document.getElementById("shs_inputs").style.display = "none";
-  } else {
-    document.getElementById("shs_inputs").style.display = "block";
-  }
-}
-
-function logShsCharacteristics() {
-  shsCharacteristics = [];
-  for (var i = 0; i < 4; ++i) {
-    shsCapacity = document.getElementById(`shs_capacity_${i}`).value;
-    maxPower = document.getElementById(`shs_max_power_${i}`).value;
-    price = document.getElementById(`shs_price_${i}`).value;
-
-    if (shsCapacity > 0 && maxPower > 0 && price > 0) {
-      shsCharacteristics.push({
-        price: price,
-        capacity: shsCapacity,
-        max_power: maxPower,
-      });
-    }
-  }
-  return shsCharacteristics;
-}
-
 // POST REQUESTS
 function getBuildingCoordinates(boundariesCoordinates) {
   $("#loading").show();
@@ -186,13 +160,9 @@ function optimize_grid() {
 }
 
 function identify_shs() {
-  const cable_price_per_meter =
-    cable_price_per_meter_for_shs_mst_identification.value;
-  const additional_connection_price =
-    additional_connection_price_for_shs_mst_identification.value;
+  const cable_price_per_meter = price_distribution_cable.value;
+  const additional_connection_price = 0;
   const algo = "mst1";
-  const shs_characteristics = logShsCharacteristics();
-
   $("#loading").show();
   $.ajax({
     url: "shs_identification/",
@@ -203,7 +173,6 @@ function identify_shs() {
       additional_connection_price_for_shs_mst_identification:
         additional_connection_price,
       algo,
-      shs_characteristics,
     }),
     dataType: "json",
     statusCode: {
@@ -339,11 +308,16 @@ function selectBoundariesAdd() {
   // changing the label of the button
   if (textButtonDrawBoundariesAdd.innerHTML === "Select") {
     textButtonDrawBoundariesAdd.innerHTML = "Draw Lines";
-    textButtonDrawBoundariesAdd.setAttribute('title', 'Draw a polygon on the map to add nodes');
-
+    textButtonDrawBoundariesAdd.setAttribute(
+      "title",
+      "Draw a polygon on the map to add nodes"
+    );
   } else {
     textButtonDrawBoundariesAdd.innerHTML = "Select";
-    textButtonDrawBoundariesAdd.setAttribute('title', 'Select all nodes inside the drawn polygon');
+    textButtonDrawBoundariesAdd.setAttribute(
+      "title",
+      "Select all nodes inside the drawn polygon"
+    );
   }
 
   // changing the type of the button (primary <-> success)
@@ -369,7 +343,6 @@ function selectBoundariesAdd() {
     removeBoundaries();
     textButtonDrawBoundariesAdd.innerHTML = "Draw Lines";
   }
-
 }
 
 // selecting boundaries of the site for removing new nodes
@@ -381,10 +354,16 @@ function selectBoundariesRemove() {
   // changing the label of the button
   if (textButtonDrawBoundariesRemove.innerHTML === "Remove") {
     textButtonDrawBoundariesRemove.innerHTML = "Draw Lines";
-    textButtonDrawBoundariesRemove.setAttribute('title', 'Draw a polygon on the map to remove nodes');
+    textButtonDrawBoundariesRemove.setAttribute(
+      "title",
+      "Draw a polygon on the map to remove nodes"
+    );
   } else {
     textButtonDrawBoundariesRemove.innerHTML = "Remove";
-    textButtonDrawBoundariesRemove.setAttribute('title', 'Remove all nodes inside the drawn polygon');
+    textButtonDrawBoundariesRemove.setAttribute(
+      "title",
+      "Remove all nodes inside the drawn polygon"
+    );
   }
 
   // changing the type of the button (primary <-> alert)
@@ -410,5 +389,4 @@ function selectBoundariesRemove() {
     removeBoundaries();
     textButtonDrawBoundariesRemove.innerHTML = "Draw Lines";
   }
-
 }
