@@ -217,15 +217,21 @@ var markerPole = new L.Icon({
   iconSize: [16, 16],
 });
 
+var markerShs = new L.Icon({
+  iconUrl: "fastapi_app/static/images/markers/markerShs.png",
+  iconSize: [16, 16],
+});
+
 var legend = L.control({ position: "bottomright" });
 legend.onAdd = function (map) {
   var div = L.DomUtil.create("div", "info legend"),
-    description = ["High Demand", "Medium Demand", "Low Demand", "Pole"],
+    description = ["High Demand", "Medium Demand", "Low Demand", "Pole", "SHS"],
     image = [
       "fastapi_app/static/images/markers/markerHighDemand.png",
       "fastapi_app/static/images/markers/markerMediumDemand.png",
       "fastapi_app/static/images/markers/markerLowDemand.png",
       "fastapi_app/static/images/markers/markerPole.png",
+      "fastapi_app/static/images/markers/markerShs.png",
     ];
 
   // loop through our density intervals and generate a label with a colored square for each interval
@@ -298,9 +304,13 @@ mainMap.on("click", function (e) {
     }
   }
 
-  if ((document.getElementById("radio_button_nodes_boundaries").checked) &&
-    ((document.getElementById("button_draw_boundaries_add").innerHTML === "Select") ||
-      (document.getElementById("button_draw_boundaries_remove").innerHTML === "Remove"))) {
+  if (
+    document.getElementById("radio_button_nodes_boundaries").checked &&
+    (document.getElementById("button_draw_boundaries_add").innerHTML ===
+      "Select" ||
+      document.getElementById("button_draw_boundaries_remove").innerHTML ===
+        "Remove")
+  ) {
     siteBoundaries.push([poplocation.lat, poplocation.lng]);
 
     // adding the new solid line to siteBoundaryLines and draw it on the map
@@ -336,6 +346,8 @@ function drawMarker(latitude, longitude, type) {
     icon_type = markerLowDemand;
   } else if (type === "pole") {
     icon_type = markerPole;
+  } else if (type === "shs") {
+    icon_type = markerShs;
   }
   markers.push(
     L.marker([latitude, longitude], { icon: icon_type }).addTo(mainMap)

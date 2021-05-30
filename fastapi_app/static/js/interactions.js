@@ -224,6 +224,12 @@ function refreshNodeFromDataBase() {
               icon: markerPole,
             }).addTo(mainMap)
           );
+        } else if (node.node_type === "shs") {
+          markers.push(
+            L.marker([node.latitude, node.longitude], {
+              icon: markerShs,
+            }).addTo(mainMap)
+          );
         } else {
           peak_demand_per_sq_meter = 4;
           total_demand = node.area * peak_demand_per_sq_meter;
