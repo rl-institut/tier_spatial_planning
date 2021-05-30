@@ -1252,7 +1252,7 @@ class GridOptimizer:
 
             offsprings = [offspring for offsprings_pair in offspring_pairs
                           for offspring in offsprings_pair]
-            # mutate offspings
+            # mutate offsprings
             if number_of_hubs == 'undefined':
                 offsprings = [self.ga_random_mutation(
                     grid=grid,
