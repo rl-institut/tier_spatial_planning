@@ -49,6 +49,7 @@ class OptimizeGridRequest(BaseModel):
     price_interhub_cable: float
     price_distribution_cable: float
     number_of_relaxation_steps_nr: int
+    max_connection_poles: int
 
 
 class ShsIdentificationRequest(BaseModel):

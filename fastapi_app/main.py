@@ -344,7 +344,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                 price_household=optimize_grid_request.price_household,
                 price_interhub_cable_per_meter=optimize_grid_request.price_interhub_cable,
                 price_distribution_cable_per_meter=optimize_grid_request.price_distribution_cable,
-                default_hub_capacity=4)
+                default_hub_capacity=optimize_grid_request.max_connection_poles)
     # Make sure that new grid object is empty before adding nodes to it
     grid.clear_nodes_and_links()
 
