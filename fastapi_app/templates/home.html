@@ -154,8 +154,14 @@
               placeholder="max_connection_poles" value="4" min="1" step="1" />
           </label>
         </div>
-        <div class="cell small-4">
-          <button id="button_optimize" class="ui button sidebar-padding" onclick="optimize_grid()">Optimize</button>
+        <div class="cell small-4 grid-y">
+          <div class="cell small-6">
+            <button id="button_optimize" class="ui button sidebar-padding" onclick="optimize_grid()">Optimize</button>
+          </div>
+          <div class="cell small-6">
+            <button id="button_identify_shs" class="ui button sidebar-padding" onclick="identify_shs()">Identify
+              SHS</button>
+          </div>
         </div>
       </div>
     </div>
