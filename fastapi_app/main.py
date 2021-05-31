@@ -360,7 +360,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
         node_type = node[4]
         type_fixed = bool(node[5])
 
-        if ((not node_type == 'pole') or (node_type == "pole" and type_fixed == True)):
+        if (not node_type == 'shs') and ((not node_type == 'pole') or (node_type == "pole" and type_fixed == True)):
 
             x, y = conv.xy_coordinates_from_latitude_longitude(
                 latitude=latitude,
