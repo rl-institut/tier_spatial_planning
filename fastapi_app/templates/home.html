@@ -95,8 +95,8 @@
           <legend>Main Components of Mini-Grid</legend>
           <div class="cell shrink grid-x">
             <label class="cell small-3">Poles ($)
-              <input id="price_meterhub" class="sidebar-input" name="price_meterhub" type="number"
-                placeholder="price_meterhub" title="Unit cost of each pole in $" value="600" />
+              <input id="price_pole" class="sidebar-input" name="price_pole" type="number" placeholder="price_pole"
+                title="Unit cost of each pole in $" value="600" />
             </label>
             <label class="cell small-3">Connections ($)
               <input id="price_household" class="sidebar-input" name="price_household" type="number"
@@ -109,8 +109,8 @@
                 value="2" />
             </label>
             <label class="cell small-3">HV Cables ($/m)
-              <input id="price_interhub_cable" class="sidebar-input" name="price_interhub_cable" type="number"
-                placeholder="price_interhub_cable" title="Cost of cables between poles in $/m" value="5" />
+              <input id="price_pole_cable" class="sidebar-input" name="price_pole_cable" type="number"
+                placeholder="price_pole_cable" title="Cost of cables between poles in $/m" value="5" />
             </label>
           </div>
         </fieldset>
@@ -120,17 +120,16 @@
           <legend>Solar Home Systems</legend>
           <div class="cell shrink grid-x">
             <label class="cell small-4">High Demand ($)
-              <input id="price_shs_hd" class="sidebar-input" name="price_shs_hd" type="number"
-                placeholder="price_shs_hd" title="Cost of SHS components for high-demand consumers in $" value="200" />
+              <input id="price_shs_hd" class="sidebar-input" name="price_shs" type="number" placeholder="price_shs_hd"
+                title="Cost of SHS components for high-demand consumers in $" value="300" />
             </label>
             <label class="cell small-4">Medium Demand ($)
-              <input id="price_shs_md" class="sidebar-input" name="price_shs_md" type="number"
-                placeholder="price_shs_md" title="Cost of SHS components for medium-demand consumers in $"
-                value="200" />
+              <input id="price_shs_md" class="sidebar-input" name="price_shs" type="number" placeholder="price_shs_md"
+                title="Cost of SHS components for medium-demand consumers in $" value="200" />
             </label>
             <label class="cell small-4">Low Demand ($)
-              <input id="price_shs_ld" class="sidebar-input" name="price_shs_ld" type="number"
-                placeholder="price_shs_ld" title="Cost of SHS components for low-demand consumers in $" value="200" />
+              <input id="price_shs_ld" class="sidebar-input" name="price_shs" type="number" placeholder="price_shs_ld"
+                title="Cost of SHS components for low-demand consumers in $" value="100" />
             </label>
           </div>
         </fieldset>

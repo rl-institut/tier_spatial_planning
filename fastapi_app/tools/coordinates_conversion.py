@@ -2,7 +2,7 @@ import math
 
 
 def xy_coordinates_from_latitude_longitude(latitude, longitude, ref_latitude, ref_longitude):
-    """ This function converts (latitude, longitude) coordinates into ()x, y) 
+    """ This function converts (latitude, longitude) coordinates into (x, y) 
     plane coordinates using a reference latitude and longitude.
 
     Parameters

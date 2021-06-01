@@ -1,6 +1,7 @@
+from sqlalchemy.sql.expression import true
 import uvicorn
 import fastapi_app.tools.boundary_identification as bi
-import fastapi_app.tools.convertion as conv
+import fastapi_app.tools.coordinates_conversion as conv
 import fastapi_app.tools.shs_identification as shs_ident
 import fastapi_app.tools.io as io
 import fastapi_app.models as models
@@ -147,11 +148,12 @@ async def import_config(file: UploadFile = File(...)):
         str(nodes_df.iloc[i]['node_type']),
         bool(nodes_df.iloc[i]['type_fixed']),
         float(nodes_df.iloc[i]['required_capacity']),
-        float(nodes_df.iloc[i]['max_power'])
+        float(nodes_df.iloc[i]['max_power']),
+        float(nodes_df.iloc[i]['is_connected'])
     ) for i in range(nodes_df.shape[0])]
 
     cursor.executemany(
-        'INSERT INTO nodes VALUES(?, ?, ?, ?, ?, ?, ?, ?)', records)
+        'INSERT INTO nodes VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)', records)
 
     # Populate links table from links sheet of file
     links_df = pd.read_excel(f"{path}/import_export/import.xlsx",
@@ -261,10 +263,21 @@ async def select_boundaries_add(
         nodes.latitude = coordinates[0]
         nodes.longitude = coordinates[1]
         nodes.area = building_area[label]
-        nodes.node_type = ""
+
+        # initial calculations for demand estimation
+        peak_demand_per_sq_meter = 4
+        total_demand = nodes.area * peak_demand_per_sq_meter
+        if total_demand >= 100:
+            nodes.node_type = "high-demand"
+        elif 40 < total_demand < 100:
+            nodes.node_type = "medium-demand"
+        else:
+            nodes.node_type = "low-demand"
+
         nodes.fixed_type = False
         nodes.required_capacity = nodes.area * 4
         nodes.max_power = nodes.area * 4
+        nodes.is_connected = True
         db.add(nodes)
         db.commit()
 
@@ -304,6 +317,7 @@ async def add_node(add_node_request: models.AddNodeRequest,
     nodes.fixed_type = add_node_request.fixed_type
     nodes.required_capacity = add_node_request.required_capacity
     nodes.max_power = add_node_request.max_power
+    nodes.is_connected = add_node_request.is_connected
 
     db.add(nodes)
     db.commit()
@@ -340,15 +354,14 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
             clear_single_node(node_index)
 
     # Create new grid object
-    grid = Grid(price_meterhub=optimize_grid_request.price_meterhub,
+    grid = Grid(price_meterhub=optimize_grid_request.price_pole,
                 price_household=optimize_grid_request.price_household,
-                price_interhub_cable_per_meter=optimize_grid_request.price_interhub_cable,
+                price_interhub_cable_per_meter=optimize_grid_request.price_pole_cable,
                 price_distribution_cable_per_meter=optimize_grid_request.price_distribution_cable,
                 default_hub_capacity=optimize_grid_request.max_connection_poles)
     # Make sure that new grid object is empty before adding nodes to it
     grid.clear_nodes_and_links()
 
-    r = 6371000     # Radius of the earth [m]
     # use latitude of the node that is the most west to set origin of x coordinates
     ref_latitude = math.radians(min([node[1] for node in nodes]))
     # use latitude of the node that is the most south to set origin of y coordinates
@@ -428,6 +441,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
             nodes.fixed_type = False
             nodes.required_capacity = 0
             nodes.max_power = 0
+            nodes.is_connected = True
 
             db.add(nodes)
             db.commit()
@@ -515,7 +529,6 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
             "message": "No nodes in table, no identification to be performed"
         }
 
-    r = 6371000     # Radius of the earth [m]
     # use latitude of the node that is the most west to set origin of x coordinates
     ref_latitude = math.radians(min([node[1] for node in nodes]))
     # use latitude of the node that is the most south to set origin of y coordinates
@@ -523,22 +536,29 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
 
     nodes_df = shs_ident.create_nodes_df()
 
-    cable_price_per_meter =\
-        shs_identification_request.cable_price_per_meter_for_shs_mst_identification
-    additional_price_for_connection_per_node =\
-        shs_identification_request.additional_connection_price_for_shs_mst_identification
+    cable_price_per_meter = shs_identification_request.cable_price_per_meter_for_shs_mst_identification
+    additional_price_for_connection_per_node = shs_identification_request.connection_cost_to_minigrid
 
     for node in nodes:
         latitude = math.radians(node[1])
         longitude = math.radians(node[2])
 
-        x = r * (longitude - ref_longitude) * math.cos(ref_latitude)
-        y = r * (latitude - ref_latitude)
+        x, y = conv.xy_coordinates_from_latitude_longitude(
+            latitude=latitude,
+            longitude=longitude,
+            ref_latitude=ref_latitude,
+            ref_longitude=ref_longitude)
 
         node_label = node[0]
         required_capacity = node[6]
         max_power = node[7]
-        shs_price = 200     # default value for shs price
+        # is_connected = node[8]
+        if node[4] == "low-demand":
+            shs_price = shs_identification_request.price_shs_ld
+        elif node[4] == "medium-demand":
+            shs_price = shs_identification_request.price_shs_md
+        elif node[4] == "high-demand":
+            shs_price = shs_identification_request.price_shs_hd
 
         shs_ident.add_node(nodes_df, node_label, x, y,
                            required_capacity, max_power, shs_price=shs_price)

@@ -14,9 +14,9 @@ async function importConfig(include_settings) {
         refreshLinksFromDatBase();
         if (include_settings === true) {
           setSettings(
-            (price_meterhub = result.price_meterhub),
+            (price_pole = result.price_pole),
             (price_household = result.price_household),
-            (price_interhub_cable = result.price_interhub_cable),
+            (price_pole_cable = result.price_pole_cable),
             (price_distribution_cable = result.price_distribution_cable),
             (shs_identification_connection_price =
               result.shs_identification_connection_price),
@@ -30,22 +30,19 @@ async function importConfig(include_settings) {
 }
 
 function setSettings(
-  price_meterhub,
+  price_pole,
   price_household,
-  price_interhub_cable,
+  price_pole_cable,
   price_distribution_cable,
   shs_identification_cable_price,
   shs_identification_connection_price,
   number_of_relaxation_steps_nr
 ) {
-  document.getElementById("price_meterhub").value = price_meterhub;
+  document.getElementById("price_pole").value = price_pole;
   document.getElementById("price_household").value = price_household;
-  document.getElementById("price_interhub_cable").value = price_interhub_cable;
+  document.getElementById("price_pole_cable").value = price_pole_cable;
   document.getElementById("price_distribution_cable").value =
     price_distribution_cable;
-  document.getElementById(
-    "additional_connection_price_for_shs_mst_identification"
-  ).value = shs_identification_connection_price;
   document.getElementById("number_of_relaxation_steps_nr").value =
     number_of_relaxation_steps_nr;
 }
@@ -56,9 +53,9 @@ async function generateExportFile() {
     type: "POST",
     contentType: "application/json",
     data: JSON.stringify({
-      price_meterhub: price_meterhub.value,
+      price_pole: price_pole.value,
       price_household: price_household.value,
-      price_interhub_cable: price_interhub_cable.value,
+      price_pole_cable: price_pole_cable.value,
       price_distribution_cable: price_distribution_cable.value,
       shs_identification_cable_price: price_distribution_cable.value,
       //      shs_identification_cable_price:

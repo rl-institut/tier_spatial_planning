@@ -110,7 +110,8 @@ function addNodeToDatBase(
   node_type,
   fixed_type,
   required_capacity,
-  max_power
+  max_power,
+  is_connected,
 ) {
   $.ajax({
     url: "add_node/",
@@ -124,6 +125,7 @@ function addNodeToDatBase(
       fixed_type: fixed_type,
       required_capacity: required_capacity,
       max_power: max_power,
+      is_connected: is_connected,
     }),
     dataType: "json",
     statusCode: {
@@ -143,7 +145,7 @@ function optimize_grid() {
     data: JSON.stringify({
       price_meterhub: price_meterhub.value,
       price_household: price_household.value,
-      price_interhub_cable: price_interhub_cable.value,
+      price_pole_cable: price_pole_cable.value,
       price_distribution_cable: price_distribution_cable.value,
       number_of_relaxation_steps_nr: number_of_relaxation_steps_nr.value,
       max_connection_poles: max_connection_poles.value,
@@ -160,8 +162,8 @@ function optimize_grid() {
 }
 
 function identify_shs() {
-  const cable_price_per_meter = price_distribution_cable.value;
-  const additional_connection_price = 0;
+  const max_distance_between_poles = 40; // must be definded globally in the fututre
+  const cable_pole_price_per_meter = price_pole_cable.value + price_pole.value / max_distance_between_poles;
   const algo = "mst1";
   $("#loading").show();
   $.ajax({
@@ -169,9 +171,11 @@ function identify_shs() {
     type: "POST",
     contentType: "application/json",
     data: JSON.stringify({
-      cable_price_per_meter_for_shs_mst_identification: cable_price_per_meter,
-      additional_connection_price_for_shs_mst_identification:
-        additional_connection_price,
+      cable_price_per_meter_for_shs_mst_identification: cable_pole_price_per_meter,
+      connection_cost_to_minigrid: price_household.value,
+      price_shs_hd: price_shs_hd.value,
+      price_shs_md: price_shs_md.value,
+      price_shs_ld: price_shs_ld.value,
       algo,
     }),
     dataType: "json",
@@ -229,21 +233,6 @@ function refreshNodeFromDataBase() {
             L.marker([node.latitude, node.longitude], {
               icon: markerShs,
             }).addTo(mainMap)
-          );
-        } else {
-          peak_demand_per_sq_meter = 4;
-          total_demand = node.area * peak_demand_per_sq_meter;
-          if (total_demand >= 100) {
-            icon = markerHighDemand;
-          } else if (total_demand < 100 && total_demand > 40) {
-            icon = markerMediumDemand;
-          } else {
-            icon = markerLowDemand;
-          }
-          markers.push(
-            L.marker([node.latitude, node.longitude], { icon: icon }).addTo(
-              mainMap
-            )
           );
         }
       }
