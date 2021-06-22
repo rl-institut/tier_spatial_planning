@@ -3153,11 +3153,17 @@ class GridOptimizer:
         if number_of_hill_climbers_runs > 0 and print_progress_bar:
             print('\n\nHill climber runs...\n')
         for i in range(number_of_hill_climbers_runs):
-            self.printProgressBar(
-                iteration=i,
-                total=number_of_hill_climbers_runs,
-                price=(grid_copy.price() - (number_of_virtual_hubs
-                                            * price_household)))
+            if print_progress_bar:
+                if locate_new_hubs_freely:
+                    current_price = grid_copy.price()
+                else:
+                    current_price = grid_copy.price() - (number_of_virtual_hubs
+                                                         * price_household)
+                self.printProgressBar(
+                    iteration=i,
+                    total=number_of_hill_climbers_runs,
+                    price=current_price
+                )
             counter = 0
             for hub in grid_copy.get_hubs().index:
                 counter += 1
@@ -3166,19 +3172,24 @@ class GridOptimizer:
                     grid=grid_copy,
                     hub=hub,
                     gradient=gradient)
+                self.connect_nodes(grid_copy)
                 if save_output:
                     algo_run_log.loc[f'{algo_run_log.shape[0]}'] = [
                         time.time() - start_time,
                         grid_copy.price() - (number_of_virtual_hubs
                                              * price_household),
                         0]
-
-                self.printProgressBar(
-                    iteration=i + ((counter + 1) /
-                                   grid_copy.get_hubs().shape[0]),
-                    total=number_of_hill_climbers_runs,
-                    price=(grid_copy.price() - (number_of_virtual_hubs
-                                                * price_household)))
+                if print_progress_bar:
+                    if locate_new_hubs_freely:
+                        current_price = grid_copy.price()
+                    else:
+                        current_price = (grid_copy.price() - (number_of_virtual_hubs
+                                                              * price_household))
+                    self.printProgressBar(
+                        iteration=i + ((counter + 1) /
+                                       grid_copy.get_hubs().shape[0]),
+                        total=number_of_hill_climbers_runs,
+                        price=current_price)
 
         if not locate_new_hubs_freely:
             # Set closest node to every virtual hub to meterhubs and remove virtual
