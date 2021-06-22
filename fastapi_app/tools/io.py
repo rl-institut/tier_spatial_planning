@@ -27,7 +27,9 @@ def create_empty_nodes_df():
             'required_capacity':
             pd.Series([], dtype=np.dtype(float)),
             'max_power':
-            pd.Series([], dtype=np.dtype(float))
+            pd.Series([], dtype=np.dtype(float)),
+            'is_connected':
+            pd.Series([], dtype=np.dtype(bool))
         }
     ).set_index('label')
 
@@ -51,6 +53,9 @@ def create_empty_links_df():
             pd.Series([], dtype=np.dtype(float)),
         }
     ).set_index('label')
+
+
+# taken from sgdot (temporary comment)
 
 
 def make_folder(folder):
