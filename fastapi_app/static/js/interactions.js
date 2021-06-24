@@ -111,7 +111,7 @@ function addNodeToDatBase(
   fixed_type,
   required_capacity,
   max_power,
-  is_connected,
+  is_connected
 ) {
   $.ajax({
     url: "add_node/",
@@ -143,7 +143,7 @@ function optimize_grid() {
     type: "POST",
     contentType: "application/json",
     data: JSON.stringify({
-      price_meterhub: price_meterhub.value,
+      price_pole: price_pole.value,
       price_household: price_household.value,
       price_pole_cable: price_pole_cable.value,
       price_distribution_cable: price_distribution_cable.value,
@@ -163,7 +163,8 @@ function optimize_grid() {
 
 function identify_shs() {
   const max_distance_between_poles = 40; // must be definded globally in the fututre
-  const cable_pole_price_per_meter = price_pole_cable.value + price_pole.value / max_distance_between_poles;
+  const cable_pole_price_per_meter =
+    price_pole_cable.value + price_pole.value / max_distance_between_poles;
   const algo = "mst1";
   $("#loading").show();
   $.ajax({
@@ -171,7 +172,8 @@ function identify_shs() {
     type: "POST",
     contentType: "application/json",
     data: JSON.stringify({
-      cable_price_per_meter_for_shs_mst_identification: cable_pole_price_per_meter,
+      cable_price_per_meter_for_shs_mst_identification:
+        cable_pole_price_per_meter,
       connection_cost_to_minigrid: price_household.value,
       price_shs_hd: price_shs_hd.value,
       price_shs_md: price_shs_md.value,
