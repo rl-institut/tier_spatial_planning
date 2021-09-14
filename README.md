@@ -1,13 +1,13 @@
-# PeopleSun WP4 geospatial tool
+# Description
 
-This geospatial computer tool is part of the PeopleSun project (peoplesun.org).
-The project contains a webapp that wraps tools to optimize off-grid systems based on a webmap.
+This open-source computer tool is part of the PeopleSuN project (https://www.peoplesun.org), which contains a web-based app that aims to optimize the network structure as well as the power supply system for mini-grid systems.
 
-The features of the tool are the following:
+The features of the tool are listed below:
 
-- Identification of the buildings from OSM (overpass) API.
-- Optimization of network layout of mini-grids with a hub structure. The optimization is based on the Python sgdotlite package.
-- Identification of buildings that are located far enough to the rest of the buildings so that it makes sense to provide them with idividual solar-home systems.
+- Automatic identification of buildings from the OpenStreetMap inside a given boundary.
+- Network optimization of mini-grids based on the Python package /*sgdotlite*/.
+- Optimization of the power supply systems for mini-grids (PV, battery, and diesel) using a Python-based tool called /*Offgridders*/. 
+- Automatic identification of buildings that are better to be served by idividual solar home systems.
 
 
 ## Get started
