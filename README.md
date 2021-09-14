@@ -25,7 +25,7 @@ i. On Linux, MacOs
 source venv/bin/activate
 
 ii. On Windows
-venv\Scripts\bin\activate
+venv\Scripts\activate
 
 3. Install the required packages using the following command:
    pip install -r requirements.txt
