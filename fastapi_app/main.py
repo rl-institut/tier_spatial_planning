@@ -1,5 +1,4 @@
 from sqlalchemy.sql.expression import true
-import uvicorn
 import fastapi_app.tools.boundary_identification as bi
 import fastapi_app.tools.coordinates_conversion as conv
 import fastapi_app.tools.shs_identification as shs_ident
