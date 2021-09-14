@@ -5,8 +5,8 @@ This open-source computer tool is part of the PeopleSuN project (https://www.peo
 The features of the tool are listed below:
 
 - Automatic identification of buildings from the OpenStreetMap inside a given boundary.
-- Network optimization of mini-grids based on the Python package /*sgdotlite*/.
-- Optimization of the power supply systems for mini-grids (PV, battery, and diesel) using a Python-based tool called /*Offgridders*/. 
+- Network optimization of mini-grids based on the Python package **sgdotlite**.
+- Optimization of the power supply systems for mini-grids (PV, battery, and diesel) using a Python-based tool called [**Offgridders**](https://offgridders.readthedocs.io/en/latest/Home.html). 
 - Automatic identification of buildings that are better to be served by idividual solar home systems.
 
 
