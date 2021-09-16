@@ -350,7 +350,9 @@ function drawMarker(latitude, longitude, type) {
     icon_type = markerShs;
   }
   markers.push(
-    L.marker([latitude, longitude], { icon: icon_type }).addTo(mainMap)
+    L.marker([latitude, longitude], { icon: icon_type }).bindTooltip(
+      "type: " + type
+    ).addTo(map)
   );
 }
 
@@ -374,7 +376,10 @@ function drawLinkOnMap(
     opacity: 0.5,
     smoothFactor: 1,
   });
-  lines.push(link_polyline.addTo(map));
+  lines.push(
+    link_polyline.bindTooltip(
+      pointA.distanceTo(pointB).toFixed(2).toString() + " m"
+    ).addTo(map));
 }
 
 function ereaseLinksFromMap(map) {

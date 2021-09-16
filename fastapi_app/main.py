@@ -22,6 +22,8 @@ import numpy as np
 import time
 import os
 import aiofiles
+#for debugging
+import uvicorn 
 
 app = FastAPI()
 
@@ -384,6 +386,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                 allocation_capacity = grid.get_default_hub_capacity()
 
             else:
+
                 node_type = "household"
                 allocation_capacity = 0
 
@@ -448,6 +451,8 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
             node_type = grid.get_nodes().at[index, "node_type"]
             if node_type == 'meterhub':
                 node_type = 'pole'
+            else:
+                node_type = "low-demand"
             sql_delete_query = (
                 f"""UPDATE nodes
                 SET node_type = '{node_type}'
