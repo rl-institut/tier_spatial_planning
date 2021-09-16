@@ -1,5 +1,6 @@
 $(document).ready(function () {
   $(document).foundation();
+  refreshFromFiles(nodes = True, links = True)
   refreshNodeFromDataBase();
   refreshLinksFromDatBase();
 });
@@ -189,6 +190,14 @@ function identify_shs() {
       },
     },
   });
+}
+
+function refreshFromFiles(nodes, links) {
+  var xhr = new XMLHttpRequest();
+  url = "nodes_db_html";
+  xhr.open("GET", url, true);
+  xhr.responseType = "json";
+  xhr.send();
 }
 
 function refreshNodeFromDataBase() {
