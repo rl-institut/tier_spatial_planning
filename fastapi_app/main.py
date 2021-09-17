@@ -1,4 +1,5 @@
-from sqlalchemy.sql.expression import true
+from sqlalchemy.sql.expression import column, true
+from sqlalchemy.sql.sqltypes import Boolean
 import fastapi_app.tools.boundary_identification as bi
 import fastapi_app.tools.coordinates_conversion as conv
 import fastapi_app.tools.shs_identification as shs_ident
@@ -10,7 +11,7 @@ from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi_app.database import SessionLocal, engine
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, raiseload
 import sqlite3
 from fastapi_app.tools.grids import Grid
 from fastapi_app.tools.grid_optimizer import GridOptimizer
@@ -194,6 +195,62 @@ def home(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse("home.html", {
         "request": request
     })
+
+
+@app.get("/csv_to_html/{nodes}/{links}")
+async def get_nodes(nodes: bool, links: bool):
+    """
+    This function reads all nodes in the csv file and sends them to the front-end
+
+    Parameters
+    ----------
+    nodes:
+        boolean parameter to check if nodes must be sent to the html or not
+    
+    links:
+        boolean parameter to check if links must be sent to the html or not
+    """
+
+    dir_name = "data"
+    nodes_file = "nodes.csv"
+    links_file = "links.csv"
+    full_path_nodes = os.path.join(dir_name, nodes_file)
+    full_path_links = os.path.join(dir_name, links_file)
+
+    if nodes:
+        if not os.path.isfile(full_path_nodes):
+            header = [
+                "id",
+                "lat",
+                "long",
+                "x",
+                "y",
+                "area",
+                "type",
+                "peak_demand",
+                "is_connected"
+            ]
+            res_nodes = pd.DataFrame(columns=header).to_csv(full_path_nodes)
+    
+    if links:
+        if not os.path.isfile(full_path_links):
+            header = [
+                "id",
+                "lat_from",
+                "long_from",
+                "lat_to",
+                "long_to",
+                "x_from",
+                "y_from",
+                "x_to",
+                "y_to",
+                "type",
+                "cable_thickness",
+                "length"
+            ]
+            res_links = pd.DataFrame(columns=header).to_csv(full_path_links)
+
+    return res_nodes, res_links
 
 
 @app.get("/nodes_db_html")
