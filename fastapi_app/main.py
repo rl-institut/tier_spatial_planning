@@ -21,7 +21,7 @@ import json
 import pandas as pd
 import numpy as np
 import time
-import os
+import os 
 import aiofiles
 #for debugging
 import uvicorn 
@@ -197,8 +197,8 @@ def home(request: Request, db: Session = Depends(get_db)):
     })
 
 
-@app.get("/csv_to_html/{nodes}/{links}")
-async def get_nodes(nodes: bool, links: bool):
+@app.get("/csv_to_html/{nodes}/{links}/{initialize}")
+async def get_nodes_mod(nodes: bool, links: bool, initialize: bool):
     """
     This function reads all nodes in the csv file and sends them to the front-end
 
@@ -209,49 +209,51 @@ async def get_nodes(nodes: bool, links: bool):
     
     links:
         boolean parameter to check if links must be sent to the html or not
+    
+    initialize:
+        boolean parameter that enables initialization and creates the csv files in case they are not created yet
     """
 
-    dir_name = "data"
+    dir_name = Path("fastapi_app/data")
     nodes_file = "nodes.csv"
     links_file = "links.csv"
-    full_path_nodes = os.path.join(dir_name, nodes_file)
-    full_path_links = os.path.join(dir_name, links_file)
+    full_path_nodes = os.path.join(dir_name, nodes_file).replace("\\","/")
+    full_path_links = os.path.join(dir_name, links_file).replace("\\","/")
+    header_nodes = [
+        "id",
+        "lat",
+        "long",
+        "x",
+        "y",
+        "area",
+        "type",
+        "peak_demand",
+        "is_connected"
+    ]
+    header_links = [
+        "id",
+        "lat_from",
+        "long_from",
+        "lat_to",
+        "long_to",
+        "x_from",
+        "y_from",
+        "x_to",
+        "y_to",
+        "type",
+        "cable_thickness",
+        "length"
+    ]
 
-    if nodes:
-        if not os.path.isfile(full_path_nodes):
-            header = [
-                "id",
-                "lat",
-                "long",
-                "x",
-                "y",
-                "area",
-                "type",
-                "peak_demand",
-                "is_connected"
-            ]
-            res_nodes = pd.DataFrame(columns=header).to_csv(full_path_nodes)
+
+    # Creating the csv files
+    # - In case these files do not exist they will be created here
+    # - Each time the code runs from the beginning, the old csv files will be deleted and new blank ones will be created
+    if initialize:
+        pd.DataFrame(columns=header_nodes).to_csv(full_path_nodes, index=False)
+        pd.DataFrame(columns=header_links).to_csv(full_path_links, index=False)    
+
     
-    if links:
-        if not os.path.isfile(full_path_links):
-            header = [
-                "id",
-                "lat_from",
-                "long_from",
-                "lat_to",
-                "long_to",
-                "x_from",
-                "y_from",
-                "x_to",
-                "y_to",
-                "type",
-                "cable_thickness",
-                "length"
-            ]
-            res_links = pd.DataFrame(columns=header).to_csv(full_path_links)
-
-    return res_nodes, res_links
-
 
 @app.get("/nodes_db_html")
 async def get_nodes(request: Request, db: Session = Depends(get_db)):
