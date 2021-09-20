@@ -1,6 +1,6 @@
 $(document).ready(function() {
     $(document).foundation();
-    refreshDataFromFiles(nodes = True, links = True)
+    refreshDataFromFiles(nodes=false, links=false, initialize = true)
     refreshNodeFromDataBase();
     refreshLinksFromDatBase();
 });
@@ -191,12 +191,58 @@ function identify_shs() {
     });
 }
 
-function refreshDataFromFiles(nodes, links) {
+function refreshDataFromFiles(nodes, links, initialize) {
     var xhr = new XMLHttpRequest();
-    url = "csv_to_html/{nodes}/{links}";
+    url = "csv_to_html/" + nodes + "/" + links + "/" + initialize;
     xhr.open("GET", url, true);
     xhr.responseType = "json";
     xhr.send();
+
+    xhr.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+            nodes = this.response;
+            for (marker of markers) {
+                mainMap.removeLayer(marker);
+            }
+            markers.length = 0;
+            for (node of nodes) {
+                if (node.node_type === "high-demand") {
+                    markers.push(
+                        L.marker([node.latitude, node.longitude], {
+                            icon: markerHighDemand,
+                        }).addTo(mainMap)
+                    );
+                } else if (node.node_type === "medium-demand") {
+                    markers.push(
+                        L.marker([node.latitude, node.longitude], {
+                            icon: markerMediumDemand,
+                        }).addTo(mainMap)
+                    );
+                } else if (node.node_type === "low-demand") {
+                    markers.push(
+                        L.marker([node.latitude, node.longitude], {
+                            icon: markerLowDemand,
+                        }).addTo(mainMap)
+                    );
+                } else if (node.node_type === "pole") {
+                    markers.push(
+                        L.marker([node.latitude, node.longitude], {
+                            icon: markerPole,
+                        }).addTo(mainMap)
+                    );
+                } else if (node.node_type === "shs") {
+                    markers.push(
+                        L.marker([node.latitude, node.longitude], {
+                            icon: markerShs,
+                        }).addTo(mainMap)
+                    );
+                }
+            }
+            if (document.getElementById("radio_button_nodes_boundaries").checked) {
+                zoomAll(mainMap);
+            }
+        }
+    };
 }
 
 function refreshNodeFromDataBase() {
@@ -309,7 +355,7 @@ function selectBoundariesAdd() {
     var textButtonDrawBoundariesAdd = document.getElementById(
         "button_draw_boundaries_add"
     );
-    refreshDataFromFiles(nodes = True, links = True)
+    refreshDataFromFiles(nodes = true, links = true)
 
     // changing the label of the button
     if (textButtonDrawBoundariesAdd.innerHTML === "Select") {
