@@ -1,3 +1,4 @@
+from re import X
 from sqlalchemy.sql.expression import column, true
 from sqlalchemy.sql.sqltypes import Boolean
 import fastapi_app.tools.boundary_identification as bi
@@ -21,10 +22,10 @@ import json
 import pandas as pd
 import numpy as np
 import time
-import os 
+import os
 import aiofiles
-#for debugging
-import uvicorn 
+# for debugging
+import uvicorn
 
 app = FastAPI()
 
@@ -38,6 +39,12 @@ templates = Jinja2Templates(directory="fastapi_app/templates")
 grid_db = "grid.db"
 
 path = "fastapi_app"
+
+dir_name = os.path.join(path, "data").replace("\\", "/")
+nodes_file = "nodes.csv"
+links_file = "links.csv"
+full_path_nodes = os.path.join(dir_name, nodes_file).replace("\\", "/")
+full_path_links = os.path.join(dir_name, links_file).replace("\\", "/")
 
 # ---------------------------- SET UP grid.db DATABASE -----------------------#
 
@@ -197,28 +204,11 @@ def home(request: Request, db: Session = Depends(get_db)):
     })
 
 
-@app.get("/csv_to_html/{nodes}/{links}/{initialize}")
-async def get_nodes_mod(nodes: bool, links: bool, initialize: bool):
-    """
-    This function reads all nodes in the csv file and sends them to the front-end
-
-    Parameters
-    ----------
-    nodes:
-        boolean parameter to check if nodes must be sent to the html or not
-    
-    links:
-        boolean parameter to check if links must be sent to the html or not
-    
-    initialize:
-        boolean parameter that enables initialization and creates the csv files in case they are not created yet
-    """
-
-    dir_name = Path("fastapi_app/data")
-    nodes_file = "nodes.csv"
-    links_file = "links.csv"
-    full_path_nodes = os.path.join(dir_name, nodes_file).replace("\\","/")
-    full_path_links = os.path.join(dir_name, links_file).replace("\\","/")
+# Creating the csv files
+# - In case these files do not exist they will be created here
+# - Each time the code runs from the beginning, the old csv files will be deleted and new blank ones will be created
+@app.get("/csv_files_initialization")
+async def csv_files_initialization():
     header_nodes = [
         "id",
         "lat",
@@ -244,16 +234,35 @@ async def get_nodes_mod(nodes: bool, links: bool, initialize: bool):
         "cable_thickness",
         "length"
     ]
+    pd.DataFrame(columns=header_nodes).to_csv(full_path_nodes, index=False)
+    pd.DataFrame(columns=header_links).to_csv(full_path_links, index=False)
 
 
-    # Creating the csv files
-    # - In case these files do not exist they will be created here
-    # - Each time the code runs from the beginning, the old csv files will be deleted and new blank ones will be created
-    if initialize:
-        pd.DataFrame(columns=header_nodes).to_csv(full_path_nodes, index=False)
-        pd.DataFrame(columns=header_links).to_csv(full_path_links, index=False)    
+@app.get("/csv_files_writing/{nodes}/{links}")
+async def csv_files_writing(nodes: bool, links: bool):
+    if nodes:
+        new_node = models.Nodes()
+        new_node.lat
+        new_node.long
+        new_node.x
+        new_node.y
+        new_node.area
+        new_node.type
+        new_node.peak_demand
+        new_node.is_connected
+        pd.DataFrame(new_node).to_csv(full_path_nodes, mode='a', index=False, header=False)
+    if links:
+        pd.DataFrame.to_csv(full_path_links, mode='a', index=False, header=False)
 
-    
+
+@app.get("/csv_files_reading/{nodes}/{links}")
+async def csv_files_reading(nodes: bool, links: bool):
+    if nodes:
+        nodes_list = pd.read_csv(full_path_nodes)
+    if links:
+        links_list = pd.read_csv(full_path_links)
+    return nodes_list, links_list
+
 
 @app.get("/nodes_db_html")
 async def get_nodes(request: Request, db: Session = Depends(get_db)):

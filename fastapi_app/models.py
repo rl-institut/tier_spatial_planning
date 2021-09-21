@@ -7,6 +7,7 @@ from fastapi_app.database import Base
 # Models
 
 
+"""
 class Nodes(Base):
     __tablename__ = "nodes"
 
@@ -20,6 +21,20 @@ class Nodes(Base):
     required_capacity = Column(Numeric(10, 4))
     max_power = Column(Numeric(10, 4))
     is_connected = Column(Boolean)
+"""
+
+
+class Nodes():
+
+    id: int
+    lat: float
+    long: float
+    x: float
+    y: float
+    area: float
+    type: str
+    peak_demand: float
+    is_connected: bool
 
 
 class Links(Base):

@@ -253,54 +253,63 @@ mainMap.on("click", function (e) {
 
   if (document.getElementById("radio_button_nodes_manually").checked) {
     if (document.getElementsByName("radio_button_nodes_manually")[0].checked) {
-      addNodeToDatBase(
+      csv_files_writing(
+        nodes = true,
+        links = false,
+        lat = poplocation.lat,
+        long = poplocation.lng,
+        type = "high-demand"
+      );
+      drawMarker(
         poplocation.lat,
         poplocation.lng,
-        0,
-        "high-demand",
-        true,
-        default_household_required_capacity,
-        default_household_max_power
+        "high-demand"
       );
-      drawMarker(poplocation.lat, poplocation.lng, "high-demand");
     }
 
     if (document.getElementsByName("radio_button_nodes_manually")[1].checked) {
-      addNodeToDatBase(
+      csv_files_writing(
+        nodes = true,
+        links = false,
+        lat = poplocation.lat,
+        long = poplocation.lng,
+        type = "medium-demand"
+      );
+      drawMarker(
         poplocation.lat,
         poplocation.lng,
-        0,
-        "medium-demand",
-        true,
-        default_household_required_capacity,
-        default_household_max_power
+        "medium-demand"
       );
-      drawMarker(poplocation.lat, poplocation.lng, "medium-demand");
     }
 
     if (document.getElementsByName("radio_button_nodes_manually")[2].checked) {
-      addNodeToDatBase(
+      csv_files_writing(
+        nodes = true,
+        links = false,
+        lat = poplocation.lat,
+        lon = poplocation.lng,
+        type = "low-demand"
+      );
+      drawMarker(
         poplocation.lat,
         poplocation.lng,
-        0,
-        "low-demand",
-        true,
-        2 * default_household_required_capacity,
-        2 * default_household_max_power
+        "low-demand"
       );
-      drawMarker(poplocation.lat, poplocation.lng, "low-demand");
     }
+
     if (document.getElementsByName("radio_button_nodes_manually")[3].checked) {
-      addNodeToDatBase(
+      csv_files_writing(
+        nodes = true,
+        links = false,
+        lat = poplocation.lat,
+        long = poplocation.lng,
+        type = "pole"
+      );
+      drawMarker(
         poplocation.lat,
         poplocation.lng,
-        0,
-        "pole",
-        true,
-        2 * default_household_required_capacity,
-        2 * default_household_max_power
+        "pole"
       );
-      drawMarker(poplocation.lat, poplocation.lng, "pole");
     }
   }
 
@@ -309,7 +318,7 @@ mainMap.on("click", function (e) {
     (document.getElementById("button_draw_boundaries_add").innerHTML ===
       "Select" ||
       document.getElementById("button_draw_boundaries_remove").innerHTML ===
-        "Remove")
+      "Remove")
   ) {
     siteBoundaries.push([poplocation.lat, poplocation.lng]);
 
@@ -350,9 +359,7 @@ function drawMarker(latitude, longitude, type) {
     icon_type = markerShs;
   }
   markers.push(
-    L.marker([latitude, longitude], { icon: icon_type }).bindTooltip(
-      "type: " + type
-    ).addTo(map)
+    L.marker([latitude, longitude], { icon: icon_type }).addTo(mainMap)
   );
 }
 

@@ -1,8 +1,8 @@
-$(document).ready(function() {
+$(document).ready(function () {
     $(document).foundation();
-    refreshDataFromFiles(nodes=false, links=false, initialize = true)
-    refreshNodeFromDataBase();
-    refreshLinksFromDatBase();
+    csv_files_initialization();
+    //    refreshNodeFromDataBase();
+    //    refreshLinksFromDatBase();
 });
 
 // --------------------VARIABLES DECLARATION----------------------//
@@ -76,7 +76,7 @@ function getBuildingCoordinates(boundariesCoordinates) {
         }),
         dataType: "json",
         statusCode: {
-            200: function() {
+            200: function () {
                 refreshNodeFromDataBase();
                 $("#loading").hide();
             },
@@ -95,7 +95,7 @@ function removeBuildingsInsideBoundary(boundariesCoordinates) {
         }),
         dataType: "json",
         statusCode: {
-            200: function() {
+            200: function () {
                 refreshNodeFromDataBase();
                 refreshLinksFromDatBase();
                 $("#loading").hide();
@@ -130,7 +130,7 @@ function addNodeToDatBase(
         }),
         dataType: "json",
         statusCode: {
-            200: function() {
+            200: function () {
                 refreshNodeFromDataBase();
             },
         },
@@ -153,7 +153,7 @@ function optimize_grid() {
         }),
         dataType: "json",
         statusCode: {
-            200: function() {
+            200: function () {
                 refreshNodeFromDataBase();
                 refreshLinksFromDatBase();
                 $("#loading").hide();
@@ -182,7 +182,7 @@ function identify_shs() {
         }),
         dataType: "json",
         statusCode: {
-            200: function() {
+            200: function () {
                 refreshNodeFromDataBase();
                 clearLinksDataBase();
                 $("#loading").hide();
@@ -191,14 +191,28 @@ function identify_shs() {
     });
 }
 
-function refreshDataFromFiles(nodes, links, initialize) {
+/* getting properties of nodes and links from the stored data 
+PARAMETERS:
+    nodes: if equal to 'true' nodes will be considered
+    links: if equal to 'true' links will be considered
+*/
+function csv_files_initialization() {
     var xhr = new XMLHttpRequest();
-    url = "csv_to_html/" + nodes + "/" + links + "/" + initialize;
+    url = "csv_files_initialization";
+    xhr.open("GET", url, true);
+    xhr.responseType = "json";
+    xhr.send();
+}
+
+
+function csv_files_reading(nodes, links) {
+    var xhr = new XMLHttpRequest();
+    url = "reading_from_csv/" + nodes + "/" + links;
     xhr.open("GET", url, true);
     xhr.responseType = "json";
     xhr.send();
 
-    xhr.onreadystatechange = function() {
+    xhr.onreadystatechange = function () {
         if (this.readyState == 4 && this.status == 200) {
             nodes = this.response;
             for (marker of markers) {
@@ -245,6 +259,43 @@ function refreshDataFromFiles(nodes, links, initialize) {
     };
 }
 
+
+function csv_files_writing(
+    nodes,
+    links,
+    lat,
+    long,
+    x,
+    y,
+    area,
+    type,
+    peak_demand,
+    is_connected
+) {
+    $.ajax({
+        url: "csv_files_writing/" + nodes + "/" + links,
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({
+            latitude: lat,
+            longitude: long,
+            x: x,
+            y: y,
+            area: area,
+            type: type,
+            peak_demand: peak_demand,
+            is_connected: is_connected,
+        }),
+        dataType: "json",
+        statusCode: {
+            200: function () {
+                csv_files_reading(nodes = true, links = false);
+            },
+        },
+    });
+}
+
+
 function refreshNodeFromDataBase() {
     var xhr = new XMLHttpRequest();
     url = "nodes_db_html";
@@ -252,7 +303,7 @@ function refreshNodeFromDataBase() {
     xhr.responseType = "json";
     xhr.send();
 
-    xhr.onreadystatechange = function() {
+    xhr.onreadystatechange = function () {
         if (this.readyState == 4 && this.status == 200) {
             nodes = this.response;
             for (marker of markers) {
@@ -306,7 +357,7 @@ function refreshLinksFromDatBase() {
     xhr.responseType = "json";
     xhr.send();
 
-    xhr.onreadystatechange = function() {
+    xhr.onreadystatechange = function () {
         if (this.readyState == 4 && this.status == 200) {
             links = this.response;
             ereaseLinksFromMap(mainMap);
@@ -330,7 +381,7 @@ function clearLinksDataBase() {
         url: "clear_link_db/",
         type: "POST",
         statusCode: {
-            200: function() {
+            200: function () {
                 refreshLinksFromDatBase();
             },
         },
@@ -342,7 +393,7 @@ function clear_node_db() {
         url: "clear_node_db/",
         type: "POST",
         statusCode: {
-            200: function() {
+            200: function () {
                 refreshNodeFromDataBase();
                 refreshLinksFromDatBase();
             },
@@ -355,7 +406,6 @@ function selectBoundariesAdd() {
     var textButtonDrawBoundariesAdd = document.getElementById(
         "button_draw_boundaries_add"
     );
-    refreshDataFromFiles(nodes = true, links = true)
 
     // changing the label of the button
     if (textButtonDrawBoundariesAdd.innerHTML === "Select") {
