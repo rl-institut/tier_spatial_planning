@@ -216,7 +216,7 @@ async def csv_files_initialization():
         "x",
         "y",
         "area",
-        "type",
+        "node_type",
         "peak_demand",
         "is_connected"
     ]
@@ -230,7 +230,7 @@ async def csv_files_initialization():
         "y_from",
         "x_to",
         "y_to",
-        "type",
+        "link_type",
         "cable_thickness",
         "length"
     ]
@@ -238,19 +238,23 @@ async def csv_files_initialization():
     pd.DataFrame(columns=header_links).to_csv(full_path_links, index=False)
 
 
-@app.get("/csv_files_writing/{nodes}/{links}")
-async def csv_files_writing(nodes: bool, links: bool):
+@app.post("/csv_files_writing/{nodes}/{links}")
+async def csv_files_writing(
+    add_node_request: models.AddNodeRequest, 
+    nodes: bool, 
+    links: bool):
     if nodes:
-        new_node = models.Nodes()
-        new_node.lat
-        new_node.long
-        new_node.x
-        new_node.y
-        new_node.area
-        new_node.type
-        new_node.peak_demand
-        new_node.is_connected
-        pd.DataFrame(new_node).to_csv(full_path_nodes, mode='a', index=False, header=False)
+        new_node = models.Nodes
+        new_node.lat = add_node_request.lat
+        new_node.long = add_node_request.long
+        new_node.x = add_node_request.x
+        new_node.y = add_node_request.y
+        new_node.area = add_node_request.area
+        new_node.node_type = add_node_request.node_type
+        new_node.peak_demand = add_node_request.peak_demand
+        new_node.is_connected = add_node_request.is_connected
+        #df = [1, new_node.lat, new_node.long, new_node.x,new_node.y, new_node.area, new_node.node_type, new_node.peak_demand, new_node.is_connected]
+        pd.DataFrame(df).to_csv(full_path_nodes, mode='a', index=False, header=False)
     if links:
         pd.DataFrame.to_csv(full_path_links, mode='a', index=False, header=False)
 

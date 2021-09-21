@@ -254,11 +254,10 @@ mainMap.on("click", function (e) {
   if (document.getElementById("radio_button_nodes_manually").checked) {
     if (document.getElementsByName("radio_button_nodes_manually")[0].checked) {
       csv_files_writing(
-        nodes = true,
-        links = false,
-        lat = poplocation.lat,
-        long = poplocation.lng,
-        type = "high-demand"
+        {add_nodes : true,
+        lat : poplocation.lat,
+        long : poplocation.lng,
+        node_type : "high-demand"}
       );
       drawMarker(
         poplocation.lat,
@@ -269,11 +268,10 @@ mainMap.on("click", function (e) {
 
     if (document.getElementsByName("radio_button_nodes_manually")[1].checked) {
       csv_files_writing(
-        nodes = true,
-        links = false,
+        add_nodes = true,
         lat = poplocation.lat,
         long = poplocation.lng,
-        type = "medium-demand"
+        node_type = "medium-demand"
       );
       drawMarker(
         poplocation.lat,
@@ -284,11 +282,10 @@ mainMap.on("click", function (e) {
 
     if (document.getElementsByName("radio_button_nodes_manually")[2].checked) {
       csv_files_writing(
-        nodes = true,
-        links = false,
+        add_nodes = true,
         lat = poplocation.lat,
         lon = poplocation.lng,
-        type = "low-demand"
+        node_type = "low-demand"
       );
       drawMarker(
         poplocation.lat,
@@ -299,11 +296,10 @@ mainMap.on("click", function (e) {
 
     if (document.getElementsByName("radio_button_nodes_manually")[3].checked) {
       csv_files_writing(
-        nodes = true,
-        links = false,
+        add_nodes = true,
         lat = poplocation.lat,
         long = poplocation.lng,
-        type = "pole"
+        node_type = "pole"
       );
       drawMarker(
         poplocation.lat,

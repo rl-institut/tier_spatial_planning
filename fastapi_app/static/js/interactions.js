@@ -261,37 +261,37 @@ function csv_files_reading(nodes, links) {
 
 
 function csv_files_writing(
-    nodes,
-    links,
+    {add_nodes=false,
+    add_links=false,
     lat,
     long,
     x,
     y,
     area,
-    type,
+    node_type,
     peak_demand,
-    is_connected
+    is_connected} = {}
 ) {
     $.ajax({
-        url: "csv_files_writing/" + nodes + "/" + links,
+        url: "csv_files_writing/" + add_nodes + "/" + add_links,
         type: "POST",
+        dataType: "json",
         contentType: "application/json",
         data: JSON.stringify({
-            latitude: lat,
-            longitude: long,
+            lat: lat,
+            long: long,
             x: x,
             y: y,
             area: area,
-            type: type,
+            node_type: node_type,
             peak_demand: peak_demand,
             is_connected: is_connected,
         }),
-        dataType: "json",
-        statusCode: {
-            200: function () {
-                csv_files_reading(nodes = true, links = false);
-            },
-        },
+        // statusCode: {
+        //     200: function () {
+        //         csv_files_reading(add_nodes = true, add_links = false);
+        //     },
+        // },
     });
 }
 

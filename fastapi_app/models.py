@@ -32,7 +32,7 @@ class Nodes():
     x: float
     y: float
     area: float
-    type: str
+    node_type: str
     peak_demand: float
     is_connected: bool
 
@@ -50,13 +50,13 @@ class Links(Base):
 
 
 class AddNodeRequest(BaseModel):
-    latitude: float
-    longitude: float
+    lat: float
+    long: float
+    x: float
+    y: float
     area: float
     node_type: str
-    fixed_type: bool
-    required_capacity: float
-    max_power: float
+    peak_demand: float
     is_connected: bool
 
 
