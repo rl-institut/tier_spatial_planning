@@ -111,7 +111,7 @@ function addNodeToDatBase(
   fixed_type,
   required_capacity,
   max_power,
-  is_connected
+  is_connected=true
 ) {
   $.ajax({
     url: "add_node/",
