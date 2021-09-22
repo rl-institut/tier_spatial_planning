@@ -423,7 +423,7 @@ function selectBoundariesAdd() {
 
     // only when a boundary is drawn, the next steps will be executed
     if (siteBoundaryLines.length > 0) {
-        buildingsAddRemove({ add_remove = "add", boundariesCoordinates = siteBoundaries });
+        buildingsAddRemove({ add_remove: "add", boundariesCoordinates: siteBoundaries });
         removeBoundaries();
         textButtonDrawBoundariesAdd.innerHTML = "Draw Lines";
     }

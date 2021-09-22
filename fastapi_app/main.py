@@ -211,13 +211,11 @@ def home(request: Request, db: Session = Depends(get_db)):
 @app.get("/csv_files_initialization")
 async def csv_files_initialization():
     header_nodes = [
-        "lat",
-        "long",
-        "x",
-        "y",
+        "latitude",
+        "longitude",
         "area",
-        "node_type",
         "peak_demand",
+        "node_type",
         "is_connected"
     ]
     header_links = [
@@ -225,10 +223,6 @@ async def csv_files_initialization():
         "long_from",
         "lat_to",
         "long_to",
-        "x_from",
-        "y_from",
-        "x_to",
-        "y_to",
         "link_type",
         "cable_thickness",
         "length"
@@ -256,12 +250,10 @@ async def db_add_from_js(
         nodes = {}
         nodes[headers[0]] = [add_node_request.latitude]
         nodes[headers[1]] = [add_node_request.longitude]
-        nodes[headers[2]] = [add_node_request.x]
-        nodes[headers[3]] = [add_node_request.y]
-        nodes[headers[4]] = [add_node_request.area]
-        nodes[headers[5]] = [add_node_request.node_type]
-        nodes[headers[6]] = [add_node_request.peak_demand]
-        nodes[headers[7]] = [add_node_request.is_connected]
+        nodes[headers[2]] = [add_node_request.area]
+        nodes[headers[3]] = [add_node_request.peak_demand]
+        nodes[headers[4]] = [add_node_request.node_type]
+        nodes[headers[5]] = [add_node_request.is_connected]
 
         db_add(add_nodes, add_links, nodes)
 
@@ -354,21 +346,21 @@ async def select_boundaries_add_remove(
         # to the 'db_add' function to store nodes properties in the database
         for label, coordinates in building_coordidates_within_boundaries.items():
             nodes = {}
-            nodes["latitude"] = coordinates[0]
-            nodes["longitude"] = coordinates[1]
-            nodes["area"] = building_area[label]
+            nodes["latitude"] = [coordinates[0]]
+            nodes["longitude"] = [coordinates[1]]
+            nodes["area"] = [building_area[label]]
             # a very rough estimation for peak_demand at each node
             peak_demand_per_sq_meter = 4
-            nodes["peak_demand"] = nodes["area"] * peak_demand_per_sq_meter
+            nodes["peak_demand"] = [building_area[label] * peak_demand_per_sq_meter]
             # categorization of node_type based on the peak_demand value
-            if nodes["peak_demand"] >= 100:
-                nodes["node_type"] = "high-demand"
-            elif 40 < nodes["peak_demand"] < 100:
-                nodes["node_type"] = "medium-demand"
+            if nodes["peak_demand"][0] >= 100:
+                nodes["node_type"] = ["high-demand"]
+            elif 40 < nodes["peak_demand"][0] < 100:
+                nodes["node_type"] = ["medium-demand"]
             else:
-                nodes.node_type = "low-demand"
+                nodes["node_type"] = ["low-demand"]
             # it is assumed that all nodes are parts of the mini-grid
-            nodes["is_connected"] = True
+            nodes["is_connected"] = [True]
 
             # storing the nodes in the database
             db_add(add_nodes=True, add_links=False, nodes=nodes)
