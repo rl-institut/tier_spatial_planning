@@ -1,5 +1,6 @@
 from re import X
-from sqlalchemy.sql.expression import column, true
+from fastapi.params import Header
+from sqlalchemy.sql.expression import column, false, true
 from sqlalchemy.sql.sqltypes import Boolean
 import fastapi_app.tools.boundary_identification as bi
 import fastapi_app.tools.coordinates_conversion as conv
@@ -208,7 +209,6 @@ def home(request: Request, db: Session = Depends(get_db)):
 @app.get("/csv_files_initialization")
 async def csv_files_initialization():
     header_nodes = [
-        "id",
         "lat",
         "long",
         "x",
@@ -219,7 +219,6 @@ async def csv_files_initialization():
         "is_connected"
     ]
     header_links = [
-        "id",
         "lat_from",
         "long_from",
         "lat_to",
@@ -240,28 +239,22 @@ async def csv_files_initialization():
 async def db_add(
     add_nodes: bool, 
     add_links: bool,
-    add_node_request: models.AddNodeRequest,
-    db: Session = Depends(get_db)):
+    add_node_request: models.AddNodeRequest):
 
     if add_nodes:
-        nodes = models.Nodes
+        headers = pd.read_csv(full_path_nodes).columns
 
-        nodes.latitude = add_node_request.latitude
-        nodes.longitude = add_node_request.longitude
-        nodes.x = add_node_request.x
-        nodes.y = add_node_request.y
-        nodes.area = add_node_request.area
-        nodes.node_type = add_node_request.node_type
-        nodes.peak_demand = add_node_request.peak_demand
-        nodes.is_connected = add_node_request.is_connected
+        nodes = {}
+        nodes[headers[0]] = add_node_request.latitude
+        nodes[headers[1]] = add_node_request.longitude
+        nodes[headers[2]] = add_node_request.x
+        nodes[headers[3]] = add_node_request.y
+        nodes[headers[4]] = add_node_request.area
+        nodes[headers[5]] = add_node_request.node_type
+        nodes[headers[6]] = add_node_request.peak_demand
+        nodes[headers[7]] = add_node_request.is_connected
 
-        db.add(nodes)
-        db.commit()
-
-        return {
-        "code": "success",
-        "message": "node added to db"
-        }
+        pd.DataFrame(nodes).T.reset_index().to_csv(full_path_nodes, mode='a', header=False, index=False)
 
     if add_links:
         print("hi")
