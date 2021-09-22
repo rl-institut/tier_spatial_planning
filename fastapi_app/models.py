@@ -1,57 +1,59 @@
 from sqlalchemy import Boolean, Column, Integer, String, Numeric
-from sqlalchemy.orm import relationship
+#from sqlalchemy.orm import relationship
 from pydantic import BaseModel
 from typing import Optional
 from fastapi_app.database import Base
 
 # Models
 
-
-"""
 class Nodes(Base):
     __tablename__ = "nodes"
 
     id = Column(Integer, primary_key=True, index=True)
 
-    latitude = Column(Numeric(10, 4))
-    longitude = Column(Numeric(10, 4))
-    area = Column(Numeric(10, 4))
+    latitude = Column(Numeric(10, 5))
+    longitude = Column(Numeric(10, 5))
+    x = Column(Numeric(10,5))
+    y = Column(Numeric(10,5))
+    area = Column(Numeric(10, 2))
     node_type = Column(String)
-    fixed_type = Column(Boolean)
-    required_capacity = Column(Numeric(10, 4))
-    max_power = Column(Numeric(10, 4))
+    peak_demand = Column(Numeric(10, 3))
     is_connected = Column(Boolean)
-"""
 
 
-class Nodes():
+# class Nodes():
 
-    id: int
-    lat: float
-    long: float
-    x: float
-    y: float
-    area: float
-    node_type: str
-    peak_demand: float
-    is_connected: bool
+#     id: int
+#     lat: float
+#     long: float
+#     x: float
+#     y: float
+#     area: float
+#     node_type: str
+#     peak_demand: float
+#     is_connected: bool
 
 
 class Links(Base):
     __tablename__ = "links"
 
     id = Column(Integer, primary_key=True, index=True)
-    lat_from = Column(Numeric(10, 4))
-    long_from = Column(Numeric(10, 4))
-    lat_to = Column(Numeric(10, 4))
-    long_to = Column(Numeric(10, 4))
-    cable_type = Column(String)
-    distance = Column(Numeric(10, 4))
+    lat_from = Column(Numeric(10, 5))
+    long_from = Column(Numeric(10, 5))
+    lat_to = Column(Numeric(10, 5))
+    long_to = Column(Numeric(10, 5))
+    x_from = Column(Numeric(10, 5))
+    y_from = Column(Numeric(10, 5))
+    x_to = Column(Numeric(10, 5))
+    y_to = Column(Numeric(10, 5))
+    link_type = Column(String)
+    cable_thickness = Column(Numeric(10, 3))
+    length = Column(Numeric(10, 2))
 
 
 class AddNodeRequest(BaseModel):
-    lat: float
-    long: float
+    latitude: float
+    longitude: float
     x: float
     y: float
     area: float

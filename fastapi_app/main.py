@@ -48,7 +48,6 @@ full_path_links = os.path.join(dir_name, links_file).replace("\\", "/")
 
 # ---------------------------- SET UP grid.db DATABASE -----------------------#
 
-
 def get_db():
     try:
         db = SessionLocal()
@@ -57,7 +56,6 @@ def get_db():
         db.close()
 
 # --------------------- REDIRECT REQUEST TO FAVICON LOG ----------------------#
-
 
 @app.get("/favicon.ico")
 async def redirect():
@@ -238,25 +236,35 @@ async def csv_files_initialization():
     pd.DataFrame(columns=header_links).to_csv(full_path_links, index=False)
 
 
-@app.post("/csv_files_writing/{nodes}/{links}")
-async def csv_files_writing(
-    add_node_request: models.AddNodeRequest, 
-    nodes: bool, 
-    links: bool):
-    if nodes:
-        new_node = models.Nodes
-        new_node.lat = add_node_request.lat
-        new_node.long = add_node_request.long
-        new_node.x = add_node_request.x
-        new_node.y = add_node_request.y
-        new_node.area = add_node_request.area
-        new_node.node_type = add_node_request.node_type
-        new_node.peak_demand = add_node_request.peak_demand
-        new_node.is_connected = add_node_request.is_connected
-        #df = [1, new_node.lat, new_node.long, new_node.x,new_node.y, new_node.area, new_node.node_type, new_node.peak_demand, new_node.is_connected]
-        pd.DataFrame(df).to_csv(full_path_nodes, mode='a', index=False, header=False)
-    if links:
-        pd.DataFrame.to_csv(full_path_links, mode='a', index=False, header=False)
+@app.post("/db_add/{add_nodes}/{add_links}")
+async def db_add(
+    add_nodes: bool, 
+    add_links: bool,
+    add_node_request: models.AddNodeRequest,
+    db: Session = Depends(get_db)):
+
+    if add_nodes:
+        nodes = models.Nodes
+
+        nodes.latitude = add_node_request.latitude
+        nodes.longitude = add_node_request.longitude
+        nodes.x = add_node_request.x
+        nodes.y = add_node_request.y
+        nodes.area = add_node_request.area
+        nodes.node_type = add_node_request.node_type
+        nodes.peak_demand = add_node_request.peak_demand
+        nodes.is_connected = add_node_request.is_connected
+
+        db.add(nodes)
+        db.commit()
+
+        return {
+        "code": "success",
+        "message": "node added to db"
+        }
+
+    if add_links:
+        print("hi")
 
 
 @app.get("/csv_files_reading/{nodes}/{links}")
@@ -383,7 +391,7 @@ async def add_node(add_node_request: models.AddNodeRequest,
                    db: Session = Depends(get_db)):
     nodes = models.Nodes()
 
-    nodes.latitude = add_node_request.latitude
+    nodes.latitude = add_node_request.lat
     nodes.longitude = add_node_request.longitude
     nodes.area = add_node_request.area
     nodes.node_type = add_node_request.node_type

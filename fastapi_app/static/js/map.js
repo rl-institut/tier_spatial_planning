@@ -253,10 +253,10 @@ mainMap.on("click", function (e) {
 
   if (document.getElementById("radio_button_nodes_manually").checked) {
     if (document.getElementsByName("radio_button_nodes_manually")[0].checked) {
-      csv_files_writing(
+      db_add(
         {add_nodes : true,
-        lat : poplocation.lat,
-        long : poplocation.lng,
+        latitude : poplocation.lat,
+        longitude : poplocation.lng,
         node_type : "high-demand"}
       );
       drawMarker(

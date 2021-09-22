@@ -205,9 +205,9 @@ function csv_files_initialization() {
 }
 
 
-function csv_files_reading(nodes, links) {
+function csv_files_reading(read_nodes, read_links) {
     var xhr = new XMLHttpRequest();
-    url = "reading_from_csv/" + nodes + "/" + links;
+    url = "reading_from_csv/" + read_nodes + "/" + read_links;
     xhr.open("GET", url, true);
     xhr.responseType = "json";
     xhr.send();
@@ -260,26 +260,26 @@ function csv_files_reading(nodes, links) {
 }
 
 
-function csv_files_writing(
+function db_add(
     {add_nodes=false,
     add_links=false,
-    lat,
-    long,
-    x,
-    y,
-    area,
+    latitude=0,
+    longitude=0,
+    x=0,
+    y=0,
+    area=0,
     node_type,
-    peak_demand,
-    is_connected} = {}
+    peak_demand=0,
+    is_connected=true} = {}
 ) {
     $.ajax({
-        url: "csv_files_writing/" + add_nodes + "/" + add_links,
+        url: "/db_add/" + add_nodes + "/" + add_links,
         type: "POST",
         dataType: "json",
         contentType: "application/json",
         data: JSON.stringify({
-            lat: lat,
-            long: long,
+            latitude: latitude,
+            longitude: longitude,
             x: x,
             y: y,
             area: area,
@@ -287,11 +287,11 @@ function csv_files_writing(
             peak_demand: peak_demand,
             is_connected: is_connected,
         }),
-        // statusCode: {
-        //     200: function () {
-        //         csv_files_reading(add_nodes = true, add_links = false);
-        //     },
-        // },
+        statusCode: {
+            200: function () {
+                refreshNodeFromDataBase();
+            },
+        },
     });
 }
 
