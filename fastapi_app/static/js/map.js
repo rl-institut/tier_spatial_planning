@@ -253,11 +253,13 @@ mainMap.on("click", function (e) {
 
   if (document.getElementById("radio_button_nodes_manually").checked) {
     if (document.getElementsByName("radio_button_nodes_manually")[0].checked) {
-      db_add(
-        {add_nodes : true,
-        latitude : poplocation.lat,
-        longitude : poplocation.lng,
-        node_type : "high-demand"}
+      db_add_from_js(
+        {
+          add_nodes: true,
+          latitude: poplocation.lat,
+          longitude: poplocation.lng,
+          node_type: "high-demand"
+        }
       );
       drawMarker(
         poplocation.lat,
@@ -267,11 +269,13 @@ mainMap.on("click", function (e) {
     }
 
     if (document.getElementsByName("radio_button_nodes_manually")[1].checked) {
-      csv_files_writing(
-        add_nodes = true,
-        lat = poplocation.lat,
-        long = poplocation.lng,
-        node_type = "medium-demand"
+      db_add_from_js(
+        {
+          add_nodes: true,
+          latitude: poplocation.lat,
+          longitude: poplocation.lng,
+          node_type: "medium-demand"
+        }
       );
       drawMarker(
         poplocation.lat,
@@ -281,11 +285,13 @@ mainMap.on("click", function (e) {
     }
 
     if (document.getElementsByName("radio_button_nodes_manually")[2].checked) {
-      csv_files_writing(
-        add_nodes = true,
-        lat = poplocation.lat,
-        lon = poplocation.lng,
-        node_type = "low-demand"
+      db_add_from_js(
+        {
+          add_nodes: true,
+          latitude: poplocation.lat,
+          longitude: poplocation.lng,
+          node_type: "low-demand"
+        }
       );
       drawMarker(
         poplocation.lat,
@@ -295,11 +301,13 @@ mainMap.on("click", function (e) {
     }
 
     if (document.getElementsByName("radio_button_nodes_manually")[3].checked) {
-      csv_files_writing(
-        add_nodes = true,
-        lat = poplocation.lat,
-        long = poplocation.lng,
-        node_type = "pole"
+      db_add_from_js(
+        {
+          add_nodes: true,
+          latitude: poplocation.lat,
+          longitude: poplocation.lng,
+          node_type: "pole"
+        }
       );
       drawMarker(
         poplocation.lat,

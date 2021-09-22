@@ -49,6 +49,7 @@ full_path_links = os.path.join(dir_name, links_file).replace("\\", "/")
 
 # ---------------------------- SET UP grid.db DATABASE -----------------------#
 
+
 def get_db():
     try:
         db = SessionLocal()
@@ -57,6 +58,7 @@ def get_db():
         db.close()
 
 # --------------------- REDIRECT REQUEST TO FAVICON LOG ----------------------#
+
 
 @app.get("/favicon.ico")
 async def redirect():
@@ -235,26 +237,33 @@ async def csv_files_initialization():
     pd.DataFrame(columns=header_links).to_csv(full_path_links, index=False)
 
 
+def db_add(add_nodes: bool,
+           add_links: bool,
+           nodes: dict):
+    if add_nodes:
+        pd.DataFrame.from_dict(nodes).to_csv(
+            full_path_nodes, mode='a', header=False, index=False)
+
+
 @app.post("/db_add/{add_nodes}/{add_links}")
-async def db_add(
-    add_nodes: bool, 
-    add_links: bool,
-    add_node_request: models.AddNodeRequest):
+async def db_add_from_js(
+        add_nodes: bool,
+        add_links: bool,
+        add_node_request: models.AddNodeRequest):
 
     if add_nodes:
         headers = pd.read_csv(full_path_nodes).columns
-
         nodes = {}
-        nodes[headers[0]] = add_node_request.latitude
-        nodes[headers[1]] = add_node_request.longitude
-        nodes[headers[2]] = add_node_request.x
-        nodes[headers[3]] = add_node_request.y
-        nodes[headers[4]] = add_node_request.area
-        nodes[headers[5]] = add_node_request.node_type
-        nodes[headers[6]] = add_node_request.peak_demand
-        nodes[headers[7]] = add_node_request.is_connected
+        nodes[headers[0]] = [add_node_request.latitude]
+        nodes[headers[1]] = [add_node_request.longitude]
+        nodes[headers[2]] = [add_node_request.x]
+        nodes[headers[3]] = [add_node_request.y]
+        nodes[headers[4]] = [add_node_request.area]
+        nodes[headers[5]] = [add_node_request.node_type]
+        nodes[headers[6]] = [add_node_request.peak_demand]
+        nodes[headers[7]] = [add_node_request.is_connected]
 
-        pd.DataFrame(nodes).T.reset_index().to_csv(full_path_nodes, mode='a', header=False, index=False)
+        db_add(add_nodes, add_links, nodes)
 
     if add_links:
         print("hi")
@@ -295,69 +304,82 @@ async def get_links(request: Request, db: Session = Depends(get_db)):
     return result
 
 
-@app.post("/select_boundaries_add")
-async def select_boundaries_add(
-        selectBoundariesRequest: models.SelectBoundariesRequest,
-        db: Session = Depends(get_db)):
+@app.post("/select_boundaries/{add_remove}")
+async def select_boundaries_add_remove(
+        add_remove: str,
+        selectBoundariesRequest: models.SelectBoundariesRequest):
 
     boundary_coordinates = selectBoundariesRequest.boundary_coordinates
-    latitudes = [x[0] for x in boundary_coordinates]
-    longitudes = [x[1] for x in boundary_coordinates]
-    min_latitude = min(latitudes)
-    min_longitude = min(longitudes)
-    max_latitude = max(latitudes)
-    max_longitude = max(longitudes)
 
-    url = f'https://www.overpass-api.de/api/interpreter?data=[out:json][timeout:2500][bbox:{min_latitude},{min_longitude},{max_latitude},{max_longitude}];(way["building"="yes"];relation["building"];);out body;>;out skel qt;'
-    url_formated = url.replace(" ", "+")
-    with urllib.request.urlopen(url_formated) as url:
-        data = json.loads(url.read().decode())
-    formated_geojson = bi.convert_json_to_polygones_geojson(data)
+    if add_remove == "add":
+        # latitudes and longitudes of all buildings in the selected boundary
+        latitudes = [x[0] for x in boundary_coordinates]
+        longitudes = [x[1] for x in boundary_coordinates]
 
-    building_coord, building_area = bi.get_dict_with_mean_coordinate_from_geojson(
-        formated_geojson)
+        # min and max of latitudes and longitudes are sent to the overpass to get
+        # a large rectangle including (maybe) more buildings than selected
+        min_latitude = min(latitudes)
+        min_longitude = min(longitudes)
+        max_latitude = max(latitudes)
+        max_longitude = max(longitudes)
+        url = f'https://www.overpass-api.de/api/interpreter?data=[out:json][timeout:2500][bbox:{min_latitude},{min_longitude},{max_latitude},{max_longitude}];(way["building"="yes"];relation["building"];);out body;>;out skel qt;'
+        url_formated = url.replace(" ", "+")
+        with urllib.request.urlopen(url_formated) as url:
+            data = json.loads(url.read().decode())
 
-    features = formated_geojson['features']
-    mask_building_within_boundaries = {
-        key: bi.is_point_in_boundaries(
-            value,
-            boundary_coordinates) for key, value in building_coord.items()}
-    filtered_features = [feature for feature in features
-                         if mask_building_within_boundaries[
-                             feature['property']['@id']]
-                         ]
-    formated_geojson['features'] = filtered_features
-    building_coordidates_within_boundaries = {
-        key: value for key, value in building_coord.items()
-        if mask_building_within_boundaries[key]
-    }
-    for label, coordinates in building_coordidates_within_boundaries.items():
-        nodes = models.Nodes()
+        # first converting the json file, which is delievered by overpass to geojson,
+        # then obtaining coordinates and surface areas of all buildings inside the
+        # 'big' rectangle.
+        formated_geojson = bi.convert_overpass_json_to_geojson(data)
+        building_coord, building_area = bi.obtain_areas_and_mean_coordinates_from_geojson(
+            formated_geojson)
 
-        nodes.latitude = coordinates[0]
-        nodes.longitude = coordinates[1]
-        nodes.area = building_area[label]
+        # excluding the buildings which are outside the drawn boundary
+        features = formated_geojson['features']
+        mask_building_within_boundaries = {
+            key: bi.is_point_in_boundaries(
+                value,
+                boundary_coordinates) for key, value in building_coord.items()}
+        filtered_features = [feature for feature in features
+                             if mask_building_within_boundaries[
+                                 feature['property']['@id']]
+                             ]
+        formated_geojson['features'] = filtered_features
+        building_coordidates_within_boundaries = {
+            key: value for key, value in building_coord.items()
+            if mask_building_within_boundaries[key]
+        }
 
-        # initial calculations for demand estimation
-        peak_demand_per_sq_meter = 4
-        total_demand = nodes.area * peak_demand_per_sq_meter
-        if total_demand >= 100:
-            nodes.node_type = "high-demand"
-        elif 40 < total_demand < 100:
-            nodes.node_type = "medium-demand"
-        else:
-            nodes.node_type = "low-demand"
+        # creating a dictionary from the given nodes and sending this dictionary
+        # to the 'db_add' function to store nodes properties in the database
+        for label, coordinates in building_coordidates_within_boundaries.items():
+            nodes = {}
+            nodes["latitude"] = coordinates[0]
+            nodes["longitude"] = coordinates[1]
+            nodes["area"] = building_area[label]
+            # a very rough estimation for peak_demand at each node
+            peak_demand_per_sq_meter = 4
+            nodes["peak_demand"] = nodes["area"] * peak_demand_per_sq_meter
+            # categorization of node_type based on the peak_demand value
+            if nodes["peak_demand"] >= 100:
+                nodes["node_type"] = "high-demand"
+            elif 40 < nodes["peak_demand"] < 100:
+                nodes["node_type"] = "medium-demand"
+            else:
+                nodes.node_type = "low-demand"
+            # it is assumed that all nodes are parts of the mini-grid
+            nodes["is_connected"] = True
 
-        nodes.fixed_type = False
-        nodes.required_capacity = nodes.area * 4
-        nodes.max_power = nodes.area * 4
-        nodes.is_connected = True
-        db.add(nodes)
-        db.commit()
+            # storing the nodes in the database
+            db_add(add_nodes=True, add_links=False, nodes=nodes)
+        return formated_geojson
 
-    return formated_geojson
+    else:
+        for node in boundary_coordinates:
+            if bi.is_point_in_boundaries(point_coordinates=(node[1], node[2]), boundaries=boundary_coordinates):
+                clear_single_node(node[0])
 
-
+"""
 @app.post("/select_boundaries_remove")
 async def select_boundaries_remove(
         selectBoundariesRequest: models.SelectBoundariesRequest,
@@ -376,6 +398,7 @@ async def select_boundaries_remove(
         "code": "success",
         "message": "node deleted from db"
     }
+"""
 
 
 @app.post("/add_node/")
@@ -753,4 +776,4 @@ def debugging_mode():
     if host="0.0.0.0" and port=8000 does not work, the following can be used:
         host="127.0.0.1", port=8080
     """
-    uvicorn.run(app, host="127.0.0.1", port=8080)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

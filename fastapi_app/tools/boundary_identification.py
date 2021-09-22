@@ -1,14 +1,12 @@
 import numpy as np
 import datetime
 import time
-
 from shapely.geometry.base import geometry_type_name
-
 import fastapi_app.tools.coordinates_conversion as conv
 from shapely import geometry
 
 
-def convert_json_to_polygones_geojson(json_dict):
+def convert_overpass_json_to_geojson(json_dict):
     """
     This function convert dict obtained using the overpass api into
     a GEOJSON dict containing only the polygons of the buildings.
@@ -49,26 +47,27 @@ def convert_json_to_polygones_geojson(json_dict):
     return geojson
 
 
-def get_dict_with_mean_coordinate_from_geojson(geojson: dict):
+def obtain_areas_and_mean_coordinates_from_geojson(geojson: dict):
     """
-    This function creates a dictionnary with the @id of each building as a key
-    and the mean loaction of the building as value in the form [lat, long].
+    This function creates a dictionnary with the 'id' of each building as a key
+    and the mean loaction of the building as value in the form [lat, long] as well as
+    the surface area of each buolding.
 
     Parameters
     ----------
         geojson (dict):
             Dictionary containing the geojson data of the building of a
-            specific area. Output of the
-            tools.conversion.convert_json_to_polygones_geojson function.
+            specific area. Output of the 
+            tools.conversion.convert_overpass_json_to_geojson function.
 
     Returns
     -------
         (1)
-        Dict containing the @id of each building as a key
+        Dict containing the 'id' of each building as a key
         and the mean loaction of the building as value in the form [long, lat].
 
         (2)
-        Dict containing the @id of each building as a key
+        Dict containing the 'id' of each building as a key
         and the surface area of the buildings.
     """
 
@@ -95,7 +94,7 @@ def get_dict_with_mean_coordinate_from_geojson(geojson: dict):
     return building_mean_coordinates, building_surface_areas
 
 
-def are_segment_crossing(segment1, segment2):
+def are_segments_crossing(segment1, segment2):
     """
     Function that checks weather two 2D segments are crossing/intersecting.
     Inspired from https://algorithmtutor.com/Computational-Geometry/Check-if-two-line-segment-intersect/
@@ -139,7 +138,8 @@ def are_segment_crossing(segment1, segment2):
 
 def is_point_in_boundaries(point_coordinates: tuple,
                            boundaries: tuple):
-    """ Function that checks whether or not 2D point lies within boundaries
+    """ 
+    Function that checks whether or not 2D point lies within boundaries
 
     Parameter
     ---------

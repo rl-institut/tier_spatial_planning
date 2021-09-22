@@ -65,10 +65,17 @@ function setVisibilityNodeBox() {
 }
 
 // POST REQUESTS
-function getBuildingCoordinates(boundariesCoordinates) {
+/* 
+adding or removing building coordinates that are in 
+a boundary to/from the database.
+*/
+function buildingsAddRemove(
+    { add_remove = "add",
+        boundariesCoordinates } = {}
+) {
     $("#loading").show();
     $.ajax({
-        url: "select_boundaries_add/",
+        url: "select_boundaries/" + add_remove,
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify({
@@ -77,27 +84,7 @@ function getBuildingCoordinates(boundariesCoordinates) {
         dataType: "json",
         statusCode: {
             200: function () {
-                refreshNodeFromDataBase();
-                $("#loading").hide();
-            },
-        },
-    });
-}
-
-function removeBuildingsInsideBoundary(boundariesCoordinates) {
-    $("#loading").show();
-    $.ajax({
-        url: "select_boundaries_remove/",
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify({
-            boundary_coordinates: boundariesCoordinates,
-        }),
-        dataType: "json",
-        statusCode: {
-            200: function () {
-                refreshNodeFromDataBase();
-                refreshLinksFromDatBase();
+                //refreshNodeFromDataBase();
                 $("#loading").hide();
             },
         },
@@ -260,17 +247,17 @@ function csv_files_reading(read_nodes, read_links) {
 }
 
 
-function db_add(
-    {add_nodes=false,
-    add_links=false,
-    latitude=0,
-    longitude=0,
-    x=0,
-    y=0,
-    area=0,
-    node_type,
-    peak_demand=0,
-    is_connected=true} = {}
+function db_add_from_js(
+    { add_nodes = false,
+        add_links = false,
+        latitude = 0,
+        longitude = 0,
+        x = 0,
+        y = 0,
+        area = 0,
+        node_type,
+        peak_demand = 0,
+        is_connected = true } = {}
 ) {
     $.ajax({
         url: "/db_add/" + add_nodes + "/" + add_links,
@@ -287,11 +274,6 @@ function db_add(
             peak_demand: peak_demand,
             is_connected: is_connected,
         }),
-        statusCode: {
-            200: function () {
-                refreshNodeFromDataBase();
-            },
-        },
     });
 }
 
@@ -441,7 +423,7 @@ function selectBoundariesAdd() {
 
     // only when a boundary is drawn, the next steps will be executed
     if (siteBoundaryLines.length > 0) {
-        getBuildingCoordinates(siteBoundaries);
+        buildingsAddRemove({ add_remove = "add", boundariesCoordinates = siteBoundaries });
         removeBoundaries();
         textButtonDrawBoundariesAdd.innerHTML = "Draw Lines";
     }
