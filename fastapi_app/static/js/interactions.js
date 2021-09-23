@@ -99,7 +99,8 @@ function addNodeToDatBase(
     fixed_type,
     required_capacity,
     max_power,
-    is_connected
+    is_connected,
+    how_added
 ) {
     $.ajax({
         url: "add_node/",
@@ -252,12 +253,11 @@ function db_add_from_js(
         add_links = false,
         latitude = 0,
         longitude = 0,
-        x = 0,
-        y = 0,
         area = 0,
         node_type,
         peak_demand = 0,
-        is_connected = true } = {}
+        is_connected = true,
+        how_added = "manual" } = {}
 ) {
     $.ajax({
         url: "/db_add/" + add_nodes + "/" + add_links,
@@ -267,12 +267,11 @@ function db_add_from_js(
         data: JSON.stringify({
             latitude: latitude,
             longitude: longitude,
-            x: x,
-            y: y,
             area: area,
             node_type: node_type,
             peak_demand: peak_demand,
             is_connected: is_connected,
+            how_added : how_added,
         }),
     });
 }

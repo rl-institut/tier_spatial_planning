@@ -258,7 +258,8 @@ mainMap.on("click", function (e) {
           add_nodes: true,
           latitude: poplocation.lat,
           longitude: poplocation.lng,
-          node_type: "high-demand"
+          node_type: "high-demand",
+          how_added: "manual"
         }
       );
       drawMarker(

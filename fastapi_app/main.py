@@ -216,7 +216,8 @@ async def csv_files_initialization():
         "area",
         "peak_demand",
         "node_type",
-        "is_connected"
+        "is_connected",
+        "how_added"
     ]
     header_links = [
         "lat_from",
@@ -257,6 +258,7 @@ async def db_add_from_js(
         nodes[headers[3]] = [add_node_request.peak_demand]
         nodes[headers[4]] = [add_node_request.node_type]
         nodes[headers[5]] = [add_node_request.is_connected]
+        nodes[headers[6]] = [add_node_request.how_added]
 
         db_add(add_nodes, add_links, nodes)
 
@@ -364,6 +366,9 @@ async def select_boundaries_add_remove(
                 nodes["node_type"] = ["low-demand"]
             # it is assumed that all nodes are parts of the mini-grid
             nodes["is_connected"] = [True]
+
+            # the node is selected automatically after drawing boundaries
+            nodes["how_added"] = ["automatic"]
 
             # storing the nodes in the database
             db_add(add_nodes=True, add_links=False, nodes=nodes)

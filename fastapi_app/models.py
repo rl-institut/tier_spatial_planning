@@ -19,6 +19,7 @@ class Nodes(Base):
     node_type = Column(String)
     peak_demand = Column(Numeric(10, 3))
     is_connected = Column(Boolean)
+    how_added = Column(String)
 
 
 # class Nodes():
@@ -60,6 +61,7 @@ class AddNodeRequest(BaseModel):
     node_type: str
     peak_demand: float
     is_connected: bool
+    how_added: str
 
 
 class OptimizeGridRequest(BaseModel):
