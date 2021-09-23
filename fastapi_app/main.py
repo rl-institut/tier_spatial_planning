@@ -235,8 +235,11 @@ def db_add(add_nodes: bool,
            add_links: bool,
            nodes: dict):
     if add_nodes:
-        pd.DataFrame.from_dict(nodes).to_csv(
-            full_path_nodes, mode='a', header=False, index=False)
+        df = pd.DataFrame.from_dict(nodes)
+        df["latitude"] = df["latitude"].map(lambda x: "%.6f" % x)
+        df["longitude"] = df["longitude"].map(lambda x: "%.6f" % x)
+        df["area"] = df["area"].map(lambda x: "%.2f" % x)
+        df.to_csv(full_path_nodes, mode='a', header=False, index=False, float_format='%.0f')
 
 
 @app.post("/db_add/{add_nodes}/{add_links}")
@@ -768,4 +771,4 @@ def debugging_mode():
     if host="0.0.0.0" and port=8000 does not work, the following can be used:
         host="127.0.0.1", port=8080
     """
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8080)
