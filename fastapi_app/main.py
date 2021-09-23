@@ -27,6 +27,8 @@ import os
 import aiofiles
 # for debugging
 import uvicorn
+# for appending to the dictionary
+from collections import defaultdict
 
 app = FastAPI()
 
@@ -269,10 +271,11 @@ async def db_add_from_js(
 @app.get("/csv_files_reading/{nodes}/{links}")
 async def csv_files_reading(nodes: bool, links: bool):
     if nodes:
-        nodes_list = pd.read_csv(full_path_nodes)
+        nodes_list = pd.read_csv(full_path_nodes).to_json()
+        return nodes_list
     if links:
         links_list = pd.read_csv(full_path_links)
-    return nodes_list, links_list
+        return links_list
 
 
 @app.get("/nodes_db_html")
@@ -349,30 +352,30 @@ async def select_boundaries_add_remove(
 
         # creating a dictionary from the given nodes and sending this dictionary
         # to the 'db_add' function to store nodes properties in the database
+        nodes = defaultdict(list)
         for label, coordinates in building_coordidates_within_boundaries.items():
-            nodes = {}
-            nodes["latitude"] = [coordinates[0]]
-            nodes["longitude"] = [coordinates[1]]
-            nodes["area"] = [building_area[label]]
+            nodes["latitude"].append(coordinates[0])
+            nodes["longitude"].append(coordinates[1])
+            nodes["area"].append(building_area[label])
             # a very rough estimation for peak_demand at each node
             peak_demand_per_sq_meter = 4
-            nodes["peak_demand"] = [building_area[label] * peak_demand_per_sq_meter]
+            nodes["peak_demand"].append(building_area[label] * peak_demand_per_sq_meter)
             # categorization of node_type based on the peak_demand value
-            if nodes["peak_demand"][0] >= 100:
-                nodes["node_type"] = ["high-demand"]
-            elif 40 < nodes["peak_demand"][0] < 100:
-                nodes["node_type"] = ["medium-demand"]
+            if nodes["peak_demand"][-1] >= 100:
+                nodes["node_type"].append("high-demand")
+            elif 40 < nodes["peak_demand"][-1] < 100:
+                nodes["node_type"].append("medium-demand")
             else:
-                nodes["node_type"] = ["low-demand"]
+                nodes["node_type"].append("low-demand")
             # it is assumed that all nodes are parts of the mini-grid
-            nodes["is_connected"] = [True]
+            nodes["is_connected"].append(True)
 
             # the node is selected automatically after drawing boundaries
-            nodes["how_added"] = ["automatic"]
+            nodes["how_added"].append("automatic")
 
-            # storing the nodes in the database
-            db_add(add_nodes=True, add_links=False, nodes=nodes)
-        return formated_geojson
+        # storing the nodes in the database
+        db_add(add_nodes=True, add_links=False, nodes=nodes)
+        # return formated_geojson
 
     else:
         for node in boundary_coordinates:
@@ -401,7 +404,7 @@ async def select_boundaries_remove(
 """
 
 
-@app.post("/add_node/")
+@ app.post("/add_node/")
 async def add_node(add_node_request: models.AddNodeRequest,
                    background_tasks: BackgroundTasks,
                    db: Session = Depends(get_db)):
@@ -425,7 +428,7 @@ async def add_node(add_node_request: models.AddNodeRequest,
     }
 
 
-@app.post("/optimize_grid/")
+@ app.post("/optimize_grid/")
 async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                         background_tasks: BackgroundTasks,
                         db: Session = Depends(get_db)):

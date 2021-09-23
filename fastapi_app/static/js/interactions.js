@@ -84,7 +84,7 @@ function buildingsAddRemove(
         dataType: "json",
         statusCode: {
             200: function () {
-                //refreshNodeFromDataBase();
+                csv_files_reading(read_nodes = true, read_links = false);
                 $("#loading").hide();
             },
         },
@@ -195,7 +195,7 @@ function csv_files_initialization() {
 
 function csv_files_reading(read_nodes, read_links) {
     var xhr = new XMLHttpRequest();
-    url = "reading_from_csv/" + read_nodes + "/" + read_links;
+    url = "csv_files_reading/" + read_nodes + "/" + read_links;
     xhr.open("GET", url, true);
     xhr.responseType = "json";
     xhr.send();
@@ -271,7 +271,7 @@ function db_add_from_js(
             node_type: node_type,
             peak_demand: peak_demand,
             is_connected: is_connected,
-            how_added : how_added,
+            how_added: how_added,
         }),
     });
 }
