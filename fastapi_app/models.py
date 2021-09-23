@@ -6,6 +6,7 @@ from fastapi_app.database import Base
 
 # Models
 
+
 class Nodes(Base):
     __tablename__ = "nodes"
 
@@ -13,8 +14,8 @@ class Nodes(Base):
 
     latitude = Column(Numeric(10, 5))
     longitude = Column(Numeric(10, 5))
-    x = Column(Numeric(10,5))
-    y = Column(Numeric(10,5))
+    x = Column(Numeric(10, 5))
+    y = Column(Numeric(10, 5))
     area = Column(Numeric(10, 2))
     node_type = Column(String)
     peak_demand = Column(Numeric(10, 3))
@@ -55,8 +56,6 @@ class Links(Base):
 class AddNodeRequest(BaseModel):
     latitude: float
     longitude: float
-    x: float
-    y: float
     area: float
     node_type: str
     peak_demand: float
