@@ -240,9 +240,18 @@ def db_add(add_nodes: bool,
            nodes: dict):
     if add_nodes:
         df = pd.DataFrame.from_dict(nodes)
-        df["latitude"] = df["latitude"].map(lambda x: "%.6f" % x)
-        df["longitude"] = df["longitude"].map(lambda x: "%.6f" % x)
-        df["area"] = df["area"].map(lambda x: "%.2f" % x)
+        df.latitude = df.latitude.map(lambda x: "%.6f" % x)
+        df.longitude = df.longitude.map(lambda x: "%.6f" % x)
+        df.area = df.area.map(lambda x: "%.2f" % x)
+    
+        # getting existing latitudes from the csv file as a list of float numbers
+        df_existing = list(pd.read_csv(full_path_nodes)["latitude"])
+        
+        # checking if some of the new nodes already exist in the database or not
+        for latitude in [float(x) for x in list(df["latitude"])]:
+            if latitude in df_existing:
+                df = df[df.latitude != str(latitude)]
+
         df.to_csv(full_path_nodes, mode='a', header=False, index=False, float_format='%.0f')
 
 
