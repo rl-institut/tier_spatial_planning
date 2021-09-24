@@ -211,8 +211,8 @@ def home(request: Request, db: Session = Depends(get_db)):
 # Creating the csv files
 # - In case these files do not exist they will be created here
 # - Each time the code runs from the beginning, the old csv files will be deleted and new blank ones will be created
-@app.get("/csv_files_initialization")
-async def csv_files_initialization():
+@app.get("/database_initialization")
+async def database_initialization():
     header_nodes = [
         "latitude",
         "longitude",
@@ -235,7 +235,7 @@ async def csv_files_initialization():
     pd.DataFrame(columns=header_links).to_csv(full_path_links, index=False)
 
 
-def db_add(add_nodes: bool,
+def database_add(add_nodes: bool,
            add_links: bool,
            nodes: dict):
     if add_nodes:
@@ -248,15 +248,18 @@ def db_add(add_nodes: bool,
         df_existing = list(pd.read_csv(full_path_nodes)["latitude"])
         
         # checking if some of the new nodes already exist in the database or not
+        # and then excluding the entire row from the dataframe that is going to be added to the csv file
         for latitude in [float(x) for x in list(df["latitude"])]:
             if latitude in df_existing:
                 df = df[df.latitude != str(latitude)]
 
-        df.to_csv(full_path_nodes, mode='a', header=False, index=False, float_format='%.0f')
+        # finally adding the refined dataframe (if it is not empty) to the existing csv file 
+        if len(df.index) != 0:
+            df.to_csv(full_path_nodes, mode='a', header=False, index=False, float_format='%.0f')
 
 
-@app.post("/db_add/{add_nodes}/{add_links}")
-async def db_add_from_js(
+@app.post("/database_add/{add_nodes}/{add_links}")
+async def database_add_from_js(
         add_nodes: bool,
         add_links: bool,
         add_node_request: models.AddNodeRequest):
@@ -272,14 +275,14 @@ async def db_add_from_js(
         nodes[headers[5]] = [add_node_request.is_connected]
         nodes[headers[6]] = [add_node_request.how_added]
 
-        db_add(add_nodes, add_links, nodes)
+        database_add(add_nodes, add_links, nodes)
 
     if add_links:
         print("hi")
 
 
-@app.get("/csv_files_reading/{nodes}/{links}")
-async def csv_files_reading(nodes: bool, links: bool, request: Request):
+@app.get("/database_get/{nodes}/{links}")
+async def database_get(nodes: bool, links: bool, request: Request):
     if nodes:
         nodes_list = json.loads(pd.read_csv(full_path_nodes).to_json())
         return nodes_list
@@ -361,7 +364,7 @@ async def select_boundaries_add_remove(
         }
 
         # creating a dictionary from the given nodes and sending this dictionary
-        # to the 'db_add' function to store nodes properties in the database
+        # to the 'database_add' function to store nodes properties in the database
         nodes = defaultdict(list)
         for label, coordinates in building_coordidates_within_boundaries.items():
             nodes["latitude"].append(coordinates[0])
@@ -384,7 +387,7 @@ async def select_boundaries_add_remove(
             nodes["how_added"].append("automatic")
 
         # storing the nodes in the database
-        db_add(add_nodes=True, add_links=False, nodes=nodes)
+        database_add(add_nodes=True, add_links=False, nodes=nodes)
         # return formated_geojson
 
     else:

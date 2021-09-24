@@ -1,6 +1,6 @@
 $(document).ready(function () {
     $(document).foundation();
-    csv_files_initialization();
+    database_initialization();
     //    refreshNodeFromDataBase();
     //    refreshLinksFromDatBase();
 });
@@ -84,7 +84,7 @@ function buildingsAddRemove(
         dataType: "json",
         statusCode: {
             200: function () {
-                csv_files_reading(read_nodes = true, read_links = false);
+                database_get(get_nodes = true, get_links = false);
                 $("#loading").hide();
             },
         },
@@ -179,23 +179,23 @@ function identify_shs() {
     });
 }
 
-/* getting properties of nodes and links from the stored data 
-PARAMETERS:
-    nodes: if equal to 'true' nodes will be considered
-    links: if equal to 'true' links will be considered
-*/
-function csv_files_initialization() {
+
+// this function initializes the database and removes
+// all previous nodes and lines stored in csv files
+function database_initialization() {
     var xhr = new XMLHttpRequest();
-    url = "csv_files_initialization";
+    url = "database_initialization";
     xhr.open("GET", url, true);
     xhr.responseType = "json";
     xhr.send();
 }
 
 
-function csv_files_reading(read_nodes, read_links) {
+// this function first gets all nodes and links stored in csv files
+// and then pushes the corresponding icon on the map
+function database_get(get_nodes, get_links) {
     var xhr = new XMLHttpRequest();
-    url = "csv_files_reading/" + read_nodes + "/" + read_links;
+    url = "database_get/" + get_nodes + "/" + get_links;
     xhr.open("GET", url, true);
     xhr.responseType = "json";
     xhr.send();
@@ -250,7 +250,7 @@ function csv_files_reading(read_nodes, read_links) {
 }
 
 
-function db_add_from_js(
+function database_add_from_js(
     { add_nodes = false,
         add_links = false,
         latitude = 0,
@@ -262,7 +262,7 @@ function db_add_from_js(
         how_added = "manual" } = {}
 ) {
     $.ajax({
-        url: "/db_add/" + add_nodes + "/" + add_links,
+        url: "/database_add/" + add_nodes + "/" + add_links,
         type: "POST",
         dataType: "json",
         contentType: "application/json",

@@ -253,7 +253,7 @@ mainMap.on("click", function (e) {
 
   if (document.getElementById("radio_button_nodes_manually").checked) {
     if (document.getElementsByName("radio_button_nodes_manually")[0].checked) {
-      db_add_from_js(
+      database_add_from_js(
         {
           add_nodes: true,
           latitude: poplocation.lat,
@@ -270,7 +270,7 @@ mainMap.on("click", function (e) {
     }
 
     if (document.getElementsByName("radio_button_nodes_manually")[1].checked) {
-      db_add_from_js(
+      database_add_from_js(
         {
           add_nodes: true,
           latitude: poplocation.lat,
@@ -286,7 +286,7 @@ mainMap.on("click", function (e) {
     }
 
     if (document.getElementsByName("radio_button_nodes_manually")[2].checked) {
-      db_add_from_js(
+      database_add_from_js(
         {
           add_nodes: true,
           latitude: poplocation.lat,
@@ -302,7 +302,7 @@ mainMap.on("click", function (e) {
     }
 
     if (document.getElementsByName("radio_button_nodes_manually")[3].checked) {
-      db_add_from_js(
+      database_add_from_js(
         {
           add_nodes: true,
           latitude: poplocation.lat,
