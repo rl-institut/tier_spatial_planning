@@ -47,6 +47,7 @@ dir_name = os.path.join(path, "data").replace("\\", "/")
 nodes_file = "nodes.csv"
 links_file = "links.csv"
 full_path_nodes = os.path.join(dir_name, nodes_file).replace("\\", "/")
+full_path_nodes = os.path.join(dir_name, nodes_file).replace("\\", "/")
 full_path_links = os.path.join(dir_name, links_file).replace("\\", "/")
 
 # ---------------------------- SET UP grid.db DATABASE -----------------------#
@@ -269,9 +270,9 @@ async def db_add_from_js(
 
 
 @app.get("/csv_files_reading/{nodes}/{links}")
-async def csv_files_reading(nodes: bool, links: bool):
+async def csv_files_reading(nodes: bool, links: bool, request: Request):
     if nodes:
-        nodes_list = pd.read_csv(full_path_nodes).to_json()
+        nodes_list = (pd.read_csv(full_path_nodes).to_json())
         return nodes_list
     if links:
         links_list = pd.read_csv(full_path_links)

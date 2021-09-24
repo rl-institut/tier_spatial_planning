@@ -197,7 +197,7 @@ function csv_files_reading(read_nodes, read_links) {
     var xhr = new XMLHttpRequest();
     url = "csv_files_reading/" + read_nodes + "/" + read_links;
     xhr.open("GET", url, true);
-    xhr.responseType = "json";
+    xhr.responseType = "text";
     xhr.send();
 
     xhr.onreadystatechange = function () {
