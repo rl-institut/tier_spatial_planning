@@ -208,11 +208,11 @@ def home(request: Request, db: Session = Depends(get_db)):
     })
 
 
-# Creating the csv files
-# - In case these files do not exist they will be created here
-# - Each time the code runs from the beginning, the old csv files will be deleted and new blank ones will be created
 @app.get("/database_initialization")
 async def database_initialization():
+    # creating the csv files
+    # - in case these files do not exist they will be created here
+    # - each time the code runs from the beginning, the old csv files will be replaced with new blank ones
     header_nodes = [
         "latitude",
         "longitude",
@@ -235,34 +235,13 @@ async def database_initialization():
     pd.DataFrame(columns=header_links).to_csv(full_path_links, index=False)
 
 
-def database_add(add_nodes: bool,
-           add_links: bool,
-           nodes: dict):
-    if add_nodes:
-        df = pd.DataFrame.from_dict(nodes)
-        df.latitude = df.latitude.map(lambda x: "%.6f" % x)
-        df.longitude = df.longitude.map(lambda x: "%.6f" % x)
-        df.area = df.area.map(lambda x: "%.2f" % x)
-    
-        # getting existing latitudes from the csv file as a list of float numbers
-        df_existing = list(pd.read_csv(full_path_nodes)["latitude"])
-        
-        # checking if some of the new nodes already exist in the database or not
-        # and then excluding the entire row from the dataframe that is going to be added to the csv file
-        for latitude in [float(x) for x in list(df["latitude"])]:
-            if latitude in df_existing:
-                df = df[df.latitude != str(latitude)]
-
-        # finally adding the refined dataframe (if it is not empty) to the existing csv file 
-        if len(df.index) != 0:
-            df.to_csv(full_path_nodes, mode='a', header=False, index=False, float_format='%.0f')
-
-
 @app.post("/database_add/{add_nodes}/{add_links}")
 async def database_add_from_js(
         add_nodes: bool,
         add_links: bool,
         add_node_request: models.AddNodeRequest):
+    # interface between js and python to add new nodes to the database
+    # these new nodes could either be created manually or automatically
 
     if add_nodes:
         headers = pd.read_csv(full_path_nodes).columns
@@ -281,13 +260,40 @@ async def database_add_from_js(
         print("hi")
 
 
+def database_add(add_nodes: bool,
+                 add_links: bool,
+                 nodes: dict):
+    # updating csv files based on the added nodes
+
+    if add_nodes:
+        # defining the precision of data
+        df = pd.DataFrame.from_dict(nodes)
+        df.latitude = df.latitude.map(lambda x: "%.6f" % x)
+        df.longitude = df.longitude.map(lambda x: "%.6f" % x)
+        df.area = df.area.map(lambda x: "%.2f" % x)
+
+        # getting existing latitudes from the csv file as a list of float numbers
+        # and checking if some of the new nodes already exist in the database or not
+        # and then excluding the entire row from the dataframe that is going to be added to the csv file
+        df_existing = list(pd.read_csv(full_path_nodes)["latitude"])
+        for latitude in [float(x) for x in list(df["latitude"])]:
+            if latitude in df_existing:
+                df = df[df.latitude != str(latitude)]
+
+        # finally adding the refined dataframe (if it is not empty) to the existing csv file
+        if len(df.index) != 0:
+            df.to_csv(full_path_nodes, mode='a', header=False, index=False, float_format='%.0f')
+
+
 @app.get("/database_get/{nodes}/{links}")
 async def database_get(nodes: bool, links: bool, request: Request):
+    # importing nodes and links from the csv files to the map
+
     if nodes:
         nodes_list = json.loads(pd.read_csv(full_path_nodes).to_json())
         return nodes_list
     if links:
-        links_list = pd.read_csv(full_path_links)
+        links_list = json.loads(pd.read_csv(full_path_links).to_json())
         return links_list
 
 
