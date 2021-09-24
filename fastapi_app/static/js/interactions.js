@@ -197,7 +197,7 @@ function csv_files_reading(read_nodes, read_links) {
     var xhr = new XMLHttpRequest();
     url = "csv_files_reading/" + read_nodes + "/" + read_links;
     xhr.open("GET", url, true);
-    xhr.responseType = "text";
+    xhr.responseType = "json";
     xhr.send();
 
     xhr.onreadystatechange = function () {
@@ -207,34 +207,36 @@ function csv_files_reading(read_nodes, read_links) {
                 mainMap.removeLayer(marker);
             }
             markers.length = 0;
-            for (node of nodes) {
-                if (node.node_type === "high-demand") {
+            number_of_nodes = Object.keys(nodes["node_type"]).length;
+            var counter;
+            for (counter = 0; counter < number_of_nodes; counter++) {
+                if (nodes["node_type"][counter] === "high-demand") {
                     markers.push(
-                        L.marker([node.latitude, node.longitude], {
+                        L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
                             icon: markerHighDemand,
                         }).addTo(mainMap)
                     );
-                } else if (node.node_type === "medium-demand") {
+                } else if (nodes["node_type"][counter] === "medium-demand") {
                     markers.push(
-                        L.marker([node.latitude, node.longitude], {
+                        L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
                             icon: markerMediumDemand,
                         }).addTo(mainMap)
                     );
-                } else if (node.node_type === "low-demand") {
+                } else if (nodes["node_type"][counter] === "low-demand") {
                     markers.push(
-                        L.marker([node.latitude, node.longitude], {
+                        L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
                             icon: markerLowDemand,
                         }).addTo(mainMap)
                     );
-                } else if (node.node_type === "pole") {
+                } else if (nodes["node_type"][counter] === "pole") {
                     markers.push(
-                        L.marker([node.latitude, node.longitude], {
+                        L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
                             icon: markerPole,
                         }).addTo(mainMap)
                     );
-                } else if (node.node_type === "shs") {
+                } else if (nodes["node_type"][counter] === "shs") {
                     markers.push(
-                        L.marker([node.latitude, node.longitude], {
+                        L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
                             icon: markerShs,
                         }).addTo(mainMap)
                     );

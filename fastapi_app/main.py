@@ -272,7 +272,7 @@ async def db_add_from_js(
 @app.get("/csv_files_reading/{nodes}/{links}")
 async def csv_files_reading(nodes: bool, links: bool, request: Request):
     if nodes:
-        nodes_list = (pd.read_csv(full_path_nodes).to_json())
+        nodes_list = json.loads(pd.read_csv(full_path_nodes).to_json())
         return nodes_list
     if links:
         links_list = pd.read_csv(full_path_links)
