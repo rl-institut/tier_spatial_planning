@@ -286,7 +286,7 @@ def database_add(add_nodes: bool,
 
 
 @app.get("/database_get/{nodes}/{links}")
-async def database_get(nodes: bool, links: bool, request: Request):
+def database_get(nodes: bool, links: bool):
     # importing nodes and links from the csv files to the map
 
     if nodes:
@@ -454,8 +454,11 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     # Create GridOptimizer object
     opt = GridOptimizer()
 
-    res = db.execute("select * from nodes")
-    nodes = res.fetchall()
+    # res = db.execute("select * from nodes")
+    # nodes = res.fetchall()
+
+    # getting nodes properties from the CSV file (as a dictionary file)
+    nodes = database_get(nodes=True, links=False)
 
     # if nodes db is empty, do not perform optimization
     if len(nodes) == 0:
@@ -464,27 +467,35 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
             "message": "empty grid cannot be optimized"
         }
 
-    for node in nodes:
-        node_index = node[0]
-        node_type = node[4]
-        type_fixed = node[5]
+    # extracting nodes properties from the dictionary
+    nodes_properties = pd.DataFrame.from_dict(nodes)
+    nodes_index = nodes_properties.index.values.tolist()
+    nodes_latitude = nodes_properties.latitude.values.tolist()
+    nodes_longitude = nodes_properties.longitude.values.tolist()
+    nodes_type = nodes_properties.node_type.values.tolist()
 
-        if (node_type == 'pole') and (not type_fixed):
-            clear_single_node(node_index)
+    # for node in nodes:
+    #node_index = node[0]
+    #node_type = node[4]
+    #type_fixed = node[5]
 
-    # Create new grid object
+    # if (node_type == 'pole') and (not type_fixed):
+    # clear_single_node(node_index)
+
+    # creating a new "grid" object from the Grid class
     grid = Grid(price_meterhub=optimize_grid_request.price_pole,
                 price_household=optimize_grid_request.price_household,
                 price_interhub_cable_per_meter=optimize_grid_request.price_pole_cable,
                 price_distribution_cable_per_meter=optimize_grid_request.price_distribution_cable,
                 default_hub_capacity=optimize_grid_request.max_connection_poles)
+
     # Make sure that new grid object is empty before adding nodes to it
     grid.clear_nodes_and_links()
 
     # use latitude of the node that is the most west to set origin of x coordinates
-    ref_latitude = math.radians(min([node[1] for node in nodes]))
+    ref_latitude = math.radians(min(nodes_latitude))
     # use latitude of the node that is the most south to set origin of y coordinates
-    ref_longitude = math.radians(min([node[2] for node in nodes]))
+    ref_longitude = math.radians(min(nodes_longitude))
     for node in nodes:
         node_index = node[0]
         latitude = node[1]
@@ -504,7 +515,6 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                 allocation_capacity = grid.get_default_hub_capacity()
 
             else:
-
                 node_type = "household"
                 allocation_capacity = 0
 
