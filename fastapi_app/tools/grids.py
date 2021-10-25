@@ -599,7 +599,7 @@ class Grid:
                 self.set_node_type(node_label=node_label,
                                    node_type='pole')
                 self.set_pole_capacity(str(node_label),
-                                      self.__default_pole_capacity)
+                                       self.__default_pole_capacity)
 
     def flip_random_node(self):
         """

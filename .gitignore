@@ -8,3 +8,4 @@ run
 venv/
 *.DS_Store
 fastapi_app/import_export/
+data

@@ -18,7 +18,8 @@ import sqlite3
 from fastapi_app.tools.grids import Grid
 from fastapi_app.tools.grid_optimizer import GridOptimizer
 import math
-import urllib.request, ssl
+import urllib.request
+import ssl
 import json
 import pandas as pd
 import numpy as np
@@ -212,8 +213,8 @@ def home(request: Request, db: Session = Depends(get_db)):
     })
 
 
-@app.get("/database_initialization")
-async def database_initialization():
+@app.get("/database_initialization/{nodes}/{links}")
+def database_initialization(nodes, links):
     # creating the csv files
     # - in case these files do not exist they will be created here
     # - each time the code runs from the beginning, the old csv files will be replaced with new blank ones
@@ -234,11 +235,13 @@ async def database_initialization():
         "lat_to",
         "long_to",
         "link_type",
-        "cable_thickness",
         "length"
     ]
-    pd.DataFrame(columns=header_nodes).to_csv(full_path_nodes, index=False)
-    pd.DataFrame(columns=header_links).to_csv(full_path_links, index=False)
+    if nodes:
+        pd.DataFrame(columns=header_nodes).to_csv(full_path_nodes, index=False)
+
+    if links:
+        pd.DataFrame(columns=header_links).to_csv(full_path_links, index=False)
 
 
 @app.post("/database_add/{add_nodes}/{add_links}")
@@ -270,15 +273,18 @@ async def database_add_from_js(
 
 def database_add(add_nodes: bool,
                  add_links: bool,
-                 nodes: dict):
-    # updating csv files based on the added nodes
+                 inlet: dict):
 
+    # updating csv files based on the added nodes
     if add_nodes:
+        nodes = inlet
         # defining the precision of data
         df = pd.DataFrame.from_dict(nodes)
         df.latitude = df.latitude.map(lambda x: "%.6f" % x)
         df.longitude = df.longitude.map(lambda x: "%.6f" % x)
-        df.area = df.area.map(lambda x: "%.2f" % x)
+        # if poles must add to the list, area should be neglected
+        if (df.node_type[0] != 'pole'):
+            df.area = df.area.map(lambda x: "%.2f" % x)
 
         # getting existing latitudes from the csv file as a list of float numbers
         # and checking if some of the new nodes already exist in the database or not
@@ -292,9 +298,22 @@ def database_add(add_nodes: bool,
         if len(df.index) != 0:
             df.to_csv(full_path_nodes, mode='a', header=False, index=False, float_format='%.0f')
 
+    if add_links:
+        links = inlet
+        # defining the precision of data
+        df = pd.DataFrame.from_dict(links)
+        df.lat_from = df.lat_from.map(lambda x: "%.6f" % x)
+        df.long_from = df.long_from.map(lambda x: "%.6f" % x)
+        df.lat_to = df.lat_to.map(lambda x: "%.6f" % x)
+        df.long_to = df.long_to.map(lambda x: "%.6f" % x)
+
+        # adding the links to the existing csv file
+        if len(df.index) != 0:
+            df.to_csv(full_path_links, mode='a', header=False, index=False, float_format='%.0f')
+
 
 @app.get("/database_get/{nodes}/{links}")
-def database_get(nodes: bool, links: bool):
+async def database_get(nodes: bool, links: bool):
     # importing nodes and links from the csv files to the map
 
     if nodes:
@@ -413,7 +432,7 @@ async def select_boundaries_add_remove(
             nodes["how_added"].append("automatic")
 
         # storing the nodes in the database
-        database_add(add_nodes=True, add_links=False, nodes=nodes)
+        database_add(add_nodes=True, add_links=False, inlet=nodes)
         # return formated_geojson
 
     else:
@@ -478,7 +497,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     # nodes = res.fetchall()
 
     # getting nodes properties from the CSV file (as a dictionary file)
-    nodes = database_get(nodes=True, links=False)
+    nodes = await database_get(nodes=True, links=False)
 
     # if nodes db is empty, do not perform optimization
     if len(nodes) == 0:
@@ -520,7 +539,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
 
     for node_index in nodes_index:
         if (nodes_is_connected[node_index]) and (not nodes_type[node_index] == 'pole'):
-            
+
             # converting (lat,long) coordinates to (x,y) for the optimizer
             x, y = conv.xy_coordinates_from_latitude_longitude(
                 latitude=nodes_latitude[node_index],
@@ -541,7 +560,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
         )
 
     number_of_poles = max(opt.get_expected_pole_number_from_k_means(grid=grid),
-                         min_number_of_poles)
+                          min_number_of_poles)
 
     number_of_relaxation_steps_nr = optimize_grid_request.number_of_relaxation_steps_nr
 
@@ -550,40 +569,42 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                         number_of_relaxation_steps=number_of_relaxation_steps_nr,
                         locate_new_poles_freely=True,
                         first_guess_strategy='random',
-                        save_output=False,
+                        save_output=True,
                         number_of_hill_climbers_runs=0)
 
-    conn = sqlite3.connect(grid_db)
-    sqliteConnection = sqlite3.connect(grid_db)
-    cursor = sqliteConnection.cursor()
+    #conn = sqlite3.connect(grid_db)
+    #sqliteConnection = sqlite3.connect(grid_db)
+    #cursor = sqliteConnection.cursor()
 
-    # Update nodes types in node database
+    # inserting "poles" in the node database
+    poles_list = defaultdict(list)
     for index in grid.get_nodes().index:
 
-        # The indices of the virtual poles of the nr_optimization method
-        # all start with 'V'
+        # the indices of the poles in the nr_optimization method
+        # all start with 'V', because they represent "virtual" poles
         if 'V' in index:
-            node_type = 'pole'
+            #nodes = models.Nodes()
 
-            nodes = models.Nodes()
-
-            latitude, longitude = conv.latitude_longitude_from_xy_coordinates(
+            pole_latitude, pole_longitude = conv.latitude_longitude_from_xy_coordinates(
                 x_coord=grid.get_nodes().at[index, "x_coordinate"],
                 y_coord=grid.get_nodes().at[index, "y_coordinate"],
                 ref_latitude=ref_latitude,
                 ref_longitude=ref_longitude)
 
-            nodes.latitude = latitude
-            nodes.longitude = longitude
-            nodes.area = 0
-            nodes.node_type = "pole"
-            nodes.fixed_type = False
-            nodes.required_capacity = 0
-            nodes.max_power = 0
-            nodes.is_connected = True
+            poles_list["latitude"].append(pole_latitude)
+            poles_list["longitude"].append(pole_longitude)
+            poles_list["area"].append('-')
+            poles_list["node_type"].append('pole')
+            poles_list["consumer_type"].append('-')
+            poles_list["peak_demand"].append('-')
+            poles_list["demand_type"].append('-')
+            poles_list["is_connected"].append(True)
+            poles_list["how_added"].append('optimization')
 
-            db.add(nodes)
-            db.commit()
+            # storing the list of poles in the "node" database
+            database_add(add_nodes=True, add_links=False, inlet=poles_list)
+
+        """
         else:
             node_type = grid.get_nodes().at[index, "node_type"]
             if node_type == 'pole':
@@ -591,23 +612,19 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
             else:
                 node_type = "low-demand"
             sql_delete_query = (
-                f"""UPDATE nodes
+                f""UPDATE nodes
                 SET node_type = '{node_type}'
                 WHERE  id = {index};
-                """)
+                "")
             cursor.execute(sql_delete_query)
             sqliteConnection.commit()
+            """
 
-    # Empty links table
-    sql_delete_query = """DELETE from links"""
-    cursor.execute(sql_delete_query)
-    sqliteConnection.commit()
+    # remove the content of the existing CSV file including the links
+    database_initialization(nodes=False, links=True)
 
-    # Add newly computed links to database
-
-    cursor = conn.cursor()
-    records = []
-    count = 1
+    # storing the newly obtained "links" from the optimization solution to the CSV file
+    links = defaultdict(list)
     for index, row in grid.get_links().iterrows():
         x_from = grid.get_nodes().loc[row['from']]['x_coordinate']
         y_from = grid.get_nodes().loc[row['from']]['y_coordinate']
@@ -629,30 +646,14 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
             ref_longitude=ref_longitude
         )
 
-        cable_type = row['type']
-        distance = row['distance']
+        links["lat_from"].append(lat_from)
+        links["long_from"].append(long_from)
+        links["lat_to"].append(lat_to)
+        links["long_to"].append(long_to)
+        links["link_type"].append(row['type'])
+        links["length"].append(row['distance'])
 
-        records.append((count,
-                        lat_from,
-                        long_from,
-                        lat_to,
-                        long_to,
-                        cable_type,
-                        distance))
-        count += 1
-
-    cursor.executemany(
-        'INSERT INTO links VALUES(?, ?, ?, ?, ?, ?, ?)', records)
-
-    # commit the changes to db
-    conn.commit()
-    # close the connection
-    cursor.close()
-
-    return {
-        "code": "success",
-        "message": "grid optimized"
-    }
+    database_add(add_nodes=False, add_links=True, inlet=links)
 
 
 @app.post("/shs_identification/")

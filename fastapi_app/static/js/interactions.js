@@ -1,6 +1,6 @@
 $(document).ready(function () {
     $(document).foundation();
-    database_initialization();
+    database_initialization(nodes = true, links = true);
     //    refreshNodeFromDataBase();
     //    refreshLinksFromDatBase();
 });
@@ -142,8 +142,8 @@ function optimize_grid() {
         dataType: "json",
         statusCode: {
             200: function () {
-                refreshNodeFromDataBase();
-                refreshLinksFromDatBase();
+                database_get(get_nodes = true, get_links = false);
+                database_get(get_nodes = false, get_links = true);
                 $("#loading").hide();
             },
         },
@@ -182,9 +182,9 @@ function identify_shs() {
 
 // this function initializes the database and removes
 // all previous nodes and lines stored in csv files
-function database_initialization() {
+function database_initialization(nodes, links) {
     var xhr = new XMLHttpRequest();
-    url = "database_initialization";
+    url = "database_initialization/" + nodes + "/" + links;
     xhr.open("GET", url, true);
     xhr.responseType = "json";
     xhr.send();
@@ -193,6 +193,7 @@ function database_initialization() {
 
 // this function first gets all nodes and links stored in csv files
 // and then pushes the corresponding icon on the map
+// note: both "nodes" and "links" cannot be called simultaneously
 function database_get(get_nodes, get_links) {
     var xhr = new XMLHttpRequest();
     url = "database_get/" + get_nodes + "/" + get_links;
@@ -202,50 +203,66 @@ function database_get(get_nodes, get_links) {
 
     xhr.onreadystatechange = function () {
         if (this.readyState == 4 && this.status == 200) {
-            nodes = this.response;
-            for (marker of markers) {
-                mainMap.removeLayer(marker);
-            }
-            markers.length = 0;
-            number_of_nodes = Object.keys(nodes["node_type"]).length;
-            var counter;
-            for (counter = 0; counter < number_of_nodes; counter++) {
-                if (nodes["node_type"][counter] === "pole") {
-                    markers.push(
-                        L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                            icon: markerPole,
-                        }).addTo(mainMap)
+            if (get_nodes) {
+                nodes = this.response;
+                for (marker of markers) {
+                    mainMap.removeLayer(marker);
+                }
+                markers.length = 0;
+                number_of_nodes = Object.keys(nodes["node_type"]).length;
+                var counter;
+                for (counter = 0; counter < number_of_nodes; counter++) {
+                    if (nodes["node_type"][counter] === "pole") {
+                        markers.push(
+                            L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
+                                icon: markerPole,
+                            }).addTo(mainMap)
+                        );
+                    } else if (nodes["is_connected"][counter] === false) {
+                        markers.push(
+                            L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
+                                icon: markerShs,
+                            }).addTo(mainMap)
+                        );
+                    } else {
+                        if (nodes["demand_type"][counter] === "high-demand") {
+                            markers.push(
+                                L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
+                                    icon: markerHighDemand,
+                                }).addTo(mainMap)
+                            );
+                        } else if (nodes["demand_type"][counter] === "medium-demand") {
+                            markers.push(
+                                L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
+                                    icon: markerMediumDemand,
+                                }).addTo(mainMap)
+                            );
+                        } else if (nodes["demand_type"][counter] === "low-demand") {
+                            markers.push(
+                                L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
+                                    icon: markerLowDemand,
+                                }).addTo(mainMap)
+                            );
+                        }
+                    }
+                }
+                if (document.getElementById("radio_button_nodes_boundaries").checked) {
+                    zoomAll(mainMap);
+                }
+            } else {
+                links = this.response;
+                removeLinksFromMap(mainMap);
+                for (let index = 0; index < Object.keys(links.link_type).length; index++) {
+                    var color = links.link_type[index] === "interpole" ? "red" : "green";
+                    drawLinkOnMap(
+                        links.lat_from[index],
+                        links.long_from[index],
+                        links.lat_to[index],
+                        links.long_to[index],
+                        color,
+                        mainMap
                     );
-                } else if (nodes["is_connected"][counter] === false) {
-                    markers.push(
-                        L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                            icon: markerShs,
-                        }).addTo(mainMap)
-                    );
-                } else {
-                    if (nodes["demand_type"][counter] === "high-demand") {
-                        markers.push(
-                            L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                                icon: markerHighDemand,
-                            }).addTo(mainMap)
-                        );
-                    } else if (nodes["demand_type"][counter] === "medium-demand") {
-                        markers.push(
-                            L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                                icon: markerMediumDemand,
-                            }).addTo(mainMap)
-                        );
-                    } else if (nodes["demand_type"][counter] === "low-demand") {
-                        markers.push(
-                            L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                                icon: markerLowDemand,
-                            }).addTo(mainMap)
-                        );
-                    } 
-                } 
-            }
-            if (document.getElementById("radio_button_nodes_boundaries").checked) {
-                zoomAll(mainMap);
+                }
             }
         }
     };
@@ -349,8 +366,8 @@ function refreshLinksFromDatBase() {
     xhr.onreadystatechange = function () {
         if (this.readyState == 4 && this.status == 200) {
             links = this.response;
-            ereaseLinksFromMap(mainMap);
-            for (link of links) {
+            removeLinksFromMap(mainMap);
+            for (let link in links) {
                 var color = link.cable_type === "interpole" ? "red" : "green";
                 drawLinkOnMap(
                     link.lat_from,

@@ -394,7 +394,7 @@ function drawLinkOnMap(
     ).addTo(map));
 }
 
-function ereaseLinksFromMap(map) {
+function removeLinksFromMap(map) {
   for (line of lines) {
     map.removeLayer(line);
   }
