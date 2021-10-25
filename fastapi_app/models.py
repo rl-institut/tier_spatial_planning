@@ -58,6 +58,8 @@ class AddNodeRequest(BaseModel):
     longitude: float
     area: float
     node_type: str
+    consumer_type: str
+    demand_type: str
     peak_demand: float
     is_connected: bool
     how_added: str
@@ -65,7 +67,7 @@ class AddNodeRequest(BaseModel):
 
 class OptimizeGridRequest(BaseModel):
     price_pole: float
-    price_household: float
+    price_consumer: float
     price_pole_cable: float
     price_distribution_cable: float
     number_of_relaxation_steps_nr: int
@@ -87,7 +89,7 @@ class SelectBoundariesRequest(BaseModel):
 
 class GenerateExportFileRequest(BaseModel):
     price_pole: float
-    price_household: float
+    price_consumer: float
     price_pole_cable: float
     price_distribution_cable: float
     shs_identification_cable_price: float

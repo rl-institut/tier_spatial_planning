@@ -21,10 +21,10 @@ class Grid:
         the grid. Each node possesses:
             - a label
             - x and y coordinates
-            - a node_type (either 'household', 'meterhub' or 'powerhub') which
+            - a node_type (either 'consumer', 'pole' or 'powerhub') which
               can be fixed using the type_fixed parameter
             - a segment denoting which cluster the node belongs to
-            - an allocation capacity, denoting how many households can be
+            - an allocation capacity, denoting how many consumers can be
               connected to the node.
 
     links : :class:`pandas.core.frame.DataFrame`
@@ -32,27 +32,27 @@ class Grid:
         between the nodes. The links are by definition undirected,
         'from' and 'to' denote the labels of the two nodes that are connected
         by the given link. Each link has a type: 'distribution' for links
-        between households and hubs (meterhubs or powerhubs) and 'interhub'
-        for links between two hubs.
+        between consumers and poles (poles or powerhubs) and 'interpole'
+        for links between two poles.
 
     meter_per_default_unit: float
         Ratio describing meter ratio per unit lenght.
 
-    price_meterhub: float
-        Price associated with each meterhub.
+    price_pole: float
+        Price associated with each pole.
 
-    price_household: float
-        Price associtated with each household
+    price_consumer: float
+        Price associtated with each consumer
 
-    price_interhub_cable_per_meter: float
-        Price per unit lenght [1/m] associated with interhub cables.
+    price_interpole_cable_per_meter: float
+        Price per unit lenght [1/m] associated with interpole cables.
 
     price_distribution_cable_per_meter: float
         Price per unit lenght [1/m] associated with distribution cables.
 
-    default_hub_capacity: int
-        Default value for the maximal number of households that can be
-        connected to one hub.
+    default_pole_capacity: int
+        Default value for the maximal number of consumers that can be
+        connected to one pole.
 
     max_current: float
         Value of the maximal current expected to flow into the cables [A].
@@ -60,11 +60,11 @@ class Grid:
     voltage: float
         Value of the nominal voltage delivered to each node in [V].
 
-    interhub_cable_section: float
-        Section of the interhub cables in [mm²].
+    interpole_cable_section: float
+        Section of the interpole cables in [mm²].
 
-    interhub_cable_resistivity: float
-        Electrical resistivity of the interhub cables in [Ohm*mm²/m].
+    interpole_cable_resistivity: float
+        Electrical resistivity of the interpole cables in [Ohm*mm²/m].
 
     distribution_cable_section: float
         Section of the distribution cables in [mm²].
@@ -96,15 +96,15 @@ class Grid:
                                      'distance': pd.Series([], dtype=int)
                                      }).set_index('label'),
                  meter_per_default_unit=1,
-                 price_meterhub=600,
-                 price_household=50,
-                 price_interhub_cable_per_meter=5,
+                 price_pole=600,
+                 price_consumer=50,
+                 price_interpole_cable_per_meter=5,
                  price_distribution_cable_per_meter=2,
-                 default_hub_capacity=0,
+                 default_pole_capacity=0,
                  max_current=10,  # [A]
                  voltage=230,  # [V]
-                 interhub_cable_section=4,  # [mm²]
-                 interhub_cable_resistivity=0.0171,  # [Ohm*mm²/m]
+                 interpole_cable_section=4,  # [mm²]
+                 interpole_cable_resistivity=0.0171,  # [Ohm*mm²/m]
                  distribution_cable_section=2.5,  # [mm²]
                  distribution_cable_resistivity=0.0171  # [Ohm*mm²/m]
                  ):
@@ -112,18 +112,18 @@ class Grid:
         self.__nodes = nodes
         self.__links = links
         self.__meter_per_default_unit = meter_per_default_unit
-        self.__price_meterhub = price_meterhub
-        self.__price_household = price_household
-        self.__price_interhub_cable_per_meter = price_interhub_cable_per_meter
+        self.__price_pole = price_pole
+        self.__price_consumer = price_consumer
+        self.__price_interpole_cable_per_meter = price_interpole_cable_per_meter
         self.__price_distribution_cable_per_meter = (
             price_distribution_cable_per_meter
         )
         self.__voltage = voltage
-        self.__interhub_cable_section = interhub_cable_section
-        self.__interhub_cable_resistivity = interhub_cable_resistivity
+        self.__interpole_cable_section = interpole_cable_section
+        self.__interpole_cable_resistivity = interpole_cable_resistivity
         self.__distribution_cable_section = distribution_cable_section
         self.__distribution_cable_resistivity = distribution_cable_resistivity
-        self.__default_hub_capacity = default_hub_capacity
+        self.__default_pole_capacity = default_pole_capacity
         self.__max_current = max_current
 
     # -------------------------- GET METHODS ------------------------- #
@@ -139,32 +139,32 @@ class Grid:
         """
         return self.__nodes.copy()
 
-    def get_hubs(self):
+    def get_poles(self):
         """
         Returns the filtered _nodes DataFrame with only nodes of
-        'meterhub' and 'powerhub' house type.
+        'pole' and 'powerhub' house type.
 
         Returns
         ------
         class:`pandas.core.frame.DataFrame`
-            Filtered DataFrame containing all 'powerhub' and 'meterhub' nodes
+            Filtered DataFrame containing all 'powerhub' and 'pole' nodes
             from the grid
 
         """
-        return self.__nodes[(self.__nodes['node_type'] == 'meterhub')
+        return self.__nodes[(self.__nodes['node_type'] == 'pole')
                             | (self.__nodes['node_type'] == 'powerhub')].copy()
 
-    def get_households(self):
+    def get_consumers(self):
         """
-        Returns the filtered _nodes DataFrame with only 'household' nodes.
+        Returns the filtered _nodes DataFrame with only 'consumer' nodes.
 
         Returns
         ------
         class:`pandas.core.frame.DataFrame`
-            Filtered DataFrame containing all 'household' nodes
+            Filtered DataFrame containing all 'consumer' nodes
             from the grid
         """
-        return self.__nodes[self.__nodes['node_type'] == 'household'].copy()
+        return self.__nodes[self.__nodes['node_type'] == 'consumer'].copy()
 
     def get_non_fixed_nodes(self):
         """
@@ -201,9 +201,9 @@ class Grid:
         """
         return self.__meter_per_default_unit
 
-    def get_segment_hub_capacity(self, segment):
+    def get_segment_pole_capacity(self, segment):
         """
-        Returns the total capacity of all the hubs in the segment.
+        Returns the total capacity of all the poles in the segment.
 
         Parameters
         ----------
@@ -211,16 +211,16 @@ class Grid:
             Label of the segment
         """
 
-        return self.get_hubs()[
-            self.get_hubs()['segment']
+        return self.get_poles()[
+            self.get_poles()['segment']
             == segment]['allocation_capacity'].sum()
 
-    def get_total_hub_capacity(self):
+    def get_total_pole_capacity(self):
         """
-        Returns the total capacity of all the hubs in the grid.
+        Returns the total capacity of all the poles in the grid.
 
         """
-        return self.get_hubs()['allocation_capacity'].sum()
+        return self.get_poles()['allocation_capacity'].sum()
 
     def get_id(self):
         """
@@ -233,16 +233,16 @@ class Grid:
         """
         return self.__id
 
-    def get_default_hub_capacity(self):
+    def get_default_pole_capacity(self):
         """
-        Returns __default_hub_capacity attribute of the grid.
+        Returns __default_pole_capacity attribute of the grid.
 
         Returns
         ------
         int
-            __default_hub_capacity parameter of the grid
+            __default_pole_capacity parameter of the grid
         """
-        return self.__default_hub_capacity
+        return self.__default_pole_capacity
 
     def get_distribution_cable_price(self):
         """
@@ -255,38 +255,38 @@ class Grid:
         """
         return self.__price_distribution_cable_per_meter
 
-    def get_interhub_cable_price(self):
+    def get_interpole_cable_price(self):
         """
-        Returns __interhub_cable_price attribute of the grid.
+        Returns __interpole_cable_price attribute of the grid.
 
         Returns
         ------
         int
-            __interhub_cable_price parameter of the grid
+            __interpole_cable_price parameter of the grid
         """
-        return self.__price_interhub_cable_per_meter
+        return self.__price_interpole_cable_per_meter
 
-    def get_price_meterhub(self):
+    def get_price_pole(self):
         """
-        Returns __price_meterhub attribute of the grid.
-
-        Returns
-        ------
-        int
-            __price_meterhub parameter of the grid
-        """
-        return self.__price_meterhub
-
-    def get_price_household(self):
-        """
-        Returns __price_household attribute of the grid.
+        Returns __price_pole attribute of the grid.
 
         Returns
         ------
         int
-            __price_household parameter of the grid
+            __price_pole parameter of the grid
         """
-        return self.__price_household
+        return self.__price_pole
+
+    def get_price_consumer(self):
+        """
+        Returns __price_consumer attribute of the grid.
+
+        Returns
+        ------
+        int
+            __price_consumer parameter of the grid
+        """
+        return self.__price_consumer
 
     # ------------------ FEATURE METHODS ------------------ #
 
@@ -319,53 +319,53 @@ class Grid:
         else:
             return False
 
-    def is_hub_capacity_constraint_too_strong(self):
+    def is_pole_capacity_constraint_too_strong(self):
         """
-        This methods returns wheter or not hub capacity constraint prevents
-        from connecting all households to hubs.
+        This methods returns wheter or not pole capacity constraint prevents
+        from connecting all consumers to poles.
 
         Returns
         ------
-            If number of households is greater than the sum of the respective
-            segment's hubs capacity, True is returned. Otherwise, False is
+            If number of consumers is greater than the sum of the respective
+            segment's poles capacity, True is returned. Otherwise, False is
             returned.
         Note
         ----
-            If all hubs in the grid have a an allocation_capacity equals
+            If all poles in the grid have a an allocation_capacity equals
             to 0, the allocation capacity is by default unrestricted and an
-            arbitrary number of nodes can be assigned to each hub.
+            arbitrary number of nodes can be assigned to each pole.
         """
-        # If the sum of the allocation_capacity of the hubs is 0, capacity is
+        # If the sum of the allocation_capacity of the poles is 0, capacity is
         # by default unrestricted
-        if self.get_hubs()['allocation_capacity'].sum() == 0:
+        if self.get_poles()['allocation_capacity'].sum() == 0:
             return False
 
         is_capacity_constraint_too_strong = False
         for segment in self.get_nodes()['segment'].unique():
-            if self.get_households()[
-                self.get_households()['segment'] == segment].shape[0] >\
-                    self.get_hubs()[
-                    self.get_hubs()['segment']
+            if self.get_consumers()[
+                self.get_consumers()['segment'] == segment].shape[0] >\
+                    self.get_poles()[
+                    self.get_poles()['segment']
                     == segment]['allocation_capacity'].sum():
                 is_capacity_constraint_too_strong = True
 
         return is_capacity_constraint_too_strong
 
-    def number_of_hubs_required_to_meet_allocation_capacity_constraint(self):
-        """ This function computes the number of hubs with defauld capacity
+    def number_of_poles_required_to_meet_allocation_capacity_constraint(self):
+        """ This function computes the number of poles with defauld capacity
         required to meet allocation capacity constraint.
 
         Output
         ------
             (int):
-                Number of hubs with default capacity required to meet
+                Number of poles with default capacity required to meet
                 allocation capacity constraint.
         """
-        # handle case where hubs are uncapcitated
-        if self.get_default_hub_capacity() == 0:
+        # handle case where poles are uncapcitated
+        if self.get_default_pole_capacity() == 0:
             return 1
 
-        return int(np.ceil(self.get_nodes().shape[0]/(1 * self.get_default_hub_capacity())))
+        return int(np.ceil(self.get_nodes().shape[0]/(1 * self.get_default_pole_capacity())))
 
     def is_segment_spanning_tree(self, segment):
         """
@@ -460,18 +460,18 @@ class Grid:
                                               current_node,
                                               next_node)
 
-    def get_interhub_cable_length(self):
+    def get_interpole_cable_length(self):
         """
-        This method returns the sum of the interhub cables length.
+        This method returns the sum of the interpole cables length.
 
         Returns
         ------
         type: float
-        Total distance of interhub cable in the grid.
+        Total distance of interpole cable in the grid.
         """
         return self.get_links()[
             self.get_links()['type']
-            == 'interhub']['distance'].sum()
+            == 'interpole']['distance'].sum()
 
     def get_distribution_cable_length(self):
         """
@@ -526,7 +526,7 @@ class Grid:
         y_coordinate: float
             y coordinate of node in default unit.
         node_type: str
-            node_type of the node (either 'household', 'meterhub'
+            node_type of the node (either 'consumer', 'pole'
             or 'powerhub').
         type_fixed: bool
             Paramter specifing if node_type can be changed or not.
@@ -535,12 +535,12 @@ class Grid:
         segment: str
             Label of the segment the node should be part of.
         allocation_capacity: int
-            Only relevant for hubs, define maximum number of households
-            that can be connected to each hub.
+            Only relevant for poles, define maximum number of consumers
+            that can be connected to each pole.
         """
 
-        if allocation_capacity == 0 and 'hub' in node_type:
-            allocation_capacity = self.__default_hub_capacity
+        if allocation_capacity == 0 and 'pole' in node_type:
+            allocation_capacity = self.__default_pole_capacity
         self.__nodes.loc[str(label)] = [x_coordinate,
                                         y_coordinate,
                                         node_type,
@@ -580,9 +580,9 @@ class Grid:
 
     def flip_node(self, node_label):
         """
-        Switch the node_type of a node i.e. if node_type is 'meterhub',
-        change it to 'household', if node_type is 'household', change
-        it to 'meterhub'.
+        Switch the node_type of a node i.e. if node_type is 'pole',
+        change it to 'consumer', if node_type is 'consumer', change
+        it to 'pole'.
 
         Parameters
         ----------
@@ -591,21 +591,21 @@ class Grid:
         """
 
         if not self.__nodes['type_fixed'][node_label]:
-            if self.__nodes['node_type'][node_label] == 'meterhub':
+            if self.__nodes['node_type'][node_label] == 'pole':
                 self.set_node_type(node_label=node_label,
-                                   node_type='household')
-                self.set_hub_capacity(str(node_label), 0)
-            elif self.__nodes['node_type'][node_label] == 'household':
+                                   node_type='consumer')
+                self.set_pole_capacity(str(node_label), 0)
+            elif self.__nodes['node_type'][node_label] == 'consumer':
                 self.set_node_type(node_label=node_label,
-                                   node_type='meterhub')
-                self.set_hub_capacity(str(node_label),
-                                      self.__default_hub_capacity)
+                                   node_type='pole')
+                self.set_pole_capacity(str(node_label),
+                                      self.__default_pole_capacity)
 
     def flip_random_node(self):
         """
         This function picks a node uniformly at random and flips its
-        'node_type' (i.e. if node_type is meterhub, change it to
-        household, if node_type is household, change it to meterhub).
+        'node_type' (i.e. if node_type is pole, change it to
+        consumer, if node_type is consumer, change it to pole).
         """
         # First be sure that the node dataframe is not empty
         if self.get_non_fixed_nodes().shape[0] > 0:  # noqa: E712
@@ -618,91 +618,91 @@ class Grid:
     def swap_random(self,
                     swap_option='random'):
         """
-        This method picks a meterhub uniformly at random and, swap it
-        house state with a household selected according to the
+        This method picks a pole uniformly at random and, swap it
+        house state with a consumer selected according to the
         swap_option parameter (ie. the 'node_type' of the picked
-        meterhub is changed to 'household' and the 'node_type' of the
-        selected household is set to 'meterhub).
+        pole is changed to 'consumer' and the 'node_type' of the
+        selected consumer is set to 'pole).
 
         Parameters
         ----------
         swap_option: :class:`bool`
-            If parameter is 'nearest_neighbour', the household that is picked
+            If parameter is 'nearest_neighbour', the consumer that is picked
             is necessarily the one that is the clostest to the picked
-            meterhub. If parameter is 'random', the household to be swaped
-            with the meterhub is selected uniformly at random.
+            pole. If parameter is 'random', the consumer to be swaped
+            with the pole is selected uniformly at random.
         """
 
-        # Make sure that the grid contains at least one meterhub and household
+        # Make sure that the grid contains at least one pole and consumer
         if self.get_non_fixed_nodes()[self.get_non_fixed_nodes()['node_type']
-                                      == 'meterhub'].shape[0] > 0\
+                                      == 'pole'].shape[0] > 0\
                 and self.get_non_fixed_nodes()[
                     self.get_non_fixed_nodes()['node_type']
-                    == 'household'].shape[0] > 0:
+                    == 'consumer'].shape[0] > 0:
 
-            # Pick a meterhub uniformly at random among the ones not fixed
-            randomly_selected_meterhub_label =\
+            # Pick a pole uniformly at random among the ones not fixed
+            randomly_selected_pole_label =\
                 self.get_non_fixed_nodes()[
                     self.get_non_fixed_nodes()['node_type']
-                    == 'meterhub'].sample(n=1).index[0]
+                    == 'pole'].sample(n=1).index[0]
 
-            # If swap_option is 'nearest_neighbour', find nearest household
+            # If swap_option is 'nearest_neighbour', find nearest consumer
             # and flip its node_type
             if swap_option == 'nearest_neighbour':
-                # Define first household of the nodes Dataframe before looping
-                # to finde the nearest to the picked meterhub and save
+                # Define first consumer of the nodes Dataframe before looping
+                # to finde the nearest to the picked pole and save
                 # distance
-                selected_household_label\
+                selected_consumer_label\
                     = self.get_non_fixed_nodes()[
                         self.get_non_fixed_nodes()['node_type']
-                        == 'household'].index[0]
+                        == 'consumer'].index[0]
 
-                dist_to_selected_household = self.distance_between_nodes(
-                    randomly_selected_meterhub_label,
-                    selected_household_label)
-                # Loop over all households to find the one that is the nearest
-                # to the meterhub
-                for household_label in \
+                dist_to_selected_consumer = self.distance_between_nodes(
+                    randomly_selected_pole_label,
+                    selected_consumer_label)
+                # Loop over all consumers to find the one that is the nearest
+                # to the pole
+                for consumer_label in \
                         self.get_non_fixed_nodes()[
                             self.get_non_fixed_nodes()['node_type']
-                            == 'household'].index:
+                            == 'consumer'].index:
                     if self.distance_between_nodes(
-                            randomly_selected_meterhub_label, household_label)\
-                            < dist_to_selected_household:
-                        selected_household_label = household_label
-                        dist_to_selected_household =\
+                            randomly_selected_pole_label, consumer_label)\
+                            < dist_to_selected_consumer:
+                        selected_consumer_label = consumer_label
+                        dist_to_selected_consumer =\
                             self.distance_between_nodes(
-                                randomly_selected_meterhub_label,
-                                selected_household_label)
+                                randomly_selected_pole_label,
+                                selected_consumer_label)
             else:
-                selected_household_label =\
+                selected_consumer_label =\
                     self.get_non_fixed_nodes()[
                         self.get_non_fixed_nodes()['node_type']
-                        == 'household'].sample(n=1).index[0]
+                        == 'consumer'].sample(n=1).index[0]
 
-            self.flip_node(randomly_selected_meterhub_label)
-            self.flip_node(selected_household_label)
+            self.flip_node(randomly_selected_pole_label)
+            self.flip_node(selected_consumer_label)
 
-    def set_all_node_type_to_households(self):
+    def set_all_node_type_to_consumers(self):
         """"
-        This method sets the node_type to 'household' for all nodes with
+        This method sets the node_type to 'consumer' for all nodes with
         type_fixed == False.
         """
 
         for label in self.get_non_fixed_nodes()[(self.__nodes['node_type']
                                                  != 'powerhub')].index:
-            self.set_node_type(label, 'household')
+            self.set_node_type(label, 'consumer')
 
-    def set_all_node_type_to_meterhubs(self):
+    def set_all_node_type_to_poles(self):
         """"
-        This method sets the node_type to 'meterhub' for all nodes with
+        This method sets the node_type to 'pole' for all nodes with
         type_fixed == False.
         """
 
         for label in self.__nodes[self.__nodes['node_type']
                                   != 'powerhub'].index:
             if not self.get_nodes()['type_fixed'][label]:
-                self.set_node_type(label, 'meterhub')
+                self.set_node_type(label, 'pole')
 
     def set_node_type(self, node_label, node_type):
         """
@@ -718,29 +718,29 @@ class Grid:
         """
         if not self.get_nodes()['type_fixed'][node_label]:
             self.__nodes.at[node_label, 'node_type'] = node_type
-            if node_type == 'meterhub' or node_type == 'powerhub':
+            if node_type == 'pole' or node_type == 'powerhub':
                 self.__nodes.at[node_label, 'allocation_capacity'] =\
-                    self.__default_hub_capacity
-            elif node_type == 'household':
+                    self.__default_pole_capacity
+            elif node_type == 'consumer':
                 self.__nodes.at[node_label, 'allocation_capacity'] = 0
 
-    def set_node_type_randomly(self, probability_for_meterhub):
+    def set_node_type_randomly(self, probability_for_pole):
         """"
-        This method sets the node_type of each node to meterhub with a
-        probability probability_for_meterhub, the rest are being set to
-        households.
+        This method sets the node_type of each node to pole with a
+        probability probability_for_pole, the rest are being set to
+        consumers.
 
         Parameters
         ----------
-            probability_for_meterhub: float
-                Probabilty to assign each node to node_type value 'meterhub'.
+            probability_for_pole: float
+                Probabilty to assign each node to node_type value 'pole'.
         """
 
         for label in self.__nodes.index:
-            if np.random.rand() < probability_for_meterhub:
-                self.set_node_type(node_label=label, node_type='meterhub')
+            if np.random.rand() < probability_for_pole:
+                self.set_node_type(node_label=label, node_type='pole')
             else:
-                self.set_node_type(node_label=label, node_type='household')
+                self.set_node_type(node_label=label, node_type='consumer')
 
     def set_segment(self, node_label, segment):
         """ This method assigns the segment attribute of the node corresponding
@@ -779,34 +779,34 @@ class Grid:
         if self.__nodes.shape[0] > 0:
             self.__nodes.at[str(node_label), 'type_fixed'] = type_to_set
 
-    def set_hub_capacity(self, hub_label, allocation_capacity):
+    def set_pole_capacity(self, pole_label, allocation_capacity):
         """
-        This method sets the allocation capacity of a hub to the value given
-        by the allocation_capacity parameter. If the node is not a hub, the
+        This method sets the allocation capacity of a pole to the value given
+        by the allocation_capacity parameter. If the node is not a pole, the
         method doesn't do anything.
 
         Parameters
         ----------
-        hub_label: str
-            Label of the hub.
+        pole_label: str
+            Label of the pole.
         allocation_capacity: int
-            Value the allocation_capacity of the hub is assigned to.
+            Value the allocation_capacity of the pole is assigned to.
         """
-        if hub_label in self.get_hubs().index\
+        if pole_label in self.get_poles().index\
                 and type(allocation_capacity) == int:
-            self.__nodes.at[str(hub_label),
+            self.__nodes.at[str(pole_label),
                             'allocation_capacity'] = allocation_capacity
 
-    def set_default_hub_capacity(self, default_hub_capacity):
+    def set_default_pole_capacity(self, default_pole_capacity):
         """
-        Set grid's _default_hub_capacity attibute to default_hub_capacity parameter.
+        Set grid's _default_pole_capacity attibute to default_pole_capacity parameter.
 
         Parameters
         ----------
         links (int):
-            Value to set to default hub capacity.
+            Value to set to default pole capacity.
         """
-        self.__default_hub_capacity = default_hub_capacity
+        self.__default_pole_capacity = default_pole_capacity
 
     def shift_node(self,
                    node,
@@ -869,12 +869,12 @@ class Grid:
         # link type
         if label_node_from in self.__nodes.index\
                 and label_node_to in self.__nodes.index:
-            if (self.__nodes['node_type'][label_node_from] == 'meterhub'
+            if (self.__nodes['node_type'][label_node_from] == 'pole'
                 or self.__nodes['node_type'][label_node_from] == 'powerhub')\
-               and (self.__nodes['node_type'][label_node_to] == 'meterhub'
+               and (self.__nodes['node_type'][label_node_to] == 'pole'
                     or (self.__nodes['node_type'][label_node_to]
                         == 'powerhub')):
-                link_type = 'interhub'
+                link_type = 'interpole'
             else:
                 link_type = 'distribution'
             distance = self.distance_between_nodes(label_node_from,
@@ -923,13 +923,13 @@ class Grid:
             [label for label in self.get_links().index],
             axis=0)
 
-    def clear_interhub_links(self):
-        """Removes all the interhub links from the grid$.
+    def clear_interpole_links(self):
+        """Removes all the interpole links from the grid$.
         """
-        self.__links = self.__links[self.__links['type'] != 'interhub']
+        self.__links = self.__links[self.__links['type'] != 'interpole']
 
     def clear_distribution_links(self):
-        """Removes all the interhub links from the grid.
+        """Removes all the interpole links from the grid.
         """
         self.__links = self.__links[self.__links['type'] != 'distribution']
 
@@ -946,31 +946,31 @@ class Grid:
         the cable types.
         """
 
-        # If there are no meterhubs in the grid, the price function
+        # If there are no poles in the grid, the price function
         # returns a very large value
-        if (self.get_hubs().shape[0] == 0) or (self.get_links().shape[0] == 0):
+        if (self.get_poles().shape[0] == 0) or (self.get_links().shape[0] == 0):
             return 999999999999999.1
 
-        # Compute total interhub cable length in meter
-        interhub_cable_lentgh_meter =\
-            self.get_interhub_cable_length()
+        # Compute total interpole cable length in meter
+        interpole_cable_lentgh_meter =\
+            self.get_interpole_cable_length()
         # Compute total distribution cable length in meter
         distribution_cable_length_meter =\
             self.get_distribution_cable_length()
-        # Compute the number of meterhubs
-        number_of_meterhubs =\
-            self.__nodes[self.__nodes['node_type'] == 'meterhub'].shape[0]
+        # Compute the number of poles
+        number_of_poles =\
+            self.__nodes[self.__nodes['node_type'] == 'pole'].shape[0]
 
-        # Compute the number of households
-        number_of_households =\
-            self.__nodes[self.__nodes['node_type'] == 'household'].shape[0]
+        # Compute the number of consumers
+        number_of_consumers =\
+            self.__nodes[self.__nodes['node_type'] == 'consumer'].shape[0]
 
-        grid_price = ((number_of_meterhubs * self.__price_meterhub)
-                      + (number_of_households * self.__price_household)
+        grid_price = ((number_of_poles * self.__price_pole)
+                      + (number_of_consumers * self.__price_consumer)
                       + (distribution_cable_length_meter
                          * self.__price_distribution_cable_per_meter)
-                      + (interhub_cable_lentgh_meter
-                         * self.__price_interhub_cable_per_meter))
+                      + (interpole_cable_lentgh_meter
+                         * self.__price_interpole_cable_per_meter))
 
         return np.around(grid_price, decimals=2)
 
@@ -1006,7 +1006,7 @@ class Grid:
         else:
             return np.infty
 
-    def get_cable_distance_from_households_to_powerhub(self):
+    def get_cable_distance_from_consumers_to_powerhub(self):
         """
         This method computes the cable distance separating each node
         from its powerhub. It recursively uses the method
@@ -1018,13 +1018,13 @@ class Grid:
         ------
         class:`pandas.core.frame.DataFrame`
             This method returns a pandas DataFrame containing all the
-            nodes in the grid and the total length of interhub and
+            nodes in the grid and the total length of interpole and
             distribution cable separating it from its respective powerhub.
          """
 
-        # Create dataframe with interhub and distribution cable length
+        # Create dataframe with interpole and distribution cable length
         distance_df = pd.DataFrame({'label': [],
-                                    'interhub cable [m]': [],
+                                    'interpole cable [m]': [],
                                     'distribution cable [m]': [],
                                     'powerhub label': []})
         distance_df = distance_df.set_index('label')
@@ -1037,7 +1037,7 @@ class Grid:
             # this list gathers the index of all nodes that are directly
             # connected with a link to the powerhub
             node_next_neighbours = []
-            # add all nodes connected to the meterhub to the list
+            # add all nodes connected to the pole to the list
             for next_node in self.get_links()[
                     (self.get_links()['from'] == index_powerhub)]['to']:
                 if next_node not in node_next_neighbours\
@@ -1102,16 +1102,16 @@ class Grid:
 
         # check what type the link is to know distiguish of the cable types
         # in the datafram
-        if self.get_links()['type'][index_link_between_nodes] == 'interhub':
+        if self.get_links()['type'][index_link_between_nodes] == 'interpole':
             distance_df.loc[node_n] = [
-                distance_df['interhub cable [m]'][node_n_minus_1]
+                distance_df['interpole cable [m]'][node_n_minus_1]
                 + self.distance_between_nodes(node_n_minus_1, node_n),
                 0,
                 index_powerhub]
         elif self.get_links()['type'][
                 index_link_between_nodes] == 'distribution':
             distance_df.loc[node_n] = [
-                distance_df['interhub cable [m]'][node_n_minus_1],
+                distance_df['interpole cable [m]'][node_n_minus_1],
                 self.distance_between_nodes(node_n_minus_1, node_n),
                 index_powerhub]
 
@@ -1153,19 +1153,19 @@ class Grid:
             The cable resistance R_i is computed as follow
             R_i =  rho_i * 2* d_i / (i_cable_section)
             where i represent the cable type, rho the cable electric
-            resistivity (self.__interhub_cable_resistivity),
+            resistivity (self.__interpole_cable_resistivity),
             d the cable distance and i_cable_section the section of the cable.
             The voltage drop is computed using Ohm's law
             U = R * I where U is the tension (here corresponding to the
             voltage drop), R the resistance and I the current.
         """
         voltage_drop_df =\
-            self.get_cable_distance_from_households_to_powerhub()
+            self.get_cable_distance_from_consumers_to_powerhub()
 
-        voltage_drop_df['interhub cable resistance [Ω]'] = (
-            self.__interhub_cable_resistivity
-            * 2 * voltage_drop_df['interhub cable [m]']
-            / self.__interhub_cable_section
+        voltage_drop_df['interpole cable resistance [Ω]'] = (
+            self.__interpole_cable_resistivity
+            * 2 * voltage_drop_df['interpole cable [m]']
+            / self.__interpole_cable_section
         )
 
         voltage_drop_df['distribution cable resistance [Ω]'] = (
@@ -1175,7 +1175,7 @@ class Grid:
         )
 
         voltage_drop_df['voltage drop [V]'] = (
-            (voltage_drop_df['interhub cable resistance [Ω]']
+            (voltage_drop_df['interpole cable resistance [Ω]']
              * self.__max_current)
             + (voltage_drop_df['distribution cable resistance [Ω]'] *
                self.__max_current)

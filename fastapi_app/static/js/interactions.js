@@ -7,8 +7,8 @@ $(document).ready(function () {
 
 // --------------------VARIABLES DECLARATION----------------------//
 
-default_household_required_capacity = 10;
-default_household_max_power = 20;
+default_consumer_required_capacity = 10;
+default_consumer_max_power = 20;
 // --------------------FUNCTIONS DECLARATION----------------------//
 
 // SET FUNCTIONS
@@ -133,7 +133,7 @@ function optimize_grid() {
         contentType: "application/json",
         data: JSON.stringify({
             price_pole: price_pole.value,
-            price_household: price_household.value,
+            price_consumer: price_consumer.value,
             price_pole_cable: price_pole_cable.value,
             price_distribution_cable: price_distribution_cable.value,
             number_of_relaxation_steps_nr: number_of_relaxation_steps_nr.value,
@@ -162,7 +162,7 @@ function identify_shs() {
         contentType: "application/json",
         data: JSON.stringify({
             cable_price_per_meter_for_shs_mst_identification: cable_pole_price_per_meter,
-            connection_cost_to_minigrid: price_household.value,
+            connection_cost_to_minigrid: price_consumer.value,
             price_shs_hd: price_shs_hd.value,
             price_shs_md: price_shs_md.value,
             price_shs_ld: price_shs_ld.value,
@@ -210,37 +210,39 @@ function database_get(get_nodes, get_links) {
             number_of_nodes = Object.keys(nodes["node_type"]).length;
             var counter;
             for (counter = 0; counter < number_of_nodes; counter++) {
-                if (nodes["node_type"][counter] === "high-demand") {
-                    markers.push(
-                        L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                            icon: markerHighDemand,
-                        }).addTo(mainMap)
-                    );
-                } else if (nodes["node_type"][counter] === "medium-demand") {
-                    markers.push(
-                        L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                            icon: markerMediumDemand,
-                        }).addTo(mainMap)
-                    );
-                } else if (nodes["node_type"][counter] === "low-demand") {
-                    markers.push(
-                        L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                            icon: markerLowDemand,
-                        }).addTo(mainMap)
-                    );
-                } else if (nodes["node_type"][counter] === "pole") {
+                if (nodes["node_type"][counter] === "pole") {
                     markers.push(
                         L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
                             icon: markerPole,
                         }).addTo(mainMap)
                     );
-                } else if (nodes["node_type"][counter] === "shs") {
+                } else if (nodes["is_connected"][counter] === false) {
                     markers.push(
                         L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
                             icon: markerShs,
                         }).addTo(mainMap)
                     );
-                }
+                } else {
+                    if (nodes["demand_type"][counter] === "high-demand") {
+                        markers.push(
+                            L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
+                                icon: markerHighDemand,
+                            }).addTo(mainMap)
+                        );
+                    } else if (nodes["demand_type"][counter] === "medium-demand") {
+                        markers.push(
+                            L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
+                                icon: markerMediumDemand,
+                            }).addTo(mainMap)
+                        );
+                    } else if (nodes["demand_type"][counter] === "low-demand") {
+                        markers.push(
+                            L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
+                                icon: markerLowDemand,
+                            }).addTo(mainMap)
+                        );
+                    } 
+                } 
             }
             if (document.getElementById("radio_button_nodes_boundaries").checked) {
                 zoomAll(mainMap);
@@ -257,6 +259,8 @@ function database_add_from_js(
         longitude = 0,
         area = 0,
         node_type,
+        consumer_type,
+        demand_type,
         peak_demand = 0,
         is_connected = true,
         how_added = "manual" } = {}
@@ -271,6 +275,8 @@ function database_add_from_js(
             longitude: longitude,
             area: area,
             node_type: node_type,
+            consumer_type: consumer_type,
+            demand_type: demand_type,
             peak_demand: peak_demand,
             is_connected: is_connected,
             how_added: how_added,
@@ -345,7 +351,7 @@ function refreshLinksFromDatBase() {
             links = this.response;
             ereaseLinksFromMap(mainMap);
             for (link of links) {
-                var color = link.cable_type === "interhub" ? "red" : "green";
+                var color = link.cable_type === "interpole" ? "red" : "green";
                 drawLinkOnMap(
                     link.lat_from,
                     link.long_from,

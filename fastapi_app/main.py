@@ -18,7 +18,7 @@ import sqlite3
 from fastapi_app.tools.grids import Grid
 from fastapi_app.tools.grid_optimizer import GridOptimizer
 import math
-import urllib.request
+import urllib.request, ssl
 import json
 import pandas as pd
 import numpy as np
@@ -49,6 +49,10 @@ links_file = "links.csv"
 full_path_nodes = os.path.join(dir_name, nodes_file).replace("\\", "/")
 full_path_nodes = os.path.join(dir_name, nodes_file).replace("\\", "/")
 full_path_links = os.path.join(dir_name, links_file).replace("\\", "/")
+
+# this is to avoid problems in "urllib" by not authenticating SSL certificate, otherwise following error occurs:
+# urllib.error.URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1131)>
+ssl._create_default_https_context = ssl._create_unverified_context
 
 # ---------------------------- SET UP grid.db DATABASE -----------------------#
 
@@ -217,8 +221,10 @@ async def database_initialization():
         "latitude",
         "longitude",
         "area",
-        "peak_demand",
         "node_type",
+        "consumer_type",
+        "peak_demand",
+        "demand_type",
         "is_connected",
         "how_added"
     ]
@@ -249,10 +255,12 @@ async def database_add_from_js(
         nodes[headers[0]] = [add_node_request.latitude]
         nodes[headers[1]] = [add_node_request.longitude]
         nodes[headers[2]] = [add_node_request.area]
-        nodes[headers[3]] = [add_node_request.peak_demand]
-        nodes[headers[4]] = [add_node_request.node_type]
-        nodes[headers[5]] = [add_node_request.is_connected]
-        nodes[headers[6]] = [add_node_request.how_added]
+        nodes[headers[3]] = [add_node_request.node_type]
+        nodes[headers[4]] = [add_node_request.consumer_type]
+        nodes[headers[5]] = [add_node_request.peak_demand]
+        nodes[headers[6]] = [add_node_request.demand_type]
+        nodes[headers[7]] = [add_node_request.is_connected]
+        nodes[headers[8]] = [add_node_request.how_added]
 
         database_add(add_nodes, add_links, nodes)
 
@@ -376,16 +384,28 @@ async def select_boundaries_add_remove(
             nodes["latitude"].append(coordinates[0])
             nodes["longitude"].append(coordinates[1])
             nodes["area"].append(building_area[label])
-            # a very rough estimation for peak_demand at each node
-            peak_demand_per_sq_meter = 4
+            nodes["node_type"].append("consumer")
+
+            # a very rough estimation about the type of the consumer based on the surface area
+            if nodes["area"][-1] <= 150:
+                nodes["consumer_type"].append("household")
+            else:
+                nodes["consumer_type"].append("productive")
+
+            # a very rough estimation for peak_demand at each node depending on the node_type
+            if nodes["consumer_type"][-1] == "household":
+                peak_demand_per_sq_meter = 2
+            else:
+                peak_demand_per_sq_meter = 6
+
             nodes["peak_demand"].append(building_area[label] * peak_demand_per_sq_meter)
             # categorization of node_type based on the peak_demand value
             if nodes["peak_demand"][-1] >= 100:
-                nodes["node_type"].append("high-demand")
+                nodes["demand_type"].append("high-demand")
             elif 40 < nodes["peak_demand"][-1] < 100:
-                nodes["node_type"].append("medium-demand")
+                nodes["demand_type"].append("medium-demand")
             else:
-                nodes["node_type"].append("low-demand")
+                nodes["demand_type"].append("low-demand")
             # it is assumed that all nodes are parts of the mini-grid
             nodes["is_connected"].append(True)
 
@@ -469,10 +489,16 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
 
     # extracting nodes properties from the dictionary
     nodes_properties = pd.DataFrame.from_dict(nodes)
-    nodes_index = nodes_properties.index.values.tolist()
+    nodes_index = nodes_properties.index.astype(int).values.tolist()
     nodes_latitude = nodes_properties.latitude.values.tolist()
     nodes_longitude = nodes_properties.longitude.values.tolist()
     nodes_type = nodes_properties.node_type.values.tolist()
+    nodes_is_connected = nodes_properties.is_connected.values.tolist()
+
+    # use latitude of the node that is the most west to set the origin of x coordinates
+    ref_latitude = math.radians(min(nodes_latitude))
+    # use latitude of the node that is the most south to set the origin of y coordinates
+    ref_longitude = math.radians(min(nodes_longitude))
 
     # for node in nodes:
     #node_index = node[0]
@@ -483,63 +509,46 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     # clear_single_node(node_index)
 
     # creating a new "grid" object from the Grid class
-    grid = Grid(price_meterhub=optimize_grid_request.price_pole,
-                price_household=optimize_grid_request.price_household,
-                price_interhub_cable_per_meter=optimize_grid_request.price_pole_cable,
+    grid = Grid(price_meterpole=optimize_grid_request.price_pole,
+                price_consumer=optimize_grid_request.price_consumer,
+                price_interpole_cable_per_meter=optimize_grid_request.price_pole_cable,
                 price_distribution_cable_per_meter=optimize_grid_request.price_distribution_cable,
-                default_hub_capacity=optimize_grid_request.max_connection_poles)
+                default_pole_capacity=optimize_grid_request.max_connection_poles)
 
     # Make sure that new grid object is empty before adding nodes to it
     grid.clear_nodes_and_links()
 
-    # use latitude of the node that is the most west to set origin of x coordinates
-    ref_latitude = math.radians(min(nodes_latitude))
-    # use latitude of the node that is the most south to set origin of y coordinates
-    ref_longitude = math.radians(min(nodes_longitude))
-    for node in nodes:
-        node_index = node[0]
-        latitude = node[1]
-        longitude = node[2]
-        node_type = node[4]
-        type_fixed = bool(node[5])
-
-        if (not node_type == 'shs') and ((not node_type == 'pole') or (node_type == "pole" and type_fixed == True)):
-
+    for node_index in nodes_index:
+        if (nodes_is_connected[node_index]) and (not nodes_type[node_index] == 'pole'):
+            
+            # converting (lat,long) coordinates to (x,y) for the optimizer
             x, y = conv.xy_coordinates_from_latitude_longitude(
-                latitude=latitude,
-                longitude=longitude,
+                latitude=nodes_latitude[nodes_index],
+                longitude=nodes.longitude[nodes_index],
                 ref_latitude=ref_latitude,
                 ref_longitude=ref_longitude)
-            if (node_type == 'pole'):
-                node_type = "meterhub"
-                allocation_capacity = grid.get_default_hub_capacity()
-
-            else:
-                node_type = "household"
-                allocation_capacity = 0
 
             grid.add_node(label=str(node_index),
                           x_coordinate=x,
                           y_coordinate=y,
-                          node_type=node_type,
-                          type_fixed=type_fixed,
-                          allocation_capacity=allocation_capacity)
-    if grid.get_default_hub_capacity() == 0:
-        min_number_of_hubs = 1
+                          node_type=nodes_type[node_index])
+
+    if grid.get_default_pole_capacity() == 0:
+        min_number_of_poles = 1
     else:
-        min_number_of_hubs = (
-            int(np.ceil(grid.get_nodes().shape[0]/(1 * grid.get_default_hub_capacity())))
+        min_number_of_poles = (
+            int(np.ceil(grid.get_nodes().shape[0]/(1 * grid.get_default_pole_capacity())))
         )
 
-    number_of_hubs = max(opt.get_expected_hub_number_from_k_means(grid=grid),
-                         min_number_of_hubs)
+    number_of_poles = max(opt.get_expected_pole_number_from_k_means(grid=grid),
+                         min_number_of_poles)
 
     number_of_relaxation_steps_nr = optimize_grid_request.number_of_relaxation_steps_nr
 
     opt.nr_optimization(grid=grid,
-                        number_of_hubs=number_of_hubs,
+                        number_of_poles=number_of_poles,
                         number_of_relaxation_steps=number_of_relaxation_steps_nr,
-                        locate_new_hubs_freely=True,
+                        locate_new_poles_freely=True,
                         first_guess_strategy='random',
                         save_output=False,
                         number_of_hill_climbers_runs=0)
@@ -551,7 +560,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     # Update nodes types in node database
     for index in grid.get_nodes().index:
 
-        # The indices of the virtual hubs of the nr_optimization method
+        # The indices of the virtual poles of the nr_optimization method
         # all start with 'V'
         if 'V' in index:
             node_type = 'pole'
@@ -577,7 +586,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
             db.commit()
         else:
             node_type = grid.get_nodes().at[index, "node_type"]
-            if node_type == 'meterhub':
+            if node_type == 'pole':
                 node_type = 'pole'
             else:
                 node_type = "low-demand"
@@ -722,7 +731,7 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
         else:
             sql_delete_query = (
                 f"""UPDATE nodes
-                SET node_type = 'household'
+                SET node_type = 'consumer'
                 WHERE  id = {index};
                 """)
         cursor.execute(sql_delete_query)

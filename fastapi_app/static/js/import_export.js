@@ -15,7 +15,7 @@ async function importConfig(include_settings) {
         if (include_settings === true) {
           setSettings(
             (price_pole = result.price_pole),
-            (price_household = result.price_household),
+            (price_consumer = result.price_consumer),
             (price_pole_cable = result.price_pole_cable),
             (price_distribution_cable = result.price_distribution_cable),
             (shs_identification_connection_price =
@@ -31,7 +31,7 @@ async function importConfig(include_settings) {
 
 function setSettings(
   price_pole,
-  price_household,
+  price_consumer,
   price_pole_cable,
   price_distribution_cable,
   shs_identification_cable_price,
@@ -39,7 +39,7 @@ function setSettings(
   number_of_relaxation_steps_nr
 ) {
   document.getElementById("price_pole").value = price_pole;
-  document.getElementById("price_household").value = price_household;
+  document.getElementById("price_consumer").value = price_consumer;
   document.getElementById("price_pole_cable").value = price_pole_cable;
   document.getElementById("price_distribution_cable").value =
     price_distribution_cable;
@@ -54,7 +54,7 @@ async function generateExportFile() {
     contentType: "application/json",
     data: JSON.stringify({
       price_pole: price_pole.value,
-      price_household: price_household.value,
+      price_consumer: price_consumer.value,
       price_pole_cable: price_pole_cable.value,
       price_distribution_cable: price_distribution_cable.value,
       shs_identification_cable_price: price_distribution_cable.value,
