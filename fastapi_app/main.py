@@ -509,7 +509,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     # clear_single_node(node_index)
 
     # creating a new "grid" object from the Grid class
-    grid = Grid(price_meterpole=optimize_grid_request.price_pole,
+    grid = Grid(price_pole=optimize_grid_request.price_pole,
                 price_consumer=optimize_grid_request.price_consumer,
                 price_interpole_cable_per_meter=optimize_grid_request.price_pole_cable,
                 price_distribution_cable_per_meter=optimize_grid_request.price_distribution_cable,
@@ -523,8 +523,8 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
             
             # converting (lat,long) coordinates to (x,y) for the optimizer
             x, y = conv.xy_coordinates_from_latitude_longitude(
-                latitude=nodes_latitude[nodes_index],
-                longitude=nodes.longitude[nodes_index],
+                latitude=nodes_latitude[node_index],
+                longitude=nodes_longitude[node_index],
                 ref_latitude=ref_latitude,
                 ref_longitude=ref_longitude)
 

@@ -2923,9 +2923,9 @@ class GridOptimizer:
         # the method is interrupted)
         grid_copy = copy.deepcopy(grid)
 
-        if (not locate_new_polees_freely) & (grid.get_tota_polele_capacity() > 0):
-            grid_copy.set_default_polee_capacity(
-                grid.get_default_polee_capacity())
+        if (not locate_new_poles_freely) & (grid.get_total_pole_capacity() > 0):
+            grid_copy.set_default_pole_capacity(
+                grid.get_default_pole_capacity())
 
         # find out what x and y coordinate ranges the nodes are in
         x_range = [grid_copy.get_nodes()['x_coordinate'].min(),
@@ -2947,20 +2947,20 @@ class GridOptimizer:
             * number_of_relaxation_steps,
             dtype=float)})
         # Define number of virtual poles
-        number_of_virtual_polees = (number_o_poleles
-                                  - grid_copy.get_polees()[
-                                      grid_copy.get_polees()[
+        number_of_virtual_poles = (number_of_poles
+                                  - grid_copy.get_poles()[
+                                      grid_copy.get_poles()[
                                           'type_fixed']].shape[0]
                                   )
         if first_guess_strategy == 'random':
             # flip all non-fixed poles from the grid for the optimization
-            for pole, row in grid_copy.get_polees().iterrows():
+            for pole, row in grid_copy.get_poles().iterrows():
                 if not row['type_fixed']:
                     grid_copy.flip_node(pole)
 
             # Create virtual poles and add them randomly at locations within
             # square containing all nodes
-            for i in range(number_of_virtual_polees):
+            for i in range(number_of_virtual_poles):
                 grid_copy.add_node(label=f'V{i}',
                                    x_coordinate=random.uniform(x_range[0],
                                                                x_range[1]),
@@ -2972,7 +2972,7 @@ class GridOptimizer:
 
         elif first_guess_strategy == 'k_means':
             # flip all non-fixed poles from the grid for the optimization
-            for pole, row in grid_copy.get_polees().iterrows():
+            for pole, row in grid_copy.get_poles().iterrows():
                 if not row['type_fixed']:
                     grid_copy.flip_node(pole)
 
@@ -2981,7 +2981,7 @@ class GridOptimizer:
 
             cluster_centers = self.k_means_cluster_centers(
                 grid=grid_copy,
-                k_number_of_clusters=number_of_virtual_polees)
+                k_number_of_clusters=number_of_virtual_poles)
 
             count = 0
             for coord in cluster_centers:
@@ -2995,13 +2995,13 @@ class GridOptimizer:
 
         elif first_guess_strategy == 'relax_input_grid':
             counter = 0
-            intial_polee_indices = grid_copy.ge_poleles().index
+            intial_pole_indices = grid_copy.get_poles().index
 
-            for pole in intial_polee_indices:
+            for pole in intial_pole_indices:
                 grid_copy.add_node(
                     label=f'V{counter}',
-                    x_coordinate=grid_copy.get_polees()['x_coordinate'][pole],
-                    y_coordinate=grid_copy.get_polees()['y_coordinate'][pole],
+                    x_coordinate=grid_copy.get_poles()['x_coordinate'][pole],
+                    y_coordinate=grid_copy.get_poles()['y_coordinate'][pole],
                     node_type='pole',
                     type_fixed=False,
                     segment='0',
@@ -3056,8 +3056,8 @@ class GridOptimizer:
                  for x in row['vector_resulting']]
 
         # Shift virtual poles in direction 'vector_resulting'
-        for pole, row_polee in grid_copy.ge_poleles()[
-                - grid_copy.get_polees()['type_fixed']].iterrows():
+        for pole, row_pole in grid_copy.get_poles()[
+                - grid_copy.get_poles()['type_fixed']].iterrows():
             vector_resulting = relaxation_df['vector_resulting'][pole]
             grid_copy.shift_node(node=pole,
                                  delta_x=(vector_resulting[0]
@@ -3067,11 +3067,11 @@ class GridOptimizer:
 
         self.connect_nodes(grid_copy)
         algo_run_log['time'][0] = time.time() - start_time
-        # The solution have number_of_virtual_polees consumers less than the
+        # The solution have number_of_virtual_poles consumers less than the
         # intermediate layout containing virtual poles
         algo_run_log['virtual_price'][0] = (
             grid_copy.price()
-            - number_of_virtual_polees * price_consumer)
+            - number_of_virtual_poles * price_consumer)
         algo_run_log['norm_longest_shift'][0] = (norm_longest_vector
                                                  / smaller_link_distance)
         if print_progress_bar:
@@ -3081,10 +3081,10 @@ class GridOptimizer:
         for n in range(1, number_of_relaxation_steps + 1):
             if number_of_steps_bewteen_random_shifts > 0:
                 if n % (number_of_steps_bewteen_random_shifts) == 0:
-                    pole_to_shift = np.random.choice(grid_copy.get_polees().index)
-                    coord_polee = (
-                        grid_copy.get_polees()['x_coordinate'][pole_to_shift],
-                        grid_copy.get_polees()['y_coordinate'][pole_to_shift])
+                    pole_to_shift = np.random.choice(grid_copy.get_poles().index)
+                    coord_pole = (
+                        grid_copy.get_poles()['x_coordinate'][pole_to_shift],
+                        grid_copy.get_poles()['y_coordinate'][pole_to_shift])
                     random_consumer =\
                         np.random.choice(grid_copy.get_consumers().index)
                     coord_consumer = (
@@ -3094,8 +3094,8 @@ class GridOptimizer:
                             random_consumer])
                     grid_copy.shift_node(
                         pole_to_shift,
-                        coord_consumer[0] - coord_polee[0],
-                        coord_consumer[1] - coord_polee[1])
+                        coord_consumer[0] - coord_pole[0],
+                        coord_consumer[1] - coord_pole[1])
 
             relaxation_df = self.nr_compute_relaxation_df(grid_copy,
                                                           weight_of_attraction)
@@ -3119,13 +3119,13 @@ class GridOptimizer:
                      for x in row['vector_resulting']]
 
             # Shift virtual poles in direction 'vector_resulting'
-            virtual_polees = grid_copy.ge_poleles()[
+            virtual_poles = grid_copy.get_poles()[
                 [(True if index[0] == "V" else False)
-                 for index in grid_copy.get_polees().index]
+                 for index in grid_copy.get_poles().index]
             ]
 
-            for pole, row_polee in virtua_poleles[
-                    - virtual_polees['type_fixed']].iterrows():
+            for pole, row_pole in virtual_poles[
+                    - virtual_poles['type_fixed']].iterrows():
                 vector_resulting = relaxation_df['vector_resulting'][pole]
                 grid_copy.shift_node(
                     node=pole,
@@ -3134,7 +3134,7 @@ class GridOptimizer:
             self.connect_nodes(grid_copy)
             algo_run_log['time'][n] = time.time() - start_time
             algo_run_log['virtual_price'][n] = (grid_copy.price()
-                                                - (number_of_virtual_polees
+                                                - (number_of_virtual_poles
                                                    * price_consumer))
             algo_run_log['norm_longest_shift'][n] = \
                 self.nr_get_norm_of_longest_vector_resulting(
@@ -3143,7 +3143,7 @@ class GridOptimizer:
                 self.printProgressBar(
                     n + 1,
                     number_of_relaxation_steps + 1,
-                    price=(grid_copy.price() - (number_of_virtual_polees
+                    price=(grid_copy.price() - (number_of_virtual_poles
                                                 * price_consumer)))
             list_resulting_vectors_previous_step =\
                 list_resulting_vectors_current_step
@@ -3154,10 +3154,10 @@ class GridOptimizer:
             print('\n\nHill climber runs...\n')
         for i in range(number_of_hill_climbers_runs):
             if print_progress_bar:
-                if locate_new_polees_freely:
+                if locate_new_poles_freely:
                     current_price = grid_copy.price()
                 else:
-                    current_price = grid_copy.price() - (number_of_virtual_polees
+                    current_price = grid_copy.price() - (number_of_virtual_poles
                                                          * price_consumer)
                 self.printProgressBar(
                     iteration=i,
@@ -3165,10 +3165,10 @@ class GridOptimizer:
                     price=current_price
                 )
             counter = 0
-            for pole in grid_copy.get_polees().index:
+            for pole in grid_copy.get_poles().index:
                 counter += 1
                 gradient = self.nr_compute_local_price_gradient(grid_copy, pole)
-                self.nr_shift_polee_toward_minus_gradient(
+                self.nr_shift_pole_toward_minus_gradient(
                     grid=grid_copy,
                     pole=pole,
                     gradient=gradient)
@@ -3176,44 +3176,44 @@ class GridOptimizer:
                 if save_output:
                     algo_run_log.loc[f'{algo_run_log.shape[0]}'] = [
                         time.time() - start_time,
-                        grid_copy.price() - (number_of_virtual_polees
+                        grid_copy.price() - (number_of_virtual_poles
                                              * price_consumer),
                         0]
                 if print_progress_bar:
-                    if locate_new_polees_freely:
+                    if locate_new_poles_freely:
                         current_price = grid_copy.price()
                     else:
-                        current_price = (grid_copy.price() - (number_of_virtual_polees
+                        current_price = (grid_copy.price() - (number_of_virtual_poles
                                                               * price_consumer))
                     self.printProgressBar(
                         iteration=i + ((counter + 1) /
-                                       grid_copy.get_polees().shape[0]),
+                                       grid_copy.get_poles().shape[0]),
                         total=number_of_hill_climbers_runs,
                         price=current_price)
 
-        if not locate_new_polees_freely:
+        if not locate_new_poles_freely:
             # Set closest node to every virtual pole to poles and remove virtual
             # poles
-            node_choosen_to_be_polees = []
-            for pole in grid_copy.get_polees()[
-                    - grid_copy.get_polees()['type_fixed']].index:
+            node_choosen_to_be_poles = []
+            for pole in grid_copy.get_poles()[
+                    - grid_copy.get_poles()['type_fixed']].index:
                 closest_node = grid_copy.get_consumers().index[0]
                 distance_to_closest_node = grid_copy.distance_between_nodes(
                     pole,
                     closest_node)
                 for node in grid_copy.get_consumers().index:
                     if (grid_copy.distance_between_nodes(pole, node) <
-                            distance_to_closest_node) & (node not in node_choosen_to_be_polees):
+                            distance_to_closest_node) & (node not in node_choosen_to_be_poles):
                         distance_to_closest_node = (
                             grid_copy.distance_between_nodes(
                                 pole,
                                 node)
                         )
                         closest_node = node
-                node_choosen_to_be_polees.append(closest_node)
+                node_choosen_to_be_poles.append(closest_node)
                 grid_copy.remove_node(pole)
 
-            for node_chosen in node_choosen_to_be_polees:
+            for node_chosen in node_choosen_to_be_poles:
                 grid_copy.flip_node(node_chosen)
 
             self.connect_nodes(grid_copy)
@@ -3235,7 +3235,7 @@ class GridOptimizer:
             # create json file containing about dictionary
             about_dict = {
                 'grid id': grid_copy.get_id(),
-                'number_of_polees': number_o_poleles,
+                'number_of_poles': number_of_poles,
                 'number_of_relaxation_steps': number_of_relaxation_steps,
                 'damping_factor': damping_factor,
                 'weight_of_attraction': weight_of_attraction,
@@ -3344,16 +3344,16 @@ class GridOptimizer:
         relaxation_df = pd.DataFrame({
             'pole': pd.Series([]),
             'connected_consumers': pd.Series([]),
-            'connected_polees': pd.Series([]),
+            'connected_poles': pd.Series([]),
             'relative_position_consumers': pd.Series([]),
-            'relative_position_polees': pd.Series([]),
+            'relative_position_poles': pd.Series([]),
             'vector_consumers': pd.Series([]),
-            'vector_polees': pd.Series([]),
+            'vector_poles': pd.Series([]),
             'vector_resulting': pd.Series([])
         })
         relaxation_df = relaxation_df.set_index('pole')
 
-        for pole, row_polee in grid.ge_poleles().iterrows():
+        for pole, row_pole in grid.get_poles().iterrows():
             relaxation_df.loc[pole] = [
                 [],
                 [],
@@ -3364,13 +3364,13 @@ class GridOptimizer:
                 [0, 0]]
             for link, row_link in grid.get_links().iterrows():
                 if row_link['from'] == pole:
-                    if row_link['to'] in grid.get_polees().index:
-                        relaxation_df['connected_polees'][pole].append(
+                    if row_link['to'] in grid.get_poles().index:
+                        relaxation_df['connected_poles'][pole].append(
                             row_link['to'])
                 if row_link['to'] == pole:
-                    if row_link['from'] in grid.get_polees().index:
+                    if row_link['from'] in grid.get_poles().index:
                         relaxation_df[
-                            'connected_polees'][pole].append(row_link['from'])
+                            'connected_poles'][pole].append(row_link['from'])
 
                 if row_link['from'] == pole:
                     if row_link['to'] in grid.get_consumers().index:
@@ -3382,7 +3382,7 @@ class GridOptimizer:
                             'connected_consumers'
                         ][pole].append(row_link['from'])
 
-        for pole, row_polee in grid.ge_poleles().iterrows():
+        for pole, row_pole in grid.get_poles().iterrows():
             for consumer in relaxation_df['connected_consumers'][pole]:
                 delta_x = (grid.get_nodes()['x_coordinate'][consumer]
                            - grid.get_nodes()['x_coordinate'][pole])
@@ -3399,15 +3399,15 @@ class GridOptimizer:
                 relaxation_df['vector_resulting'][pole][1] +=\
                     (delta_y * distribution_cable_price / interpole_cable_price)
 
-            for pole_2 in relaxation_df['connected_polees'][pole]:
+            for pole_2 in relaxation_df['connected_poles'][pole]:
                 delta_x = (grid.get_nodes()['x_coordinate'][pole_2]
                            - grid.get_nodes()['x_coordinate'][pole])
                 delta_y = (grid.get_nodes()['y_coordinate'][pole_2]
                            - grid.get_nodes()['y_coordinate'][pole])
-                relaxation_df['relative_position_polees'][pole].append(
+                relaxation_df['relative_position_poles'][pole].append(
                     [delta_x, delta_y])
-                relaxation_df['vector_polees'][pole][0] += delta_x
-                relaxation_df['vector_polees'][pole][1] += delta_y
+                relaxation_df['vector_poles'][pole][0] += delta_x
+                relaxation_df['vector_poles'][pole][1] += delta_y
 
                 relaxation_df['vector_resulting'][pole][0] += delta_x
                 relaxation_df['vector_resulting'][pole][1] += delta_y
@@ -3477,7 +3477,7 @@ class GridOptimizer:
 
         return gradient
 
-    def nr_shift_polee_toward_minus_gradient(self, grid: Grid, pole, gradient):
+    def nr_shift_pole_toward_minus_gradient(self, grid: Grid, pole, gradient):
         """
         This method compares the price of the grid if pole is shifted by
         different amplitudes toward the negative gradient direction and
