@@ -214,7 +214,7 @@ def home(request: Request, db: Session = Depends(get_db)):
 
 
 @app.get("/database_initialization/{nodes}/{links}")
-def database_initialization(nodes, links):
+async def database_initialization(nodes, links):
     # creating the csv files
     # - in case these files do not exist they will be created here
     # - each time the code runs from the beginning, the old csv files will be replaced with new blank ones
@@ -314,14 +314,46 @@ def database_add(add_nodes: bool,
 
 @app.get("/database_get/{nodes}/{links}")
 async def database_get(nodes: bool, links: bool):
-    # importing nodes and links from the csv files to the map
 
+    # importing nodes and links from the csv files to the map
     if nodes:
         nodes_list = json.loads(pd.read_csv(full_path_nodes).to_json())
         return nodes_list
     if links:
         links_list = json.loads(pd.read_csv(full_path_links).to_json())
         return links_list
+
+
+@app.post("/database_clear/{mode}/{nodes_to_delete}")
+async def database_clear(mode: str, 
+                         nodes_to_delete: dict):
+
+    # removing all (or selected) nodes and links from the database
+    # mode can be "all" or "selected"
+    # in any case, ALL links will be removed, wither with all nodes, or with some selected ones 
+    if mode=='all':
+        await database_initialization(nodes=True, links=True)
+    else:
+        # removing all links
+        await database_initialization(nodes=False, links=True)
+
+        # creating a dataframe from the dictionaty that includes all nodes we need to delete from database
+        df = pd.DataFrame.from_dict(nodes_to_delete)
+
+        # reading the existing CSV file to find the rows that need to be removed
+        # here, the latitudes will be checked in both dataframes and if they are identical, 
+        # the row will be removed from the CSV file.
+        df_existing = list(pd.read_csv(full_path_nodes)["latitude"])
+        for latitude in [float(x) for x in list(df["latitude"])]:
+            if latitude in df_existing:
+                df_existing = df_existing[df_existing.latitude != str(latitude)]
+
+        # removing all nodes        
+        await database_initialization(nodes=True, links=False)
+        
+        # adding the modified list of nodes to the empty CSV file
+        if len(df_existing.index) != 0:
+            df_existing.to_csv(full_path_nodes, mode='a', header=False, index=False, float_format='%.0f')
 
 
 @app.get("/nodes_db_html")
@@ -356,12 +388,12 @@ async def select_boundaries_add_remove(
         selectBoundariesRequest: models.SelectBoundariesRequest):
 
     boundary_coordinates = selectBoundariesRequest.boundary_coordinates
+    
+    # latitudes and longitudes of all buildings in the selected boundary
+    latitudes = [x[0] for x in boundary_coordinates]
+    longitudes = [x[1] for x in boundary_coordinates]
 
     if add_remove == "add":
-        # latitudes and longitudes of all buildings in the selected boundary
-        latitudes = [x[0] for x in boundary_coordinates]
-        longitudes = [x[1] for x in boundary_coordinates]
-
         # min and max of latitudes and longitudes are sent to the overpass to get
         # a large rectangle including (maybe) more buildings than selected
         min_latitude = min(latitudes)
@@ -572,10 +604,6 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                         save_output=True,
                         number_of_hill_climbers_runs=0)
 
-    #conn = sqlite3.connect(grid_db)
-    #sqliteConnection = sqlite3.connect(grid_db)
-    #cursor = sqliteConnection.cursor()
-
     # inserting "poles" in the node database
     poles_list = defaultdict(list)
     for index in grid.get_nodes().index:
@@ -604,24 +632,8 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
             # storing the list of poles in the "node" database
             database_add(add_nodes=True, add_links=False, inlet=poles_list)
 
-        """
-        else:
-            node_type = grid.get_nodes().at[index, "node_type"]
-            if node_type == 'pole':
-                node_type = 'pole'
-            else:
-                node_type = "low-demand"
-            sql_delete_query = (
-                f""UPDATE nodes
-                SET node_type = '{node_type}'
-                WHERE  id = {index};
-                "")
-            cursor.execute(sql_delete_query)
-            sqliteConnection.commit()
-            """
-
-    # remove the content of the existing CSV file including the links
-    database_initialization(nodes=False, links=True)
+    # removing the content of the existing CSV file for the links
+    await database_initialization(nodes=False, links=True)
 
     # storing the newly obtained "links" from the optimization solution to the CSV file
     links = defaultdict(list)

@@ -375,7 +375,7 @@ function drawLinkOnMap(
   longitude_to,
   color,
   map,
-  weight = 3,
+  weight,
   opacity = 0.5
 ) {
   var pointA = new L.LatLng(latitude_from, longitude_from);

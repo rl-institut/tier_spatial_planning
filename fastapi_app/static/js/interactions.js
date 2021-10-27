@@ -254,13 +254,15 @@ function database_get(get_nodes, get_links) {
                 removeLinksFromMap(mainMap);
                 for (let index = 0; index < Object.keys(links.link_type).length; index++) {
                     var color = links.link_type[index] === "interpole" ? "red" : "green";
+                    var weight = links.link_type[index] === "interpole" ? 5 : 3;
                     drawLinkOnMap(
                         links.lat_from[index],
                         links.long_from[index],
                         links.lat_to[index],
                         links.long_to[index],
                         color,
-                        mainMap
+                        mainMap,
+                        weight
                     );
                 }
             }
@@ -298,6 +300,29 @@ function database_add_from_js(
             is_connected: is_connected,
             how_added: how_added,
         }),
+    });
+}
+
+
+function database_clear(
+    {mode = 'all',
+    nodes_to_delete} = {}
+    ) {
+    $.ajax({
+        url: "/database_clear/" + mode + "/" + nodes_to_delete,
+        type: "POST",
+        dataType: "json",
+        contentType: "application/json",
+        data: JSON.stringify({
+            mode: mode,
+            nodes_to_delete: nodes_to_delete,
+        }),
+        statusCode: {
+            200: function () {
+                database_get(get_nodes = true, get_links = false);
+                $("#loading").hide();
+            },
+        },
     });
 }
 
@@ -394,18 +419,6 @@ function clearLinksDataBase() {
     });
 }
 
-function clear_node_db() {
-    $.ajax({
-        url: "clear_node_db/",
-        type: "POST",
-        statusCode: {
-            200: function () {
-                refreshNodeFromDataBase();
-                refreshLinksFromDatBase();
-            },
-        },
-    });
-}
 
 // selecting boundaries of the site for adding new nodes
 function selectBoundariesAdd() {
