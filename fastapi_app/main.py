@@ -147,8 +147,7 @@ async def import_config(file: UploadFile = File(...)):
         await out_file.write(content_file)
 
     # Empty Database tables
-    clear_nodes_table()
-    clear_links_table()
+    database_initialization(nodes=True, links=True)
 
     # Populate nodes table from nodes sheet of file
     nodes_df = pd.read_excel(f"{path}/import_export/import.xlsx",
@@ -312,79 +311,29 @@ def database_add(add_nodes: bool,
             df.to_csv(full_path_links, mode='a', header=False, index=False, float_format='%.0f')
 
 
-@app.get("/database_get/{nodes}/{links}")
-async def database_get(nodes: bool, links: bool):
+@app.get("/database_get/{nodes_or_links}")
+async def database_get(nodes_or_links: str):
 
     # importing nodes and links from the csv files to the map
-    if nodes:
+    if nodes_or_links == 'nodes':
         nodes_list = json.loads(pd.read_csv(full_path_nodes).to_json())
         return nodes_list
-    if links:
+    else:
         links_list = json.loads(pd.read_csv(full_path_links).to_json())
         return links_list
 
 
-@app.post("/database_clear/{mode}/{nodes_to_delete}")
-async def database_clear(mode: str,
-                         nodes_to_delete: dict):
+@app.post("/database_clear_all")
+async def database_clear_all():
 
     # removing all (or selected) nodes and links from the database
     # mode can be "all" or "selected"
     # in any case, ALL links will be removed, wither with all nodes, or with some selected ones
-    if mode == 'all':
-        await database_initialization(nodes=True, links=True)
-    else:
-        # removing all links
-        await database_initialization(nodes=False, links=True)
-
-        # creating a dataframe from the dictionaty that includes all nodes we need to delete from database
-        df = pd.DataFrame.from_dict(nodes_to_delete)
-
-        # reading the existing CSV file to find the rows that need to be removed
-        # here, the latitudes will be checked in both dataframes and if they are identical,
-        # the row will be removed from the CSV file.
-        df_existing = pd.read_csv(full_path_nodes)["latitude"].to_dict()
-        for latitude in [float(x) for x in list(df["latitude"])]:
-            if latitude in df_existing:
-                df_existing = df_existing[df_existing.latitude != str(latitude)]
-
-        # removing all nodes
-        await database_initialization(nodes=True, links=False)
-
-        # adding the modified list of nodes to the empty CSV file
-        if len(df_existing.index) != 0:
-            df_existing.to_csv(full_path_nodes, mode='a', header=False,
-                               index=False, float_format='%.0f')
+    await database_initialization(nodes=True, links=True)
 
 
-@app.get("/nodes_db_html")
-async def get_nodes(request: Request, db: Session = Depends(get_db)):
-    """
-    This funtcion access and returns the entries of the nodes table of the grid database
-
-    Parameters
-    ----------
-    request:
-        url get request called to invoke function
-
-    db:
-        database to be accessed
-
-    """
-    res = db.execute("select * from nodes")
-    result = res.fetchall()
-    return result
-
-
-@app.get("/links_db_html")
-async def get_links(request: Request, db: Session = Depends(get_db)):
-    res = db.execute("select * from links")
-    result = res.fetchall()
-    return result
-
-
-@app.post("/select_boundaries/{add_remove}")
-async def select_boundaries_add_remove(
+@app.post("/database_add_remove_using_boundaries/{add_remove}")
+async def database_add_remove_using_boundaries(
         add_remove: str,
         selectBoundariesRequest: models.SelectBoundariesRequest):
 
@@ -466,33 +415,28 @@ async def select_boundaries_add_remove(
 
         # storing the nodes in the database
         database_add(add_nodes=True, add_links=False, inlet=nodes)
-        # return formated_geojson
 
     else:
-        for node in boundary_coordinates:
-            if bi.is_point_in_boundaries(point_coordinates=(node[1], node[2]), boundaries=boundary_coordinates):
-                clear_single_node(node[0])
+        # reading the existing CSV file of nodes, and then removing the corresponding row
+        df = pd.read_csv(full_path_nodes)
+        number_of_nodes = df.shape[0]
+        for index in range(number_of_nodes):
+            if bi.is_point_in_boundaries(point_coordinates=(df.to_dict()['latitude'][index], df.to_dict()['longitude'][index]), boundaries=boundary_coordinates):
+                df.drop(labels=index, axis=0, inplace=True)
 
-"""
-@app.post("/select_boundaries_remove")
-async def select_boundaries_remove(
-        selectBoundariesRequest: models.SelectBoundariesRequest,
-        db: Session = Depends(get_db)):
+        # removing all nodes and links
+        await database_initialization(nodes=True, links=True)
 
-    boundary_coordinates = selectBoundariesRequest.boundary_coordinates
+        # storing the nodes in the database (updating the existing CSV file)
+        df = df.reset_index(drop=True)
+        database_add(add_nodes=True, add_links=False, inlet=df.to_dict())
 
-    res = db.execute("select * from nodes")
-    nodes = res.fetchall()
 
-    for node in nodes:
-        if bi.is_point_in_boundaries(point_coordinates=(node[1], node[2]), boundaries=boundary_coordinates):
-            clear_single_node(node[0])
-
-    return {
-        "code": "success",
-        "message": "node deleted from db"
-    }
-"""
+@app.get("/links_db_html")
+async def get_links(request: Request, db: Session = Depends(get_db)):
+    res = db.execute("select * from links")
+    result = res.fetchall()
+    return result
 
 
 @ app.post("/add_node/")
@@ -530,7 +474,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     # nodes = res.fetchall()
 
     # getting nodes properties from the CSV file (as a dictionary file)
-    nodes = await database_get(nodes=True, links=False)
+    nodes = await database_get(nodes_or_links='nodes')
 
     # if nodes db is empty, do not perform optimization
     if len(nodes) == 0:

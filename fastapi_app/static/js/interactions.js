@@ -1,18 +1,9 @@
 $(document).ready(function () {
     $(document).foundation();
     database_initialization(nodes = true, links = true);
-    //    refreshNodeFromDataBase();
-    //    refreshLinksFromDatBase();
 });
 
-// --------------------VARIABLES DECLARATION----------------------//
-
-default_consumer_required_capacity = 10;
-default_consumer_max_power = 20;
-// --------------------FUNCTIONS DECLARATION----------------------//
-
 // SET FUNCTIONS
-
 function setVisibilityNodeBox() {
     if (document.getElementById("radio_button_nodes_manually").checked) {
         $(document.getElementById("button_draw_boundaries_add")).attr(
@@ -64,6 +55,98 @@ function setVisibilityNodeBox() {
     }
 }
 
+/************************* DATABASE *************************/
+
+// remove the existing nodes and links in the *.csv files
+function database_initialization(nodes, links) {
+    var xhr = new XMLHttpRequest();
+    url = "database_initialization/" + nodes + "/" + links;
+    xhr.open("GET", url, true);
+}
+
+
+// get all nodes/links stored in the *.csv files
+// then push the corresponding icon on the map
+// note: both "nodes" and "links" cannot be called simultaneously
+function database_get(nodes_or_links) {
+    var xhr = new XMLHttpRequest();
+    url = "database_get/" + nodes_or_links;
+    xhr.open("GET", url, true);
+    xhr.responseType = "json";
+    xhr.send();
+
+    xhr.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+            if (nodes_or_links == 'nodes') {
+                // push nodes to the map
+                nodes = this.response;
+                for (marker of markers) {
+                    mainMap.removeLayer(marker);
+                }
+                markers.length = 0;
+                number_of_nodes = Object.keys(nodes["node_type"]).length;
+                var counter;
+                for (counter = 0; counter < number_of_nodes; counter++) {
+                    if (nodes["node_type"][counter] === "pole") {
+                        markers.push(
+                            L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
+                                icon: markerPole,
+                            }).addTo(mainMap)
+                        );
+                    } else if (nodes["is_connected"][counter] === false) {
+                        // if the node is not connected to the grid, it will be a SHS consumer
+                        markers.push(
+                            L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
+                                icon: markerShs,
+                            }).addTo(mainMap)
+                        );
+                    } else {
+                        if (nodes["demand_type"][counter] === "high-demand") {
+                            markers.push(
+                                L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
+                                    icon: markerHighDemand,
+                                }).addTo(mainMap)
+                            );
+                        } else if (nodes["demand_type"][counter] === "medium-demand") {
+                            markers.push(
+                                L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
+                                    icon: markerMediumDemand,
+                                }).addTo(mainMap)
+                            );
+                        } else if (nodes["demand_type"][counter] === "low-demand") {
+                            markers.push(
+                                L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
+                                    icon: markerLowDemand,
+                                }).addTo(mainMap)
+                            );
+                        }
+                    }
+                }
+                if (document.getElementById("radio_button_nodes_boundaries").checked) {
+                    zoomAll(mainMap);
+                }
+            } else {
+                // push links to the map
+                links = this.response;
+                removeLinksFromMap(mainMap);
+                for (let index = 0; index < Object.keys(links.link_type).length; index++) {
+                    var color = links.link_type[index] === "interpole" ? "red" : "green";
+                    var weight = links.link_type[index] === "interpole" ? 5 : 3;
+                    drawLinkOnMap(
+                        links.lat_from[index],
+                        links.long_from[index],
+                        links.lat_to[index],
+                        links.long_to[index],
+                        color,
+                        mainMap,
+                        weight
+                    );
+                }
+            }
+        }
+    };
+}
+
 // POST REQUESTS
 /* 
 adding or removing building coordinates that are in 
@@ -75,7 +158,7 @@ function buildingsAddRemove(
 ) {
     $("#loading").show();
     $.ajax({
-        url: "select_boundaries/" + add_remove,
+        url: "database_add_remove_using_boundaries/" + add_remove,
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify({
@@ -84,46 +167,13 @@ function buildingsAddRemove(
         dataType: "json",
         statusCode: {
             200: function () {
-                database_get(get_nodes = true, get_links = false);
+                database_get(nodes_or_links = 'nodes');
                 $("#loading").hide();
             },
         },
     });
 }
 
-function addNodeToDatBase(
-    latitude,
-    longitude,
-    area,
-    node_type,
-    fixed_type,
-    required_capacity,
-    max_power,
-    is_connected,
-    how_added
-) {
-    $.ajax({
-        url: "add_node/",
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify({
-            latitude: latitude,
-            longitude: longitude,
-            area: area,
-            node_type: node_type,
-            fixed_type: fixed_type,
-            required_capacity: required_capacity,
-            max_power: max_power,
-            is_connected: is_connected,
-        }),
-        dataType: "json",
-        statusCode: {
-            200: function () {
-                refreshNodeFromDataBase();
-            },
-        },
-    });
-}
 
 function optimize_grid() {
     $("#loading").show();
@@ -142,8 +192,8 @@ function optimize_grid() {
         dataType: "json",
         statusCode: {
             200: function () {
-                database_get(get_nodes = true, get_links = false);
-                database_get(get_nodes = false, get_links = true);
+                database_get(nodes_or_link = 'nodes');
+                database_get(nodes_or_link = 'links');
                 $("#loading").hide();
             },
         },
@@ -180,97 +230,6 @@ function identify_shs() {
 }
 
 
-// this function initializes the database and removes
-// all previous nodes and lines stored in csv files
-function database_initialization(nodes, links) {
-    var xhr = new XMLHttpRequest();
-    url = "database_initialization/" + nodes + "/" + links;
-    xhr.open("GET", url, true);
-    xhr.responseType = "json";
-    xhr.send();
-}
-
-
-// this function first gets all nodes and links stored in csv files
-// and then pushes the corresponding icon on the map
-// note: both "nodes" and "links" cannot be called simultaneously
-function database_get(get_nodes, get_links) {
-    var xhr = new XMLHttpRequest();
-    url = "database_get/" + get_nodes + "/" + get_links;
-    xhr.open("GET", url, true);
-    xhr.responseType = "json";
-    xhr.send();
-
-    xhr.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            if (get_nodes) {
-                nodes = this.response;
-                for (marker of markers) {
-                    mainMap.removeLayer(marker);
-                }
-                markers.length = 0;
-                number_of_nodes = Object.keys(nodes["node_type"]).length;
-                var counter;
-                for (counter = 0; counter < number_of_nodes; counter++) {
-                    if (nodes["node_type"][counter] === "pole") {
-                        markers.push(
-                            L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                                icon: markerPole,
-                            }).addTo(mainMap)
-                        );
-                    } else if (nodes["is_connected"][counter] === false) {
-                        markers.push(
-                            L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                                icon: markerShs,
-                            }).addTo(mainMap)
-                        );
-                    } else {
-                        if (nodes["demand_type"][counter] === "high-demand") {
-                            markers.push(
-                                L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                                    icon: markerHighDemand,
-                                }).addTo(mainMap)
-                            );
-                        } else if (nodes["demand_type"][counter] === "medium-demand") {
-                            markers.push(
-                                L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                                    icon: markerMediumDemand,
-                                }).addTo(mainMap)
-                            );
-                        } else if (nodes["demand_type"][counter] === "low-demand") {
-                            markers.push(
-                                L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                                    icon: markerLowDemand,
-                                }).addTo(mainMap)
-                            );
-                        }
-                    }
-                }
-                if (document.getElementById("radio_button_nodes_boundaries").checked) {
-                    zoomAll(mainMap);
-                }
-            } else {
-                links = this.response;
-                removeLinksFromMap(mainMap);
-                for (let index = 0; index < Object.keys(links.link_type).length; index++) {
-                    var color = links.link_type[index] === "interpole" ? "red" : "green";
-                    var weight = links.link_type[index] === "interpole" ? 5 : 3;
-                    drawLinkOnMap(
-                        links.lat_from[index],
-                        links.long_from[index],
-                        links.lat_to[index],
-                        links.long_to[index],
-                        color,
-                        mainMap,
-                        weight
-                    );
-                }
-            }
-        }
-    };
-}
-
-
 function database_add_from_js(
     { add_nodes = false,
         add_links = false,
@@ -304,22 +263,14 @@ function database_add_from_js(
 }
 
 
-function database_clear(
-    { mode = 'all',
-        nodes_to_delete } = {}
-) {
+function database_clear_all() {
     $.ajax({
-        url: "/database_clear/" + mode + "/" + nodes_to_delete,
+        url: "/database_clear_all",
         type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify({
-            mode: mode,
-            nodes_to_delete: nodes_to_delete,
-        }),
-        dataType: "json",
         statusCode: {
             200: function () {
-                database_get(get_nodes = true, get_links = true);
+                database_get(nodes_or_links = 'nodes');
+                database_get(nodes_or_links = 'links');
                 $("#loading").hide();
             },
         },
@@ -405,18 +356,6 @@ function refreshLinksFromDatBase() {
             }
         }
     };
-}
-
-function clearLinksDataBase() {
-    $.ajax({
-        url: "clear_link_db/",
-        type: "POST",
-        statusCode: {
-            200: function () {
-                refreshLinksFromDatBase();
-            },
-        },
-    });
 }
 
 
@@ -506,7 +445,8 @@ function selectBoundariesRemove() {
 
     // only when a boundary is drawn, the next steps will be executed
     if (siteBoundaryLines.length > 0) {
-        removeBuildingsInsideBoundary(siteBoundaries);
+        buildingsAddRemove({ add_remove: "remove", boundariesCoordinates: siteBoundaries });
+        //removeBuildingsInsideBoundary(siteBoundaries);
         removeBoundaries();
         textButtonDrawBoundariesRemove.innerHTML = "Draw Lines";
     }

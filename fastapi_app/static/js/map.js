@@ -169,11 +169,7 @@ function zoomAll(mainMap) {
 L.easyButton(
   '<img class="leaflet-touch" src="fastapi_app/static/images/imgClearAll.png">',
   function (btn, map) {
-    database_clear({
-      mode: 'all',
-      nodes_to_delete: {}
-    }
-    );
+    database_clear_all();
     position: "topleft";
   },
   "Clear all nodes from the map"
