@@ -305,21 +305,21 @@ function database_add_from_js(
 
 
 function database_clear(
-    {mode = 'all',
-    nodes_to_delete} = {}
-    ) {
+    { mode = 'all',
+        nodes_to_delete } = {}
+) {
     $.ajax({
         url: "/database_clear/" + mode + "/" + nodes_to_delete,
         type: "POST",
-        dataType: "json",
         contentType: "application/json",
         data: JSON.stringify({
             mode: mode,
             nodes_to_delete: nodes_to_delete,
         }),
+        dataType: "json",
         statusCode: {
             200: function () {
-                database_get(get_nodes = true, get_links = false);
+                database_get(get_nodes = true, get_links = true);
                 $("#loading").hide();
             },
         },

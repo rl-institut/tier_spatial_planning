@@ -325,13 +325,13 @@ async def database_get(nodes: bool, links: bool):
 
 
 @app.post("/database_clear/{mode}/{nodes_to_delete}")
-async def database_clear(mode: str, 
+async def database_clear(mode: str,
                          nodes_to_delete: dict):
 
     # removing all (or selected) nodes and links from the database
     # mode can be "all" or "selected"
-    # in any case, ALL links will be removed, wither with all nodes, or with some selected ones 
-    if mode=='all':
+    # in any case, ALL links will be removed, wither with all nodes, or with some selected ones
+    if mode == 'all':
         await database_initialization(nodes=True, links=True)
     else:
         # removing all links
@@ -341,19 +341,20 @@ async def database_clear(mode: str,
         df = pd.DataFrame.from_dict(nodes_to_delete)
 
         # reading the existing CSV file to find the rows that need to be removed
-        # here, the latitudes will be checked in both dataframes and if they are identical, 
+        # here, the latitudes will be checked in both dataframes and if they are identical,
         # the row will be removed from the CSV file.
-        df_existing = list(pd.read_csv(full_path_nodes)["latitude"])
+        df_existing = pd.read_csv(full_path_nodes)["latitude"].to_dict()
         for latitude in [float(x) for x in list(df["latitude"])]:
             if latitude in df_existing:
                 df_existing = df_existing[df_existing.latitude != str(latitude)]
 
-        # removing all nodes        
+        # removing all nodes
         await database_initialization(nodes=True, links=False)
-        
+
         # adding the modified list of nodes to the empty CSV file
         if len(df_existing.index) != 0:
-            df_existing.to_csv(full_path_nodes, mode='a', header=False, index=False, float_format='%.0f')
+            df_existing.to_csv(full_path_nodes, mode='a', header=False,
+                               index=False, float_format='%.0f')
 
 
 @app.get("/nodes_db_html")
@@ -388,7 +389,7 @@ async def select_boundaries_add_remove(
         selectBoundariesRequest: models.SelectBoundariesRequest):
 
     boundary_coordinates = selectBoundariesRequest.boundary_coordinates
-    
+
     # latitudes and longitudes of all buildings in the selected boundary
     latitudes = [x[0] for x in boundary_coordinates]
     longitudes = [x[1] for x in boundary_coordinates]
@@ -776,33 +777,6 @@ def clear_single_node(index):
     sqliteConnection.commit()
 
     cursor.close()
-
-
-def clear_nodes_table():
-    """
-    This function clears the nodes table of the grid.db database.
-    """
-    sqliteConnection = sqlite3.connect(grid_db)
-    cursor = sqliteConnection.cursor()
-
-    sql_delete_query = """DELETE from nodes"""
-    cursor.execute(sql_delete_query)
-    sqliteConnection.commit()
-
-    sql_delete_query = """DELETE from links"""
-    cursor.execute(sql_delete_query)
-    sqliteConnection.commit()
-    cursor.close()
-
-
-@app.post("/clear_node_db/")
-async def clear_nodes():
-    clear_nodes_table()
-
-    return {
-        "code": "success",
-        "message": "nodes cleared"
-    }
 
 
 def clear_links_table():
