@@ -243,33 +243,27 @@ async def database_initialization(nodes, links):
         pd.DataFrame(columns=header_links).to_csv(full_path_links, index=False)
 
 
-@app.post("/database_add/{add_nodes}/{add_links}")
-async def database_add_from_js(
-        add_nodes: bool,
-        add_links: bool,
+# add new manually-selected nodes to the *.csv file
+@app.post("/database_add_manual")
+async def database_add_manual(
         add_node_request: models.AddNodeRequest):
-    # interface between js and python to add new nodes to the database
-    # these new nodes could either be created manually or automatically
 
-    if add_nodes:
-        headers = pd.read_csv(full_path_nodes).columns
-        nodes = {}
-        nodes[headers[0]] = [add_node_request.latitude]
-        nodes[headers[1]] = [add_node_request.longitude]
-        nodes[headers[2]] = [add_node_request.area]
-        nodes[headers[3]] = [add_node_request.node_type]
-        nodes[headers[4]] = [add_node_request.consumer_type]
-        nodes[headers[5]] = [add_node_request.peak_demand]
-        nodes[headers[6]] = [add_node_request.demand_type]
-        nodes[headers[7]] = [add_node_request.is_connected]
-        nodes[headers[8]] = [add_node_request.how_added]
+    headers = pd.read_csv(full_path_nodes).columns
+    nodes = {}
+    nodes[headers[0]] = [add_node_request.latitude]
+    nodes[headers[1]] = [add_node_request.longitude]
+    nodes[headers[2]] = [add_node_request.area]
+    nodes[headers[3]] = [add_node_request.node_type]
+    nodes[headers[4]] = [add_node_request.consumer_type]
+    nodes[headers[5]] = [add_node_request.peak_demand]
+    nodes[headers[6]] = [add_node_request.demand_type]
+    nodes[headers[7]] = [add_node_request.is_connected]
+    nodes[headers[8]] = [add_node_request.how_added]
 
-        database_add(add_nodes, add_links, nodes)
-
-    if add_links:
-        print("hi")
+    database_add(add_nodes=True, add_links=False, inlet=nodes)
 
 
+# add new nodes/links to the database
 def database_add(add_nodes: bool,
                  add_links: bool,
                  inlet: dict):
@@ -311,8 +305,8 @@ def database_add(add_nodes: bool,
             df.to_csv(full_path_links, mode='a', header=False, index=False, float_format='%.0f')
 
 
-@app.get("/database_get/{nodes_or_links}")
-async def database_get(nodes_or_links: str):
+@app.get("/database_to_map/{nodes_or_links}")
+async def database_read(nodes_or_links: str):
 
     # importing nodes and links from the csv files to the map
     if nodes_or_links == 'nodes':
@@ -323,17 +317,8 @@ async def database_get(nodes_or_links: str):
         return links_list
 
 
-@app.post("/database_clear_all")
-async def database_clear_all():
-
-    # removing all (or selected) nodes and links from the database
-    # mode can be "all" or "selected"
-    # in any case, ALL links will be removed, wither with all nodes, or with some selected ones
-    await database_initialization(nodes=True, links=True)
-
-
-@app.post("/database_add_remove_using_boundaries/{add_remove}")
-async def database_add_remove_using_boundaries(
+@app.post("/database_add_remove_automatic/{add_remove}")
+async def database_add_remove_automatic(
         add_remove: str,
         selectBoundariesRequest: models.SelectBoundariesRequest):
 
@@ -432,37 +417,6 @@ async def database_add_remove_using_boundaries(
         database_add(add_nodes=True, add_links=False, inlet=df.to_dict())
 
 
-@app.get("/links_db_html")
-async def get_links(request: Request, db: Session = Depends(get_db)):
-    res = db.execute("select * from links")
-    result = res.fetchall()
-    return result
-
-
-@ app.post("/add_node/")
-async def add_node(add_node_request: models.AddNodeRequest,
-                   background_tasks: BackgroundTasks,
-                   db: Session = Depends(get_db)):
-    nodes = models.Nodes()
-
-    nodes.latitude = add_node_request.lat
-    nodes.longitude = add_node_request.longitude
-    nodes.area = add_node_request.area
-    nodes.node_type = add_node_request.node_type
-    nodes.fixed_type = add_node_request.fixed_type
-    nodes.required_capacity = add_node_request.required_capacity
-    nodes.max_power = add_node_request.max_power
-    nodes.is_connected = add_node_request.is_connected
-
-    db.add(nodes)
-    db.commit()
-
-    return {
-        "code": "success",
-        "message": "node added to db"
-    }
-
-
 @ app.post("/optimize_grid/")
 async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                         background_tasks: BackgroundTasks,
@@ -474,7 +428,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     # nodes = res.fetchall()
 
     # getting nodes properties from the CSV file (as a dictionary file)
-    nodes = await database_get(nodes_or_links='nodes')
+    nodes = await database_read(nodes_or_links='nodes')
 
     # if nodes db is empty, do not perform optimization
     if len(nodes) == 0:
@@ -497,9 +451,9 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     ref_longitude = math.radians(min(nodes_longitude))
 
     # for node in nodes:
-    #node_index = node[0]
-    #node_type = node[4]
-    #type_fixed = node[5]
+    # node_index = node[0]
+    # node_type = node[4]
+    # type_fixed = node[5]
 
     # if (node_type == 'pole') and (not type_fixed):
     # clear_single_node(node_index)
@@ -556,7 +510,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
         # the indices of the poles in the nr_optimization method
         # all start with 'V', because they represent "virtual" poles
         if 'V' in index:
-            #nodes = models.Nodes()
+            # nodes = models.Nodes()
 
             pole_latitude, pole_longitude = conv.latitude_longitude_from_xy_coordinates(
                 x_coord=grid.get_nodes().at[index, "x_coordinate"],
@@ -704,41 +658,6 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
     return {
         "code": "success",
         "message": "shs identified"
-    }
-
-
-def clear_single_node(index):
-    """
-    This function clears the node from the grid.db database.
-    """
-    sqliteConnection = sqlite3.connect(grid_db)
-    cursor = sqliteConnection.cursor()
-
-    sql_delete_query = (
-        f"""DELETE FROM nodes WHERE id = {index};"""
-    )
-    cursor.execute(sql_delete_query)
-    sqliteConnection.commit()
-
-    cursor.close()
-
-
-def clear_links_table():
-    sqliteConnection = sqlite3.connect(grid_db)
-    cursor = sqliteConnection.cursor()
-
-    sql_delete_query = """DELETE from links"""
-    cursor.execute(sql_delete_query)
-    sqliteConnection.commit()
-    cursor.close()
-
-
-@app.post("/clear_link_db/")
-async def clear_links():
-    clear_links_table()
-    return {
-        "code": "success",
-        "message": "links cleared"
     }
 
 

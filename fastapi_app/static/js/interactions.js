@@ -55,22 +55,25 @@ function setVisibilityNodeBox() {
     }
 }
 
-/************************* DATABASE *************************/
+/************************************************************/
+/*                         DATABASE                         */
+/************************************************************/
 
 // remove the existing nodes and links in the *.csv files
 function database_initialization(nodes, links) {
     var xhr = new XMLHttpRequest();
     url = "database_initialization/" + nodes + "/" + links;
     xhr.open("GET", url, true);
+    xhr.send()
 }
 
 
-// get all nodes/links stored in the *.csv files
-// then push the corresponding icon on the map
+// read all nodes/links stored in the *.csv files
+// then push the corresponding icon to the map
 // note: both "nodes" and "links" cannot be called simultaneously
-function database_get(nodes_or_links) {
+function database_to_map(nodes_or_links) {
     var xhr = new XMLHttpRequest();
-    url = "database_get/" + nodes_or_links;
+    url = "database_to_map/" + nodes_or_links;
     xhr.open("GET", url, true);
     xhr.responseType = "json";
     xhr.send();
@@ -147,18 +150,47 @@ function database_get(nodes_or_links) {
     };
 }
 
-// POST REQUESTS
-/* 
-adding or removing building coordinates that are in 
-a boundary to/from the database.
-*/
-function buildingsAddRemove(
+
+// add single nodes selected manually to the *.csv file
+function database_add_manual(
+    { latitude,
+        longitude,
+        area = 0,
+        node_type,
+        consumer_type,
+        demand_type,
+        peak_demand = 0,
+        is_connected = true,
+        how_added = 'manual' } = {}
+) {
+    $.ajax({
+        url: "/database_add_manual",
+        type: "POST",
+        dataType: "json",
+        contentType: "application/json",
+        data: JSON.stringify({
+            latitude: latitude,
+            longitude: longitude,
+            area: area,
+            node_type: node_type,
+            consumer_type: consumer_type,
+            demand_type: demand_type,
+            peak_demand: peak_demand,
+            is_connected: is_connected,
+            how_added: how_added,
+        }),
+    });
+}
+
+
+// add/remove nodes automatically from a given boundary
+function database_add_remove_automatic(
     { add_remove = "add",
         boundariesCoordinates } = {}
 ) {
     $("#loading").show();
     $.ajax({
-        url: "database_add_remove_using_boundaries/" + add_remove,
+        url: "database_add_remove_automatic/" + add_remove,
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify({
@@ -167,13 +199,78 @@ function buildingsAddRemove(
         dataType: "json",
         statusCode: {
             200: function () {
-                database_get(nodes_or_links = 'nodes');
+                database_to_map(nodes_or_links = 'nodes');
                 $("#loading").hide();
             },
         },
     });
 }
 
+
+/************************************************************/
+/*                    BOUNDARY SELECTION                    */
+/************************************************************/
+
+// selecting boundaries of the site for adding new nodes
+function select_boundaries(mode) {
+    if (mode == 'add') {
+        button_text = 'Select'
+        button_class = 'success'
+        var textButtonDrawBoundaries = document.getElementById(
+            "button_draw_boundaries_add"
+        );
+    } else {
+        var textButtonDrawBoundaries = document.getElementById(
+            "button_draw_boundaries_remove"
+        );
+        button_text = 'Remove'
+        button_class = 'alert'
+    }
+
+    // changing the label of the button
+    if (textButtonDrawBoundaries.innerHTML === button_text) {
+        textButtonDrawBoundaries.innerHTML = "Draw Lines";
+        textButtonDrawBoundaries.setAttribute(
+            "title",
+            "Draw a polygon on the map to" + mode + "nodes"
+        );
+    } else {
+        textButtonDrawBoundaries.innerHTML = button_text;
+        textButtonDrawBoundaries.setAttribute(
+            "title",
+            button_text + "all nodes inside the drawn polygon"
+        );
+    }
+
+    // changing the type of the button (primary <-> success)
+    if ($(textButtonDrawBoundaries).hasClass("primary")) {
+        $(textButtonDrawBoundaries).removeClass("primary");
+        $(textButtonDrawBoundaries).addClass(button_class);
+    } else {
+        $(textButtonDrawBoundaries).removeClass(button_class);
+        $(textButtonDrawBoundaries).addClass("primary");
+    }
+
+    // add a line to the polyline object in the map
+    siteBoundaryLines.push(
+        L.polyline([siteBoundaries[0], siteBoundaries.slice(-1)[0]], {
+            color: "black",
+        })
+    );
+    siteBoundaryLines[siteBoundaryLines.length - 1].addTo(mainMap);
+
+    // only when a boundary is drawn, the next steps will be executed
+    if (siteBoundaryLines.length > 0) {
+        database_add_remove_automatic({ add_remove: mode, boundariesCoordinates: siteBoundaries });
+        removeBoundaries();
+        textButtonDrawBoundaries.innerHTML = "Draw Lines";
+    }
+}
+
+
+/************************************************************/
+/*                       OPTIMIZATION                       */
+/************************************************************/
 
 function optimize_grid() {
     $("#loading").show();
@@ -192,13 +289,17 @@ function optimize_grid() {
         dataType: "json",
         statusCode: {
             200: function () {
-                database_get(nodes_or_link = 'nodes');
-                database_get(nodes_or_link = 'links');
+                database_to_map(nodes_or_link = 'nodes');
+                database_to_map(nodes_or_link = 'links');
                 $("#loading").hide();
             },
         },
     });
 }
+
+/************************************************************/
+/*                    SOLAR-HOME-SYSTEM                     */
+/************************************************************/
 
 function identify_shs() {
     const max_distance_between_poles = 40; // must be definded globally in the fututre
@@ -221,233 +322,11 @@ function identify_shs() {
         dataType: "json",
         statusCode: {
             200: function () {
-                refreshNodeFromDataBase();
+                database_to_map(nodes_or_links = 'nodes');
+                //refreshNodeFromDataBase();
                 clearLinksDataBase();
                 $("#loading").hide();
             },
         },
     });
-}
-
-
-function database_add_from_js(
-    { add_nodes = false,
-        add_links = false,
-        latitude = 0,
-        longitude = 0,
-        area = 0,
-        node_type,
-        consumer_type,
-        demand_type,
-        peak_demand = 0,
-        is_connected = true,
-        how_added = "manual" } = {}
-) {
-    $.ajax({
-        url: "/database_add/" + add_nodes + "/" + add_links,
-        type: "POST",
-        dataType: "json",
-        contentType: "application/json",
-        data: JSON.stringify({
-            latitude: latitude,
-            longitude: longitude,
-            area: area,
-            node_type: node_type,
-            consumer_type: consumer_type,
-            demand_type: demand_type,
-            peak_demand: peak_demand,
-            is_connected: is_connected,
-            how_added: how_added,
-        }),
-    });
-}
-
-
-function database_clear_all() {
-    $.ajax({
-        url: "/database_clear_all",
-        type: "POST",
-        statusCode: {
-            200: function () {
-                database_get(nodes_or_links = 'nodes');
-                database_get(nodes_or_links = 'links');
-                $("#loading").hide();
-            },
-        },
-    });
-}
-
-
-function refreshNodeFromDataBase() {
-    var xhr = new XMLHttpRequest();
-    url = "nodes_db_html";
-    xhr.open("GET", url, true);
-    xhr.responseType = "json";
-    xhr.send();
-
-    xhr.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            nodes = this.response;
-            for (marker of markers) {
-                mainMap.removeLayer(marker);
-            }
-            markers.length = 0;
-            for (node of nodes) {
-                if (node.node_type === "high-demand") {
-                    markers.push(
-                        L.marker([node.latitude, node.longitude], {
-                            icon: markerHighDemand,
-                        }).addTo(mainMap)
-                    );
-                } else if (node.node_type === "medium-demand") {
-                    markers.push(
-                        L.marker([node.latitude, node.longitude], {
-                            icon: markerMediumDemand,
-                        }).addTo(mainMap)
-                    );
-                } else if (node.node_type === "low-demand") {
-                    markers.push(
-                        L.marker([node.latitude, node.longitude], {
-                            icon: markerLowDemand,
-                        }).addTo(mainMap)
-                    );
-                } else if (node.node_type === "pole") {
-                    markers.push(
-                        L.marker([node.latitude, node.longitude], {
-                            icon: markerPole,
-                        }).addTo(mainMap)
-                    );
-                } else if (node.node_type === "shs") {
-                    markers.push(
-                        L.marker([node.latitude, node.longitude], {
-                            icon: markerShs,
-                        }).addTo(mainMap)
-                    );
-                }
-            }
-            if (document.getElementById("radio_button_nodes_boundaries").checked) {
-                zoomAll(mainMap);
-            }
-        }
-    };
-}
-
-function refreshLinksFromDatBase() {
-    var xhr = new XMLHttpRequest();
-    url = "links_db_html";
-    xhr.open("GET", url, true);
-    xhr.responseType = "json";
-    xhr.send();
-
-    xhr.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            links = this.response;
-            removeLinksFromMap(mainMap);
-            for (let link in links) {
-                var color = link.cable_type === "interpole" ? "red" : "green";
-                drawLinkOnMap(
-                    link.lat_from,
-                    link.long_from,
-                    link.lat_to,
-                    link.long_to,
-                    color,
-                    mainMap
-                );
-            }
-        }
-    };
-}
-
-
-// selecting boundaries of the site for adding new nodes
-function selectBoundariesAdd() {
-    var textButtonDrawBoundariesAdd = document.getElementById(
-        "button_draw_boundaries_add"
-    );
-
-    // changing the label of the button
-    if (textButtonDrawBoundariesAdd.innerHTML === "Select") {
-        textButtonDrawBoundariesAdd.innerHTML = "Draw Lines";
-        textButtonDrawBoundariesAdd.setAttribute(
-            "title",
-            "Draw a polygon on the map to add nodes"
-        );
-    } else {
-        textButtonDrawBoundariesAdd.innerHTML = "Select";
-        textButtonDrawBoundariesAdd.setAttribute(
-            "title",
-            "Select all nodes inside the drawn polygon"
-        );
-    }
-
-    // changing the type of the button (primary <-> success)
-    if ($(textButtonDrawBoundariesAdd).hasClass("primary")) {
-        $(textButtonDrawBoundariesAdd).removeClass("primary");
-        $(textButtonDrawBoundariesAdd).addClass("success");
-    } else {
-        $(textButtonDrawBoundariesAdd).removeClass("success");
-        $(textButtonDrawBoundariesAdd).addClass("primary");
-    }
-
-    // adding a line to the list of lines inside the polyline object
-    siteBoundaryLines.push(
-        L.polyline([siteBoundaries[0], siteBoundaries.slice(-1)[0]], {
-            color: "black",
-        })
-    );
-    siteBoundaryLines[siteBoundaryLines.length - 1].addTo(mainMap);
-
-    // only when a boundary is drawn, the next steps will be executed
-    if (siteBoundaryLines.length > 0) {
-        buildingsAddRemove({ add_remove: "add", boundariesCoordinates: siteBoundaries });
-        removeBoundaries();
-        textButtonDrawBoundariesAdd.innerHTML = "Draw Lines";
-    }
-}
-
-// selecting boundaries of the site for removing new nodes
-function selectBoundariesRemove() {
-    var textButtonDrawBoundariesRemove = document.getElementById(
-        "button_draw_boundaries_remove"
-    );
-
-    // changing the label of the button
-    if (textButtonDrawBoundariesRemove.innerHTML === "Remove") {
-        textButtonDrawBoundariesRemove.innerHTML = "Draw Lines";
-        textButtonDrawBoundariesRemove.setAttribute(
-            "title",
-            "Draw a polygon on the map to remove nodes"
-        );
-    } else {
-        textButtonDrawBoundariesRemove.innerHTML = "Remove";
-        textButtonDrawBoundariesRemove.setAttribute(
-            "title",
-            "Remove all nodes inside the drawn polygon"
-        );
-    }
-
-    // changing the type of the button (primary <-> alert)
-    if ($(textButtonDrawBoundariesRemove).hasClass("primary")) {
-        $(textButtonDrawBoundariesRemove).removeClass("primary");
-        $(textButtonDrawBoundariesRemove).addClass("alert");
-    } else {
-        $(textButtonDrawBoundariesRemove).removeClass("alert");
-        $(textButtonDrawBoundariesRemove).addClass("primary");
-    }
-
-    // adding a line to the list of lines inside the polyline object
-    siteBoundaryLines.push(
-        L.polyline([siteBoundaries[0], siteBoundaries.slice(-1)[0]], {
-            color: "black",
-        })
-    );
-    siteBoundaryLines[siteBoundaryLines.length - 1].addTo(mainMap);
-
-    // only when a boundary is drawn, the next steps will be executed
-    if (siteBoundaryLines.length > 0) {
-        buildingsAddRemove({ add_remove: "remove", boundariesCoordinates: siteBoundaries });
-        //removeBuildingsInsideBoundary(siteBoundaries);
-        removeBoundaries();
-        textButtonDrawBoundariesRemove.innerHTML = "Draw Lines";
-    }
 }

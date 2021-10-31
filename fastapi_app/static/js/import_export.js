@@ -10,8 +10,11 @@ async function importConfig(include_settings) {
     contentType: false,
     statusCode: {
       200: function (result) {
-        refreshNodeFromDataBase();
-        refreshLinksFromDatBase();
+        // refreshNodeFromDataBase();
+        // refreshLinksFromDatBase();
+        database_to_map(nodes_or_links = 'nodes');
+        database_to_map(nodes_or_links = 'links');
+
         if (include_settings === true) {
           setSettings(
             (price_pole = result.price_pole),

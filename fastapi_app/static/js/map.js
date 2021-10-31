@@ -169,7 +169,7 @@ function zoomAll(mainMap) {
 L.easyButton(
   '<img class="leaflet-touch" src="fastapi_app/static/images/imgClearAll.png">',
   function (btn, map) {
-    database_clear_all();
+    database_initialization(nodes = true, links = true);
     position: "topleft";
   },
   "Clear all nodes from the map"
@@ -253,13 +253,13 @@ mainMap.on("click", function (e) {
 
   if (document.getElementById("radio_button_nodes_manually").checked) {
     if (document.getElementsByName("radio_button_nodes_manually")[0].checked) {
-      database_add_from_js(
+      database_add_manual(
         {
-          add_nodes: true,
           latitude: poplocation.lat,
           longitude: poplocation.lng,
-          node_type: "high-demand",
-          how_added: "manual"
+          node_type: "consumer",
+          consumer_type: 'household',
+          demand_type: 'high-demand',
         }
       );
       drawMarker(
@@ -270,12 +270,13 @@ mainMap.on("click", function (e) {
     }
 
     if (document.getElementsByName("radio_button_nodes_manually")[1].checked) {
-      database_add_from_js(
+      database_add_manual(
         {
-          add_nodes: true,
           latitude: poplocation.lat,
           longitude: poplocation.lng,
-          node_type: "medium-demand"
+          node_type: "consumer",
+          consumer_type: 'household',
+          demand_type: 'medium-demand',
         }
       );
       drawMarker(
@@ -286,12 +287,13 @@ mainMap.on("click", function (e) {
     }
 
     if (document.getElementsByName("radio_button_nodes_manually")[2].checked) {
-      database_add_from_js(
+      database_add_manual(
         {
-          add_nodes: true,
           latitude: poplocation.lat,
           longitude: poplocation.lng,
-          node_type: "low-demand"
+          node_type: "consumer",
+          consumer_type: 'household',
+          demand_type: 'low-demand',
         }
       );
       drawMarker(
@@ -302,12 +304,13 @@ mainMap.on("click", function (e) {
     }
 
     if (document.getElementsByName("radio_button_nodes_manually")[3].checked) {
-      database_add_from_js(
+      database_add_manual(
         {
-          add_nodes: true,
           latitude: poplocation.lat,
           longitude: poplocation.lng,
-          node_type: "pole"
+          node_type: "pole",
+          consumer_type: '-',
+          demand_type: '-',
         }
       );
       drawMarker(
