@@ -21,8 +21,8 @@ async function importConfig(include_settings) {
             (cost_connection = result.cost_connection),
             (cost_interpole_cable = result.cost_interpole_cable),
             (cost_distribution_cable = result.cost_distribution_cable),
-            (shs_identification_connection_price =
-              result.shs_identification_connection_price),
+            (shs_identification_connection_cost =
+              result.shs_identification_connection_cost),
             (number_of_relaxation_steps_nr =
               result.number_of_relaxation_steps_nr)
           );
@@ -37,8 +37,8 @@ function setSettings(
   cost_connection,
   cost_interpole_cable,
   cost_distribution_cable,
-  shs_identification_cable_price,
-  shs_identification_connection_price,
+  shs_identification_cable_cost,
+  shs_identification_connection_cost,
   number_of_relaxation_steps_nr
 ) {
   document.getElementById("cost_pole").value = cost_pole;
@@ -50,7 +50,7 @@ function setSettings(
     number_of_relaxation_steps_nr;
 }
 
-async function generateExportFile() {
+async function generate_export_file() {
   $.ajax({
     url: "generate_export_file/",
     type: "POST",
@@ -60,23 +60,19 @@ async function generateExportFile() {
       cost_connection: cost_connection.value,
       cost_interpole_cable: cost_interpole_cable.value,
       cost_distribution_cable: cost_distribution_cable.value,
-      shs_identification_cable_price: cost_distribution_cable.value,
-      //      shs_identification_cable_price:
+      shs_identification_cable_cost: cost_distribution_cable.value,
+      //      shs_identification_cable_cost:
       //        cable_price_per_meter_for_shs_mst_identification.value,
-      //shs_identification_connection_price:
+      //shs_identification_connection_cost:
       //additional_connection_price_for_shs_mst_identification.value,
-      shs_identification_connection_price: 0,
+      shs_identification_connection_cost: 0,
       number_of_relaxation_steps_nr: number_of_relaxation_steps_nr.value,
     }),
     dataType: "json",
     statusCode: {
       200: function () {
-        downloadExportFile();
+        window.open("download_export_file", "_self");
       },
     },
   });
-}
-
-function downloadExportFile() {
-  window.open("download_export_file", "_self");
 }

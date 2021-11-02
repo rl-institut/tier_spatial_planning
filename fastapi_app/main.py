@@ -1,5 +1,3 @@
-from re import X
-from fastapi.params import Header
 from sqlalchemy.sql.expression import column, false, true
 from sqlalchemy.sql.sqltypes import Boolean
 import fastapi_app.tools.boundary_identification as bi
@@ -40,8 +38,6 @@ models.Base.metadata.create_all(bind=engine)
 
 templates = Jinja2Templates(directory="fastapi_app/templates")
 
-grid_db = "grid.db"
-
 path = "fastapi_app"
 
 dir_name = os.path.join(path, "data").replace("\\", "/")
@@ -55,15 +51,6 @@ full_path_links = os.path.join(dir_name, links_file).replace("\\", "/")
 # urllib.error.URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1131)>
 ssl._create_default_https_context = ssl._create_unverified_context
 
-# ---------------------------- SET UP grid.db DATABASE -----------------------#
-
-
-def get_db():
-    try:
-        db = SessionLocal()
-        yield db
-    finally:
-        db.close()
 
 # --------------------- REDIRECT REQUEST TO FAVICON LOG ----------------------#
 
@@ -74,60 +61,51 @@ async def redirect():
     response = RedirectResponse(url='/fastapi_app/static/favicon.ico')
     return response
 
-# --------------------------- IMPORT/EXPORT FEATURE --------------------------#
 
+# ************************************************************/
+# *                     IMPORT / EXPORT                      */
+# ************************************************************/
 
 @app.post("/generate_export_file/")
 async def generate_export_file(
-        generate_export_file_request: models.GenerateExportFileRequest,
-        db: Session = Depends(get_db)):
+        generate_export_file_request: models.GenerateExportFileRequest):
     """
-    Generates an Excel file from the grid.db database tables and from the
-    webapp setting. The file is stored in fastapi_app/import_export/temp.xlsx
+    Generates an Excel file from the database tables (*.csv files) and the
+    webapp settings. The file is stored in fastapi_app/import_export/temp.xlsx
 
     Parameters
     ----------
     generate_export_file_request (fastapi_app.models.GenerateExportFileRequest):
         Basemodel request object containing the data send to the request as attributes.
-
-    db (sqlalchemy.orm.Session):
-         Establishes conversation with the {grid_db} database.
     """
-    # CREATE NODES DATAFRAME FROM DATABASE
-    res_nodes = db.execute("select * from nodes")
-    nodes_table = res_nodes.fetchall()
 
-    nodes_df = io.create_empty_nodes_df()
-
-    for node in nodes_table:
-        nodes_df.at[node[0]] = node[1:]
-
-    # CREATE LINKS DATAFRAME FROM DATABASE
-    res_links = db.execute("select * from links")
-    links_table = res_links.fetchall()
-
-    links_df = io.create_empty_links_df()
-
-    for link in links_table:
-        links_df.at[link[0]] = link[1:]
+    # reading nodes and links from *.csv files
+    nodes = await database_read(nodes_or_links='nodes')
+    nodes_df = pd.DataFrame(nodes)
+    links = await database_read(nodes_or_links='links')
+    links_df = pd.DataFrame(links)
 
     settings = [element for element in generate_export_file_request]
 
     settings_df = pd.DataFrame({"Setting": [x[0] for x in settings],
                                 "value": [x[1] for x in settings]}).set_index('Setting')
 
-    # Create xlsx file with sheets for nodes and for links
+    # create the *.xlsx file with sheets for nodes, links and settings
     file_name = 'temp.xlsx'
-    with pd.ExcelWriter(f'{path}/import_export/{file_name}') as writer:
-        nodes_df.to_excel(excel_writer=writer, sheet_name='nodes', header=nodes_df.columns)
-        links_df.to_excel(excel_writer=writer, sheet_name='links', header=links_df.columns)
+    with pd.ExcelWriter(f'{path}/import_export/{file_name}') as writer:  # pylint: disable=abstract-class-instantiated
+        nodes_df.to_excel(excel_writer=writer, sheet_name='nodes',
+                          header=nodes_df.columns, index=False)
+        links_df.to_excel(excel_writer=writer, sheet_name='links',
+                          header=links_df.columns, index=False)
         settings_df.to_excel(excel_writer=writer, sheet_name='settings')
+
+    # TO DO: formatting of the excel file
 
 
 @app.get("/download_export_file",
          responses={200: {"description": "xlsx file containing the information about the configuration.",
                           "content": {"static/io/test_excel_node.xlsx": {"example": "No example available."}}}})
-async def download_export_file(db: Session = Depends(get_db)):
+async def download_export_file():
     file_name = 'temp.xlsx'
     # Download xlsx file
     file_path = os.path.join(path, f"import_export/{file_name}")
@@ -154,6 +132,7 @@ async def import_config(file: UploadFile = File(...)):
                              sheet_name="nodes",
                              engine="openpyxl")
 
+    """
     conn = sqlite3.connect(grid_db)
     cursor = conn.cursor()
 
@@ -171,6 +150,7 @@ async def import_config(file: UploadFile = File(...)):
 
     cursor.executemany(
         'INSERT INTO nodes VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)', records)
+    """
 
     # Populate links table from links sheet of file
     links_df = pd.read_excel(f"{path}/import_export/import.xlsx",
@@ -206,7 +186,7 @@ async def import_config(file: UploadFile = File(...)):
 
 
 @app.get("/")
-def home(request: Request, db: Session = Depends(get_db)):
+def home(request: Request):
     return templates.TemplateResponse("home.html", {
         "request": request
     })
@@ -419,8 +399,7 @@ async def database_add_remove_automatic(
 
 @ app.post("/optimize_grid/")
 async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
-                        background_tasks: BackgroundTasks,
-                        db: Session = Depends(get_db)):
+                        background_tasks: BackgroundTasks):
     # Create GridOptimizer object
     opt = GridOptimizer()
 
@@ -568,13 +547,12 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
 
 
 @app.post("/shs_identification/")
-def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
-                 db: Session = Depends(get_db)):
+def identify_shs(shs_identification_request: models.ShsIdentificationRequest):
 
     print("starting shs_identification...")
 
-    res = db.execute("select * from nodes")
-    nodes = res.fetchall()
+    #res = db.execute("select * from nodes")
+    #nodes = res.fetchall()
 
     if len(nodes) == 0:
         return {
@@ -629,23 +607,24 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
         print("issue with version parameter of shs_identification_request")
         return 0
 
-    sqliteConnection = sqlite3.connect(grid_db)
-    conn = sqlite3.connect(grid_db)
-    cursor = conn.cursor()
+    #sqliteConnection = sqlite3.connect(grid_db)
+    #conn = sqlite3.connect(grid_db)
+    #cursor = conn.cursor()
 
+    """
     for index in nodes_df.index:
         if index in nodes_to_disconnect_from_grid:
             sql_delete_query = (
-                f"""UPDATE nodes
+                f""UPDATE nodes
                 SET node_type = 'shs'
                 WHERE  id = {index};
-                """)
+                "")
         else:
             sql_delete_query = (
-                f"""UPDATE nodes
+                f""UPDATE nodes
                 SET node_type = 'consumer'
                 WHERE  id = {index};
-                """)
+                "")
         cursor.execute(sql_delete_query)
         sqliteConnection.commit()
     cursor.close()
@@ -659,9 +638,11 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest,
         "code": "success",
         "message": "shs identified"
     }
-
+    """
 
 # -------------------------- FUNCTION FOR DEBUGGING-------------------------- #
+
+
 def debugging_mode():
     """
     if host="0.0.0.0" and port=8000 does not work, the following can be used:

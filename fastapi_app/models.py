@@ -92,6 +92,6 @@ class GenerateExportFileRequest(BaseModel):
     cost_connection: float
     cost_interpole_cable: float
     cost_distribution_cable: float
-    shs_identification_cable_price: float
-    shs_identification_connection_price: float
+    shs_identification_cable_cost: float
+    shs_identification_connection_cost: float
     number_of_relaxation_steps_nr: int
