@@ -414,13 +414,13 @@ class GridOptimizer:
                 # the nearest meter pole to a node
                 index_closest_pole =\
                     grid.get_poles()[grid.get_poles()['segment']
-                                    == segment].index[0]
+                                     == segment].index[0]
                 shortest_dist_to_pole =\
                     grid.distance_between_nodes(index_node,
                                                 index_closest_pole)
                 for index_pole, row_pole in\
                         grid.get_poles()[grid.get_poles()['segment']
-                                        == segment].iterrows():
+                                         == segment].iterrows():
                     # Store which pole is the clostest and what the
                     # distance to it is
                     if grid.distance_between_nodes(index_node, index_pole)\
@@ -448,7 +448,7 @@ class GridOptimizer:
 
         for segment in grid.get_poles()['segment'].unique():
             poles_in_segment = grid.get_poles()[grid.get_poles()['segment']
-                                              == segment]
+                                                == segment]
             consumers_in_segment = grid.get_consumers()[
                 grid.get_consumers()['segment']
                 == segment]
@@ -772,7 +772,7 @@ class GridOptimizer:
         )
         # initialize DataFrame to store number of poles and according price
         price_per_number_pole_df = pd.DataFrame({"#poles": [],
-                                                "price": []})
+                                                 "price": []})
         price_per_number_pole_df = price_per_number_pole_df.set_index("#poles")
 
         price_per_number_pole_df.loc[
@@ -894,7 +894,7 @@ class GridOptimizer:
                         ].shape[0]
                         grid.flip_node(
                             grid.get_consumers()[grid.get_consumers()
-                                                  == segment].index[
+                                                 == segment].index[
                                 int(random_number
                                     * num_consumers)])
 
@@ -964,7 +964,7 @@ class GridOptimizer:
         grid_copy = copy.deepcopy(grid)
         # Store number of fixed poles in grid
         number_of_fixed_poles = grid.get_poles()[grid.get_poles()['type_fixed']
-                                               ].shape[0]
+                                                 ].shape[0]
 
         # Ensure that number of nodes is positive integer, if not release
         # constraint by setting it to 'unspecified'
@@ -1495,7 +1495,7 @@ class GridOptimizer:
 
         chromosome_copy = chromosome
         possible_new_pole_index = [x for x in grid.get_non_fixed_nodes().index
-                                  if x not in chromosome]
+                                   if x not in chromosome]
         chromosome_copy.append(random.choice(possible_new_pole_index))
         if chromosome_copy is None:
             print('ga_append_gene returned None chromosome')
@@ -1728,7 +1728,7 @@ class GridOptimizer:
             # The lonely_poles list is a list of all the poles that are not
             # part of a pair
             lonely_poles = [pole for pole in parent1 + parent2
-                           if pole not in (offspring1 + offspring2)]
+                            if pole not in (offspring1 + offspring2)]
 
             # Distribute the lonely poles to the offspring uniformly at random
             for pole in lonely_poles:
@@ -2521,8 +2521,8 @@ class GridOptimizer:
 
         distribution_cable_price = grid.get_distribution_cable_price()
         interpole_cable_price = grid.get_interpole_cable_price()
-        price_pole = grid.get_price_pole()
-        price_consumer = grid.get_price_consumer()
+        cost_pole = grid.get_price_pole()
+        cost_connection = grid.get_price_consumer()
 
         # Create helping functions from passing from list to matrix indices
         def k_lu(i, j): return self.lp_lu_to_list(i, j)            # noqa: E731
@@ -2569,10 +2569,10 @@ class GridOptimizer:
                * sum([y[k] * distance_list[ij(i_lu(k), j_lu(k))]
                       for k in range(len(y))])
                )
-            + price_pole * sum(
+            + cost_pole * sum(
                 [y[k_lu(i, i)] for i in range(number_of_nodes)]
             )
-            + price_consumer * (number_of_nodes
+            + cost_connection * (number_of_nodes
                                  - sum([y[k_lu(i, i)]
                                         for i in range(number_of_nodes)]))
         )
@@ -2890,7 +2890,7 @@ class GridOptimizer:
         # import and  initialize parameters
 
         allocation_capacity = grid.get_default_pole_capacity()
-        price_consumer = grid.get_price_consumer()
+        cost_connection = grid.get_price_consumer()
 
         if save_output:
             if output_folder is None:
@@ -2948,10 +2948,10 @@ class GridOptimizer:
             dtype=float)})
         # Define number of virtual poles
         number_of_virtual_poles = (number_of_poles
-                                  - grid_copy.get_poles()[
-                                      grid_copy.get_poles()[
-                                          'type_fixed']].shape[0]
-                                  )
+                                   - grid_copy.get_poles()[
+                                       grid_copy.get_poles()[
+                                           'type_fixed']].shape[0]
+                                   )
         if first_guess_strategy == 'random':
             # flip all non-fixed poles from the grid for the optimization
             for pole, row in grid_copy.get_poles().iterrows():
@@ -3038,7 +3038,7 @@ class GridOptimizer:
                 grid_copy,
                 weight_of_attraction)['vector_resulting']
         meter_per_default_unit = grid_copy.get_meter_per_default_unit()
-        price_consumer = grid.get_price_consumer()
+        cost_connection = grid.get_price_consumer()
 
         # Compute damping_factor such that:
         # The norm of the longest 'vector_resulting' of the relaxation_df at
@@ -3071,7 +3071,7 @@ class GridOptimizer:
         # intermediate layout containing virtual poles
         algo_run_log['virtual_price'][0] = (
             grid_copy.price()
-            - number_of_virtual_poles * price_consumer)
+            - number_of_virtual_poles * cost_connection)
         algo_run_log['norm_longest_shift'][0] = (norm_longest_vector
                                                  / smaller_link_distance)
         if print_progress_bar:
@@ -3135,7 +3135,7 @@ class GridOptimizer:
             algo_run_log['time'][n] = time.time() - start_time
             algo_run_log['virtual_price'][n] = (grid_copy.price()
                                                 - (number_of_virtual_poles
-                                                   * price_consumer))
+                                                   * cost_connection))
             algo_run_log['norm_longest_shift'][n] = \
                 self.nr_get_norm_of_longest_vector_resulting(
                     relaxation_df) * meter_per_default_unit
@@ -3144,7 +3144,7 @@ class GridOptimizer:
                     n + 1,
                     number_of_relaxation_steps + 1,
                     price=(grid_copy.price() - (number_of_virtual_poles
-                                                * price_consumer)))
+                                                * cost_connection)))
             list_resulting_vectors_previous_step =\
                 list_resulting_vectors_current_step
 
@@ -3158,7 +3158,7 @@ class GridOptimizer:
                     current_price = grid_copy.price()
                 else:
                     current_price = grid_copy.price() - (number_of_virtual_poles
-                                                         * price_consumer)
+                                                         * cost_connection)
                 self.printProgressBar(
                     iteration=i,
                     total=number_of_hill_climbers_runs,
@@ -3177,14 +3177,14 @@ class GridOptimizer:
                     algo_run_log.loc[f'{algo_run_log.shape[0]}'] = [
                         time.time() - start_time,
                         grid_copy.price() - (number_of_virtual_poles
-                                             * price_consumer),
+                                             * cost_connection),
                         0]
                 if print_progress_bar:
                     if locate_new_poles_freely:
                         current_price = grid_copy.price()
                     else:
                         current_price = (grid_copy.price() - (number_of_virtual_poles
-                                                              * price_consumer))
+                                                              * cost_connection))
                     self.printProgressBar(
                         iteration=i + ((counter + 1) /
                                        grid_copy.get_poles().shape[0]),
@@ -3522,7 +3522,6 @@ class GridOptimizer:
 
 
 # Progress bar
-
 
     def printProgressBar(self,
                          iteration,

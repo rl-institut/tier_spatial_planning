@@ -212,7 +212,7 @@ function database_add_remove_automatic(
 /************************************************************/
 
 // selecting boundaries of the site for adding new nodes
-function select_boundaries(mode) {
+function boundary_select(mode) {
     if (mode == 'add') {
         button_text = 'Select'
         button_class = 'success'
@@ -279,10 +279,10 @@ function optimize_grid() {
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify({
-            price_pole: price_pole.value,
-            price_consumer: price_consumer.value,
-            price_pole_cable: price_pole_cable.value,
-            price_distribution_cable: price_distribution_cable.value,
+            cost_pole: cost_pole.value,
+            cost_connection: cost_connection.value,
+            cost_interpole_cable: cost_interpole_cable.value,
+            cost_distribution_cable: cost_distribution_cable.value,
             number_of_relaxation_steps_nr: number_of_relaxation_steps_nr.value,
             max_connection_poles: max_connection_poles.value,
         }),
@@ -304,7 +304,7 @@ function optimize_grid() {
 function identify_shs() {
     const max_distance_between_poles = 40; // must be definded globally in the fututre
     const cable_pole_price_per_meter =
-        price_pole_cable.value + price_pole.value / max_distance_between_poles;
+        cost_interpole_cable.value + cost_pole.value / max_distance_between_poles;
     const algo = "mst1";
     $("#loading").show();
     $.ajax({
@@ -313,7 +313,7 @@ function identify_shs() {
         contentType: "application/json",
         data: JSON.stringify({
             cable_price_per_meter_for_shs_mst_identification: cable_pole_price_per_meter,
-            connection_cost_to_minigrid: price_consumer.value,
+            connection_cost_to_minigrid: cost_connection.value,
             price_shs_hd: price_shs_hd.value,
             price_shs_md: price_shs_md.value,
             price_shs_ld: price_shs_ld.value,

@@ -66,10 +66,10 @@ class AddNodeRequest(BaseModel):
 
 
 class OptimizeGridRequest(BaseModel):
-    price_pole: float
-    price_consumer: float
-    price_pole_cable: float
-    price_distribution_cable: float
+    cost_pole: float
+    cost_connection: float
+    cost_interpole_cable: float
+    cost_distribution_cable: float
     number_of_relaxation_steps_nr: int
     max_connection_poles: int
 
@@ -88,10 +88,10 @@ class SelectBoundariesRequest(BaseModel):
 
 
 class GenerateExportFileRequest(BaseModel):
-    price_pole: float
-    price_consumer: float
-    price_pole_cable: float
-    price_distribution_cable: float
+    cost_pole: float
+    cost_connection: float
+    cost_interpole_cable: float
+    cost_distribution_cable: float
     shs_identification_cable_price: float
     shs_identification_connection_price: float
     number_of_relaxation_steps_nr: int

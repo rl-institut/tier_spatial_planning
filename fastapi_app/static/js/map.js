@@ -170,6 +170,7 @@ L.easyButton(
   '<img class="leaflet-touch" src="fastapi_app/static/images/imgClearAll.png">',
   function (btn, map) {
     database_initialization(nodes = true, links = true);
+    database_to_map(nodes_or_links = 'nodes')
     position: "topleft";
   },
   "Clear all nodes from the map"

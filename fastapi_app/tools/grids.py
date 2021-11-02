@@ -38,10 +38,10 @@ class Grid:
     meter_per_default_unit: float
         Ratio describing meter ratio per unit lenght.
 
-    price_pole: float
+    cost_pole: float
         Price associated with each pole.
 
-    price_consumer: float
+    cost_connection: float
         Price associtated with each consumer
 
     price_interpole_cable_per_meter: float
@@ -96,8 +96,8 @@ class Grid:
                                      'distance': pd.Series([], dtype=int)
                                      }).set_index('label'),
                  meter_per_default_unit=1,
-                 price_pole=600,
-                 price_consumer=50,
+                 cost_pole=600,
+                 cost_connection=50,
                  price_interpole_cable_per_meter=5,
                  price_distribution_cable_per_meter=2,
                  default_pole_capacity=0,
@@ -112,8 +112,8 @@ class Grid:
         self.__nodes = nodes
         self.__links = links
         self.__meter_per_default_unit = meter_per_default_unit
-        self.__price_pole = price_pole
-        self.__price_consumer = price_consumer
+        self.__price_pole = cost_pole
+        self.__price_consumer = cost_connection
         self.__price_interpole_cable_per_meter = price_interpole_cable_per_meter
         self.__price_distribution_cable_per_meter = (
             price_distribution_cable_per_meter

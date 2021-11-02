@@ -459,10 +459,10 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     # clear_single_node(node_index)
 
     # creating a new "grid" object from the Grid class
-    grid = Grid(price_pole=optimize_grid_request.price_pole,
-                price_consumer=optimize_grid_request.price_consumer,
-                price_interpole_cable_per_meter=optimize_grid_request.price_pole_cable,
-                price_distribution_cable_per_meter=optimize_grid_request.price_distribution_cable,
+    grid = Grid(cost_pole=optimize_grid_request.cost_pole,
+                cost_connection=optimize_grid_request.cost_connection,
+                price_interpole_cable_per_meter=optimize_grid_request.cost_interpole_cable,
+                price_distribution_cable_per_meter=optimize_grid_request.cost_distribution_cable,
                 default_pole_capacity=optimize_grid_request.max_connection_poles)
 
     # Make sure that new grid object is empty before adding nodes to it

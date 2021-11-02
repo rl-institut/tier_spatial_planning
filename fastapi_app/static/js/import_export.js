@@ -17,10 +17,10 @@ async function importConfig(include_settings) {
 
         if (include_settings === true) {
           setSettings(
-            (price_pole = result.price_pole),
-            (price_consumer = result.price_consumer),
-            (price_pole_cable = result.price_pole_cable),
-            (price_distribution_cable = result.price_distribution_cable),
+            (cost_pole = result.cost_pole),
+            (cost_connection = result.cost_connection),
+            (cost_interpole_cable = result.cost_interpole_cable),
+            (cost_distribution_cable = result.cost_distribution_cable),
             (shs_identification_connection_price =
               result.shs_identification_connection_price),
             (number_of_relaxation_steps_nr =
@@ -33,19 +33,19 @@ async function importConfig(include_settings) {
 }
 
 function setSettings(
-  price_pole,
-  price_consumer,
-  price_pole_cable,
-  price_distribution_cable,
+  cost_pole,
+  cost_connection,
+  cost_interpole_cable,
+  cost_distribution_cable,
   shs_identification_cable_price,
   shs_identification_connection_price,
   number_of_relaxation_steps_nr
 ) {
-  document.getElementById("price_pole").value = price_pole;
-  document.getElementById("price_consumer").value = price_consumer;
-  document.getElementById("price_pole_cable").value = price_pole_cable;
-  document.getElementById("price_distribution_cable").value =
-    price_distribution_cable;
+  document.getElementById("cost_pole").value = cost_pole;
+  document.getElementById("cost_connection").value = cost_connection;
+  document.getElementById("cost_interpole_cable").value = cost_interpole_cable;
+  document.getElementById("cost_distribution_cable").value =
+    cost_distribution_cable;
   document.getElementById("number_of_relaxation_steps_nr").value =
     number_of_relaxation_steps_nr;
 }
@@ -56,11 +56,11 @@ async function generateExportFile() {
     type: "POST",
     contentType: "application/json",
     data: JSON.stringify({
-      price_pole: price_pole.value,
-      price_consumer: price_consumer.value,
-      price_pole_cable: price_pole_cable.value,
-      price_distribution_cable: price_distribution_cable.value,
-      shs_identification_cable_price: price_distribution_cable.value,
+      cost_pole: cost_pole.value,
+      cost_connection: cost_connection.value,
+      cost_interpole_cable: cost_interpole_cable.value,
+      cost_distribution_cable: cost_distribution_cable.value,
+      shs_identification_cable_price: cost_distribution_cable.value,
       //      shs_identification_cable_price:
       //        cable_price_per_meter_for_shs_mst_identification.value,
       //shs_identification_connection_price:

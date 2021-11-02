@@ -28,7 +28,7 @@
           <div class="cell small-2 small-offset-3">Add</div>
           <div class="cell small-7">
             <button id="button_draw_boundaries_add" class="ui button sidebar-padding primary"
-              title="Draw a polygon on the map to add nodes" onclick="select_boundaries('add')">Draw Lines</button>
+              title="Draw a polygon on the map to add nodes" onclick="boundary_select('add')">Draw Lines</button>
           </div>
         </div>
 
@@ -36,7 +36,7 @@
           <div class="cell small-3 small-offset-2">Remove</div>
           <div class="cell small-7">
             <button id="button_draw_boundaries_remove" class="ui button sidebar-padding primary"
-              title="Draw a polygon on the map to remove nodes" onclick="select_boundaries('remove')">Draw
+              title="Draw a polygon on the map to remove nodes" onclick="boundary_select('remove')">Draw
               Lines</button>
           </div>
         </div>
@@ -96,22 +96,22 @@
           <legend>Main Components of Mini-Grid</legend>
           <div class="cell shrink grid-x">
             <label class="cell small-3">Poles ($)
-              <input id="price_pole" class="sidebar-input" name="price_pole" type="number" placeholder="price_pole"
+              <input id="cost_pole" class="sidebar-input" name="cost_pole" type="number" placeholder="cost_pole"
                 title="Unit cost of each pole in $" value="600" />
             </label>
             <label class="cell small-3">Connections ($)
-              <input id="price_consumer" class="sidebar-input" name="price_consumer" type="number"
-                placeholder="price_consumer" title="Connection cost of each consumer to the mini-grid in $"
+              <input id="cost_connection" class="sidebar-input" name="cost_connection" type="number"
+                placeholder="cost_connection" title="Connection cost of each consumer to the mini-grid in $"
                 value="50" />
             </label>
             <label class="cell small-3">LV Cables ($/m)
-              <input id="price_distribution_cable" class="sidebar-input" name="price_distribution_cable" type="number"
-                placeholder="price_distribution_cable" title="Cost of cables between consumers and poles in $/m"
+              <input id="cost_distribution_cable" class="sidebar-input" name="cost_distribution_cable" type="number"
+                placeholder="cost_distribution_cable" title="Cost of cables between consumers and poles in $/m"
                 value="2" />
             </label>
             <label class="cell small-3">HV Cables ($/m)
-              <input id="price_pole_cable" class="sidebar-input" name="price_pole_cable" type="number"
-                placeholder="price_pole_cable" title="Cost of cables between poles in $/m" value="5" />
+              <input id="cost_interpole_cable" class="sidebar-input" name="cost_interpole_cable" type="number"
+                placeholder="cost_interpole_cable" title="Cost of cables between poles in $/m" value="5" />
             </label>
           </div>
         </fieldset>
@@ -245,8 +245,8 @@
           type="number" placeholder="price_interpole_cable" value="2000" />
         <p class="name_currency_1">₦/m</p>
         <p class="name_component_2">Distribution</p>
-        <input id="price_distribution_cable" class="input_sidebar input_component_2" name="price_distribution_cable"
-          type="number" placeholder="price_distribution_cable" value="750" />
+        <input id="cost_distribution_cable" class="input_sidebar input_component_2" name="cost_distribution_cable"
+          type="number" placeholder="cost_distribution_cable" value="750" />
         <p class="name_currency_2">₦/m</p>
       </div> -->
 <!-- <div class="box_add_node sidebar-box cell shrink grid-y">
