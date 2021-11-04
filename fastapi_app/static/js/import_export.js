@@ -1,4 +1,4 @@
-async function importConfig(include_settings) {
+async function import_data(include_settings) {
   let formData = new FormData();
   formData.append("file", config_import.files[0]);
 
@@ -10,19 +10,18 @@ async function importConfig(include_settings) {
     contentType: false,
     statusCode: {
       200: function (result) {
-        // refreshNodeFromDataBase();
-        // refreshLinksFromDatBase();
         database_to_map(nodes_or_links = 'nodes');
         database_to_map(nodes_or_links = 'links');
 
         if (include_settings === true) {
-          setSettings(
+          import_settings_to_webapp(
             (cost_pole = result.cost_pole),
             (cost_connection = result.cost_connection),
             (cost_interpole_cable = result.cost_interpole_cable),
             (cost_distribution_cable = result.cost_distribution_cable),
-            (shs_identification_connection_cost =
-              result.shs_identification_connection_cost),
+            (shs_identification_cable_cost =
+              result.shs_identification_cable_cost),
+            (shs_identification_connection_cost = result.shs_identification_connection_cost),
             (number_of_relaxation_steps_nr =
               result.number_of_relaxation_steps_nr)
           );
@@ -32,7 +31,7 @@ async function importConfig(include_settings) {
   });
 }
 
-function setSettings(
+function import_settings_to_webapp(
   cost_pole,
   cost_connection,
   cost_interpole_cable,
@@ -61,10 +60,6 @@ async function generate_export_file() {
       cost_interpole_cable: cost_interpole_cable.value,
       cost_distribution_cable: cost_distribution_cable.value,
       shs_identification_cable_cost: cost_distribution_cable.value,
-      //      shs_identification_cable_cost:
-      //        cable_price_per_meter_for_shs_mst_identification.value,
-      //shs_identification_connection_cost:
-      //additional_connection_price_for_shs_mst_identification.value,
       shs_identification_connection_cost: 0,
       number_of_relaxation_steps_nr: number_of_relaxation_steps_nr.value,
     }),

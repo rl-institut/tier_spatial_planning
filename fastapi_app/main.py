@@ -79,14 +79,15 @@ async def generate_export_file(
         Basemodel request object containing the data send to the request as attributes.
     """
 
-    # reading nodes and links from *.csv files
+    # read nodes and links from *.csv files
+    # then convert their type from dictionary to data frame
     nodes = await database_read(nodes_or_links='nodes')
-    nodes_df = pd.DataFrame(nodes)
     links = await database_read(nodes_or_links='links')
+    nodes_df = pd.DataFrame(nodes)
     links_df = pd.DataFrame(links)
 
+    # get all settings defined in the web app
     settings = [element for element in generate_export_file_request]
-
     settings_df = pd.DataFrame({"Setting": [x[0] for x in settings],
                                 "value": [x[1] for x in settings]}).set_index('Setting')
 
@@ -125,55 +126,17 @@ async def import_config(file: UploadFile = File(...)):
         await out_file.write(content_file)
 
     # Empty Database tables
-    database_initialization(nodes=True, links=True)
+    await database_initialization(nodes=True, links=True)
 
     # Populate nodes table from nodes sheet of file
     nodes_df = pd.read_excel(f"{path}/import_export/import.xlsx",
                              sheet_name="nodes",
                              engine="openpyxl")
 
-    """
-    conn = sqlite3.connect(grid_db)
-    cursor = conn.cursor()
-
-    records = [(
-        str(nodes_df.iloc[i]['label']),
-        float(nodes_df.iloc[i]['latitude']),
-        float(nodes_df.iloc[i]['longitude']),
-        float(nodes_df.iloc[i]['area']),
-        str(nodes_df.iloc[i]['node_type']),
-        bool(nodes_df.iloc[i]['type_fixed']),
-        float(nodes_df.iloc[i]['required_capacity']),
-        float(nodes_df.iloc[i]['max_power']),
-        float(nodes_df.iloc[i]['is_connected'])
-    ) for i in range(nodes_df.shape[0])]
-
-    cursor.executemany(
-        'INSERT INTO nodes VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)', records)
-    """
-
     # Populate links table from links sheet of file
     links_df = pd.read_excel(f"{path}/import_export/import.xlsx",
                              sheet_name="links",
                              engine="openpyxl")
-
-    records = [(
-        str(links_df.iloc[i]['label']),
-        float(links_df.iloc[i]['latitude_from']),
-        float(links_df.iloc[i]['longitude_from']),
-        float(links_df.iloc[i]['latitude_to']),
-        float(links_df.iloc[i]['longitude_to']),
-        str(links_df.iloc[i]['type']),
-        float(links_df.iloc[i]['distance'])
-    ) for i in range(links_df.shape[0])]
-
-    cursor.executemany(
-        'INSERT INTO links VALUES(?, ?, ?, ?, ?, ?, ?)', records)
-
-    # commit the changes to db
-    conn.commit()
-    # close the connection
-    conn.close()
 
     # Collect settings for settings tab and return them as a dict
     settings_df = pd.read_excel(f"{path}/import_export/import.xlsx",
