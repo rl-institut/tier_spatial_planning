@@ -3,7 +3,7 @@ async function import_data(include_settings) {
   formData.append("file", config_import.files[0]);
 
   $.ajax({
-    url: "import_config",
+    url: "import_data",
     type: "POST",
     data: formData,
     processData: false,
@@ -64,10 +64,5 @@ async function generate_export_file() {
       number_of_relaxation_steps_nr: number_of_relaxation_steps_nr.value,
     }),
     dataType: "json",
-    statusCode: {
-      200: function () {
-        window.open("download_export_file", "_self");
-      },
-    },
   });
 }

@@ -38,14 +38,26 @@ models.Base.metadata.create_all(bind=engine)
 
 templates = Jinja2Templates(directory="fastapi_app/templates")
 
-path = "fastapi_app"
+# define different directories for:
+# (1) database: *.csv files for nodes and links,
+# (2) inputs: input excel files (cost data and timeseries) for offgridders + web app import and export files, and
+# (3) outputs: offgridders results
+directory_parent = "fastapi_app"
 
-dir_name = os.path.join(path, "data").replace("\\", "/")
-nodes_file = "nodes.csv"
-links_file = "links.csv"
-full_path_nodes = os.path.join(dir_name, nodes_file).replace("\\", "/")
-full_path_nodes = os.path.join(dir_name, nodes_file).replace("\\", "/")
-full_path_links = os.path.join(dir_name, links_file).replace("\\", "/")
+directory_database = os.path.join(directory_parent, 'data', 'database').replace("\\", "/")
+full_path_nodes = os.path.join(directory_database, 'nodes.csv').replace("\\", "/")
+full_path_links = os.path.join(directory_database, 'links.csv').replace("\\", "/")
+os.makedirs(directory_database, exist_ok=True)
+
+directory_inputs = os.path.join(directory_parent, 'data', 'inputs').replace("\\", "/")
+full_path_import_export = os.path.join(directory_inputs, 'import_export.xlsx').replace("\\", "/")
+full_path_offgridders_inputs = os.path.join(directory_inputs, 'input_data.xlsx').replace("\\", "/")
+full_path_offgridders_timeseries = os.path.join(
+    directory_inputs, 'site_data.xlsx').replace("\\", "/")
+os.makedirs(directory_inputs, exist_ok=True)
+
+directory_outputs = os.path.join(directory_parent, 'data', 'outputs').replace("\\", "/")
+os.makedirs(directory_outputs, exist_ok=True)
 
 # this is to avoid problems in "urllib" by not authenticating SSL certificate, otherwise following error occurs:
 # urllib.error.URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1131)>
@@ -92,8 +104,7 @@ async def generate_export_file(
                                 "value": [x[1] for x in settings]}).set_index('Setting')
 
     # create the *.xlsx file with sheets for nodes, links and settings
-    file_name = 'temp.xlsx'
-    with pd.ExcelWriter(f'{path}/import_export/{file_name}') as writer:  # pylint: disable=abstract-class-instantiated
+    with pd.ExcelWriter(full_path_import_export) as writer:  # pylint: disable=abstract-class-instantiated
         nodes_df.to_excel(excel_writer=writer, sheet_name='nodes',
                           header=nodes_df.columns, index=False)
         links_df.to_excel(excel_writer=writer, sheet_name='links',
@@ -109,7 +120,7 @@ async def generate_export_file(
 async def download_export_file():
     file_name = 'temp.xlsx'
     # Download xlsx file
-    file_path = os.path.join(path, f"import_export/{file_name}")
+    file_path = os.path.join(directory_parent, f"import_export/{file_name}")
 
     if os.path.exists(file_path):
         return FileResponse(
@@ -118,33 +129,41 @@ async def download_export_file():
         return {"error": "File not found!"}
 
 
-@app.post("/import_config")
-async def import_config(file: UploadFile = File(...)):
+@app.post("/import_data")
+async def import_data():
 
-    content_file = await file.read()
-    async with aiofiles.open(f"{path}/import_export/import.xlsx", 'wb') as out_file:
-        await out_file.write(content_file)
-
-    # Empty Database tables
+    # empty *.csv files cotaining nodes and links
     await database_initialization(nodes=True, links=True)
 
-    # Populate nodes table from nodes sheet of file
-    nodes_df = pd.read_excel(f"{path}/import_export/import.xlsx",
+    # add nodes from the 'nodes' sheet of the excel file to the 'nodes.csv' file
+    nodes_df = pd.read_excel(full_path_import_export,
                              sheet_name="nodes",
-                             engine="openpyxl")
+                             engine="openpyxl",
+                             converters={'latitude': float,
+                                         'longitude': float,
+                                         'area': float,
+                                         'peak_demand': float})
+    database_add(add_nodes=True, add_links=False, inlet=nodes_df)
 
-    # Populate links table from links sheet of file
-    links_df = pd.read_excel(f"{path}/import_export/import.xlsx",
+    # add links from the 'links' sheet of the excel file to the 'links.csv' file
+    links_df = pd.read_excel(full_path_import_export,
                              sheet_name="links",
-                             engine="openpyxl")
+                             engine="openpyxl",
+                             converters={'lat_from': float,
+                                         'long_from': float,
+                                         'lat_to': float,
+                                         'long_to': float,
+                                         'length': float})
+    database_add(add_nodes=False, add_links=True, inlet=links_df)
 
-    # Collect settings for settings tab and return them as a dict
-    settings_df = pd.read_excel(f"{path}/import_export/import.xlsx",
+    # get settings from the 'settings' sheet of the excel file
+    # and return it to the javascript function to put in the web app
+    settings_df = pd.read_excel(full_path_import_export,
                                 sheet_name="settings",
                                 engine="openpyxl").set_index('Setting')
     settings = {index: row['value'].item() for index, row in settings_df.iterrows()}
-
     return settings
+
     # ------------------------------ HANDLE REQUEST ------------------------------#
 
 
@@ -218,9 +237,7 @@ def database_add(add_nodes: bool,
         df = pd.DataFrame.from_dict(nodes)
         df.latitude = df.latitude.map(lambda x: "%.6f" % x)
         df.longitude = df.longitude.map(lambda x: "%.6f" % x)
-        # if poles must add to the list, area should be neglected
-        if (df.node_type[0] != 'pole'):
-            df.area = df.area.map(lambda x: "%.2f" % x)
+        df.area = df.area.map(lambda x: "%.2f" % x)
 
         # getting existing latitudes from the csv file as a list of float numbers
         # and checking if some of the new nodes already exist in the database or not
@@ -246,6 +263,20 @@ def database_add(add_nodes: bool,
         # adding the links to the existing csv file
         if len(df.index) != 0:
             df.to_csv(full_path_links, mode='a', header=False, index=False, float_format='%.0f')
+
+
+# remove some nodes from the database
+def database_remove_nodes(nodes,
+                          nodes_index_removing):
+
+    number_of_nodes = nodes.shape[0]
+    for index in range(number_of_nodes):
+        if index in nodes_index_removing:
+            nodes.drop(labels=index, axis=0, inplace=True)
+
+    # storing the nodes in the database (updating the existing CSV file)
+    nodes = nodes.reset_index(drop=True)
+    database_add(add_nodes=True, add_links=False, inlet=nodes.to_dict())
 
 
 @app.get("/database_to_map/{nodes_or_links}")
@@ -366,13 +397,10 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     # Create GridOptimizer object
     opt = GridOptimizer()
 
-    # res = db.execute("select * from nodes")
-    # nodes = res.fetchall()
-
     # getting nodes properties from the CSV file (as a dictionary file)
     nodes = await database_read(nodes_or_links='nodes')
 
-    # if nodes db is empty, do not perform optimization
+    # if nodes database is empty, do not perform optimization
     if len(nodes) == 0:
         return {
             "code": "success",
@@ -386,19 +414,23 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     nodes_longitude = nodes_properties.longitude.values.tolist()
     nodes_type = nodes_properties.node_type.values.tolist()
     nodes_is_connected = nodes_properties.is_connected.values.tolist()
+    nodes_how_added = nodes_properties.how_added.values.tolist()
 
     # use latitude of the node that is the most west to set the origin of x coordinates
     ref_latitude = math.radians(min(nodes_latitude))
     # use latitude of the node that is the most south to set the origin of y coordinates
     ref_longitude = math.radians(min(nodes_longitude))
 
-    # for node in nodes:
-    # node_index = node[0]
-    # node_type = node[4]
-    # type_fixed = node[5]
+    df = pd.read_csv(full_path_nodes)
+    await database_initialization(nodes=True, links=False)
 
-    # if (node_type == 'pole') and (not type_fixed):
-    # clear_single_node(node_index)
+    nodes_index_removing = []
+    for node_index in nodes_index:
+        if (nodes_how_added[node_index] == 'optimization'):
+            nodes_index_removing.append(node_index)
+
+    database_remove_nodes(nodes=df,
+                          nodes_index_removing=nodes_index_removing)
 
     # creating a new "grid" object from the Grid class
     grid = Grid(cost_pole=optimize_grid_request.cost_pole,
@@ -462,16 +494,16 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
 
             poles_list["latitude"].append(pole_latitude)
             poles_list["longitude"].append(pole_longitude)
-            poles_list["area"].append('-')
+            poles_list["area"].append(float(0))
             poles_list["node_type"].append('pole')
             poles_list["consumer_type"].append('-')
-            poles_list["peak_demand"].append('-')
+            poles_list["peak_demand"].append(float(0))
             poles_list["demand_type"].append('-')
             poles_list["is_connected"].append(True)
             poles_list["how_added"].append('optimization')
 
-            # storing the list of poles in the "node" database
-            database_add(add_nodes=True, add_links=False, inlet=poles_list)
+    # storing the list of poles in the "node" database
+    database_add(add_nodes=True, add_links=False, inlet=poles_list)
 
     # removing the content of the existing CSV file for the links
     await database_initialization(nodes=False, links=True)
@@ -514,8 +546,8 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest):
 
     print("starting shs_identification...")
 
-    #res = db.execute("select * from nodes")
-    #nodes = res.fetchall()
+    # res = db.execute("select * from nodes")
+    # nodes = res.fetchall()
 
     if len(nodes) == 0:
         return {
@@ -570,9 +602,9 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest):
         print("issue with version parameter of shs_identification_request")
         return 0
 
-    #sqliteConnection = sqlite3.connect(grid_db)
-    #conn = sqlite3.connect(grid_db)
-    #cursor = conn.cursor()
+    # sqliteConnection = sqlite3.connect(grid_db)
+    # conn = sqlite3.connect(grid_db)
+    # cursor = conn.cursor()
 
     """
     for index in nodes_df.index:
