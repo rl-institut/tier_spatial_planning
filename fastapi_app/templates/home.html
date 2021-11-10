@@ -170,13 +170,18 @@
     <div class="cell auto">
       <div class="sidebar-box sidebar-box-title cell shrink">IMPORT / EXPORT</div>
 
+      <!--
       <div class="sidebar-box-text cell shrink grid-padding-x">
         <label for="file">Choose the Excel file to import</label>
         <input id="config_import" name="config_import" type="file" accept=".xls, .xlsx">
       </div>
+      -->
 
       <div class="sidebar-box-text cell shrink grid-x">
         <div class="cell small-6">
+          <button class="ui button sidebar-padding primary" id="button_import" onclick="import_data(true);">Import</button>
+          <input id="config_import" type="file" name="config_import" style="display: none;" accept=".xls, .xlsx"/>
+          <!--
           <button class="ui button dropdown sidebar-padding primary" id="button_import"
             data-toggle="import_options">Import
             Data</button>
@@ -186,6 +191,7 @@
               <li class="ui sidebar-padding" onclick="import_data(true)"><a>With All Settings</a></li>
             </ul>
           </div>
+          -->
         </div>
 
         <div class="cell small-6">

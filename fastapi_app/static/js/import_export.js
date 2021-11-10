@@ -1,4 +1,6 @@
 async function import_data(include_settings) {
+  $(document.getElementById('config_import')).click();
+
   let formData = new FormData();
   formData.append("file", config_import.files[0]);
 
