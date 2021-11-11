@@ -1,9 +1,20 @@
 async function import_data(include_settings) {
-  $(document.getElementById('config_import')).click();
+  // trigger the click on the import button
+  $(document.getElementById('import')).click();
 
-  let formData = new FormData();
-  formData.append("file", config_import.files[0]);
+  // read the excel file
+  var import_excel_file = document.getElementById('import');
+  import_excel_file.addEventListener('change', function () {
+    readXlsxFile(import_excel_file.files[0]).then(function (data) {
+      console.log(data)
+    })
+  })
 
+
+  //let formData = new FormData();
+  //formData.append("file", config_import.files[0]);
+
+  /*
   $.ajax({
     url: "import_data",
     type: "POST",
@@ -31,6 +42,7 @@ async function import_data(include_settings) {
       },
     },
   });
+  */
 }
 
 function import_settings_to_webapp(
