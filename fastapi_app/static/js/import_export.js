@@ -3,34 +3,44 @@
 function handleFile(e) {
   var file = e.target.files[0];
   var reader = new FileReader();
-  reader.onload = function (e) {
-    var data = new Uint8Array(e.target.result);
-    var workbook = XLSX.read(data, { type: 'array' });
-    var sheet_name_list = workbook.SheetNames;
-    // sheet 1: nodes
-    var nodes = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]])
-    // sheet 2: links
-    var links = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[1]])
-    // sheet 1: settings
-    var settings = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[2]])
-
-    var import_file_content = { "nodes": nodes, "links": links, "settings": settings };
-  };
+  reader.onload = (function (f) {
+    return function (e) {
+      var data = new Uint8Array(e.target.result);
+      var workbook = XLSX.read(data, { type: 'array' });
+      var sheet_name_list = workbook.SheetNames;
+      // sheet 1: nodes
+      var nodes = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]])
+      // sheet 2: links
+      var links = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[1]])
+      // sheet 1: settings
+      var settings = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[2]])
+      var import_file_content = { "nodes": nodes, "links": links, "settings": settings };
+      //return import_file_content;
+    };
+  })(file);
   reader.readAsArrayBuffer(file);
-  return import_file_content;
 
 }
 
-
-
+let selected_file;
+document.getElementById('import').addEventListener('change', (event) => {
+  selected_file = event.target.files[0];
+})
 
 function import_data() {
   element = document.getElementById('import');
   element.click();
-  element.addEventListener('change', function (event) {
-    var results = handleFile(event);
-    result2 = results;
-  }, false)
+  //element.addEventListener('change', (event) => {
+  //  selected_file = event.target.files[0];
+  //})
+
+  if (selected_file) {
+    let file_reader = new FileReader();
+    file_reader.readAsArrayBuffer(selected_file)
+    file_reader.onload = (event) => {
+      console.log(event.target.result)
+    }
+  }
   //console.log('hi')
   /*
 // read the excel file
