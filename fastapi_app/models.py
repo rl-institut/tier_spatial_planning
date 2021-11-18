@@ -1,8 +1,8 @@
 from sqlalchemy import Boolean, Column, Integer, String, Numeric
 #from sqlalchemy.orm import relationship
 from pydantic import BaseModel
-from typing import Optional
 from fastapi_app.database import Base
+from typing import List
 
 # Models
 
@@ -95,3 +95,12 @@ class GenerateExportFileRequest(BaseModel):
     shs_identification_cable_cost: float
     shs_identification_connection_cost: float
     number_of_relaxation_steps_nr: int
+
+
+class ImportFileRequest(BaseModel):
+    latitude: float
+    longitude: float
+
+
+class ImportFileRequestList(BaseModel):
+    data: List[ImportFileRequest]

@@ -130,7 +130,7 @@ async def download_export_file():
 
 
 @app.post("/import_data")
-async def import_data():
+async def import_data(import_file_request: models.ImportFileRequestList):
 
     # empty *.csv files cotaining nodes and links
     await database_initialization(nodes=True, links=True)
