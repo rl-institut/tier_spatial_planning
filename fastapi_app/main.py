@@ -28,6 +28,8 @@ import aiofiles
 import uvicorn
 # for appending to the dictionary
 from collections import defaultdict
+# for sending an array of data from JS to the fastAPI
+from typing import Any, Dict, List, Union
 
 app = FastAPI()
 
@@ -62,6 +64,11 @@ os.makedirs(directory_outputs, exist_ok=True)
 # this is to avoid problems in "urllib" by not authenticating SSL certificate, otherwise following error occurs:
 # urllib.error.URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1131)>
 ssl._create_default_https_context = ssl._create_unverified_context
+
+# define the template for importing json data in the form of arrays from js to python
+json_object = Dict[Any, Any]
+json_array = List[Any]
+import_structure = Union[json_array, json_object]
 
 
 # --------------------- REDIRECT REQUEST TO FAVICON LOG ----------------------#
@@ -130,39 +137,16 @@ async def download_export_file():
 
 
 @app.post("/import_data")
-async def import_data(import_file_request: models.ImportFileRequestList):
+async def import_data(import_files: import_structure = None):
 
     # empty *.csv files cotaining nodes and links
     await database_initialization(nodes=True, links=True)
 
     # add nodes from the 'nodes' sheet of the excel file to the 'nodes.csv' file
-    nodes_df = pd.read_excel(full_path_import_export,
-                             sheet_name="nodes",
-                             engine="openpyxl",
-                             converters={'latitude': float,
-                                         'longitude': float,
-                                         'area': float,
-                                         'peak_demand': float})
-    database_add(add_nodes=True, add_links=False, inlet=nodes_df)
-
-    # add links from the 'links' sheet of the excel file to the 'links.csv' file
-    links_df = pd.read_excel(full_path_import_export,
-                             sheet_name="links",
-                             engine="openpyxl",
-                             converters={'lat_from': float,
-                                         'long_from': float,
-                                         'lat_to': float,
-                                         'long_to': float,
-                                         'length': float})
-    database_add(add_nodes=False, add_links=True, inlet=links_df)
-
-    # get settings from the 'settings' sheet of the excel file
-    # and return it to the javascript function to put in the web app
-    settings_df = pd.read_excel(full_path_import_export,
-                                sheet_name="settings",
-                                engine="openpyxl").set_index('Setting')
-    settings = {index: row['value'].item() for index, row in settings_df.iterrows()}
-    return settings
+    nodes = import_files['nodes_to_import']
+    links = import_files['links_to_import']
+    database_add(add_nodes=True, add_links=False, inlet=nodes)
+    database_add(add_nodes=False, add_links=True, inlet=links)
 
     # ------------------------------ HANDLE REQUEST ------------------------------#
 

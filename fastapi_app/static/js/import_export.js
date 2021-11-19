@@ -55,15 +55,23 @@ function import_data() {
       let links_to_import = XLSX.utils.sheet_to_row_object_array(workbook.Sheets['links']);
       nodes_to_import_json = JSON.stringify(nodes_to_import);
 
+      $("#loading").show();
       $.ajax({
         url: "/import_data",
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify({
-          latitude: [11, 12],
-          longitude: [8, 9]
+          nodes_to_import,
+          links_to_import
         }),
         dataType: "json",
+        statusCode: {
+          200: function () {
+            database_to_map(nodes_or_links = 'nodes');
+            database_to_map(nodes_or_links = 'links');
+            $("#loading").hide();
+          },
+        },
       });
 
       //console.log(settings_json_file);
