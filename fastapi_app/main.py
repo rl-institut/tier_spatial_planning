@@ -145,8 +145,11 @@ async def import_data(import_files: import_structure = None):
     # add nodes from the 'nodes' sheet of the excel file to the 'nodes.csv' file
     nodes = import_files['nodes_to_import']
     links = import_files['links_to_import']
-    database_add(add_nodes=True, add_links=False, inlet=nodes)
-    database_add(add_nodes=False, add_links=True, inlet=links)
+    if len(nodes) > 0:
+        database_add(add_nodes=True, add_links=False, inlet=nodes)
+
+    if len(links) > 0:
+        database_add(add_nodes=False, add_links=True, inlet=links)
 
     # ------------------------------ HANDLE REQUEST ------------------------------#
 
