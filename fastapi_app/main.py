@@ -85,8 +85,8 @@ async def redirect():
 # *                     IMPORT / EXPORT                      */
 # ************************************************************/
 
-@app.post("/generate_export_file/")
-async def generate_export_file(
+@app.post("/export_data/")
+async def export_data(
         generate_export_file_request: models.GenerateExportFileRequest):
     """
     Generates an Excel file from the database tables (*.csv files) and the

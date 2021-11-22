@@ -180,23 +180,17 @@
       <div class="sidebar-box-text cell shrink grid-x">
         <div class="cell small-6">
           <button class="ui button sidebar-padding primary" id="button_import" onclick="import_data();">Import</button>
-          <input type="file" id="import" style="display: none;" accept=".xls, .xlsx"/>
-          <!--
-          <button class="ui button dropdown sidebar-padding primary" id="button_import"
-            data-toggle="import_options">Import
-            Data</button>
-          <div class="dropdown-pane sidebar-dropdown" id="import_options" data-dropdown data-close-on-click="true">
-            <ul class="sidebar-dropdown-list">
-              <li class="ui sidebar-padding" onclick="import_data(false)"><a>Only Network</a></li>
-              <li class="ui sidebar-padding" onclick="import_data(true)"><a>With All Settings</a></li>
-            </ul>
-          </div>
-          -->
+          <input type="file" id="import" style="display: none;" accept=".xls, .xlsx" />
         </div>
 
         <div class="cell small-6">
-          <button class="ui button sidebar-padding primary" id="button_export" onclick="generate_export_file()">Export
-            Data</button>
+          <button href="" class="ui button sidebar-padding primary" id="button_export"
+            onclick="download_file()">Export</button>
+          <!--
+            <button onclick="download_file()">Create file</button>
+            <button onclick="download('file text', 'myfilename.txt', 'text/plain')">Create file</button>
+          <input type="file" id="export" style="display: none;" accept=".xls, .xlsx" />
+          -->
         </div>
       </div>
     </div>

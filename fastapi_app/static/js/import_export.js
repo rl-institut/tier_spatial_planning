@@ -1,32 +1,10 @@
-/*function handleFile(e) {
-  var file = e.target.files[0];
-  var reader = new FileReader();
-  reader.onload = (function (f) {
-    return function (e) {
-      var data = new Uint8Array(e.target.result);
-      var workbook = XLSX.read(data, { type: 'array' });
-      var sheet_name_list = workbook.SheetNames;
-      // sheet 1: nodes
-      var nodes = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]])
-      // sheet 2: links
-      var links = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[1]])
-      // sheet 1: settings
-      var settings = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[2]])
-      var import_file_content = { "nodes": nodes, "links": links, "settings": settings };
-      //return import_file_content;
-    };
-  })(file);
-  reader.readAsArrayBuffer(file);
+/************************************************************/
+/*                          IMPORT                          */
+/************************************************************/
 
-}
-*/
-
-//document.getElementById('import').addEventListener('change', (event) => {
-//  selected_file = event.target.files[0];
-//})
-
+// import nodes, links, and settings from the selected excel file
 function import_data() {
-  // click on the hidden input file button
+  // click on the hidden input file button (to change the status of the element)
   document.getElementById('import').click();
 
   // when the element's status gets changed, the following code will be executed
@@ -46,15 +24,13 @@ function import_data() {
         raw: true,
         rawNumbers: true
       });
-      settings_row_object.shift(); // remove the first array only containing the sheet name and "value"
-      settings_dict = settings_row_object.reduce((dict, [key, value]) => Object.assign(dict, { [key]: value }), {}); // converting the array to dictionary
+      settings_row_object.shift(); // remove the first array only containing the sheet name ("settings") and "value"
+      settings_dict = settings_row_object.reduce((dict, [key, value]) => Object.assign(dict, { [key]: value }), {}); // convert the array to dictionary
       import_settings_to_webapp(settings_dict);
 
       // copy nodes and links into the existing *.csv files
       let nodes_to_import = XLSX.utils.sheet_to_row_object_array(workbook.Sheets['nodes']);
       let links_to_import = XLSX.utils.sheet_to_row_object_array(workbook.Sheets['links']);
-      nodes_to_import_json = JSON.stringify(nodes_to_import);
-
       $("#loading").show();
       $.ajax({
         url: "/import_data",
@@ -73,46 +49,12 @@ function import_data() {
           },
         },
       });
-
-      //console.log(settings_json_file);
     }
   });
 }
 
-//let formData = new FormData();
-//formData.append("file", config_import.files[0]);
 
-/*
-$.ajax({
-  url: "import_data",
-  type: "POST",
-  data: formData,
-  processData: false,
-  contentType: false,
-  statusCode: {
-    200: function (result) {
-      database_to_map(nodes_or_links = 'nodes');
-      database_to_map(nodes_or_links = 'links');
- 
-      if (include_settings === true) {
-        import_settings_to_webapp(
-          (cost_pole = result.cost_pole),
-          (cost_connection = result.cost_connection),
-          (cost_interpole_cable = result.cost_interpole_cable),
-          (cost_distribution_cable = result.cost_distribution_cable),
-          (shs_identification_cable_cost =
-            result.shs_identification_cable_cost),
-          (shs_identification_connection_cost = result.shs_identification_connection_cost),
-          (number_of_relaxation_steps_nr =
-            result.number_of_relaxation_steps_nr)
-        );
-      }
-    },
-  },
-});
-*/
-//}
-
+// put the settings into the web app
 function import_settings_to_webapp(settings_dict) {
   document.getElementById("cost_pole").value = settings_dict.cost_pole;
   document.getElementById("cost_connection").value = settings_dict.cost_connection;
@@ -121,9 +63,15 @@ function import_settings_to_webapp(settings_dict) {
   document.getElementById("number_of_relaxation_steps_nr").value = settings_dict.number_of_relaxation_steps_nr;
 }
 
-async function generate_export_file() {
+
+/************************************************************/
+/*                          EXPORT                          */
+/************************************************************/
+
+// export nodes, links, and settings to the selected excel file
+async function export_data() {
   $.ajax({
-    url: "generate_export_file/",
+    url: "export_data/",
     type: "POST",
     contentType: "application/json",
     data: JSON.stringify({
@@ -137,4 +85,22 @@ async function generate_export_file() {
     }),
     dataType: "json",
   });
+}
+
+
+function download(text, name, type) {
+  var default_file_name = 'import_export'
+  var file_name = prompt('Enter the file name:', default_file_name);
+
+  var button_export = document.getElementById("a");
+  var file = new Blob([text], { type: type });
+  a.href = URL.createObjectURL(file);
+  a.download = name;
+}
+
+
+function download_file() {
+  var FileSaver = require('file-saver');
+  var blob = new Blob(["Hello, world!"], { type: "text/plain;charset=utf-8" });
+  FileSaver.saveAs(blob, "hello world.txt");
 }
