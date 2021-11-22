@@ -70,80 +70,86 @@ function database_initialization(nodes, links) {
 
 // read all nodes/links stored in the *.csv files
 // then push the corresponding icon to the map
+// or return their correcponding json files for exporting the excel file
 // note: both "nodes" and "links" cannot be called simultaneously
-function database_to_map(nodes_or_links) {
+function database_read(nodes_or_links, map_or_export) {
     var xhr = new XMLHttpRequest();
-    url = "database_to_map/" + nodes_or_links;
+    url = "database_to_js/" + nodes_or_links;
     xhr.open("GET", url, true);
     xhr.responseType = "json";
     xhr.send();
 
     xhr.onreadystatechange = function () {
         if (this.readyState == 4 && this.status == 200) {
-            if (nodes_or_links == 'nodes') {
-                // push nodes to the map
-                nodes = this.response;
-                for (marker of markers) {
-                    mainMap.removeLayer(marker);
-                }
-                markers.length = 0;
-                number_of_nodes = Object.keys(nodes["node_type"]).length;
-                var counter;
-                for (counter = 0; counter < number_of_nodes; counter++) {
-                    if (nodes["node_type"][counter] === "pole") {
-                        markers.push(
-                            L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                                icon: markerPole,
-                            }).addTo(mainMap)
-                        );
-                    } else if (nodes["is_connected"][counter] === false) {
-                        // if the node is not connected to the grid, it will be a SHS consumer
-                        markers.push(
-                            L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                                icon: markerShs,
-                            }).addTo(mainMap)
-                        );
-                    } else {
-                        if (nodes["demand_type"][counter] === "high-demand") {
+            if (map_or_export == 'export') {
+                return this.response;
+            }
+            else {
+                if (nodes_or_links == 'nodes') {
+                    // push nodes to the map
+                    nodes = this.response;
+                    for (marker of markers) {
+                        mainMap.removeLayer(marker);
+                    }
+                    markers.length = 0;
+                    number_of_nodes = Object.keys(nodes["node_type"]).length;
+                    var counter;
+                    for (counter = 0; counter < number_of_nodes; counter++) {
+                        if (nodes["node_type"][counter] === "pole") {
                             markers.push(
                                 L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                                    icon: markerHighDemand,
+                                    icon: markerPole,
                                 }).addTo(mainMap)
                             );
-                        } else if (nodes["demand_type"][counter] === "medium-demand") {
+                        } else if (nodes["is_connected"][counter] === false) {
+                            // if the node is not connected to the grid, it will be a SHS consumer
                             markers.push(
                                 L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                                    icon: markerMediumDemand,
+                                    icon: markerShs,
                                 }).addTo(mainMap)
                             );
-                        } else if (nodes["demand_type"][counter] === "low-demand") {
-                            markers.push(
-                                L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                                    icon: markerLowDemand,
-                                }).addTo(mainMap)
-                            );
+                        } else {
+                            if (nodes["demand_type"][counter] === "high-demand") {
+                                markers.push(
+                                    L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
+                                        icon: markerHighDemand,
+                                    }).addTo(mainMap)
+                                );
+                            } else if (nodes["demand_type"][counter] === "medium-demand") {
+                                markers.push(
+                                    L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
+                                        icon: markerMediumDemand,
+                                    }).addTo(mainMap)
+                                );
+                            } else if (nodes["demand_type"][counter] === "low-demand") {
+                                markers.push(
+                                    L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
+                                        icon: markerLowDemand,
+                                    }).addTo(mainMap)
+                                );
+                            }
                         }
                     }
-                }
-                if (document.getElementById("radio_button_nodes_boundaries").checked) {
-                    zoomAll(mainMap);
-                }
-            } else {
-                // push links to the map
-                links = this.response;
-                removeLinksFromMap(mainMap);
-                for (let index = 0; index < Object.keys(links.link_type).length; index++) {
-                    var color = links.link_type[index] === "interpole" ? "red" : "green";
-                    var weight = links.link_type[index] === "interpole" ? 5 : 3;
-                    drawLinkOnMap(
-                        links.lat_from[index],
-                        links.long_from[index],
-                        links.lat_to[index],
-                        links.long_to[index],
-                        color,
-                        mainMap,
-                        weight
-                    );
+                    if (document.getElementById("radio_button_nodes_boundaries").checked) {
+                        zoomAll(mainMap);
+                    }
+                } else {
+                    // push links to the map
+                    links = this.response;
+                    removeLinksFromMap(mainMap);
+                    for (let index = 0; index < Object.keys(links.link_type).length; index++) {
+                        var color = links.link_type[index] === "interpole" ? "red" : "green";
+                        var weight = links.link_type[index] === "interpole" ? 5 : 3;
+                        drawLinkOnMap(
+                            links.lat_from[index],
+                            links.long_from[index],
+                            links.lat_to[index],
+                            links.long_to[index],
+                            color,
+                            mainMap,
+                            weight
+                        );
+                    }
                 }
             }
         }
@@ -199,7 +205,7 @@ function database_add_remove_automatic(
         dataType: "json",
         statusCode: {
             200: function () {
-                database_to_map(nodes_or_links = 'nodes');
+                database_read(nodes_or_links = 'nodes', map_or_export = 'map');
                 $("#loading").hide();
             },
         },
@@ -289,8 +295,8 @@ function optimize_grid() {
         dataType: "json",
         statusCode: {
             200: function () {
-                database_to_map(nodes_or_link = 'nodes');
-                database_to_map(nodes_or_link = 'links');
+                database_read(nodes_or_link = 'nodes', map_or_export = 'map');
+                database_read(nodes_or_link = 'links', map_or_export = 'map');
                 $("#loading").hide();
             },
         },
@@ -322,7 +328,7 @@ function identify_shs() {
         dataType: "json",
         statusCode: {
             200: function () {
-                database_to_map(nodes_or_links = 'nodes');
+                database_read(nodes_or_links = 'nodes', map_or_export = 'map');
                 //refreshNodeFromDataBase();
                 clearLinksDataBase();
                 $("#loading").hide();

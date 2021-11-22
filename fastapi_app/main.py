@@ -266,7 +266,7 @@ def database_remove_nodes(nodes,
     database_add(add_nodes=True, add_links=False, inlet=nodes.to_dict())
 
 
-@app.get("/database_to_map/{nodes_or_links}")
+@app.get("/database_to_js/{nodes_or_links}")
 async def database_read(nodes_or_links: str):
 
     # importing nodes and links from the csv files to the map

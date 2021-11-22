@@ -43,8 +43,8 @@ function import_data() {
         dataType: "json",
         statusCode: {
           200: function () {
-            database_to_map(nodes_or_links = 'nodes');
-            database_to_map(nodes_or_links = 'links');
+            database_read(nodes_or_links = 'nodes', map_or_export = 'map');
+            database_read(nodes_or_links = 'links', map_or_export = 'map');
             $("#loading").hide();
           },
         },
@@ -68,50 +68,6 @@ function import_settings_to_webapp(settings_dict) {
 /*                          EXPORT                          */
 /************************************************************/
 
-// export nodes, links, and settings to the selected excel file
-async function export_data() {
-  $.ajax({
-    url: "export_data/",
-    type: "POST",
-    contentType: "application/json",
-    data: JSON.stringify({
-      cost_pole: cost_pole.value,
-      cost_connection: cost_connection.value,
-      cost_interpole_cable: cost_interpole_cable.value,
-      cost_distribution_cable: cost_distribution_cable.value,
-      shs_identification_cable_cost: cost_distribution_cable.value,
-      shs_identification_connection_cost: 0,
-      number_of_relaxation_steps_nr: number_of_relaxation_steps_nr.value,
-    }),
-    dataType: "json",
-  });
-}
-
-
-function download(text, name, type) {
-  var default_file_name = 'import_export'
-  var file_name = prompt('Enter the file name:', default_file_name);
-
-  var button_export = document.getElementById("a");
-  var file = new Blob([text], { type: type });
-  a.href = URL.createObjectURL(file);
-  a.download = name;
-}
-
-
-function download_file() {
-  var FileSaver = require('file-saver');
-  var blob = new Blob(["Hello, world!"], { type: "text/plain;charset=utf-8" });
-  FileSaver.saveAs(blob, "hello world.txt");
-}
-// convert the binary data into octet, which is the correct content type for excel file
-function binary_to_octet(string) {
-  var buffer = new ArrayBuffer(string.length);
-  var array = new Uint8Array(buffer);
-  for (var i = 0; i < string.length; i++) array[i] = string.charCodeAt(i) & 0xFF;
-  return array;
-}
-
 
 async function export_data() {
   // create the excel workbook and add some properties
@@ -125,58 +81,41 @@ async function export_data() {
 
   // create sheets
   workbook.SheetNames.push("Nodes");
+  database_read(nodes_or_links = 'nodes', map_or_export = 'export')
   var worksheet_data = [["hello", "world"]];
   var worksheet = XLSX.utils.aoa_to_sheet(worksheet_data);
   workbook.Sheets["Nodes"] = worksheet;
 
   var wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'binary' });
 
-  //var URL = window.URL || window.webkitURL || window.mozURL || window.msURL || window.oURL;
   var blob = new Blob([binary_to_octet(wbout)], { type: "application/octet-stream" });
 
-  saveAs(blob, 'test.xlsx');
+  saveAs(blob, 'import_export.xlsx');
 
   /*
-    const fileBlob = new Blob(
-      [binary_to_octet(wbout)],
-      { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }
-    );
-    var objectURL = URL.createObjectURL(fileBlob);
-  
-    const exportLinkElement = document.createElement('a');
-  
-    exportLinkElement.hidden = true;
-    exportLinkElement.download = "import_export.xlsx";
-    exportLinkElement.href = objectURL;
-    exportLinkElement.text = "downloading...";
-  
-    document.body.appendChild(exportLinkElement);
-    exportLinkElement.click();
-  
-    URL.revokeObjectURL(objectURL);
-    
-    TODO:
-    setTimeout(function() {
-      URL.revokeObjectURL(objectURL);
-    });
-    
-  
-    exportLinkElement.remove();
-    
-      $.ajax({
-        url: "generate_export_file/",
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify({
-          cost_pole: cost_pole.value,
-          cost_connection: cost_connection.value,
-          cost_interpole_cable: cost_interpole_cable.value,
-          cost_distribution_cable: cost_distribution_cable.value,
-          shs_identification_cable_cost: cost_distribution_cable.value,
-          shs_identification_connection_cost: 0,
-          number_of_relaxation_steps_nr: number_of_relaxation_steps_nr.value,
-        }),
-        dataType: "json",
-      });
-    */
+  $.ajax({
+    url: "generate_export_file/",
+    type: "POST",
+    contentType: "application/json",
+    data: JSON.stringify({
+      cost_pole: cost_pole.value,
+      cost_connection: cost_connection.value,
+      cost_interpole_cable: cost_interpole_cable.value,
+      cost_distribution_cable: cost_distribution_cable.value,
+      shs_identification_cable_cost: cost_distribution_cable.value,
+      shs_identification_connection_cost: 0,
+      number_of_relaxation_steps_nr: number_of_relaxation_steps_nr.value,
+    }),
+    dataType: "json",
+  });
+  */
+}
+
+
+// convert the binary data into octet, which is the correct content type for excel file
+function binary_to_octet(string) {
+  var buffer = new ArrayBuffer(string.length);
+  var array = new Uint8Array(buffer);
+  for (var i = 0; i < string.length; i++) array[i] = string.charCodeAt(i) & 0xFF;
+  return array;
 }
