@@ -184,13 +184,11 @@
         </div>
 
         <div class="cell small-6">
-          <button href="" class="ui button sidebar-padding primary" id="button_export"
-            onclick="download_file()">Export</button>
           <!--
-            <button onclick="download_file()">Create file</button>
-            <button onclick="download('file text', 'myfilename.txt', 'text/plain')">Create file</button>
-          <input type="file" id="export" style="display: none;" accept=".xls, .xlsx" />
+          <button class="ui button sidebar-padding primary" id="button_export" onclick="export_data();">Export</button>
           -->
+          <input type="button" id="export" class="ui button sidebar-padding primary" id="button_export"
+            onclick="export_data();">Export</input>
         </div>
       </div>
     </div>
