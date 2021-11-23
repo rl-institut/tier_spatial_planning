@@ -72,7 +72,7 @@ function database_initialization(nodes, links) {
 // then push the corresponding icon to the map
 // or return their correcponding json files for exporting the excel file
 // note: both "nodes" and "links" cannot be called simultaneously
-function database_read(nodes_or_links, map_or_export) {
+function database_read(nodes_or_links, map_or_export, callback) {
     var xhr = new XMLHttpRequest();
     url = "database_to_js/" + nodes_or_links;
     xhr.open("GET", url, true);
@@ -82,7 +82,7 @@ function database_read(nodes_or_links, map_or_export) {
     xhr.onreadystatechange = function () {
         if (this.readyState == 4 && this.status == 200) {
             if (map_or_export == 'export') {
-                return this.response;
+                if (callback) callback(this.response);
             }
             else {
                 if (nodes_or_links == 'nodes') {

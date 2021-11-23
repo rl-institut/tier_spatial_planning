@@ -69,8 +69,7 @@ function import_settings_to_webapp(settings_dict) {
 /*                          EXPORT                          */
 /************************************************************/
 
-
-async function export_data() {
+function export_data() {
   // create the excel workbook and add some properties
   var workbook = XLSX.utils.book_new();
   workbook.Props = {
@@ -82,9 +81,18 @@ async function export_data() {
 
   // create sheets
   workbook.SheetNames.push("Nodes");
-  database_read(nodes_or_links = 'nodes', map_or_export = 'export')
-  var worksheet_data = [["hello", "world"]];
-  var worksheet = XLSX.utils.aoa_to_sheet(worksheet_data);
+  $.ajax({
+    contentType: "application/json",
+    dataType: "json",
+    statusCode: {
+      200: function () {
+        database_read(nodes_or_links = 'nodes', map_or_export = 'export', function (data_nodes) {
+          console.log(data_nodes);
+        });
+      },
+    },
+  });
+  var worksheet = XLSX.utils.json_to_sheet([data_nodes]);
   workbook.Sheets["Nodes"] = worksheet;
 
   var wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'binary' });
