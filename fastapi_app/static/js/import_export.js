@@ -45,6 +45,7 @@ function import_data() {
           200: function () {
             database_read(nodes_or_links = 'nodes', map_or_export = 'map');
             database_read(nodes_or_links = 'links', map_or_export = 'map');
+            element.value = null; // clear the file input value to ensure addEventListener works more than one time
             $("#loading").hide();
           },
         },
