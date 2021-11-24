@@ -81,25 +81,23 @@ function export_data() {
 
   // create sheets
   workbook.SheetNames.push("Nodes");
-  $.ajax({
-    contentType: "application/json",
-    dataType: "json",
-    statusCode: {
-      200: function () {
-        database_read(nodes_or_links = 'nodes', map_or_export = 'export', function (data_nodes) {
-          console.log(data_nodes);
-        });
-      },
-    },
+  console.log("befor reading data")
+  database_read(nodes_or_links = 'nodes', map_or_export = 'export', function (data_nodes) {
+    console.log('right before reading data');
+    console.log(data_nodes);
+    var worksheet = XLSX.utils.json_to_sheet([data_nodes]);
+    workbook.Sheets["Nodes"] = worksheet;
   });
-  var worksheet = XLSX.utils.json_to_sheet([data_nodes]);
-  workbook.Sheets["Nodes"] = worksheet;
+  console.log("after reading data")
 
-  var wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'binary' });
+  setTimeout(() => {
+    console.log("set timeout executed")
+    var wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'binary' });
+    var blob = new Blob([binary_to_octet(wbout)], { type: "application/octet-stream" });
+    saveAs(blob, 'import_export.xlsx');
+  }, 1000)
 
-  var blob = new Blob([binary_to_octet(wbout)], { type: "application/octet-stream" });
-
-  saveAs(blob, 'import_export.xlsx');
+  console.log("after executing saveAs")
 
   /*
   $.ajax({
