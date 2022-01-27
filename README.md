@@ -1,15 +1,13 @@
-# PeopleSun WP4 geospatial tool
+# Description
 
-TEST 
+This open-source computer tool is part of the [PeopleSuN project](https://www.peoplesun.org), which contains a web-based app that aims to optimize the network structure as well as the power supply system for mini-grid systems.
 
-This geospatial computer tool is part of the PeopleSun project (peoplesun.org).
-The project contains a webapp that wraps tools to optimize off-grid systems based on a webmap.
+The features of the tool are listed below:
 
-The features of the tool are the following:
-
-- Identification of the buildings from OSM (overpass) API.
-- Optimization of network layout of mini-grids with a hub structure. The optimization is based on the Python sgdotlite package.
-- Identification of buildings that are located far enough to the rest of the buildings so that it makes sense to provide them with idividual solar-home systems.
+- Automatic identification of buildings from the OpenStreetMap inside a given boundary.
+- Network optimization of mini-grids based on the Python package [sgdot-lite](https://github.com/fsumpa/sgdot-lite).
+- Optimization of the power supply systems for mini-grids (PV, battery, and diesel) using a Python-based tool called [Offgridders](https://github.com/rl-institut/offgridders). 
+- Automatic identification of buildings that are better to be served by idividual solar home systems.
 
 
 ## Get started
@@ -18,6 +16,9 @@ The features of the tool are the following:
 
 1. From the root of the repository, first create a virtual environment (here called venv) using the following command:
    python3 -m venv venv
+   
+or if you want to install a specific version of python, first install *virtualenv* and then:
+   virtualenv venv --python=python_version
 
 Note that conda can also be used to set up a virtual environment
 
@@ -27,7 +28,7 @@ i. On Linux, MacOs
 source venv/bin/activate
 
 ii. On Windows
-venv\Scripts\bin\activate
+venv\Scripts\activate
 
 3. Install the required packages using the following command:
    pip install -r requirements.txt

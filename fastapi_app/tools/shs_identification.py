@@ -12,12 +12,12 @@ def create_nodes_df():
     """
     This function creates and returns an empty DataFrame represetning nodes of
     following form:
-                    x_coordinate  y_coordinate   required_capacity  max_power
+                    x_coordinate  y_coordinate   required_capacity  max_power   shs_price
         label
-        a           0.0           0.0             3.0               3.0
-        b           0.0           1.0             6.0               6.0
-        c           1.0           1.0             10.0              200.0
-        d           2.0           0.0             2.0               2.0
+        a           0.0           0.0             3.0               3.0         200
+        b           0.0           1.0             6.0               6.0         300
+        c           1.0           1.0             10.0              200.0       1000
+        d           2.0           0.0             2.0               2.0         50
 
     Output
     ------
@@ -42,7 +42,11 @@ def create_nodes_df():
                       dtype=np.dtype(float)
                       ),
             'max_power':
-            pd.Series([], dtype=np.dtype(float))
+            pd.Series([], dtype=np.dtype(float)
+                      ),
+            'shs_price':
+            pd.Series([], dtype=np.dtype(float)
+                      )
         }
     ).set_index('label')
 
@@ -52,7 +56,8 @@ def add_node(nodes_df,
              x_coordinate,
              y_coordinate,
              required_capacity,
-             max_power):
+             max_power,
+             shs_price):
     """
     This function adds a node to a nodes DataFrame nodes_df:
 
@@ -77,80 +82,19 @@ def add_node(nodes_df,
         max_power (float):
             Value of the maximm power required by the shs for the node.
 
+        shs_price (float):
+            Cost associated with electrify node with a solar home system.
+
     """
 
     nodes_df.at[node_label] = (x_coordinate,
                                y_coordinate,
                                required_capacity,
-                               max_power)
+                               max_power,
+                               shs_price)
 
 # ---------------COMPUTE SHS PRICES ----------------#
 
-
-def shs_price_for_load(capacity, max_power, shs_characteristics):
-    """
-    This function returns the price of a Solar Home System of a given an
-    average load value as well as a max power based on the price ranges given
-    by the price_for_shs DataFrame.
-
-    Parameters
-    ----------
-    capacity (float):
-        Value of the battery capactity required for the shs
-
-    max_power (float):
-        Maximum power that shs is supposed to deliver
-
-    shs_characteristics (pandasz.DataFrame):
-        Dataframe where each row contains the following inforamtions about the shs:
-            'price[$]'
-            'capacity[Wh]'
-            'max_power[W]'
-
-    Output
-    ------
-        Price of the cheapest shs fullfiling the capacity and max_power requirement criteria
-
-    """
-    for index, row in shs_characteristics.sort_values(by=['capacity[Wh]']).iterrows():
-        if row['capacity[Wh]'] >= capacity and row['max_power[W]'] >= max_power:
-            return row['price[$]']
-    return np.infty
-
-
-def shs_price_of_node(node_index, nodes_df, shs_characteristics):
-    """
-    This function returns the price of the shs coresponding to the building
-    represented by the node node_index of nodes_df.
-
-    Parameters
-    ----------
-        node_index (str):
-            Index of the node.
-
-        nodes_df (pandas.DataFrame):
-            DataFrame containing the nodes of the network in the form
-                            x_coordinate  y_coordinate
-                   x_coordinate  y_coordinate    required_capacity  max_power
-            label
-            node0  2.0           3.0             90.0               5.0
-            node1  4.0           6.0             500.0              20.0
-            node2  7.0           10.0            190.0              10.0
-            node3  1.0           2.0             1200.0             1000.0
-
-        shs_characteristics (pandas.DataFrame):
-            Dataframe where each row contains the following inforamtions about the shs:
-                'price[$]'
-                'capacity[Wh]'
-                'max_power[W]'
-
-    """
-
-    return shs_price_for_load(
-        capacity=nodes_df['required_capacity'][node_index],
-        max_power=nodes_df['max_power'][node_index],
-        shs_characteristics=shs_characteristics
-    )
 
 # ---------------PROPERTIES/FEATURES OF NODES --------------#
 
@@ -243,7 +187,7 @@ def are_nodes_connected(node_a, node_b, links_df):
     for index_link, row_link in links_df.iterrows():
         if ((row_link['node_a'] == node_a and row_link['node_b'] == node_b)
                 or (row_link['node_a'] == node_b and row_link['node_b'] == node_a)
-                ):
+            ):
             return True
     return False
 
@@ -456,8 +400,7 @@ def mst_links(nodes_df):
 def nodes_to_disconnect_from_grid(nodes_df,
                                   links_df,
                                   cable_price_per_meter,
-                                  additional_price_for_connection_per_node,
-                                  shs_characteristics):
+                                  additional_price_for_connection_per_node):
     """
     This function computes the nodes that would be worth assigning to a solar
     home system (shs) taking the price of the associated to a grid connection
@@ -488,12 +431,12 @@ def nodes_to_disconnect_from_grid(nodes_df,
     ----------
         nodes_df (pandas.DataFrame):
             Pandas DataFrame containing the labels and coordinates of the nodes under the form:
-                        x_coordinate  y_coordinate   required_capacity  max_power
+                        x_coordinate  y_coordinate   required_capacity  max_power   shs_price
             label
-            a           0.0           0.0             3.0               3.0
-            b           0.0           1.0             6.0               6.0
-            c           1.0           1.0             10.0              200.0
-            d           2.0           0.0             2.0               2.0
+            a           0.0           0.0             3.0               3.0         100
+            b           0.0           1.0             6.0               6.0         200
+            c           1.0           1.0             10.0              200.0       1000
+            d           2.0           0.0             2.0               2.0         50
 
         links_df (pandas.DataFrame):
             Pandas DataFrame containing the links connecting the network.
@@ -510,12 +453,6 @@ def nodes_to_disconnect_from_grid(nodes_df,
             Additional price associated to grid connection (substracted from shs
             price in computation).
 
-        shs_characteristics (pandasz.DataFrame):
-            Dataframe where each row contains the following inforamtions about the shs:
-                'price[$]'
-                'capacity[Wh]'
-                'max_power[W]'
-
     Output
     ------
         type: list
@@ -526,11 +463,8 @@ def nodes_to_disconnect_from_grid(nodes_df,
         return []
     index_of_all_nodes = list(nodes_df.index)
 
-    nodes_shs_price = {node: shs_price_of_node(
-        node,
-        nodes_df=nodes_df,
-        shs_characteristics=shs_characteristics)
-        for node in nodes_df.index}
+    nodes_shs_price = {node: nodes_df['shs_price'][node]
+                       for node in nodes_df.index}
 
     # Create list of links subject to be disconnected to reduce price
     # These links will be identified as the ones larger than the critical

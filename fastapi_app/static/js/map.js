@@ -169,7 +169,9 @@ function zoomAll(mainMap) {
 L.easyButton(
   '<img class="leaflet-touch" src="fastapi_app/static/images/imgClearAll.png">',
   function (btn, map) {
-    clear_node_db();
+    database_initialization(nodes = true, links = true);
+    database_read(nodes_or_links = 'nodes', map_or_export = 'map')
+    database_read(nodes_or_links = 'links', map_or_export = 'map')
     position: "topleft";
   },
   "Clear all nodes from the map"
@@ -217,15 +219,21 @@ var markerPole = new L.Icon({
   iconSize: [16, 16],
 });
 
+var markerShs = new L.Icon({
+  iconUrl: "fastapi_app/static/images/markers/markerShs.png",
+  iconSize: [16, 16],
+});
+
 var legend = L.control({ position: "bottomright" });
 legend.onAdd = function (map) {
   var div = L.DomUtil.create("div", "info legend"),
-    description = ["High Demand", "Medium Demand", "Low Demand", "Pole"],
+    description = ["High Demand", "Medium Demand", "Low Demand", "Pole", "SHS"],
     image = [
       "fastapi_app/static/images/markers/markerHighDemand.png",
       "fastapi_app/static/images/markers/markerMediumDemand.png",
       "fastapi_app/static/images/markers/markerLowDemand.png",
       "fastapi_app/static/images/markers/markerPole.png",
+      "fastapi_app/static/images/markers/markerShs.png",
     ];
 
   // loop through our density intervals and generate a label with a colored square for each interval
@@ -247,60 +255,81 @@ mainMap.on("click", function (e) {
 
   if (document.getElementById("radio_button_nodes_manually").checked) {
     if (document.getElementsByName("radio_button_nodes_manually")[0].checked) {
-      addNodeToDatBase(
+      database_add_manual(
+        {
+          latitude: poplocation.lat,
+          longitude: poplocation.lng,
+          node_type: "consumer",
+          consumer_type: 'household',
+          demand_type: 'high-demand',
+        }
+      );
+      drawMarker(
         poplocation.lat,
         poplocation.lng,
-        0,
-        "high-demand",
-        true,
-        default_household_required_capacity,
-        default_household_max_power
+        "high-demand"
       );
-      drawMarker(poplocation.lat, poplocation.lng, "high-demand");
     }
 
     if (document.getElementsByName("radio_button_nodes_manually")[1].checked) {
-      addNodeToDatBase(
+      database_add_manual(
+        {
+          latitude: poplocation.lat,
+          longitude: poplocation.lng,
+          node_type: "consumer",
+          consumer_type: 'household',
+          demand_type: 'medium-demand',
+        }
+      );
+      drawMarker(
         poplocation.lat,
         poplocation.lng,
-        0,
-        "medium-demand",
-        true,
-        default_household_required_capacity,
-        default_household_max_power
+        "medium-demand"
       );
-      drawMarker(poplocation.lat, poplocation.lng, "medium-demand");
     }
 
     if (document.getElementsByName("radio_button_nodes_manually")[2].checked) {
-      addNodeToDatBase(
+      database_add_manual(
+        {
+          latitude: poplocation.lat,
+          longitude: poplocation.lng,
+          node_type: "consumer",
+          consumer_type: 'household',
+          demand_type: 'low-demand',
+        }
+      );
+      drawMarker(
         poplocation.lat,
         poplocation.lng,
-        0,
-        "low-demand",
-        true,
-        2 * default_household_required_capacity,
-        2 * default_household_max_power
+        "low-demand"
       );
-      drawMarker(poplocation.lat, poplocation.lng, "low-demand");
     }
+
     if (document.getElementsByName("radio_button_nodes_manually")[3].checked) {
-      addNodeToDatBase(
+      database_add_manual(
+        {
+          latitude: poplocation.lat,
+          longitude: poplocation.lng,
+          node_type: "pole",
+          consumer_type: '-',
+          demand_type: '-',
+        }
+      );
+      drawMarker(
         poplocation.lat,
         poplocation.lng,
-        0,
-        "pole",
-        true,
-        2 * default_household_required_capacity,
-        2 * default_household_max_power
+        "pole"
       );
-      drawMarker(poplocation.lat, poplocation.lng, "pole");
     }
   }
 
-  if ((document.getElementById("radio_button_nodes_boundaries").checked) &&
-    ((document.getElementById("button_draw_boundaries_add").innerHTML === "Select") ||
-      (document.getElementById("button_draw_boundaries_remove").innerHTML === "Remove"))) {
+  if (
+    document.getElementById("radio_button_nodes_boundaries").checked &&
+    (document.getElementById("button_draw_boundaries_add").innerHTML ===
+      "Select" ||
+      document.getElementById("button_draw_boundaries_remove").innerHTML ===
+      "Remove")
+  ) {
     siteBoundaries.push([poplocation.lat, poplocation.lng]);
 
     // adding the new solid line to siteBoundaryLines and draw it on the map
@@ -336,6 +365,8 @@ function drawMarker(latitude, longitude, type) {
     icon_type = markerLowDemand;
   } else if (type === "pole") {
     icon_type = markerPole;
+  } else if (type === "shs") {
+    icon_type = markerShs;
   }
   markers.push(
     L.marker([latitude, longitude], { icon: icon_type }).addTo(mainMap)
@@ -349,7 +380,7 @@ function drawLinkOnMap(
   longitude_to,
   color,
   map,
-  weight = 3,
+  weight,
   opacity = 0.5
 ) {
   var pointA = new L.LatLng(latitude_from, longitude_from);
@@ -362,10 +393,13 @@ function drawLinkOnMap(
     opacity: 0.5,
     smoothFactor: 1,
   });
-  lines.push(link_polyline.addTo(map));
+  lines.push(
+    link_polyline.bindTooltip(
+      pointA.distanceTo(pointB).toFixed(2).toString() + " m"
+    ).addTo(map));
 }
 
-function ereaseLinksFromMap(map) {
+function removeLinksFromMap(map) {
   for (line of lines) {
     map.removeLayer(line);
   }
