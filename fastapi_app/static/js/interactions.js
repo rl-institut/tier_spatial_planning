@@ -67,7 +67,6 @@ function database_initialization(nodes, links) {
     xhr.send()
 }
 
-
 // read all nodes/links stored in the *.csv files
 // then push the corresponding icon to the map
 // or return their correcponding json files for exporting the excel file
