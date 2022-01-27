@@ -169,7 +169,9 @@ function zoomAll(mainMap) {
 L.easyButton(
   '<img class="leaflet-touch" src="fastapi_app/static/images/imgClearAll.png">',
   function (btn, map) {
-    clear_node_db();
+    database_initialization(nodes = true, links = true);
+    database_read(nodes_or_links = 'nodes', map_or_export = 'map')
+    database_read(nodes_or_links = 'links', map_or_export = 'map')
     position: "topleft";
   },
   "Clear all nodes from the map"
@@ -253,54 +255,71 @@ mainMap.on("click", function (e) {
 
   if (document.getElementById("radio_button_nodes_manually").checked) {
     if (document.getElementsByName("radio_button_nodes_manually")[0].checked) {
-      addNodeToDatBase(
+      database_add_manual(
+        {
+          latitude: poplocation.lat,
+          longitude: poplocation.lng,
+          node_type: "consumer",
+          consumer_type: 'household',
+          demand_type: 'high-demand',
+        }
+      );
+      drawMarker(
         poplocation.lat,
         poplocation.lng,
-        0,
-        "high-demand",
-        true,
-        default_household_required_capacity,
-        default_household_max_power
+        "high-demand"
       );
-      drawMarker(poplocation.lat, poplocation.lng, "high-demand");
     }
 
     if (document.getElementsByName("radio_button_nodes_manually")[1].checked) {
-      addNodeToDatBase(
+      database_add_manual(
+        {
+          latitude: poplocation.lat,
+          longitude: poplocation.lng,
+          node_type: "consumer",
+          consumer_type: 'household',
+          demand_type: 'medium-demand',
+        }
+      );
+      drawMarker(
         poplocation.lat,
         poplocation.lng,
-        0,
-        "medium-demand",
-        true,
-        default_household_required_capacity,
-        default_household_max_power
+        "medium-demand"
       );
-      drawMarker(poplocation.lat, poplocation.lng, "medium-demand");
     }
 
     if (document.getElementsByName("radio_button_nodes_manually")[2].checked) {
-      addNodeToDatBase(
+      database_add_manual(
+        {
+          latitude: poplocation.lat,
+          longitude: poplocation.lng,
+          node_type: "consumer",
+          consumer_type: 'household',
+          demand_type: 'low-demand',
+        }
+      );
+      drawMarker(
         poplocation.lat,
         poplocation.lng,
-        0,
-        "low-demand",
-        true,
-        2 * default_household_required_capacity,
-        2 * default_household_max_power
+        "low-demand"
       );
-      drawMarker(poplocation.lat, poplocation.lng, "low-demand");
     }
+
     if (document.getElementsByName("radio_button_nodes_manually")[3].checked) {
-      addNodeToDatBase(
+      database_add_manual(
+        {
+          latitude: poplocation.lat,
+          longitude: poplocation.lng,
+          node_type: "pole",
+          consumer_type: '-',
+          demand_type: '-',
+        }
+      );
+      drawMarker(
         poplocation.lat,
         poplocation.lng,
-        0,
-        "pole",
-        true,
-        2 * default_household_required_capacity,
-        2 * default_household_max_power
+        "pole"
       );
-      drawMarker(poplocation.lat, poplocation.lng, "pole");
     }
   }
 
@@ -309,7 +328,7 @@ mainMap.on("click", function (e) {
     (document.getElementById("button_draw_boundaries_add").innerHTML ===
       "Select" ||
       document.getElementById("button_draw_boundaries_remove").innerHTML ===
-        "Remove")
+      "Remove")
   ) {
     siteBoundaries.push([poplocation.lat, poplocation.lng]);
 
@@ -350,9 +369,7 @@ function drawMarker(latitude, longitude, type) {
     icon_type = markerShs;
   }
   markers.push(
-    L.marker([latitude, longitude], { icon: icon_type }).bindTooltip(
-      "type: " + type
-    ).addTo(map)
+    L.marker([latitude, longitude], { icon: icon_type }).addTo(mainMap)
   );
 }
 
@@ -363,7 +380,7 @@ function drawLinkOnMap(
   longitude_to,
   color,
   map,
-  weight = 3,
+  weight,
   opacity = 0.5
 ) {
   var pointA = new L.LatLng(latitude_from, longitude_from);
@@ -382,7 +399,7 @@ function drawLinkOnMap(
     ).addTo(map));
 }
 
-function ereaseLinksFromMap(map) {
+function removeLinksFromMap(map) {
   for (line of lines) {
     map.removeLayer(line);
   }

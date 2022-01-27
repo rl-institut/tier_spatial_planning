@@ -4,7 +4,8 @@ import os
 
 
 def create_empty_nodes_df():
-    """ Creates an empty DataFrame for representing nodes.
+    """ 
+    Creates an empty DataFrame for representing nodes.
 
     Output
     ------
@@ -22,14 +23,16 @@ def create_empty_nodes_df():
             pd.Series([], dtype=np.dtype(float)),
             'node_type':
             pd.Series([], dtype=np.dtype(str)),
-            'type_fixed':
-            pd.Series([], dtype=np.dtype(bool)),
-            'required_capacity':
+            'customer_type':
+            pd.Series([], dtype=np.dtype(str)),
+            'peak_demand':
             pd.Series([], dtype=np.dtype(float)),
-            'max_power':
-            pd.Series([], dtype=np.dtype(float)),
+            'demand_type':
+            pd.Series([], dtype=np.dtype(str)),
             'is_connected':
-            pd.Series([], dtype=np.dtype(bool))
+            pd.Series([], dtype=np.dtype(bool)),
+            'how_added':
+            pd.Series([], dtype=np.dtype(str))
         }
     ).set_index('label')
 
