@@ -381,78 +381,87 @@ async def database_add_remove_automatic(
 @ app.post("/optimize_grid/")
 async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                         background_tasks: BackgroundTasks):
-    # Create GridOptimizer object
+
+    # create GridOptimizer object
     opt = GridOptimizer()
 
-    # getting nodes properties from the CSV file (as a dictionary file)
+    # get nodes from the database (CSV file) as a dictionary
+    # then convert it again to a panda dataframe for simplicity
+    # TODO: check the format of nodes from the database_read()
     nodes = await database_read(nodes_or_links='nodes')
+    nodes = pd.DataFrame.from_dict(nodes)
 
-    # if nodes database is empty, do not perform optimization
+    # if there is no element in the nodes, optimization will be terminated
     if len(nodes) == 0:
         return {
             "code": "success",
-            "message": "empty grid cannot be optimized"
+            "message": "Empty grid cannot be optimized!"
         }
 
-    # extracting nodes properties from the dictionary
-    nodes_properties = pd.DataFrame.from_dict(nodes)
-    nodes_index = nodes_properties.index.astype(int).values.tolist()
-    nodes_latitude = nodes_properties.latitude.values.tolist()
-    nodes_longitude = nodes_properties.longitude.values.tolist()
-    nodes_type = nodes_properties.node_type.values.tolist()
-    nodes_is_connected = nodes_properties.is_connected.values.tolist()
-    nodes_how_added = nodes_properties.how_added.values.tolist()
-
-    # use latitude of the node that is the most west to set the origin of x coordinates
-    ref_latitude = math.radians(min(nodes_latitude))
-    # use latitude of the node that is the most south to set the origin of y coordinates
-    ref_longitude = math.radians(min(nodes_longitude))
-
-    df = pd.read_csv(full_path_nodes)
+    # TODO: why initialization?!
+    # initialite the database (remove contents of the CSV files)
     await database_initialization(nodes=True, links=False)
 
+    # nodes obtained from a previous optimization (e.g., poles)
+    # will not be considered in the grid optimization
     nodes_index_removing = []
-    for node_index in nodes_index:
-        if (nodes_how_added[node_index] == 'optimization'):
+    for node_index in nodes.index:
+        if (nodes.how_added[node_index] == 'optimization'):
             nodes_index_removing.append(node_index)
 
-    database_remove_nodes(nodes=df,
+    database_remove_nodes(nodes=nodes,
                           nodes_index_removing=nodes_index_removing)
 
-    # creating a new "grid" object from the Grid class
-    grid = Grid(cost_pole=optimize_grid_request.cost_pole,
-                cost_connection=optimize_grid_request.cost_connection,
-                price_interpole_cable_per_meter=optimize_grid_request.cost_interpole_cable,
-                price_distribution_cable_per_meter=optimize_grid_request.cost_distribution_cable,
-                default_pole_capacity=optimize_grid_request.max_connection_poles)
+    # create a new "grid" object from the Grid class
+    grid = Grid(
+        capex_pole=optimize_grid_request.cost_pole,
+        capex_connection=optimize_grid_request.cost_connection,
+        capex_interpole=optimize_grid_request.cost_interpole_cable,
+        capex_distribution=optimize_grid_request.cost_distribution_cable,
+        pole_max_connection=optimize_grid_request.max_connection_poles
+    )
 
-    # Make sure that new grid object is empty before adding nodes to it
-    grid.clear_nodes_and_links()
+    # make sure that the new grid object is empty before adding nodes to it
+    grid.clear_nodes()
+    grid.clear_links()
 
-    for node_index in nodes_index:
-        if (nodes_is_connected[node_index]) and (not nodes_type[node_index] == 'pole'):
+    # exclude solar-home-systems and poles from the grid optimization
+    for node_index in nodes.index:
+        if (nodes.is_connected[node_index]) and (not nodes.node_type[node_index] == 'pole'):
 
-            # converting (lat,long) coordinates to (x,y) for the optimizer
-            x, y = conv.xy_coordinates_from_latitude_longitude(
-                latitude=nodes_latitude[node_index],
-                longitude=nodes_longitude[node_index],
-                ref_latitude=ref_latitude,
-                ref_longitude=ref_longitude)
+            # add all consumers which are not served by solar-home-systems
+            grid.add_node(
+                label=str(node_index),
+                longitude=nodes.longitude[node_index],
+                latitude=nodes.latitude[node_index],
+                node_type=nodes.node_type[node_index],
+                is_connected=nodes.is_connected[node_index]
+            )
 
-            grid.add_node(label=str(node_index),
-                          x_coordinate=x,
-                          y_coordinate=y,
-                          node_type=nodes_type[node_index])
+    # convert all (long,lat) coordinates to (x,y) coordinates and update
+    # the Grid object, which is necessary for the GridOptimizer
+    grid.convert_lonlat_xy()
 
-    if grid.get_default_pole_capacity() == 0:
+    # in case the grid contains 'poles' from the previous optimization
+    # they must be removed, becasue the grid_optimizer will calculate
+    # new locations for poles considering the newly added nodes
+    grid.clear_poles()
+
+    # calculate the minimum number of poles based on the
+    # maximum number of connectins at each pole
+    if grid.pole_max_connection == 0:
         min_number_of_poles = 1
     else:
         min_number_of_poles = (
-            int(np.ceil(grid.get_nodes().shape[0]/(1 * grid.get_default_pole_capacity())))
+            int(np.ceil(grid.nodes.shape[0]/(grid.pole_max_connection)))
         )
 
-    number_of_poles = max(opt.get_expected_pole_number_from_k_means(grid=grid),
-                          min_number_of_poles)
+    # obtain the optimal number of poles by increasing the minimum number of poles
+    # and each time applying the kmeans clustering algorithm and minimum spanning tree
+    number_of_poles = opt.find_opt_number_of_poles(
+        grid=grid,
+        min_n_clusters=min_number_of_poles
+    )
 
     number_of_relaxation_steps_nr = optimize_grid_request.number_of_relaxation_steps_nr
 
@@ -461,7 +470,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                         number_of_relaxation_steps=number_of_relaxation_steps_nr,
                         locate_new_poles_freely=True,
                         first_guess_strategy='random',
-                        save_output=True,
+                        save_output=False,
                         number_of_hill_climbers_runs=0)
 
     # inserting "poles" in the node database
@@ -497,7 +506,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
 
     # storing the newly obtained "links" from the optimization solution to the CSV file
     links = defaultdict(list)
-    for index, row in grid.get_links().iterrows():
+    for index, row in grid.links().iterrows():
         x_from = grid.get_nodes().loc[row['from']]['x_coordinate']
         y_from = grid.get_nodes().loc[row['from']]['y_coordinate']
 
@@ -543,9 +552,9 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest):
         }
 
     # use latitude of the node that is the most west to set origin of x coordinates
-    ref_latitude = math.radians(min([node[1] for node in nodes]))
+    ref_latitude = min([node[1] for node in nodes])
     # use latitude of the node that is the most south to set origin of y coordinates
-    ref_longitude = math.radians(min([node[2] for node in nodes]))
+    ref_longitude = min([node[2] for node in nodes])
 
     nodes_df = shs_ident.create_nodes_df()
 

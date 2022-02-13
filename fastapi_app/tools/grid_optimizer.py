@@ -2,19 +2,15 @@
 import numpy as np
 import pandas as pd
 import random
-import math
 import os
 import copy
 import time
-import statistics
 import json
+from k_means_constrained import KMeansConstrained
 from munkres import Munkres
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import minimum_spanning_tree
-from pulp import LpMinimize, LpProblem, LpVariable
 from sklearn.datasets import make_blobs
-from sklearn.cluster import KMeans
-from multiprocessing import Pool
 
 from fastapi_app.tools.io import make_folder
 from fastapi_app.tools.grids import Grid
@@ -22,252 +18,92 @@ from fastapi_app.tools.grids import Grid
 
 class GridOptimizer:
     """
-    Object containing methods for optimizing Grid object as well
-    as attributes containing all default values for the optimization
-    method's parameters.
+    This class includes:
+        - methods for optimizing the "grid" object
+        - attributes containing all default values for the optimization parameters.
 
     Attributes
     ----------
-    mst_algorithm_linking_poles (str):
-        Name of the minimum spanning tree algorithm used for connecting the
-        poles.
-
-    sa_runtime (float):
-        Simulated Annealing (SA) parameter.
-        Algorithm is interupted at the end of the temperature step if run time
-        exeeds runtime.
-
-    sa_omega (float):
-        Simulated Annealing (SA) parameter.
-        Parameter used to determine the staring temperature in the case where
-        the sa_starting_temperature value is "auto".
-        sa_omega determine the value of the starting temperature t_0
-        using the following expression
-        t_0 = (avg_price - price_k_means) * sa_omega
-        where avg_price is the average price of the randomly generated
-        configurations and price_k_means is the price of the configuration
-        obatined using the k_means clustering method.
-
-    sa_starting_temperature (float):
-        This parameter specifies the starting temperature of the SA.
-        If parameter is 'auto', an initial temperature is computed using
-        the omega paramter as explained in the Notes of the method
-        description.
-
-
-    sa_ratio_temperatue_at_two_third_of_steps (float):
-        The temperature of the simulated annealing follows a decaying
-        exponential. The ratio_temperatue_at_two_third_of_steps determines
-        the ratio of the starting temperature and the temperature at two third
-        of the steps.
-
-    sa_flip_rep (int):
-        Simulated Annealing (SA) parameter.
-        Number of flip repetitions per temperature step.
-
-    sa_swap_rep (int):
-        Simulated Annealing (SA) parameter.
-        Number of swap repetitions per temperature step.
-
-    sa_swap_option (str):
-        Simulated Annealing (SA) parameter.
-        The swap_option parameter defines how consumers
-        should be selected for swaps
-        Possible values are:
-            -> 'random': picks consumer uniformly at random
-            -> 'nearest_neighbour': picks closest consumer to selected
-                                    poles
-
-    ga_number_of_generations (int):
-        Genetic Algorithm (GA) parameter.
-        Determines how many generations the GA should run for.
-
-    ga_population_size (int):
-        Genetic Algorithm (GA) parameter.
-        Determines the number of trial solutions in each iteration.
-
-    ga_mutation_probability (float):
-        Genetic Algorithm (GA) parameter.
-        Determines the chance of each gene in each individual solution
-        to be replaced by a random value.
-        Value must be between 0 and 1.
-
-    ga_mutation_type_ratio (float):
-        Genetic Algorithm (GA) parameter.
-        Determines the average ratio of mutations that consist on replacing
-        a pole over mutations adding or removing a pole.
-        For mutation_type_ratio = 0.5, on average, half of the mutation
-        selected will be replacing mutations. A forth of the mutation will
-        corespond to adding a pole and the other forth to removing a pole.
-        For mutation_type_ratio = 1, all the mutations are mutations
-        replacing pole indices.
-        Value must be between 0 and 1.
-
-    ga_number_of_elites (int):
-        Genetic Algorithm (GA) parameter.
-        Determines the number of elites in the population.
-
-    ga_number_of_survivors (int):
-        Genetic Algorithm (GA) parameter.
-        Determines the number of chromosomes that are not elites and will
-        be copied to the next generation
-
-    ga_crossover_type (str):
-        Genetic Algorithm (GA) parameter.
-        Determines the type of crossover (i.e. how the genes are transmitted
-        from the parents to the offsprings)
-        possibilities are:
-            - 'uniform': genes are shuffled are distributed among the
-                         offsprings
-            - 'neighbor_pair': pairs of poles from each parent are created in
-                               such a way that each poles appear in one pair and
-                               that the distance bewteen poles of all pairs is
-                               minimized
-
-    ga_number_of_processors_for_parallelization (int):
-        Genetic Algorithm (GA) parameter.
-        Determines how many processors should be used in parallel for the
-        concerned of the algorithm. The multiprocessing is one using
-        the Pool function from the multiprocessing library.
-
-    ga_parent_selection (str):
-        Genetic Algorithm (GA) parameter.
-        Determines how parent chromosomes are being picked.
-        possibilites are:
-            - 'linear_rank_selection': parent with rank k is picked with
-               probability N-k+1)/S where N is the population size and S the
-               sum of the first N natural numbers
-
-    ga_initialization_strategy (float)
-        Genetic Algorithm (GA) parameter.
-        Determines how the instances of the initial population are
-        generated.
-
-        Options are:
-            - 'random':
-                Initial population is generated at random except for first
-                chromosome that corresponds to the configuration of the input
-                grid if applicable.
-            - 'NR':
-                The chromosomes of the initial population are obtained calling
-                the nr_optimization method on randomly generated initial grids.
-
-
-    ga_delta (float):
-        Genetic Algorithm (GA) parameter.
-        This patameter is used to obtain the value of the standard deviation
-        considered for determining the number of poles in the chromosomes of
-        the initial population. The standard deviation sigma is computed as
-        follow:  sigma = n* / delta
-                 where n* is the expected number of poles in the network
-                 computed using the method
-                 get_expected_pole_number_from_k_means().
-
-    ga_max_runtime (int):
-        Genetic Algorithm (GA) parameter.
-        Maximum allowed run time in seconds for the algo. Algorithm is
-        interupted at the end of generation if run time exeeds max_run_time.
+    ???
     """
 
-    def __init__(self,
-                 mst_algorithm_linking_poles="Kruskal",
-                 sa_omega=0.2,
-                 sa_starting_temperature="auto",
-                 sa_ratio_temperatue_at_two_third_of_steps=1/20,
-                 sa_runtime=1000,
-                 sa_flip_rep=1,
-                 sa_swap_rep=3,
-                 sa_swap_option='random',
-                 ga_number_of_generations=30,
-                 ga_population_size=20,
-                 ga_mutation_probability=0.2,
-                 ga_mutation_type_ratio=0.75,
-                 ga_number_of_elites=1,
-                 ga_number_of_survivors=0,
-                 ga_crossover_type="neighbor_pair",
-                 ga_number_of_processors_for_parallelization=8,
-                 ga_parent_selection="linear_rank_selection",
-                 ga_initialization_strategy="random",
-                 ga_delta=5,
-                 ga_max_runtime=1200,
-                 fps=3):
-
-        self.mst_algorithm_linking_poles = mst_algorithm_linking_poles
-        self.sa_runtime = sa_runtime
-        self.sa_flip_rep = sa_flip_rep
-        self.sa_swap_rep = sa_swap_rep
-        self.sa_swap_option = sa_swap_option
-        self.sa_omega = sa_omega
-        self.sa_starting_temperature = sa_starting_temperature
-        self.sa_ratio_temperatue_at_two_third_of_steps = (
-            sa_ratio_temperatue_at_two_third_of_steps
-        )
-        self.ga_number_of_generations = ga_number_of_generations
-        self.ga_population_size = ga_population_size
-        self.ga_mutation_probability = ga_mutation_probability
-        self.ga_mutation_type_ratio = ga_mutation_type_ratio
-        self.ga_number_of_elites = ga_number_of_elites
-        self.ga_number_of_survivors = ga_number_of_survivors
-        self.ga_crossover_type = ga_crossover_type
-        self.ga_number_of_processors_for_parallelization = (
-            ga_number_of_processors_for_parallelization)
-        self.ga_parent_selection = ga_parent_selection
-        self.ga_initialization_strategy = ga_initialization_strategy
-        self.ga_delta = ga_delta
-        self.ga_max_runtime = ga_max_runtime
-        self.fps = fps
+    def __init__(self, mst_algorithm="Kruskal"):
+        """
+        Initialize the grid optimizer object
+        """
+        self.mst_algorithm = mst_algorithm
 
     # ------------ CONNECT NODES USING TREE-STAR SHAPE ------------#
 
-    def connect_nodes(self, grid: Grid):
+    def connect_grid_elements(self, grid: Grid):
         """
-        This method create links between the nodes of the grid:
-        it creates a link bewteen each consumer and the nearest pole
-        (or using an allocation algorithm for capacitated poles) and
-        connect all pole together using Prim's minimum spanning tree
-        method.
+        This method create links between:
+            - each consumer and the nearest pole
+            - all poles together based on the specified algorithm for minimum spanning tree
 
         Parameters
         ----------
         grid (~grids.Grid):
-            Grid object
+            grid object
         """
 
-        # First, clear links dataframe
+        # ===== FIRST PART: CONNECT CONSUMERS TO POLES =====
+
+        # first, all links of the grid must be deleted
         grid.clear_links()
 
-        if grid.get_poles()['allocation_capacity'].sum() == 0:
-            self.connect_consumer_to_nereast_poles(grid)
-        else:
-            if not grid.is_pole_capacity_constraint_too_strong():
-                self.connect_consumer_to_capacitated_poles(grid)
-            else:
-                raise Warning(
-                    f"allocation capacity limit doesn't allow to connect nodes")
-        self.connect_poles(grid)
+        # calculate the number of clusters and their labels obtained from kmeans clustering
+        n_clusters = grid.poles().shape[0]
+        cluster_labels = grid.poles()['cluster_label']
+
+        # create links between each node and the corresponding centroid
+        for cluster in range(n_clusters):
+            # first filter the nodes and only select those with cluster labels equal to 'cluster'
+            filtered_nodes = grid.nodes[grid.nodes['cluster_label'] == cluster_labels[cluster]]
+
+            # then obtain the label of the pole which is in this cluster (as the center)
+            pole_label = filtered_nodes.index[filtered_nodes['node_type'] == 'pole'][0]
+
+            for node_label in filtered_nodes.index:
+                # adding consumers
+                if node_label != pole_label:
+                    grid.add_links(
+                        label_node_from=pole_label, label_node_to=node_label)
+
+        # ===== SECOND PART: CONNECT POLES TO EACH OTHER =====
+
+        # get all links from the sparse matrix obtained using the minimum spanning tree
+        links = np.argwhere(grid.grid_mst != 0)
+
+        # connect the poles considering the followings:
+        #   + the number of rows of the 'links' reveals the number of connections
+        #   + (x,y) of each nonzero element of the 'links' correspond to the (pole_from, pole_to) labels
+        for link in range(links.shape[0]):
+            label_pole_from = grid.poles().index[links[link, 0]]
+            label_pole_to = grid.poles().index[links[link, 1]]
+            grid.add_links(label_node_from=label_pole_from, label_node_to=label_pole_to)
 
     # ------------ MINIMUM SPANNING TREE ALGORITHM ------------ #
 
-    def connect_poles(self, grid: Grid):
+    def create_minimum_spanning_tree(self, grid: Grid):
         """
-        This method creates links between all poles following
-        Prim's or Kruskal minimum spanning tree method depending on the
-        mst_algorithm value.
+        Creates links between all poles using 'Prims' or 'Kruskal' algorithms
+        for obtaining the minimum spanning tree.
 
         Parameters
         ----------
         grid (~grids.Grid):
-            Grid object
+            grid object
         """
 
-        if self.mst_algorithm_linking_poles == "Prims":
-            self.connect_poles_using_MST_Prims(grid)
-        elif self.mst_algorithm_linking_poles == "Kruskal":
-            self.connect_poles_using_MST_Kruskal(grid)
+        if self.mst_algorithm == "Prims":
+            self.mst_using_prims(grid)
+        elif self.mst_algorithm == "Kruskal":
+            self.mst_using_kruskal(grid)
         else:
             raise Exception("Invalid value provided for mst_algorithm.")
 
-    def connect_poles_using_MST_Prims(self, grid: Grid):
+    def mst_using_prims(self, grid: Grid):
         """
         This  method creates links between all poles following
         Prim's minimum spanning tree method. The idea goes as follow:
@@ -297,8 +133,7 @@ class GridOptimizer:
             if poles[- (poles['in_forest'])].shape[0] > 0:
                 # First, pick one pole and add it to the forest by
                 # setting its value in 'in_forest' to True
-                index_first_forest_pole =\
-                    poles[- poles['in_forest']].index[0]
+                index_first_forest_pole = poles[- poles['in_forest']].index[0]
                 poles.at[index_first_forest_pole, 'in_forest'] = True
 
                 # while there are poles not connected to the forest,
@@ -317,8 +152,7 @@ class GridOptimizer:
                     index_closest_pole_in_forest = (
                         poles[poles['in_forest']].index[0]
                     )
-                    index_closest_pole_to_forest =\
-                        poles[- poles['in_forest']].index[0]
+                    index_closest_pole_to_forest = poles[- poles['in_forest']].index[0]
 
                     # Iterate over all poles within the forest and over all the
                     # ones outside of the forest and find shortest distance
@@ -336,58 +170,45 @@ class GridOptimizer:
                                 index_closest_pole_in_forest = (
                                     index_pole_in_forest
                                 )
-                                index_closest_pole_to_forest =\
-                                    index_pole_outside_forest
-                                shortest_dist_to_pole_outside_forest =\
-                                    grid.distance_between_nodes(
-                                        index_closest_pole_in_forest,
-                                        index_closest_pole_to_forest)
+                                index_closest_pole_to_forest = index_pole_outside_forest
+                                shortest_dist_to_pole_outside_forest = grid.distance_between_nodes(
+                                    index_closest_pole_in_forest,
+                                    index_closest_pole_to_forest)
                     # create a link between pole pair
-                    grid.add_link(index_closest_pole_in_forest,
-                                  index_closest_pole_to_forest)
+                    grid.add_links(index_closest_pole_in_forest,
+                                   index_closest_pole_to_forest)
                     poles.at[index_closest_pole_to_forest, 'in_forest'] = True
                     count += 1
 
-    def connect_poles_using_MST_Kruskal(self, grid: Grid):
+    def mst_using_kruskal(self, grid: Grid):
         """
-        This  method creates links between all poles following
-        Kruskal's minimum spanning tree method from scpicy.sparse.csgraph.
+        Creates links between all poles using the Kruskal's algorithm for
+        the minimum spanning tree method from scpicy.sparse.csgraph.
 
         Parameters
         ----------
         grid (~grids.Grid):
-            Grid object whose poles shall be connected
+            grid object
         """
 
-        # iterate over all segments and connect poles using MST
-        for segment in grid.get_poles()['segment'].unique():
-            poles = grid.get_poles()[grid.get_poles()['segment'] == segment]
+        # total number of poles (i.e., clusters)
+        poles = grid.poles()
+        n_poles = poles.shape[0]
 
-            # configure input matrix for calling csr_matrix function
-            X = np.zeros((poles.shape[0], poles.shape[0]))
-            for i in range(poles.shape[0]):
-                for j in range(poles.shape[0]):
-                    if i > j:
-                        index_node_i = poles.index[i]
-                        index_node_j = poles.index[j]
+        # generate all possible edges between each pair of poles
+        graph_matrix = np.zeros((n_poles, n_poles))
+        for i in range(n_poles):
+            for j in range(n_poles):
+                # since the graph does not have a direction, only the upper part of the matrix must be flled
+                if j > i:
+                    graph_matrix[i, j] = grid.distance_between_nodes(
+                        label_node_1=poles.index[i],
+                        label_node_2=poles.index[j]
+                    )
 
-                        X[j][i] = grid.distance_between_nodes(index_node_i,
-                                                              index_node_j)
-            M = csr_matrix(X)
-
-            # run minimum_spanning_tree_function
-            Tcsr = minimum_spanning_tree(M)
-            A = Tcsr.toarray().astype(float)
-
-            # Read output matrix and create corresponding links to grid
-            for i in range(len(poles.index)):
-                for j in range(len(poles.index)):
-                    if i > j:
-                        if A[j][i] > 0:
-                            index_node_i = poles.index[i]
-                            index_node_j = poles.index[j]
-
-                            grid.add_link(index_node_i, index_node_j)
+        # obtain the optimal links between all poles (grid_mst) and copy it in the grid object
+        grid_mst = minimum_spanning_tree(graph_matrix)
+        grid.grid_mst = grid_mst
 
     # ------------------- ALLOCATION ALGORITHMS -------------------#
 
@@ -407,17 +228,15 @@ class GridOptimizer:
             # Iterate over all consumers and connect each of them
             # to the closest pole or powerhub in the segment
             for index_node, row_node in\
-                    grid.get_consumers()[
-                        grid.get_consumers()['segment']
+                    grid.consumers()[
+                        grid.consumers()['segment']
                         == segment].iterrows():
                 # This variable is a temporary variable that is used to find
                 # the nearest meter pole to a node
-                index_closest_pole =\
-                    grid.get_poles()[grid.get_poles()['segment']
-                                     == segment].index[0]
-                shortest_dist_to_pole =\
-                    grid.distance_between_nodes(index_node,
-                                                index_closest_pole)
+                index_closest_pole = grid.get_poles()[grid.get_poles()['segment']
+                                                      == segment].index[0]
+                shortest_dist_to_pole = grid.distance_between_nodes(index_node,
+                                                                    index_closest_pole)
                 for index_pole, row_pole in\
                         grid.get_poles()[grid.get_poles()['segment']
                                          == segment].iterrows():
@@ -425,12 +244,11 @@ class GridOptimizer:
                     # distance to it is
                     if grid.distance_between_nodes(index_node, index_pole)\
                             < shortest_dist_to_pole:
-                        shortest_dist_to_pole =\
-                            grid.distance_between_nodes(index_node,
-                                                        index_pole)
+                        shortest_dist_to_pole = grid.distance_between_nodes(index_node,
+                                                                            index_pole)
                         index_closest_pole = index_pole
                 # Finally add the link to the grid
-                grid.add_link(index_node, index_closest_pole)
+                grid.add_links(index_node, index_closest_pole)
 
     def connect_consumer_to_capacitated_poles(self, grid: Grid):
         """
@@ -449,8 +267,8 @@ class GridOptimizer:
         for segment in grid.get_poles()['segment'].unique():
             poles_in_segment = grid.get_poles()[grid.get_poles()['segment']
                                                 == segment]
-            consumers_in_segment = grid.get_consumers()[
-                grid.get_consumers()['segment']
+            consumers_in_segment = grid.consumers()[
+                grid.consumers()['segment']
                 == segment]
             num_consumers = consumers_in_segment.shape[0]
             segment_pole_capacity = grid.get_segment_pole_capacity(segment)
@@ -486,7 +304,7 @@ class GridOptimizer:
                 # Add corresponding links to the grid
                 for x in indices:
                     if x[1] < consumers_in_segment.shape[0]:
-                        grid.add_link(
+                        grid.add_links(
                             index_list[x[0]],
                             consumers_in_segment.index[int(x[1])])
 
@@ -512,15 +330,15 @@ class GridOptimizer:
             index (label) of the segment to be set for the nodes.
 
         """
-        for index_neighbour in grid.get_links()[(grid.get_links()['from']
-                                                 == index)]['to']:
+        for index_neighbour in grid.links()[(grid.links()['from']
+                                             == index)]['to']:
             if not grid.get_nodes()['segment'][index_neighbour] == segment:
                 grid.set_segment(index_neighbour, segment)
                 self.propagate_segment_to_neighbours(grid,
                                                      index_neighbour,
                                                      segment)
-        for index_neighbour in grid.get_links()[(grid.get_links()['to']
-                                                 == index)]['from']:
+        for index_neighbour in grid.links()[(grid.links()['to']
+                                             == index)]['from']:
             if not grid.get_nodes()['segment'][index_neighbour] == segment:
                 grid.set_segment(index_neighbour, segment)
                 self.propagate_segment_to_neighbours(grid,
@@ -577,20 +395,20 @@ class GridOptimizer:
         # Connect the nodes using MST
         grid.clear_links()
 
-        self.connect_poles(grid)
+        self.create_minimum_spanning_tree(grid)
 
         # Create list containing links index sorted by link's distance
         index_link_sorted_by_distance = [
-            index for index in grid.get_links()[
+            index for index in grid.links()[
                 'distance'
-            ].nlargest(grid.get_links().shape[0]).index]
+            ].nlargest(grid.links().shape[0]).index]
         # Try to split the segment removing the longest link and see if
         # resulting sub-segments meet the minimum size criterion, if not,
         # try with next links (the ones just smaller) until criterion meet
 
         for link in index_link_sorted_by_distance:
-            index_node_from = grid.get_links()['from'][link]
-            index_node_to = grid.get_links()['to'][link]
+            index_node_from = grid.links()['from'][link]
+            index_node_to = grid.links()['to'][link]
             old_segment = grid.get_nodes()['segment'][index_node_from]
             segment_1 = grid.get_nodes()['segment'][index_node_from]
             segment_2 = grid.get_nodes()['segment'][index_node_to] + '_2'
@@ -621,123 +439,108 @@ class GridOptimizer:
             grid.set_segment(index, segment_dict[index])
 
     #  --------------------- K-MEANS CLUSTERING ---------------------#
-    def k_means_cluster_centers(self, grid: Grid, k_number_of_clusters):
+    def kmeans_clustering(self, grid: Grid, n_clusters: int):
         """
-        This method uses a k-means clustering algorithm from sklearn
-        to find the coordinates of the point corresponding to the
-        center of the cluster centers on a grid object.
+        Uses a k-means clustering algorithm and returns the coordinates of the centroids.
 
         Pamameters
         ----------
             grid (~grids.Grid):
-                Grid object
-            k_number_of_cluster (int):
-                Defines the k-value for the k-means clustering.
-                It gives the number of cluster to be considered.
-        Output
+                grid object
+            n_cluster (int):
+                number of clusters (i.e., k-value) for the k-means clustering algorithm
+
+        Return
         ------
-            numpy.ndarray
-            Array containing the coordinates of the cluster centers.
-            Suppose there are two cluster with centers at respectively
-            coordinates (x_1, y_1) and (x_2, y_2), the output arroy would
-            look like
-                array([
-                    [x_1, y_1],
-                    [x_2 , y_2]
-                    ])
+            coord_centroids: numpy.ndarray
+                A numpy array containing the coordinates of the cluster centeroids.
+                Suppose there are two cluster with centers at (x1, y1) & (x2, y2),
+                then the output arroy would look like:
+                    array([
+                        [x1, y1],
+                        [x2 , y2]
+                        ])
         """
 
-        node_coord = []
+        # first, all poles must be removed from the nodes list
+        grid.clear_poles()
 
-        for node, row in grid.get_nodes().iterrows():
-            node_coord.append([row['x_coordinate'], row['y_coordinate']])
+        # gets (x,y) coordinates of all nodes in the grid
+        nodes_coord = np.array([
+            [grid.nodes.x.loc[index], grid.nodes.y.loc[index]]
+            for index in grid.nodes.index]
+        )
 
-        features, true_labels = make_blobs(
-            n_samples=200,
-            centers=3,
-            cluster_std=2.75,
-            random_state=42)
+        # features, true_labels = make_blobs(
+        #    n_samples=200,
+        #    centers=3,
+        #    cluster_std=2.75,
+        #    random_state=42)
 
-        features = node_coord
-        kmeans = KMeans(
-            init="random",
-            n_clusters=k_number_of_clusters,
+        # features = coord_nodes
+
+        # call kmeans clustering with constraints (min and max number of members in each cluster )
+        kmeans = KMeansConstrained(
+            n_clusters=n_clusters,
+            init='k-means++',  # 'k-means++' or 'random
             n_init=10,
             max_iter=300,
-            random_state=42)
+            tol=1e-4,
+            size_min=0,
+            size_max=grid.pole_max_connection,
+            random_state=0
+        )
 
-        kmeans.fit(features)
+        # fit clusters to the data
+        kmeans.fit(nodes_coord)
 
-        return kmeans.cluster_centers_
+        # coordinates of the centroids of the clusters
+        centroids_coord = kmeans.cluster_centers_
 
-    def set_k_means_configuration(self, grid: Grid, number_of_poles):
-        """
-        This method modifies the grid given as input and set it's nodes
-        so that the pole location correspond to the clostest node to the
-        centers of the k-means clustering algorithm where k corresponds to
-        number_of_poles.
-
-        Parameter
-        ---------
-        grid (~grids.Grid):
-            Grid the method is considering for computing the price.
-
-        number_of_poles (int):
-            Number of poles/clusters to be considered for the k-means
-            algorithm
-        """
-
-        # Create copy of grid in order not to modify grid
-        # in case function is interrupted
-        grid.set_all_node_type_to_consumers()
-        grid_copy = copy.deepcopy(grid)
-        centroids = self.k_means_cluster_centers(
-            grid,
-            k_number_of_clusters=number_of_poles)
-        distance_matrix = []
+        # add the obtained centroids as poles to the grid
         counter = 0
-        for i in range(number_of_poles):
-            centroid_label = f"v{counter}"
-            grid_copy.add_node(
-                label=centroid_label,
-                x_coordinate=centroids[i][0],
-                y_coordinate=centroids[i][1],
-                node_type="centroid")
-            distance_matrix.append(
-                [grid_copy.distance_between_nodes(
-                    centroid_label,
-                    node) for node in grid.get_consumers().index])
+        for i in range(n_clusters):
+            centroids_label = f'p-{counter}'
+            grid.add_node(
+                label=centroids_label,
+                x=centroids_coord[i, 0],
+                y=centroids_coord[i, 1],
+                node_type='pole',
+                cluster_label=counter
+            )
             counter += 1
-        # Use Munkres to solve allocation problem
-        munkres_sol = Munkres()
-        indices = munkres_sol.compute(distance_matrix)
 
-        # Save label of nodes that are the clostest to the centroids
-        label_nearest = [grid.get_consumers().index[index[1]]
-                         for index in indices]
-        # Set selected nodes to poles
-        for label in label_nearest:
-            grid.set_node_type(label, "pole")
-        if not (grid.is_pole_capacity_constraint_too_strong()):
-            self.connect_nodes(grid)
+        # compute (lon,lat) coordinates for the poles
+        grid.convert_lonlat_xy(inverse=True)
 
-    def get_expected_pole_number_from_k_means(self, grid: Grid):
+        # connect different elements of the grid
+        #   + consumers to the nearest poles
+        #   + poles together
+
+        # this parameter shows the label of the associated cluster to each node
+        nodes_cluster_labels = kmeans.predict(nodes_coord)
+        for node_label in grid.consumers().index:
+            grid.nodes.cluster_label.loc[node_label] = nodes_cluster_labels[int(node_label)]
+
+    def find_opt_number_of_poles(self, grid: Grid, min_n_clusters: int):
         """
-        This method computes the grid price of the configuration
-        obtained using the k-means clustering algorithm from nr_optimization
-        for different number of poles. The method returns the
-        number of poles corresponding to the least price.
+        Computes the cost of grid based on the configuration obtained from
+        the k-means clustering algorithm for different numbers of poles, and
+        returns the number of poles corresponding to the lowest cost.
 
         Parameters
         ----------
         grid (~grids.Grid):
-            Grid the method considers for computing the price.
+            'grid' object which was defined before
+        min_n_clusters: int
+            the minimum number of clusters required for the grid to satisfy
+            the maximum number of pole connections criteria
 
-        Output
+        Return
         ------
-        type: float
-            The method returns a float corresponding to the expected number
-            of poles minimizing the grid price.
+        number_of_poles: int
+            the number of polse corresponding to the minimum cost of the grid
+
 
         Notes
         -----
@@ -748,105 +551,91 @@ class GridOptimizer:
         stop 3 steps after the last minimum found.
         """
 
-        # make a copy of grid and perform changes and grid copy
-        grid_copy = copy.deepcopy(grid)
+        # make a copy of the grid and perform changes so that the grid remains unchanged
+        # grid_copy = copy.deepcopy(grid)
 
-        # Set all node types to consumer
-        for node_with_fixed_type in grid_copy.get_nodes().index:
-            grid_copy.set_type_fixed(node_with_fixed_type, False)
-        grid_copy.set_all_node_type_to_consumers()
+        # in case the grid contains 'poles' from the previous optimization
+        # they must be removed, becasue the grid_optimizer will calculate
+        # new locations for poles considering the newly added nodes
+        # for node_with_fixed_type in grid_copy.get_nodes().index:
+        #    grid_copy.set_type_fixed(node_with_fixed_type, False)
+        # grid_copy.set_all_node_type_to_consumers()
 
-        price_per_number_pole_df = pd.DataFrame()
+        # a pandas dataframe representing the grid costs for different configurations
+        grid_costs = pd.DataFrame()
 
-        # start computing the price starting with a number of poles
-        # corresponding to a fifteenth of the number of nodes in the grid.
-        num_nodes = grid_copy.get_nodes().shape[0]
+        # start computing the grid costs for each case
+        #   + starting number of poles: minimum number of required poles
+        number_of_nodes = grid.nodes.shape[0]
 
-        self.set_k_means_configuration(
-            grid_copy,
-            min(grid.get_nodes().shape[0],
-                max(1,
-                    int(num_nodes / 10)
-                    )
-                )
+        # obtain the location of poles using kmeans clustering method
+        self.kmeans_clustering(
+            grid=grid,
+            n_clusters=min_n_clusters
         )
-        # initialize DataFrame to store number of poles and according price
-        price_per_number_pole_df = pd.DataFrame({"#poles": [],
-                                                 "price": []})
-        price_per_number_pole_df = price_per_number_pole_df.set_index("#poles")
 
-        price_per_number_pole_df.loc[
-            f"{grid_copy.get_poles().shape[0]}"] = grid_copy.price()
+        # create the minimum spanning tree to obtain the optimal links between poles
+        self.create_minimum_spanning_tree(grid)
 
-        # Create variable that is used to compare price corresponding to
-        # different number of poles
-        tmp_price = grid_copy.price()
+        # connect all links in the grid based on the previous calculations
+        self.connect_grid_elements(grid)
 
-        # initialize counter to limit exploration of solution space to range
-        # and avoid exploring number of poles for increasing prices
+        # after the kmeans clustering algorithm, the  number of poles is obtained
+        number_of_poles = grid.poles().shape[0]
+
+        # initialize dataframe to store number of poles and corresponding costs
+        grid_costs = pd.DataFrame({'poles': [],
+                                   'cost': []}).set_index('poles')
+
+        # put the first row of this dataframe
+        grid_costs.loc[number_of_poles] = grid.cost()
+
+        # create variable that is used to compare cost of the grid
+        # corresponding to different number of poles
+        compare_cost = grid_costs.cost.min()
+
+        # initialize counter and iteration numbers to limit exploration of solution space
+        # and to stop searching when costs are increasing after n steps (n = stop_counter)
         counter = 0
-
-        # explore range with decreasing pole number and stop 3 steps after last
-        # minimum found
         iteration = 0
+        stop_counter = 3
+
         while (
-            (grid_copy.price() <= tmp_price or counter < 3)
-            and (grid_copy.get_poles().shape[0] > 1)
-                and (iteration < num_nodes)):
+                ((grid.cost() >= compare_cost) or (counter < stop_counter)) and
+                (number_of_poles < int(number_of_nodes*0.8)) and
+                (iteration < number_of_nodes)
+        ):
             iteration += 1
-            tmp_price = grid_copy.price()
-            number_of_poles = grid_copy.get_poles().shape[0] - 1
 
-            self.set_k_means_configuration(grid_copy, number_of_poles)
+            # increase the number of poles and let the kmeans clustering algorithm re-calculate
+            # all new locations for poles, and the minimum spanning tree find the new interpole links
+            number_of_poles += 1
+            self.kmeans_clustering(grid=grid, n_clusters=number_of_poles)
 
-            price_per_number_pole_df.loc[
-                f"{grid_copy.get_poles().shape[0]}"] = grid_copy.price()
+            # create the minimum spanning tree to obtain the optimal links between poles
+            self.create_minimum_spanning_tree(grid)
 
-            if grid_copy.price() >= tmp_price:
+            # connect all links in the grid based on the previous calculations
+            self.connect_grid_elements(grid)
+
+            # obtain the new cost for the new configuration of the grid
+            grid_costs.loc[number_of_poles] = grid.cost()
+
+            # if grid cost increases, the counter will also increase
+            if grid.cost() >= compare_cost:
                 counter += 1
             else:
                 counter = 0
 
-        # identify number of pole corresponding to lowest price and explore
-        # prices for higher number of poles is a similar fashion
-        min_price = price_per_number_pole_df['price'].min()
+            compare_cost = grid_costs.cost.min()
 
-        min_index = price_per_number_pole_df[
-            price_per_number_pole_df['price'] == min_price].index[0]
+        # update the grid object based on the optimum number of the poles
+        opt_number_of_poles = int(grid_costs.index[np.argmin(grid_costs)])
+        self.kmeans_clustering(grid=grid, n_clusters=opt_number_of_poles)
+        self.create_minimum_spanning_tree(grid)
+        self.connect_grid_elements(grid)
 
-        number_of_poles = int(min_index)
-        counter = 0
-        tmp_price = grid_copy.price() + 1
-        grid_price = grid_copy.price()
-
-        iteration = 0
-        while (
-            (grid_price < tmp_price or counter < 3)
-                and (number_of_poles < num_nodes)
-                and (iteration < num_nodes)):
-            iteration += 1
-            tmp_price = grid_price
-            # only recompute k-means for new number of poles
-            number_of_poles = number_of_poles + 1
-            if str(number_of_poles) in price_per_number_pole_df.index:
-                grid_price = price_per_number_pole_df['price'][
-                    str(number_of_poles)]
-            else:
-                self.set_k_means_configuration(grid_copy, number_of_poles)
-                grid_price = grid_copy.price()
-
-                price_per_number_pole_df.loc[f"{number_of_poles}"] = grid_price
-
-            if grid_price >= tmp_price:
-                counter += 1
-            else:
-                counter = 0
-        min_price = price_per_number_pole_df['price'].min()
-
-        min_index = price_per_number_pole_df[
-            price_per_number_pole_df['price'] == min_price].index[0]
-
-        return int(min_index)
+        return opt_number_of_poles
 
     # -----------------------REMOVE NODE-------------------------#
 
@@ -862,7 +651,7 @@ class GridOptimizer:
         if grid.get_nodes().shape[0] > 0:
             grid.set_nodes(grid.get_nodes().drop(grid.get_nodes().index[-1]))
             if not grid.is_pole_capacity_constraint_too_strong():
-                self.connect_nodes(grid)
+                self.connect_grid_elements(grid)
 
     # ---------- MAKE GRID COMPLIANT WITH CAPACITY CONSTRAINTS --------- #
 
@@ -884,1883 +673,16 @@ class GridOptimizer:
 
             if grid.is_pole_capacity_constraint_too_strong():
                 for segment in grid.get_nodes()['segment'].unique():
-                    while grid.get_consumers()[
-                        grid.get_consumers()['segment']
-                        == segment].shape[0]\
-                            > grid.get_segment_pole_capacity(segment):
+                    while grid.consumers()[grid.consumers()['segment'] == segment].shape[0] > grid.get_segment_pole_capacity(segment):
                         random_number = np.random.rand()
-                        num_consumers = grid.get_consumers()[
-                            grid.get_consumers()['segment'] == segment
+                        num_consumers = grid.consumers()[
+                            grid.consumers()['segment'] == segment
                         ].shape[0]
                         grid.flip_node(
-                            grid.get_consumers()[grid.get_consumers()
-                                                 == segment].index[
+                            grid.consumers()[grid.consumers()
+                                             == segment].index[
                                 int(random_number
                                     * num_consumers)])
-
-    # ----------------------- GENETIC ALGORITHM -----------------------#
-
-    # Main GA method
-
-    def ga_optimization(self,
-                        grid,
-                        number_of_poles='unspecified',
-                        output_folder=None,
-                        print_progress_bar=True,
-                        save_output=True,
-                        include_input_grid_as_chromosome=False):
-        """
-        This method uses the Genetic Algorithm method to find
-        find the location of poles and cables minimizing the price function.
-        All the algorithm parameters are taken from the confi_alo.cfg config
-        file.
-
-        Parameters
-        ----------
-        grid (~grids.Grid):
-            Grid object.
-
-        number_of_poles (int):
-            Number of poles in the grid the algorithm should consider.
-            Default value is 'unspecified', meaning that the chromosomes
-            can have different size (corresponding to grid with different
-            number of pole). In this case, the size of the chromosome is
-            determined using a normal distribution centered using the expected
-            number of poles n* obtained by the k-means clustering method.
-
-        output_folder (str):
-            Path of the folder the grid output of the algorithm should be
-            saved in.
-
-        print_progress_bar (bool):
-            If True, the progress is displayed in the console.
-
-        save_output (bool):
-            If True, the output (grid and population dataframe) are saved in
-            output folder.
-
-
-        include_input_grid_as_chromosome (bool):
-            Determines if the chromosome corresponding to the grid given as
-            input is part of the chromosomes of the first generation.
-
-        Notes
-        -----
-        Parent selection
-            The parent selection is made using rank selection, if there are N
-            chromosomes, the nth chromosome in term of fitness has chance
-            (N-n+1)/S
-            where S = n(n+1) / 2 is the sum of the N first natural numbers.
-            For example for N = 5, we have S = 15 and the first chromosome has
-            chance 5/15, to be picked, second 4/15 and so on.
-        """
-        # make sure that the number_of_processors_for_parallelization is valid
-        # argument
-        if self.ga_number_of_processors_for_parallelization not in range(
-                1, 1000):
-            raise Exception("number_of_processors_for_parallelization "
-                            + "should be a strictly positive integer")
-        # Copy grid to use it to get grid's corresponding chromosome
-        grid_copy = copy.deepcopy(grid)
-        # Store number of fixed poles in grid
-        number_of_fixed_poles = grid.get_poles()[grid.get_poles()['type_fixed']
-                                                 ].shape[0]
-
-        # Ensure that number of nodes is positive integer, if not release
-        # constraint by setting it to 'unspecified'
-        if type(number_of_poles) != int:
-            number_of_poles = 'unspecified'
-        elif number_of_poles <= 0:
-            number_of_poles = 'unspecified'
-
-        if number_of_poles != 'unspecified':
-            # Ensure that the grid containing number_of_poles poles
-            # can be connected (i.e. that the capacitated pole constraint
-            # allows connecting the grid). Since there might be some poles
-            # with fixed type and capacity different from default pole capacity,
-            # set all non-fixed nodes to consumers and flip some of them until
-            # number of pole corresponds to number_of_poles
-            grid.set_all_node_type_to_consumers()
-            while grid.get_poles().shape[0] < number_of_poles:
-                grid.flip_node(grid.get_consumers().index[0])
-            if grid.is_pole_capacity_constraint_too_strong():
-                raise Exception('number_of_poles is too small to allow grid to '
-                                + 'be connected while respecting pole capacity')
-
-        # Take actual time to monitor duration of algo
-        start_time = time.time()
-
-        number_of_generations = self.ga_number_of_generations
-
-        population_size = self.ga_population_size
-
-        mutation_probability = self.ga_mutation_probability
-
-        mutation_type_ratio = self.ga_mutation_type_ratio
-
-        number_of_elites = self.ga_number_of_elites
-
-        number_of_survivors = self.ga_number_of_survivors
-
-        initialization_strategy = self.ga_initialization_strategy
-
-        crossover_type = self.ga_crossover_type
-
-        parent_selection = self.ga_parent_selection
-
-        delta = self.ga_delta
-
-        default_pole_capacity = grid.get_default_pole_capacity()
-
-        max_runtime = self.ga_max_runtime
-
-        if print_progress_bar:
-            print(f"|{42 * '_'}| GENETIC ALOGRITHM |{42 * '_'}|\n")
-            print(f"{35 * ' '}population size:       {population_size}")
-            print(f"{35 * ' '}number of generations: {number_of_generations}")
-            print(f"{35 * ' '}mutation_probability:  {mutation_probability}")
-            print(f"{35 * ' '}mutation_type_ratio:   {mutation_type_ratio}")
-            print(f"{35 * ' '}number_of_elites:      {number_of_elites}")
-            print(f"{35 * ' '}number_of_survivors:   {number_of_survivors}")
-            print(f"{35 * ' '}crossover_type:        {crossover_type}")
-            print(f"{35 * ' '}runtime:               {max_runtime}\n\n")
-
-            print("\rInitializing algorithm...", end="\r")
-
-        # setup parameters for normal distribution used to determine number of
-        # poles in chromosomes of initial population
-        fixed_capacity = grid.get_poles()[
-            grid.get_poles()['type_fixed']]['allocation_capacity'].sum()
-
-        if number_of_poles == 'unspecified':
-            if grid.get_total_pole_capacity() == 0:
-                print("\rDetermining expected pole number...", end="")
-                mu = max(1, self.get_expected_pole_number_from_k_means(grid))
-                sigma = mu / delta
-                min_threshold = 1
-            else:
-                mu = max(1, ((grid.get_nodes().shape[0] - fixed_capacity)
-                             / default_pole_capacity))
-                sigma = mu / delta
-                min_threshold = np.ceil((grid.get_nodes().shape[0]
-                                         - fixed_capacity)
-                                        / default_pole_capacity)
-        else:
-            mu = max(1, number_of_poles)
-            sigma = 0
-            min_threshold = 1
-
-        if print_progress_bar:
-            print("\rCreating initial population...", end="")
-        if self.ga_initialization_strategy == 'random':
-            # If input grid fullfils criterion for pole capacity, add the
-            # chromosome corresponding to input grid to initial population
-            if(((not grid_copy.is_pole_capacity_constraint_too_strong()
-                 and grid_copy.get_poles().shape[0] == number_of_poles)
-                or number_of_poles == 'unspecified')
-                    and include_input_grid_as_chromosome):
-                # Create random intital chromosomes
-                initial_chromosomes = [
-                    self.ga_get_chromosome_from_grid(grid_copy)]
-                counter = 0
-                while (len(initial_chromosomes) < population_size):
-                    new_chromosome = sorted(list(np.random.choice(
-                        grid_copy.get_non_fixed_nodes().index,
-                        size=(self.ga_truncated_normal_distribution_draw(
-                            mu,
-                            sigma,
-                            min_threshold)
-                            - number_of_fixed_poles),
-                        replace=False)), key=int)
-
-                    # Add the chromosome corresponding to the input grid
-                    if (new_chromosome not in initial_chromosomes
-                            or counter > population_size**2):
-                        initial_chromosomes.append(new_chromosome)
-                    counter += 1
-
-            else:
-                # Create random intital chromosomes
-                initial_chromosomes = [sorted(list(np.random.choice(
-                    grid.get_non_fixed_nodes().index,
-                    size=(
-                        self.ga_truncated_normal_distribution_draw(
-                            mu,
-                            sigma,
-                            min_threshold)
-                        - number_of_fixed_poles),
-                    replace=False)), key=int)
-                    for x in range(population_size)]
-
-            with Pool(self.ga_number_of_processors_for_parallelization) as p:
-                fitness = p.starmap(
-                    self.ga_fitness_function,
-                    [(grid, chromosome) for chromosome in initial_chromosomes])
-
-        elif self.ga_initialization_strategy == 'NR':
-            fitness = []
-            initial_chromosomes = []
-            for first_guess_strategy in (['k_means']
-                                         + ['random'] * (population_size - 1)):
-                self.nr_optimization(grid=grid,
-                                     number_of_poles=number_of_poles,
-                                     number_of_relaxation_steps=5,
-                                     damping_factor=0.5,
-                                     weight_of_attraction='constant',
-                                     first_guess_strategy=first_guess_strategy,
-                                     save_output=False,
-                                     number_of_steps_bewteen_random_shifts=0,
-                                     output_folder=None,
-                                     print_progress_bar=False)
-                initial_chromosomes.append(
-                    self.ga_get_chromosome_from_grid(grid))
-                fitness.append(- grid.price())
-
-        population_df = pd.DataFrame({
-            'chromosome': initial_chromosomes,
-            'price': [-x for x in fitness],
-            'fitness': fitness,
-            'relative_fitness': fitness,
-            'generation': pd.Series([0] * len(fitness),
-                                    dtype=int),
-            'rank_in_generation': pd.Series(
-                [0] * len(fitness), dtype=int),
-            'role': pd.Series(['initial_population']
-                              * len(fitness),
-                              dtype=str),
-            'birth_time': time.time() - start_time,
-            'parents': pd.Series(['-'] * len(fitness),
-                                 dtype=str)
-        })
-        # compute relative_fitness
-        lowest_fitness_in_generation = population_df['fitness'].min()
-        for index, row in population_df.iterrows():
-            population_df.loc[index, 'relative_fitness'] -=\
-                lowest_fitness_in_generation
-        # Add ranking according to fitness
-        for chromosome_iter in range(population_size):
-            population_df.at[
-                population_df[population_df['generation'] == 0].sort_values(
-                    by=['fitness'], ascending=False).index[chromosome_iter],
-                'rank_in_generation'] = chromosome_iter + 1
-
-        for generation in range(1, number_of_generations + 1):
-            # exit loop if current runtime exeeds runtime
-            if time.time() - start_time > max_runtime:
-                break
-
-            if print_progress_bar:
-                self.display_progress_bar(current=generation - 1,
-                                          final=number_of_generations,
-                                          message=f" generation: {generation}")
-            potential_parents = population_df[population_df['generation']
-                                              == generation - 1].copy()
-
-            elites = potential_parents.sort_values(
-                by='fitness',
-                ascending=False)[:number_of_elites].copy()
-
-            # Copy elites to current generation
-            for index, row in elites.iterrows():
-                elites.loc[index, 'generation'] = generation
-                elites.loc[index, 'relative_fitness'] = 0
-                elites.loc[index, 'rank_in_generation'] = 0
-                elites.loc[index, 'role'] = 'elite'
-            population_df = population_df.append(elites, ignore_index=True)
-
-            # Copy randomly selected parents to current generation
-            # (avoiding elits)
-            survivors = (potential_parents.sort_values(
-                by='fitness',
-                ascending=False)[number_of_elites:]
-            ).sample(n=number_of_survivors,
-                     random_state=1).copy()
-
-            for index, row in survivors.iterrows():
-                survivors.loc[index, 'generation'] = generation
-                survivors.loc[index, 'relative_fitness'] = 0
-                survivors.loc[index, 'rank_in_generation'] = 0
-                survivors.loc[index, 'role'] = 'survivor'
-                # mutate surviving parent
-                if np.random.rand() < mutation_probability:
-                    if number_of_poles == 'unspecified':
-                        survivors.loc[index, 'chromosome'] =\
-                            self.ga_random_mutation(
-                            grid=grid,
-                            chromosome=survivors.loc[index, 'chromosome'],
-                            mutation_type_ratio=mutation_type_ratio)
-                    else:
-                        survivors.loc[index, 'chromosome'] = self.ga_gene_swap(
-                            grid,
-                            survivors.loc[index, 'chromosome'])
-                survivors.loc[index, 'fitness'] = self.ga_fitness_function(
-                    grid,
-                    survivors.loc[index, 'chromosome'])
-                survivors.loc[index, 'price'] = - \
-                    survivors.loc[index, 'fitness']
-
-            population_df = population_df.append(survivors.copy(),
-                                                 ignore_index=True)
-
-            # Select parent pairs for crossovers
-            if parent_selection == 'linear_rank_selection':
-                index_weighted_list = []
-                for chromosome_index in population_df[
-                        population_df['generation']
-                        == generation - 1].index:
-                    for rank in range(
-                        population_size + 1
-                        - population_df['rank_in_generation'][
-                            chromosome_index]):
-                        index_weighted_list.append(
-                            population_df['chromosome'][chromosome_index])
-                random.shuffle(index_weighted_list)
-            else:
-                raise Exception("invalid parent_selection")
-
-            # Create list of parent pairs chosen
-
-            # First ensure that there is more than one distinct chromosome in
-            # index_weighted_list. In such a case, all parents will be the
-            # same chromosome.
-            if len([index for index in index_weighted_list
-                    if index != index_weighted_list[0]]) == 0:
-                a_parents = [index_weighted_list[0]] * (
-                    population_size
-                    - number_of_elites
-                    - number_of_survivors)
-                b_parents = a_parents
-            # Otherwise, choose two different chromosomes to form parent pairs
-            else:
-                a_parents = [random.choice(index_weighted_list)
-                             for i in range(int(np.ceil((
-                                 population_size
-                                 - number_of_elites
-                                            - number_of_survivors)/2)))]
-
-                b_parents = [random.choice(
-                    [index for index in index_weighted_list
-                     if index != a])
-                    for a in a_parents]
-            parent_pairs = [[a, b] for a, b in zip(a_parents, b_parents)]
-
-            offspring_pairs = [self.ga_crossover(grid=grid,
-                                                 parent1=pair[0],
-                                                 parent2=pair[1],
-                                                 crossover_type=crossover_type)
-                               for pair in parent_pairs]
-
-            offsprings = [offspring for offsprings_pair in offspring_pairs
-                          for offspring in offsprings_pair]
-            # mutate offsprings
-            if number_of_poles == 'undefined':
-                offsprings = [self.ga_random_mutation(
-                    grid=grid,
-                    chromosome=chromosome,
-                    mutation_type_ratio=mutation_type_ratio)
-                    for chromosome in offsprings]
-            else:
-                offsprings = [self.ga_gene_swap(grid, chromosome)
-                              for chromosome in offsprings]
-
-            with Pool(self.ga_number_of_processors_for_parallelization) as p:
-                fitness_offsprings = p.starmap(
-                    self.ga_fitness_function,
-                    [(grid, chromosome) for chromosome in offsprings])
-
-            # Add offsprings to population_df with respective fitness and with
-            # its parents. (the double comprehension list is required to format
-            # the parent list so that it matches with the offspring list)
-            counter = 1
-            current_time = time.time() - start_time
-            for offspring, fitness, parents in zip(
-                    offsprings,
-                    fitness_offsprings,
-                    [parent for pair in [[parent_pair, parent_pair]
-                                         for parent_pair in parent_pairs]
-                     for parent in pair]):
-                counter += 1
-
-                population_df.loc[len(population_df)] =\
-                    [offspring,                  # chromosomes (genes)
-                     -fitness,                   # grid price (= -fitness)
-                     fitness,                    # fitness
-                     0,                          # relative_fitness unknown
-                     generation,                 # generation
-                     0,                          # rank_in_generation unknown
-                     'offspring',                # role
-                     current_time,               # birth_time
-                     f'({parents[0]}, {parents[1]})']  # parents
-
-            # In case the population size went beyond the population_size
-            # parameter, remove less fit chromosomes
-
-            if population_df[population_df['generation']
-                             == generation].shape[0] > population_size:
-                population_df = population_df.drop(
-                    population_df[population_df['generation']
-                                  == generation].sort_values(
-                        by='fitness',
-                        ascending=False).index[-1],
-                    axis=0)
-            # Compute relative_fitness of new generation chromosomes
-
-            lowest_fitness_in_generation =\
-                population_df[population_df['generation']
-                              == generation]['fitness'].min()
-
-            for index, row in population_df[population_df['generation']
-                                            == generation].iterrows():
-                population_df.loc[index, 'relative_fitness'] =\
-                    population_df.loc[index, 'fitness'] - \
-                    lowest_fitness_in_generation
-                population_df.loc[index, 'birth_time'] = current_time
-
-            # Compute rank_in_generation of new generation chromosomes
-            for chromosome_iter in range(population_size):
-                population_df.at[
-                    population_df[population_df['generation']
-                                  == generation].sort_values(
-                        by=['fitness'],
-                        ascending=False
-                    ).index[chromosome_iter],
-                    'rank_in_generation'] = chromosome_iter + 1
-
-        if time.time() - start_time > max_runtime:
-            message = "max runtime exeeded"
-        else:
-            message = ""
-        self.display_progress_bar(current=1,
-                                  final=1,
-                                  message=message)
-
-        index_fitter_chromosome = population_df.sort_values(
-            by='price',
-            ascending=True).index[0]
-        fitter_chromosome = population_df['chromosome'][
-            index_fitter_chromosome]
-        price_grid_fitter_chromosome =\
-            population_df['price'][index_fitter_chromosome]
-        grid.set_all_node_type_to_consumers()
-        for index in fitter_chromosome:
-            grid.set_node_type(index, 'pole')
-        print(f'\n\nBest chromosome found:\n{fitter_chromosome}\n')
-        print(
-            f'Price of corresponding grid: {price_grid_fitter_chromosome} $\n'
-            + "\n")
-
-        if save_output:
-            if output_folder is None:
-                # Create output folder if not already existing
-                output_folder = f'data/output/{grid.get_id()}/GA'
-
-            make_folder(output_folder)
-
-            run_name = (grid.get_id()
-                        + f'_pop{population_size}_gen{number_of_generations}')
-            if os.path.exists(output_folder + '/' + run_name):
-                counter = 1
-                while os.path.exists(f'{output_folder}/{run_name}_{counter}'):
-                    counter += 1
-                run_name = f'{run_name}_{counter}'
-            path = f'{output_folder}/{run_name}'
-            make_folder(path)
-
-            population_df.to_csv(path + '/population.csv')
-            self.connect_nodes(grid)
-            grid.export(folder=output_folder,
-                        backup_name=run_name,
-                        allow_saving_in_existing_backup_folder=True)
-            # create json file containing about dictionary
-
-            about_dict = {
-                'grid id': grid.get_id(),
-                'number_of_poles': number_of_poles,
-                'output_folder': output_folder,
-                'print_progress_bar': print_progress_bar,
-                'save_output': save_output,
-                'number_of_generations': number_of_generations,
-                'population_size': population_size,
-                'mutation_probability': mutation_probability,
-                'number_of_elites': number_of_elites,
-                'number_of_survivors': number_of_survivors,
-                'crossover_type': crossover_type,
-                'parent_selection': parent_selection,
-                'initialization_strategy': initialization_strategy
-            }
-
-            json.dumps(about_dict)
-
-            with open(output_folder + '/' + run_name + '/about_run.json',
-                      'w') as about:
-                about.write(json.dumps(about_dict))
-
-    def ga_get_offsprings_with_fitness(self, grid: Grid, parents):
-        """
-        This method returns a dictionary containing two offsprings
-        chromomsomes and their respective fitness. This method is used
-        for the parallelization of the ga_optimization.
-
-        Parameters
-        ----------
-        grid (~grids.Grid):
-            Grid object. This parameter is required for the method to know
-            compute the fitness of the offsprings.
-
-        parents (list):
-            List of two parents chromosomes. A chromosomes being a list of pole
-            str indices.
-        """
-        offsprings = self.ga_crossover(
-            grid, parents[0], parents[1], 'neighbor_pair')
-        return {'offspring1': offsprings[0],
-                'offsrping2': offsprings[1],
-                'fitness_offspring1': self.ga_fitness_function(grid,
-                                                               offsprings[0]),
-                'fitness_offspring2': self.ga_fitness_function(grid,
-                                                               offsprings[1])}
-
-    # GA gene mutation method
-
-    def ga_remove_gene(self, grid: Grid, chromosome):
-        """
-        This method removes a gene from a chromosome. A chromosome being a
-        list with pole indices, the method just removes a pole index picked at
-        random from the chromosome
-
-        Parameters
-        ----------
-        grid (~grids.Grid):
-            Grid object. This parameter is required for the method to know
-            what the indices of the new pole can be.
-        chromosome (list):
-            List of indices corresponding to the node that are non-fixed
-            poles. A chromosome is an instance of a population of the GA.
-
-        Return
-        ------
-        list
-            Chromosome with one pole index less.
-
-        Note
-        ----
-            If removing a node from the grid would lead to too few poles to link
-            the nodes, the method does nothing.
-        """
-        if len(chromosome) > 1:
-            chromosome_copy = chromosome
-            fixed_poles = grid.get_poles()[grid.get_poles()['type_fixed']]
-            fixed_allocation_capacity = fixed_poles['allocation_capacity'].sum()
-            if grid.get_default_pole_capacity() == 0:
-                if len(chromosome) > 1:
-                    chromosome_copy.pop(random.randrange(len(chromosome_copy)))
-
-            else:
-                if (fixed_allocation_capacity + (len(chromosome_copy) - 1)
-                    * grid.get_default_pole_capacity())\
-                        >= grid.get_nodes().shape[0] - (fixed_poles.shape[0]
-                                                        + len(chromosome_copy)
-                                                        - 1):
-                    chromosome_copy.pop(random.randrange(len(chromosome_copy)))
-                else:
-                    warning_message = (
-                        "Impossible to remove gene from chromosome, "
-                        + "resulting chromosome would have too little"
-                        + " poles for connecting the node")
-                    raise Warning(warning_message)
-            return chromosome_copy
-        else:
-            return chromosome
-
-    def ga_append_gene(self, grid: Grid, chromosome):
-        """
-        This method adds a gene to a chromosome. A chromosome being a list
-        with pole indices, the method just appends a new pole index to the
-        chromosome$.
-
-        Parameters
-        ----------
-        grid (~grids.Grid):
-            Grid object. This parameter is required for the method to know what
-            the indices of the new pole can be.
-        chromosome (list):
-            List of indices corresponding to the node that are non-fixed
-            poles. A chromosome is an instance of a population of the GA.
-
-        Return
-        ------
-        list
-            chromosome with additional pole index
-        """
-
-        chromosome_copy = chromosome
-        possible_new_pole_index = [x for x in grid.get_non_fixed_nodes().index
-                                   if x not in chromosome]
-        chromosome_copy.append(random.choice(possible_new_pole_index))
-        if chromosome_copy is None:
-            print('ga_append_gene returned None chromosome')
-        return chromosome_copy
-
-    def ga_gene_swap(self, grid: Grid, chromosome):
-        """
-        This method mutates a chromosome gene (i.e. changes one of the pole
-        position) corresponding to the grid given as parameter.
-
-        Parameters
-        ----------
-        grid (~grids.Grid):
-            Grid object. This parameter is required for the method to know what
-            the indices of the new pole can be.
-        chromosome (list):
-            List of indices corresponding to the node that are non-fixed
-            meterpoles. A chromosome is an instance of a population of the GA.
-
-        Output
-        ------
-        obj:`list`
-            New chromosome.
-
-        Notes
-        -----
-            The method is selecting one of the genes (i.e. elements from the
-            chromosome list) and changes the index for one of the index of
-            the nodes that is not yet part of genes (elements) from the
-            chromosome.
-        """
-
-        if len(chromosome) > 0:
-            # Select list index of the gene to be modified
-            randomly_selected_gene_number =\
-                np.random.choice(range(len(chromosome)))
-            # Get list of possible candidates for new pole index
-            list_of_possible_new_poles = [
-                index for index in grid.get_non_fixed_nodes().index
-                if index not in chromosome]
-
-            # Pick one of the pole indices
-            new_pole_index = np.random.choice(list_of_possible_new_poles)
-
-            chromosome_copy = copy.deepcopy(chromosome)
-            # replace gene
-            chromosome_copy[randomly_selected_gene_number] = new_pole_index
-
-            # reorder genes
-            chromosome_copy = sorted(chromosome_copy, key=int)
-
-            return chromosome_copy
-
-        else:
-            raise Warning(
-                f"Invalid chromosome {chromosome} for ga_gene_swap method")
-
-    def ga_random_mutation(self, grid: Grid, chromosome, mutation_type_ratio):
-        """
-        This method performs one of the three chromosome mutation
-        (remove a gene, append a gene or mutate a gene) on the chromosome
-        by calling one of the three following method selected at random
-        taking into consideration the mutation_type_ratio:
-        ga_remove_gene, ga_append_gene or ga_gene_swap.
-
-        Parameters
-        ----------
-        grid (~grids.Grid):
-            Grid object. This parameter is required for the method to know what
-            the indices of the new pole can be.
-
-        chromosome (list):
-            List of indices corresponding to the node that are non-fixed
-            poles.
-            A chromosome is an instance of a population of the GA.
-
-        mutation_type_ratio: float
-            Determines the average ratio of mutations that consist on replacing
-            a pole over mutations adding or removing a pole.
-            For mutation_type_ratio = 0.5, on average, half of the mutation
-            selected will be replacing mutations. A forth of the mutation will
-            corespond to adding a pole and the last forth to removing a pole.
-            For mutation_type_ratio = 1, all the mutations are mutations
-            replacing pole indices.
-        Return
-        ------
-            list
-                Returnes the mutated chromosome.
-        """
-        # Three mutation_types considered
-        # 'replace pole' -> Mutation replacing a hun index
-        # 'add pole'     -> Mutation adding a hun index
-        # 'remove pole'  -> Mutation removing a hun index
-
-        if np.random.rand() < mutation_type_ratio:
-            mutation_chosen = 'replace pole'
-        else:
-            if np.random.rand() < 0.5:
-                mutation_chosen = 'add pole'
-            else:
-                mutation_chosen = 'remove pole'
-
-        chromosome_copy = copy.deepcopy(chromosome)
-
-        if mutation_chosen == 'remove pole':
-
-            default_pole_capacity = grid.get_default_pole_capacity()
-
-            fixed_poles = grid.get_poles()[grid.get_poles()['type_fixed']]
-            fixed_allocation_capacity =\
-                grid.get_poles()[
-                    grid.get_poles()['type_fixed']]['allocation_capacity'].sum()
-            if default_pole_capacity == 0:
-                if len(chromosome_copy) > 1:
-                    return self.ga_remove_gene(grid, chromosome_copy)
-                else:
-                    return chromosome_copy
-            elif (fixed_allocation_capacity + (len(chromosome_copy) - 1)
-                  * default_pole_capacity)\
-                    >= grid.get_nodes().shape[0] - (fixed_poles.shape[0]
-                                                    + len(chromosome_copy)
-                                                    - 1):
-                return self.ga_remove_gene(grid, chromosome_copy)
-            else:
-                return chromosome_copy
-
-        elif mutation_chosen == 'add pole':
-            return self.ga_append_gene(grid, chromosome_copy)
-
-        elif mutation_chosen == 'replace pole':
-            return self.ga_gene_swap(grid, chromosome_copy)
-
-    def ga_crossover(self, grid: Grid, parent1, parent2, crossover_type='uniform'):
-        """
-        This method mixes the genes of two parents and returns
-        a list constaining the two offspring (children) according
-        to the crossover_type parameter.
-
-        Parameters
-        ----------
-        grid (~grids.Grid):
-            Grid object. This parameter is required for the method to know what
-            the indices of the new pole can be.
-
-        parent1 (list):
-            First parent for crossover. List of indices of poles in a grid.
-
-        parent2 (list):
-            Second parent for crossover. List of indices of poles in a grid.
-
-        crossover_type (str):
-            Specifies the type of crossover.
-            Currently implemented crossover types
-            are:
-                - 'uniform':
-                            for each gene, flip a coin, to decide if the gene
-                            of the first (resp. second) parent should be
-                            transmitted to the first (resp. second) offspring
-                            or if gene of first (resp. second) parent should
-                            be transmitted to second (resp. first) offspring.
-                - 'neighbor_pair':
-                            each pole (gene) from parent1 is allocated to a pole
-                            from parent2 to form pairs that minimize the
-                            distance between the pole of the pairs.
-                            For each pair, the pole from parent1 will be passed
-                            to the offsrping1 with
-                            probaility 50% and to offspring2 with the same
-                            probability. The other pole from the pair is passed
-                            to the other offspring.
-
-        Return:
-            List constaining the two offspring chromosomes.
-        """
-        # UNIFORM CROSSOVER
-        if crossover_type == 'uniform':
-            # Identify genes that are common to parent1 and parent2 and pass
-            # those genes to offsprings
-            common_genes = [gene for gene in parent1
-                            if gene in parent1 and gene in parent2]
-            offspring1 = common_genes.copy()
-            offspring2 = common_genes.copy()
-
-            remaining_genes_to_pass_parent_1 = [gene for gene in parent1
-                                                if gene not in common_genes]
-            remaining_genes_to_pass_parent_2 = [gene for gene in parent2
-                                                if gene not in common_genes]
-            remaining_genes_to_pass = (remaining_genes_to_pass_parent_1
-                                       + remaining_genes_to_pass_parent_2)
-
-            offspring1 += list(np.random.permutation(
-                remaining_genes_to_pass
-            )[:len(remaining_genes_to_pass_parent_1)])
-            offspring2 += [x for x in remaining_genes_to_pass
-                           if x not in offspring1]
-            try:
-                return[sorted(offspring1, key=int),
-                       sorted(offspring2, key=int)]
-            except ValueError:
-                return[sorted(offspring1), sorted(offspring2)]
-
-        # SELECTION FROM NEIGHBOR PAIRS
-        elif crossover_type == 'neighbor_pair':
-            # set parent1 to parent chromosome with the most number of genes
-            if len(parent1) < len(parent2):
-                parent1, parent2 = parent2, parent1
-
-            # Create matrix with distance between poles from parent1 and parent2
-            distance_matrix = []
-            for pole_parent1 in parent1:
-                distance_matrix.append(
-                    [grid.distance_between_nodes(
-                        pole_parent1,
-                        pole_parent2) for pole_parent2 in parent2])
-            munkres_sol = Munkres()
-            indices = munkres_sol.compute(distance_matrix)
-
-            # pass genes from pairs to the offsprings
-            neighbor_pairs =\
-                [[parent1[index[0]], parent2[index[1]]] for index in indices]
-
-            offspring1, offspring2 = [], []
-            for pair in neighbor_pairs:
-                if np.random.rand() < 0.5:
-                    offspring1.append(pair[0])
-                    offspring2.append(pair[1])
-                else:
-                    offspring1.append(pair[1])
-                    offspring2.append(pair[0])
-
-            # The lonely_poles list is a list of all the poles that are not
-            # part of a pair
-            lonely_poles = [pole for pole in parent1 + parent2
-                            if pole not in (offspring1 + offspring2)]
-
-            # Distribute the lonely poles to the offspring uniformly at random
-            for pole in lonely_poles:
-                if np.random.rand() < 0.5:
-                    offspring1.append(pole)
-                else:
-                    offspring2.append(pole)
-
-            try:
-                return [sorted(offspring1, key=int),
-                        sorted(offspring2, key=int)]
-            except ValueError:
-                return [sorted(offspring1), sorted(offspring2)]
-
-    # GA Fitness method
-
-    def ga_fitness_function(self, grid: Grid, chromosome):
-        """
-        This function computes the fitness of the chromosome
-        for the grid given as parameter. The fitness correspond to minus the
-        price of the grid (with poles located at position given by the
-        chromosome parameter).
-
-        Parameters
-        ----------
-        grid (~grids.Grid):
-            Grid object.
-
-        chromosome (list):
-            List of indices corresponding to the node that should be set to
-            'pole'. All other nodes will have node type 'consumer'.
-        """
-
-        # Set all node types to consumer
-        grid.set_all_node_type_to_consumers()
-
-        # Loop over the genes (elements) of the chromosome (list) and set type
-        # of given nodes to pole
-        for pole_index in chromosome:
-            grid.set_node_type(pole_index, 'pole')
-
-        # now link nodes
-        self.connect_nodes(grid)
-
-        return - grid.price()
-
-    # GA progress bar
-
-    def ga_printProgressBar(self, iteration,
-                            total,
-                            prefix='',
-                            suffix='',
-                            generation=0,
-                            decimals=1,
-                            length=100,
-                            fill='█',
-                            printEnd="\r"):
-        """
-        Call in a loop to create terminal progress bar.
-
-        Parameters
-        ----------
-            iteration   - Required  : current iteration (Int)
-            total       - Required  : total iterations (Int)
-            prefix      - Optional  : prefix string (Str)
-            suffix      - Optional  : suffix string (Str)
-            decimals    - Optional  : positive number of decimals in percent
-                                    complete (Int)
-            length      - Optional  : character length of bar (Int)
-            fill        - Optional  : bar fill character (Str)
-            printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
-
-            Notes
-            -----
-                Funtion inspired from https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console/30740258 # noqa: E501
-        """
-        if iteration > total:
-            iteration = total
-        percent = ("{0:." + str(decimals) + "f}").format(
-            100 * (iteration / float(total)))
-        filledLength = int(length * iteration // total)
-        bar = fill * filledLength + '-' * (length - filledLength)
-        print(f'\r{prefix} |{bar}| {percent}% {suffix},'
-              + ' generation: {generation}',
-              end=printEnd)
-        # Print New Line on Complete
-        if iteration == total:
-            print()
-
-    # Other methods GA
-
-    def ga_get_chromosome_from_grid(self, grid: Grid):
-        """
-        This method returns a chromosome for the genetic algorithm
-        corresponding to the pole indices of the grid given as parameter.
-
-        Parameters
-        ----------
-        grid (~grids.Grid):
-            Grid object
-
-        Return
-        ------
-        obj: :`list`
-            chromosome corresponding to the grid (list with indices of poles
-            with type_fixed equal False)
-        """
-
-        chromosome = [index for index in grid.get_poles().index
-                      if not grid.get_poles()['type_fixed'][index]]
-
-        return chromosome
-
-    def ga_truncated_normal_distribution_draw(self, mu, sigma, min_threshold):
-        """
-        This method returns a draw of a normal distribution bigger
-        or equal to min_threshold.
-
-        Parameters
-        ----------
-        mu: float
-            Expectation value of normal law
-        sigma: float
-            Standard deviation of normal distribution
-        min_treshold: float
-            Minimum value returned by the method, if value drwan is  smaller,
-            pick another one
-        """
-        draw = - np.infty
-        if mu <= 0 or sigma < 0:
-            raise Warning("ga_truncated_normal_distribution_draw cannot draw"
-                          + " values for mu <= 0 or sigma < 0."
-                          + f"mu: {mu}, sigma:{sigma}")
-        while draw < min_threshold:
-            draw = np.random.normal(mu, sigma)
-
-        return max(1, int(np.rint(draw)))
-
-    # ---------------------SIMULATED ANNEALING METHODS--------------------#
-
-    # Main SA method
-
-    def sa_optimization(self,
-                        grid,
-                        print_log=False,
-                        print_progress_bar=True,
-                        save_output=False,
-                        output_folder=None
-                        ):
-        """
-        This method runs a Simulated Annealing (SA) algorithm on the grid to
-        minimize the price method. See more detail about the algorithm in
-        the Notes section bellow.
-
-        Parameters
-        ----------
-        grid (~grids.Grid):
-            Grid the algorithm should be performed on in order to find
-            solution to the grid price optimization problem.
-
-        print_log (bool):
-            Parameter that specifies whether the detail of the run should be
-            written in the console (when value is True) or not.
-
-        print_progress_bar (bool):
-            Determines wheter or not the progress bar should be print in the
-            console.
-
-
-        save_output (bool):
-            Determines whether or not the output grid should be saved in a
-            folder, the parameter output_folder specifies the path of the
-            folder the output should be saved in.
-
-        output_folder (str):
-            Path of the folder the grid output of the algorithm should be
-            saved in.
-
-
-
-        Notes
-        -----
-        This method used the parameters defined in the config_algo.cfg file
-        from the config folder. For the following parameters, when value is
-        None, the parameter takes the value from the config_algo.cfg file:
-            t_0, number_of_temperature_steps, cooling_rate, flip_rep, swap_rep,
-            swap_option
-
-        Simulated Annealing (SA) algorithm:
-            During the algorithm, a number of temperature steps corresponding
-            to the temperature_steps parameter will be performed. Each
-            temperature steps is composed of a number of flips and of swaps
-            corresponding to respectively flip_rep and swap_rep. The possible
-            transitions (flip and swap) are performed at each step and the
-            new configuration is kept only if the new grid price is lower
-            than at the previous step or according to the so-called
-            Metropolis accpetance probability given as exp(-Delta/temperature)
-            where Delta is the price difference between former and new
-            configuration.
-
-            The initialization of the starting temperature uses the price of
-            the  approximation grid obatined using the k-means clustering
-            method and  the average price of randomly generated grids with
-            the same number of poles and the omega paramter. Let's denote
-            these prices price_k_means and avg_price respectively, the price
-            difference is denoted delta = (avg_price - price_k_means).
-            The starting temperature is given by
-                starting_temperature = omega * detla
-
-            After each temperature step, the
-            temperature is decreased so that it follows a decaying exponential
-            and that temperature at two third of the steps is equal to the
-            starting temperature times Q
-            where Q = self.sa_ratio_temperatue_at_two_third_of_steps
-
-            The possible swap options are:
-                - 'random':
-                    when performing a swap transition, the consumer to be
-                    swapped with the pole is selected unifromly at random.
-                - 'nearest_neighbour':
-                    when performing a swap transition, the selected consumer
-                    to be swapped with the pole is necessarily the nearest
-                    consumer to the selected pole.
-        """
-        self.sa_ratio_temperatue_at_two_third_of_steps
-        start_time = time.time()
-
-        # Print bar is not printed if plrint_log is True
-        if print_log:
-            print_progress_bar = False
-
-        # Set up number of flip transitions per temperature steps
-        flip_rep = self.sa_flip_rep
-        swap_rep = self.sa_swap_rep
-
-        # Set up number of swap transitions per temperature steps
-
-        if save_output:
-            # Create output folder if not already existing
-            if output_folder is None:
-                folder = 'data/output/' + grid.get_id() + '/' + 'SA'
-            else:
-                folder = output_folder
-
-            make_folder(folder)
-
-            if flip_rep == 0 and grid.is_pole_capacity_constraint_too_strong():
-                raise Warning("Pole capacity parameter doesn't allow grid to be"
-                              + " optimized without performing flips")
-                return 'SA algorithm aborted because of too low pole capacity'
-
-            backup_name = (grid.get_id()
-                           + f'_runtime{self.sa_runtime}_'
-                           + f'omega{self.sa_omega}'.replace('.', '-'))
-
-            if os.path.exists(folder + '/' + backup_name):
-                counter = 1
-                while os.path.exists(
-                        folder + '/' + backup_name + f'_{counter}'
-                ):
-                    counter += 1
-                backup_name = backup_name + f'_{counter}'
-
-            make_folder(folder + '/' + backup_name)
-
-            # Store inital price for about_run file
-            inital_price = grid.price()
-
-        while grid.get_poles().shape[0] == 0:
-            grid.set_node_type_randomly(0.1)
-
-        # Display algo parameters in console
-        swap_option = self.sa_swap_option
-        print(f"|{42 * '_'}| SIMULATED ANNEALING |{42 * '_'}|\n")
-        print(f"runtime:             {str(self.sa_runtime)}")
-        print("omega:                          "
-              + f"{str(self.sa_omega)}")
-        print(f"flip rep:                       {str(self.sa_flip_rep)}")
-        print(f"swap rep:                       {str(self.sa_swap_rep)}")
-        print(f"consumer selection for swap:   {swap_option}\n")
-
-        print('\rinitializing starting temperature ...', end='')
-
-        if self.sa_starting_temperature == 'auto':
-            starting_temperature, cooling_rate =\
-                self.sa_compute_starting_temp_and_cooling_rate(
-                    grid,
-                    number_of_configuratio_to_compute_avg_price=10)
-        temperature = starting_temperature
-
-        print(f"\rinitial temperature:          {str(round(temperature, 2))}")
-        print("\n\n")
-
-        # Store smaller grid price and node DataFrame (at this point it
-        # corresponds of the input grid but it will be modified during run)
-        lower_grid_price = grid.price()
-        nodes_df_corresponding_to_lower_price = grid.get_nodes()
-        # Create Dataframe with namely price evolution during the algorithm run
-        # that will be saved as csv in folder
-        performance_list = ['price',
-                            'temperature',
-                            'time',
-                            'good flip',
-                            'bad flip',
-                            'good swap',
-                            'bad swap',
-                            'interpole_cable_length',
-                            'distribution_cable_length']
-        algo_run_log = pd.DataFrame(
-            0,
-            index=np.arange(1),
-            columns=performance_list)
-        algo_run_log['price'][0] = grid.price()
-        algo_run_log['temperature'][0] = temperature
-        algo_run_log['time'][0] = float(0)
-        algo_run_log['interpole_cable_length'][0] =\
-            grid.get_interpole_cable_length()
-        algo_run_log['distribution_cable_length'][0] =\
-            grid.get_distribution_cable_length()
-        start_time = time.time()
-        # make sure that the grid has enough poles per semgment to meet
-        # pole capacity constraint, if not the case, flip randomly chosen
-        # consumers in each segment until capacity constraint is respected
-        self.flip_consumers_until_pole_capacity_constraint_met(grid)
-        # Save all nodes in a DF
-        grid_nodes_init = grid.get_nodes()
-        # Create empty DF that will contain the nodes of each segment
-        # after SA run on the segment. The nodes will be added
-        grid_nodes_final = grid.get_nodes().drop(
-            [label for label in grid.get_nodes().index],
-            axis=0)
-        if print_progress_bar:
-            self.display_progress_bar(
-                0,
-                1,
-                f"price: {grid.price()}, temperature: {round(temperature, 2)}")
-            counter_segment = 0
-        for segment in grid.get_nodes()['segment'].unique():
-            if print_log and len(grid.get_nodes()['segment'].unique()) > 0:
-                print(f'\n\nsegment: {segment}\n')
-            grid.set_nodes(
-                grid_nodes_init[grid_nodes_init['segment'] == segment])
-            step_counter = 0
-            while time.time() - start_time < self.sa_runtime:
-                number_of_good_flips = 0
-                number_of_bad_flips = 0
-
-                number_of_good_swaps = 0
-                number_of_bad_swaps = 0
-
-                if print_log is True:
-                    if flip_rep != 0:
-                        print('\nflip at temperature ' + str(int(temperature)))
-                for f in range(flip_rep):
-                    if print_progress_bar:
-                        message = (f"price: {grid.price()}, "
-                                   + f"temperature: {round(temperature, 2)}")
-                        self.display_progress_bar(
-                            (time.time() - start_time) / self.sa_runtime,
-                            1,
-                            message)
-                    algo_status = self.sa_flip_step(grid=grid,
-                                                    temperature=temperature)
-                    if algo_status == 'good flip accepted':
-                        number_of_good_flips += 1
-                    elif algo_status == 'bad flip accepted':
-                        number_of_bad_flips += 1
-                    else:
-                        algo_status = ''
-                    if print_log is True:
-                        temp = int(time.time() - start_time) / \
-                            self.sa_runtime
-                        print('step: ' + str(step_counter) + " progress:"
-                              + f'{temp}%'
-                              + '    f: ' + str(f + 1)
-                              + '/' + str(flip_rep) + "   " + str(grid.price())
-                              + "    " + algo_status)
-                    if grid.price() < lower_grid_price:
-                        lower_grid_price = grid.price()
-                        nodes_df_corresponding_to_lower_price = (
-                            grid.get_nodes()
-                        )
-                if print_log is True:
-                    print('\nswap at temperature ' + str(int(temperature)))
-                for s in range(self.sa_swap_rep):
-                    if print_progress_bar:
-                        message = (f"price: {grid.price()}, "
-                                   + f"temperature: {round(temperature, 2)}")
-                        self.display_progress_bar(
-                            (time.time() - start_time)/self.sa_runtime,
-                            1,
-                            message=message)
-                    algo_status = self.sa_swap_step(grid=grid,
-                                                    temperature=temperature,
-                                                    swap_option=swap_option)
-                    if algo_status == 'good swap accepted':
-                        number_of_good_swaps += 1
-                        self.connect_nodes(grid)
-                    elif algo_status == 'bad swap accepted':
-                        number_of_bad_swaps += 1
-                        self.connect_nodes(grid)
-                    else:
-                        algo_status = ''
-                    if print_log is True:
-                        temp = int(time.time() - start_time) / \
-                            self.sa_runtime
-                        print('step: ' + str(step_counter) + " progress:"
-                              + f'{temp}%'
-                              + '    s: ' + str(f + 1)
-                              + '/' + str(self.sa_swap_rep) + "   "
-                              + str(grid.price())
-                              + "    " + algo_status)
-                    if grid.price() < lower_grid_price:
-                        lower_grid_price = grid.price()
-                        nodes_df_corresponding_to_lower_price = (
-                            grid.get_nodes()
-                        )
-
-                algo_run_log.loc[str(algo_run_log.shape[0])] = [
-                    grid.price(),
-                    temperature,
-                    time.time() - start_time,
-                    number_of_good_flips,
-                    number_of_bad_flips,
-                    number_of_good_swaps,
-                    number_of_bad_swaps,
-                    grid.get_interpole_cable_length(),
-                    grid.get_distribution_cable_length()
-                ]
-
-                # compute temperature at current time. The cooling scheme is
-                # such that the temperature is a decaying exponential starting
-                # at the starting temperature and reaching
-                # ratio_temperatue_at_two_third_of_steps * starting_temperature
-                # at two third of the runtime
-                current_time = time.time() - start_time
-                temperature = (
-                    starting_temperature
-                    * self.sa_ratio_temperatue_at_two_third_of_steps**(
-                        (3 * current_time)/(2 * self.sa_runtime)))
-
-            if print_progress_bar:
-                message = (f"price: {grid.price()}, "
-                           + f"temperature: {round(temperature, 2)}")
-                self.display_progress_bar(1, 1, message=message)
-
-                print(f"\n\nFinal price estimate: {grid.price()} $\n")
-
-            # print detail of sa transitions accepted
-            if print_log:
-                print('\nNumber of good flips: '
-                      + str(algo_run_log['good flip'].sum()))
-                print('Number of bad flips:  '
-                      + str(algo_run_log['bad flip'].sum()))
-                print('Number of good swaps: '
-                      + str(algo_run_log['good swap'].sum()))
-                print('Number of bad swaps:  '
-                      + str(algo_run_log['bad swap'].sum()) + '\n')
-            grid_nodes_final = pd.concat([grid_nodes_final, grid.get_nodes()])
-            grid.clear_nodes_and_links()
-            grid.set_nodes(grid_nodes_final)
-            self.connect_nodes(grid)
-            if print_progress_bar:
-                counter_segment += 1
-        if save_output:
-            algo_run_log = algo_run_log[algo_run_log['price'] != 0]
-            algo_run_log.to_csv(folder + '/' + backup_name + '/log.csv')
-
-            if lower_grid_price < grid.price():
-                grid.set_nodes(nodes_df_corresponding_to_lower_price)
-                self.connect_nodes(grid)
-
-            grid.export(folder=folder,
-                        backup_name=backup_name,
-                        allow_saving_in_existing_backup_folder=True)
-
-            # create a json file containing about dictionary
-            about_dict = {
-                'grid id': grid.get_id(),
-                't_0': temperature,
-                'number_of_temperature_steps'
-                'flip_rep': flip_rep,
-                'swap_rep': swap_rep,
-                'swap_option': swap_option,
-                'print_log': print_log,
-                'print_progress_bar': print_progress_bar,
-                'save_output': save_output,
-                'output_folder': output_folder,
-                'initial_price': inital_price,
-                'final_price': grid.price()
-            }
-
-            json.dumps(about_dict)
-
-            with open(folder + '/' + backup_name + '/about_run.json',
-                      'w') as about:
-                about.write(json.dumps(about_dict))
-
-    def sa_compute_starting_temp_and_cooling_rate(
-            self,
-            grid,
-            number_of_configuratio_to_compute_avg_price):
-        """
-        This method computes an intial temperature and a cooling_rate for
-        the method sa_optimization. The temperature is computed by
-        consideing an average price for several randomly generated
-        configurations and the price of the grid obatined using applying the
-        k_means clustering method used in nr_optimization(). The cooling ratio
-        is computed so that the temperature at two third of the time is equal
-        to the inital temperature times ratio_temperatue_at_two_third_of_steps.
-
-        Parameters
-        ----------
-        grid (~grids.Grid):
-            Grid object used for computing the initial temperature.
-
-        number_of_configuratio_to_compute_avg_price (int):
-            Number of transitions performed to obtain an average price
-            difference.
-
-        Output
-        ------
-        (float,float)
-        initial temperature, cooling ratio.
-        """
-
-        # Monitor time spent in method to compute the number of temperature
-        # steps so that the sa_optimization method runs for runtime seconds
-        nodes = grid.get_nodes().copy()
-        links = grid.get_links().copy()
-
-        grid_prices = []
-        number_of_poles = self.get_expected_pole_number_from_k_means(grid)
-
-        for i in range(number_of_configuratio_to_compute_avg_price):
-            grid.set_all_node_type_to_consumers()
-            while grid.get_poles().shape[0] < number_of_poles:
-                consumer_picked = random.choice(grid.get_consumers().index)
-                grid.flip_node(consumer_picked)
-            self.connect_nodes(grid)
-            grid_prices.append(grid.price())
-
-        self.nr_optimization(grid,
-                             number_of_poles=number_of_poles,
-                             number_of_relaxation_steps=0,
-                             first_guess_strategy='k_means',
-                             save_output=False,
-                             output_folder=None,
-                             print_progress_bar=False)
-
-        price_k_means = grid.price()
-        avg_price = statistics.mean(grid_prices)
-
-        delta_price = np.absolute(avg_price - price_k_means)
-        starting_temperature = delta_price * self.sa_omega
-
-        cooling_rate = self.sa_ratio_temperatue_at_two_third_of_steps**(
-            3/(2 * self.sa_runtime))
-
-        grid.set_nodes(nodes)
-        grid.set_links(links)
-
-        return starting_temperature, cooling_rate
-
-    # Transitions form one grid configuration to another
-
-    def sa_flip_step(self, grid: Grid, temperature):
-        """
-        This method perform a step of the Simulated Annealing (SA)
-        algorithm on a Grid object. It picks a node uniformly at random
-        and flips its 'node_type' status (i.e. if node_type is
-        pole, change it to consumer, if node_type is consumer,
-        change it to pole) and keep the new configuration according
-        to the SA algorithm. This method is used as a transition step
-        of the optimizing algorithm 'sa_optimization' of
-        the tools.optimization module for the SA algorithm.
-
-        Parameters
-        ----------
-        grid (~grids.Grid):
-            Grid upon which the Simulated Annealing step should be performed
-
-        Notes
-        -----
-            The SA algorithm is based on random modifications to the grid
-            similar to a Metropolis Monte Carlo optimization model
-            based on Markov chain with acceptance probabilty
-            A(X->Y) = min(1, exp(-delta_price/temperature))
-            where delta_price denotes the price difference between
-            the two configurations X and Y and where temperature is a
-            parameter of the model that decreases thanks to the cooling_ratio
-            parameter. See documentation for more info.
-        """
-        # Make sure that the node dataframe with non-fixed nodes is
-        # not empty
-        if grid.get_nodes()[
-                grid.get_nodes()['node_type'] != 'powerhub'].shape[0] > 0:
-            # Pick random number to be compared with price delta
-            random_number = np.random.rand()
-            # Save the price of the grid as it is before changinig
-            # anything
-            initial_price = grid.price()
-            # Save the node dataframe in case the change performed
-            # doesn't improve the price
-            backup_grid_nodes = grid.get_nodes()
-            backup_grid_links = grid.get_links()
-            grid.flip_random_node()
-            # Reject flip if new configuration doesn't meet pole capacity
-            # constraint
-            if grid.is_pole_capacity_constraint_too_strong():
-                grid.set_nodes(backup_grid_nodes)
-                grid.set_links(backup_grid_links)
-                return 'bad flip rejected'
-            else:
-                self.connect_nodes(grid)
-            # delta_price is the price difference between the former
-            # and new configuration
-            delta_price = abs(grid.price()-initial_price)
-            if grid.price() < initial_price:
-                return 'good flip accepted'
-            # SA algorithm accept new config with higher price
-            # with probability exp(-delta_price/temperature)
-            if temperature > 0:
-                if random_number < math.exp(- delta_price / temperature):
-                    return 'bad flip accepted'
-
-                else:
-                    grid.set_nodes(backup_grid_nodes)
-                    grid.set_links(backup_grid_links)
-                    return 'bad flip rejected'
-            else:
-                grid.set_nodes(backup_grid_nodes)
-                grid.set_links(backup_grid_links)
-                return 'bad flip rejected'
-        else:
-            raise Exception("ERROR: invalid 'algorithm' parameter "
-                            + "given as input for "
-                            + "Grid.flip_random_node method")
-
-    def sa_swap_step(self, grid: Grid, temperature, swap_option):
-        """
-        This method picks a pole uniformly at random and, accroding
-        to the alogrithm given as input, swaps its 'node_type'
-        with the one of a consumer picked according to the
-        swap_option parameter.
-        This method is used as a step of the optimizing method
-        'sa_optimization'.
-
-        Parameters
-        ----------
-        grid (~grids.Grid):
-            Grid object.
-
-        swap_option (str):
-            If swap_option is 'nearest_neighbour', the consumer that is picked
-            is necessarily the one that is the clostest to the picked pole.
-            If swap_option  is 'random', the consumer to be swaped with the
-            pole is selected uniformly at random.
-
-        algorithm (str):
-            This parameter specifies the algorithm to be used when this method
-            is called in an optimization process. The options for the algortihm
-            are the following:
-                - None
-                    If no algorithm is given, the method performs the swap
-                    and doesn't revert it regardless of the grid price.
-
-                - 'strict price improvement'
-                    This quite simple algorithm tries to swap the two nodes
-                    picked and  revert the swap if the overall grid price
-                    was better before the swap.
-
-                - 'metropolis'
-                    The algorithm is based on random modifications to the grid
-                    similar to a Metropolis Monte Carlo optimization model
-                    based on Markov chain with acceptance probabilty
-                    A(X->Y) = min(1, exp(-delta_price/temperature))
-                    where delta_price denotes the price difference between
-                    the two configurations X and Y and wheretemperature is a
-                    parameter of the model that is fixed.
-        """
-        # Make sure that the grid contains at least one pole and one
-        # consumer
-        if grid.get_nodes()[
-                grid.get_nodes()['node_type'] == 'pole'].shape[0] > 0:
-
-            # Pick random number number to be compared with price delta
-            random_number = np.random.rand()
-            # Store the price of the grid as it is before
-            # changinig anything
-            initial_price = grid.price()
-            # Store the node dataframe in case the swap performed
-            # doesn't improve the gird price
-            backup_grid_nodes = grid.get_nodes()
-            backup_grid_links = grid.get_links()
-            grid.swap_random(swap_option=swap_option)
-            self.connect_nodes(grid)
-            # delta_price is the price difference between the former
-            # and new configuration
-            delta_price = grid.price() - initial_price
-            if grid.price() < initial_price:
-                return "good swap accepted"
-            # Metropolis algorithm accept new config with higher price
-            # with probability exp(-delta_price/t)
-            if temperature > 0:
-                if random_number < math.exp(-delta_price/temperature):
-                    return 'bad swap accepted'
-                else:
-                    grid.set_nodes(backup_grid_nodes)
-                    grid.set_links(backup_grid_links)
-                    initial_price = grid.price()
-                    return 'bad swap rejected'
-            else:
-                grid.set_nodes(backup_grid_nodes)
-                grid.set_links(backup_grid_links)
-                initial_price = grid.price()
-                return 'bad swap rejected'
-
-        # --------------- LINEAR PROGRAMMING SOLVER BASED METHODS --------------- #
-
-    # Main Linear Programming (LP) method
-
-    def lp_optimization(self,
-                        grid,
-                        pole_capacity='default_pole_capacity',
-                        relax_constraint_10=True,
-                        output_folder=None):
-        """
-        This method uses the PULP solver to find a lower bound for a solution
-        to the design optimization problem of building a tree-star shaped
-        network minimizing cable costs from the grid given as parameter.
-
-        Parameters
-        ----------
-        grid (~grids.Grid):
-            Grid the algorithm should be performed on in order to find
-            solution to the grid price optimization problem.
-
-        pole_capacity (int): or str
-            Maximum number of consumers that can be allocated to each pole.
-
-            If pole_capacity is 'uncapacitated', the capacity for each new pole
-            is set to the number of nodes in the grid.
-
-            If pole_capacity is 'default_pole_capacity', the capacity is the one
-            given in the config_grid.cfg file.
-
-        relax_constraint_10 (bool):
-            When True, Constraint (10) is ignored (relaxed).
-
-        output_folder (str):
-            Path of the folder the grid output of the algorithm should be
-            saved in.
-
-        Output
-        ------
-        obj: :`dic` containing:
-            - lower_bound: float
-                Price of the solution to the relaxed problem.
-            - optimal_solution_feasible (bool):
-                Indicates whether or not the solution found satisfies the
-                spanning constraint.
-
-        Notes
-        -----
-            In case the solution found doesn't represent a spanning grid
-            (in which case solution cannot be accepted), all nodes 'node_type'
-            are set to 'consumer'.
-        """
-
-        starting_time = time.time()
-
-        if pole_capacity == 'default_pole_capacity':
-            pole_capacity = grid.get_default_pole_capacity()
-            if pole_capacity == 0:
-                pole_capacity = grid.get_nodes().shape[0]
-
-        if pole_capacity == 'uncapacitated':
-            pole_capacity = grid.get_nodes().shape[0]
-
-        # number of nodes in the grid
-        number_of_nodes = grid.get_nodes().shape[0]
-
-        # distance list
-        distance_list = []
-        for node_i, row_i in grid.get_nodes().iterrows():
-            for node_j, row_j in grid.get_nodes().iterrows():
-                distance_list.append(
-                    grid.distance_between_nodes(node_i, node_j))
-
-        distribution_cable_price = grid.get_distribution_cable_price()
-        interpole_cable_price = grid.get_interpole_cable_price()
-        cost_pole = grid.get_price_pole()
-        cost_connection = grid.get_price_consumer()
-
-        # Create helping functions from passing from list to matrix indices
-        def k_lu(i, j): return self.lp_lu_to_list(i, j)            # noqa: E731
-        def i_lu(k): return self.lp_list_to_lu(k)[0]               # noqa: E731
-        def j_lu(k): return self.lp_list_to_lu(k)[1]               # noqa: E731
-        def ij(i, j): return i * number_of_nodes + j               # noqa: E731
-
-        # Create the linear programming model
-        model = LpProblem(name="small-problem", sense=LpMinimize)
-
-        # ------------------Initialize the decision variables---------------#
-
-        # x(i, j) = x[i * n + j] variable -> 1 iff node i is consumer
-        # assigned to pole j (n = number_of_nodes)
-        x = []
-        for i in range(number_of_nodes):
-            for j in range(number_of_nodes):
-                if i == j:
-                    x.append(0)
-                if i != j:
-                    x.append(LpVariable(
-                        name=f'x({grid.get_nodes().index[i]},'
-                        + f'{grid.get_nodes().index[j]})',
-                        lowBound=0,
-                        upBound=1,
-                        cat="Integer"))
-
-        # y(i, j) = y[i * n + j] -> 1 iff node i is a pole assigned to pole j
-        y = []
-        for i in range(number_of_nodes):
-            for j in range(i + 1):
-                y.append(LpVariable(
-                    name=f'y({grid.get_nodes().index[i]},'
-                    + f'{grid.get_nodes().index[j]})',
-                    lowBound=0,
-                    upBound=1, cat="Integer"))
-
-        # -------------Add the objective function to the model-------------#
-
-        obj_func = (
-            (distribution_cable_price
-             * sum([x_k * d_k for x_k, d_k in zip(x, distance_list)]))
-            + (interpole_cable_price
-               * sum([y[k] * distance_list[ij(i_lu(k), j_lu(k))]
-                      for k in range(len(y))])
-               )
-            + cost_pole * sum(
-                [y[k_lu(i, i)] for i in range(number_of_nodes)]
-            )
-            + cost_connection * (number_of_nodes
-                                 - sum([y[k_lu(i, i)]
-                                        for i in range(number_of_nodes)]))
-        )
-        model += obj_func
-
-        # ----------------Add the constraints to the model----------------#
-
-        # Constraint (1)
-        #       node i is either a consumer or a pole
-        #       & if i is a consumer, it cannot be allocated to multiple poles
-        for i in range(number_of_nodes):
-            model += (sum([x[ij(i, j)]
-                           for j in range(number_of_nodes)]
-                          ) + y[k_lu(i, i)] == 1,
-                      f'(1) node {i} is either a consumer or a pole')
-
-        # Constraint (2) if consumer i is allocated to j, then j must be a pole
-        for i in range(number_of_nodes):
-            for j in range(number_of_nodes):
-                model += (x[ij(i, j)] <= y[k_lu(j, j)],
-                          f'(2) if node {i} is allocated to node {j},'
-                          + f' then {j} is a pole')
-
-        # Constraint (3) there are one less inter-pole link than poles in the
-        # grid
-        model += (
-            sum(y) == 2 * sum([y[k_lu(i, i)]
-                               for i in range(number_of_nodes)]) - 1,
-            '(3) there are one less inter-pole link than poles in the grid')
-
-        # Constraint (4) Each pole is connected to at least one other pole
-        for i in range(number_of_nodes):
-            model += (sum([y[k_lu(i, j)] for j in range(i)])
-                      + sum([y[k_lu(j, i)]
-                             for j in range(i + 1, number_of_nodes)]
-                            ) >= y[k_lu(i, i)],
-                      f'(4) pole {i} is connected to at least one other pole')
-
-        # Constraint (5) each i must be a pole if y_ij > 1 for all j
-        for i in range(number_of_nodes):
-            model += (
-                (sum([y[k_lu(i, j)] for j in range(i)])
-                 + sum([y[k_lu(j, i)] for j in range(i + 1, number_of_nodes)])
-                 <= y[k_lu(i, i)] * number_of_nodes),
-                (f'(5) pole {i} is a pole if there is at least a j so that y_ij '
-                 + "> 0"
-                 )
-            )
-
-        # ---------------------Solve the problem---------------------#
-        status = model.solve()
-
-        if status != 1:
-            raise Warning("The LP solver didn't find any solution")
-
-        grid.set_all_node_type_to_consumers()
-        grid.clear_links()
-
-        # first set nodes for which y(i, i) == 1 to poles
-        for var in model.variables():
-            if var.value() != 0.0:
-                variable, node_i, node_j = (
-                    self.lp_decompose_output_str(var.name)
-                )
-                if variable == 'y' and node_i == node_j:
-                    grid.set_node_type(node_i, 'pole')
-
-        # Then add links to the grid according to output values
-        for var in model.variables():
-            if var.value() != 0.0:
-                variable, node_i, node_j = self.lp_decompose_output_str(
-                    var.name)
-                if node_i != node_j:
-                    grid.add_link(node_i, node_j)
-
-        if output_folder is None:
-            folder = f'data/output/{grid.get_id()}/LP'
-        else:
-            folder = output_folder
-        backup_name = f'{grid.get_id()}_LP'
-
-        if os.path.exists(f'{folder}/{backup_name}'):
-            counter = 1
-            while os.path.exists(f'{folder}/{backup_name}_{counter}'):
-                counter += 1
-            backup_name += f'_{counter}'
-
-        grid_connected = True
-        for segment in grid.get_nodes()['segment'].unique():
-            if not grid.is_segment_spanning_tree(segment):
-                print(
-                    "The solution found by lp_optimization doesn't fullfil the"
-                    + " graph connectivity criterion..")
-                grid_connected = False
-
-        if not grid_connected:
-            backup_name = backup_name + '_DISCONNECTED'
-
-        grid.export(folder=folder,
-                    backup_name=backup_name)
-        # Save log containing the runtime as csv file
-        runtime = time.time() - starting_time
-
-        runtime_df = pd.DataFrame({'runtime': [runtime],
-                                   'price': [grid.price()],
-                                   'connected': [grid_connected]})
-
-        runtime_df.to_csv(f'{folder}/{backup_name}/log.csv')
-
-        if grid_connected:
-            return {'lower_bound_price [$]': model.objective.value(),
-                    'optimal_solution_feasible': True}
-        else:
-            return {'lower_bound_price [$]': model.objective.value(),
-                    'optimal_solution_feasible': False}
-
-    # Helping methods used for Linear Programming
-
-    def lp_list_to_lu(self, k):
-        """
-        Helping method that helps getting the matrix indices corresponding
-        to list index representing a lower-diagonal matrix. The list comports
-        all matrix entries for j < i (i and j denoting the column and row
-        indices respectively).
-
-        Parameters
-        ----------
-        k (int):
-            Index of the list representing a lower-diagonal matrix.
-
-        Output
-        ------
-        list(int, int)
-            Row and column indices of the matrix.
-        """
-
-        def s(k): return int(k*(k+1)/2)               # noqa: E731
-        def s_inv(k): return (-1 + np.sqrt(1+8*k))/2   # noqa: E731
-
-        i = np.floor(s_inv(k))
-        j = k - s(i + 1) + i + 1
-        return int(i), int(j)
-
-    def lp_lu_to_list(self, i, j):
-        """
-        Helping method that help getting the list element corresponding to
-        the matrix indices at row i and column j. The list comports
-        all matrix entries for j < i (i and j denoting the column and row
-        indices respectively).
-
-        Parameters
-        ----------
-
-        i (int):
-            Row index of the lower-diagonal matrix.
-        j (int):
-            Column index of the lower-diagonal matrix.
-        Output
-        ------
-        list(int, int)
-            List inices of the list representing the matrix."""
-
-        def s(k): return int(k*(k+1)/2)               # noqa: E731
-
-        if j > i:
-            raise Warning("invalid matrix values. j <= i must hold."
-                          + f" value given are (i, j) = ({i}, {j}) ")
-        return s(i + 1) - i + j - 1
-
-    def lp_decompose_output_str(self, string_var):
-        """
-        This method decomposes string variable from the output of the LP
-        solver into a list.
-
-        Parameter
-        ---------
-        string_var (str):
-            string variable from the output of the LP solver, typically looks
-            like x(2, 17).
-
-        Output
-        ------
-        list of str
-            Decomposition of the input string. If input is x(2, 17),
-            output is [x, 2, 17].
-        """
-        return string_var.replace('(', '/').replace(',', '/').replace(
-            ')', '/').split('/')[0:3]
 
     # --------------- NETWORK RELAXATION METHODS --------------- #
 
@@ -2778,96 +700,93 @@ class GridOptimizer:
                         output_folder: str = None,
                         print_progress_bar: bool = True):
         """
-        This method can be used to find a approximate solution
-        to the price minimization of the grid layout. It is based on
-        an iterative process. The core idea is to consider the links
-        at a pole as pulling strings exercing a force on each pole.
-        To this end, virtual poles are added to the grid and all other
-        non-fixed poles are considered as consumers. The virtual poles
-        are free to locate wherever on the plane and at each iteration
-        step, they are shifted in the direction of the resulting "strength"
-        from the nodes they are linked with.
+        This iterative process finds an approximate solution for the minimum cost of the grid. 
+        The main idea is to consider the links between poles as pulling strings exercing a force on each pole.
+        To this end, virtual poles are added to the grid, which are free to locate wherever 
+        on the plane. At each iteration step, they are shifted in the direction of 
+        the resulting "strength" from the nodes they are linked with.
 
         Parameters
         ----------
             grid (~grids.Grid):
-                Grid object.
+                grid object
 
             number_of_poles (int):
-                Number of poles in the grid.
+                number of poles in the grid
 
+            TODO: Remove this parameter because in our case, poles must be different from consumers
             locate_new_poles_freely (float):
-                Defines if poles identified will be new nodes that can be
+                defines if poles identified will be new nodes that can be
                 located freely on the plane or not. If locate_new_poles_freely
                 is True, the poles will be new nodes added to the network and
                 can be located freely on the plane. If locate_new_poles_freely
                 is False, some nodes node_type will be set to poles, no
-                additional nodes are added to the grid. 
+                additional nodes are added to the grid.
 
             number_of_relaxation_steps (int):
-                Number of iteration in relaxation process.
+                number of iteration in the relaxation process
 
             damping_factor (int):
-                Factor determining by how much the virtual poles are shifted
-                together with shortest distance between pair of nodes.
+                a factor determining how much the virtual poles can be shifted
+                together with shortest distance between pair of nodes
 
             weight_of_attraction (str):
-                Defines how strong each link attracts/pulls the pole.
+                defines how strong each link attracts/pulls the pole.
                 Possibilites are:
-                    - 'constant':
-                        Only depends on the type of link.
-                    - 'distance':
-                        Depends on the type of link and is proportional to the
-                        distance of the link. (i.e. long links pull stronger).
+                    + 'constant':
+                        only depends on the type of link.
+                    + 'distance':
+                        depends on the type of the link and is proportional to the
+                        distance of the link. (i.e., long links pull stronger).
 
             first_guess_strategy (str):
-                Defines the stategy that should be used to get the starting
-                configuration.
+                the stategy that should be used to get the starting configuration
                 Possibilites are:
-                    - 'k_means': (default)
-                        Virtual poles are initially located at center of cluster
+                    + 'k_means': (default)
+                        virtual poles are initially located at center of cluster
                         obtained using a k_means clustering algorithm from the
-                        sklearn library.
-                    - 'random':
-                        Virtual nodes are randomly located in box containing
-                        all grid nodes.
-                    - 'relax_input_grid':
-                        The starting configuration is the one of the grid
-                        given as input.
+                        sklearn library
+                    + 'random':
+                        virtual nodes are randomly located in box containing
+                        all grid nodes
+                    + 'relax_input_grid':
+                        the starting configuration is the grid configuration given as input
 
             number_of_steps_bewteen_random_shifts (int):
-                Determines how often a random shift of one of the poles should
-                occur.
+                determines how often a random shift of one of the poles should occur
 
             save_output (bool):
-                Determines whether or not the output grid and the log should be
+                determines whether or not the output grid and the log should be
                 saved in the output_folder.
 
             number_of_hill_climbers_runs (int):
-                When larger than 0, local price optimization is performed
-                after the relaxation. The local price optimization process
+                when larger than 0, local cost optimization is performed
+                after the relaxation. The local optimization process
                 computes in which direction each pole should be shifted in
-                order to improve the price and performs the according shift.
-                The process is repeated number_of_hill_climbers_runs times.
+                order to reduce the grid costs. The process is repeated 
+                'number_of_hill_climbers_runs' times
 
             output_folder (str):
-                Path of the folder the grid output of the algorithm should be
+                path of the folder the grid output of the algorithm should be
                 saved in.
 
             print_progress_bar (bool):
-                Determines whether or not the progress bar should be displayed
+                determines whether or not the progress bar should be displayed
                 in the console.
 
         Output
         ------
             class:`pandas.core.frame.DataFrame`
-                log Dataframe containg the detail of the run as well as the,
-                time evolution, the virtual_price (see notes for more info)
+                log dataframe containg the detail of the run as well as the,
+                time evolution, the 'virtual_cost' (see notes for more info)
                 evolution and a measure of how much the poles are shifted at
                 each step.
+
+        TODO: check if we need this or not
+
         Notes
         -----
-            The virtual price is the price of the grid containing the freely
+            The 'virtual_cost' is the cost of the grid containing the freely
             located virtual poles. Since, during the process, the layout is
             not a feasible solution (the virtual poles are not located at house
             location), the price that is computed cannot be interpreted as the
@@ -2875,6 +794,7 @@ class GridOptimizer:
         """
 
         if save_output:
+            # show the summary of problem in the terminal
             print(f"|{42 * '_'}| NETWORK RELAXATION |{42 * '_'}|\n")
             print(f"{35 * ' '}number of poles:{8 * ' '} {number_of_poles}\n")
             print(
@@ -2887,21 +807,16 @@ class GridOptimizer:
             print(f"\n{35 * ' '}weight of attraction:{3 * ' '}"
                   + f"{weight_of_attraction}\n\n")
 
-        # import and  initialize parameters
-
-        allocation_capacity = grid.get_default_pole_capacity()
-        cost_connection = grid.get_price_consumer()
-
-        if save_output:
+            # save all results in a folder
             if output_folder is None:
-                path_to_folder = f'data/output/{grid.get_id()}/NR'
+                path_to_folder = f'data/output/{grid.get_id()}'
             else:
                 path_to_folder = output_folder
             make_folder(path_to_folder)
 
-            folder_name = (f'{grid.get_id()}_NR_{number_of_poles}'
-                           + f'_poles_{number_of_relaxation_steps}steps'
-                           + f'_attr-{weight_of_attraction[:4]}')
+            folder_name = (f'{grid.get_id()}_{number_of_poles}_poles_'
+                           + f'{number_of_relaxation_steps}_steps_'
+                           + f'attr-{weight_of_attraction[:4]}')
 
             if os.path.exists(f'{path_to_folder}/{folder_name}'):
                 counter = 1
@@ -2917,41 +832,34 @@ class GridOptimizer:
                 folder_name_with_path = f'{path_to_folder}/{folder_name}'
                 make_folder(folder_name_with_path)
 
-        # Create copy of grid so that the algorithm runs on that copy
-        # and that the grid is set to the grid copy at the end of the algorithm
-        # (the motivation is to avoid having grid with virtual nodes in case
-        # the method is interrupted)
-        grid_copy = copy.deepcopy(grid)
+        # if (not locate_new_poles_freely) & (grid.get_total_pole_capacity() > 0):
+        #    grid.set_default_pole_capacity(
+        #        grid.get_default_pole_capacity())
 
-        if (not locate_new_poles_freely) & (grid.get_total_pole_capacity() > 0):
-            grid_copy.set_default_pole_capacity(
-                grid.get_default_pole_capacity())
+        # find out the range of (x,y) coordinate for all nodes of the grid
+        x_range = [grid.nodes.x.min(),
+                   grid.nodes.x.min()]
+        y_range = [grid.nodes.y.min(),
+                   grid.nodes.y.min()]
 
-        # find out what x and y coordinate ranges the nodes are in
-        x_range = [grid_copy.get_nodes()['x_coordinate'].min(),
-                   grid_copy.get_nodes()['x_coordinate'].max()]
-        y_range = [grid_copy.get_nodes()['y_coordinate'].min(),
-                   grid_copy.get_nodes()['y_coordinate'].max()]
+        # create log dataframe that will store info about run
+        algo_run_log = pd.DataFrame(
+            {
+                'time': pd.Series([0] * number_of_relaxation_steps, dtype=float),
+                'virtual_price': pd.Series([0] * number_of_relaxation_steps, dtype=float),
+                'norm_longest_shift': pd.Series([0] * number_of_relaxation_steps, dtype=float)
+            }
+        )
 
-        # Create log dataframe that will store info about run
-        algo_run_log = pd.DataFrame({'time': pd.Series(
-            [0]
-            * number_of_relaxation_steps,
-            dtype=float),
-            'virtual_price': pd.Series(
-            [0]
-            * number_of_relaxation_steps,
-            dtype=float),
-            'norm_longest_shift': pd.Series(
-            [0]
-            * number_of_relaxation_steps,
-            dtype=float)})
+        # FIXME: I think the first guess strategy can be deleted
+        """
         # Define number of virtual poles
         number_of_virtual_poles = (number_of_poles
                                    - grid_copy.get_poles()[
                                        grid_copy.get_poles()[
                                            'type_fixed']].shape[0]
                                    )
+        # TODO: must be checked later. Maybe there is no need for that
         if first_guess_strategy == 'random':
             # flip all non-fixed poles from the grid for the optimization
             for pole, row in grid_copy.get_poles().iterrows():
@@ -2971,6 +879,7 @@ class GridOptimizer:
                                    allocation_capacity=allocation_capacity)
 
         elif first_guess_strategy == 'k_means':
+            # TODO: I guess the flipping part should be removed because here we have poles AND consumers
             # flip all non-fixed poles from the grid for the optimization
             for pole, row in grid_copy.get_poles().iterrows():
                 if not row['type_fixed']:
@@ -2979,9 +888,9 @@ class GridOptimizer:
             # Create virtual poles and add them at centers of clusters
             # given by the k_means_cluster_centers() method
 
-            cluster_centers = self.k_means_cluster_centers(
+            cluster_centers = self.kmeans_clustering(
                 grid=grid_copy,
-                k_number_of_clusters=number_of_virtual_poles)
+                n_clusters=number_of_virtual_poles)
 
             count = 0
             for coord in cluster_centers:
@@ -3013,12 +922,13 @@ class GridOptimizer:
             raise Warning("invalid first_guess_strategy parameter, "
                           + "possibilities are:\n- 'random'\n- 'k_means'\n- "
                           + "'relax_input_grid'")
-        self.connect_nodes(grid_copy)
+        self.connect_grid_elements(grid_copy)
+        """
         start_time = time.time()
 
         # ---------- STEP 0 - Initialization step -------- #
         if print_progress_bar:
-            self.printProgressBar(0, 1)
+            self.print_progress_bar(0, 1)
         # Compute new relaxation_df
         relaxation_df = self.nr_compute_relaxation_df(
             grid_copy, weight_of_attraction)
@@ -3029,15 +939,12 @@ class GridOptimizer:
         # scalar product between the vector_resulting form the previous
         # and current step will be computed and used to adapt the
         # damping_factor value
-        list_resulting_vectors_previous_step =\
-            self.nr_compute_relaxation_df(
-                grid_copy,
-                weight_of_attraction)['vector_resulting']
-        list_resulting_vectors_current_step =\
-            self.nr_compute_relaxation_df(
-                grid_copy,
-                weight_of_attraction)['vector_resulting']
-        meter_per_default_unit = grid_copy.get_meter_per_default_unit()
+        list_resulting_vectors_previous_step = self.nr_compute_relaxation_df(
+            grid_copy,
+            weight_of_attraction)['vector_resulting']
+        list_resulting_vectors_current_step = self.nr_compute_relaxation_df(
+            grid_copy,
+            weight_of_attraction)['vector_resulting']
         cost_connection = grid.get_price_consumer()
 
         # Compute damping_factor such that:
@@ -3050,22 +957,19 @@ class GridOptimizer:
 
         # Apply damping_factor to vector_resulting for each pole
         for pole, row in relaxation_df.iterrows():
-            row['vector_resulting'] =\
-                [(x / norm_longest_vector * smaller_link_distance
-                  * damping_factor)
-                 for x in row['vector_resulting']]
+            row['vector_resulting'] = [(x / norm_longest_vector * smaller_link_distance
+                                        * damping_factor)
+                                       for x in row['vector_resulting']]
 
         # Shift virtual poles in direction 'vector_resulting'
         for pole, row_pole in grid_copy.get_poles()[
                 - grid_copy.get_poles()['type_fixed']].iterrows():
             vector_resulting = relaxation_df['vector_resulting'][pole]
             grid_copy.shift_node(node=pole,
-                                 delta_x=(vector_resulting[0]
-                                          / meter_per_default_unit),
-                                 delta_y=(vector_resulting[1]
-                                          / meter_per_default_unit),)
+                                 delta_x=vector_resulting[0],
+                                 delta_y=vector_resulting[1])
 
-        self.connect_nodes(grid_copy)
+        self.connect_grid_elements(grid_copy)
         algo_run_log['time'][0] = time.time() - start_time
         # The solution have number_of_virtual_poles consumers less than the
         # intermediate layout containing virtual poles
@@ -3075,7 +979,7 @@ class GridOptimizer:
         algo_run_log['norm_longest_shift'][0] = (norm_longest_vector
                                                  / smaller_link_distance)
         if print_progress_bar:
-            self.printProgressBar(1, number_of_relaxation_steps + 1)
+            self.print_progress_bar(1, number_of_relaxation_steps + 1)
 
         # ------------ STEP n + 1 - ITERATIVE STEP ------------- #
         for n in range(1, number_of_relaxation_steps + 1):
@@ -3085,8 +989,7 @@ class GridOptimizer:
                     coord_pole = (
                         grid_copy.get_poles()['x_coordinate'][pole_to_shift],
                         grid_copy.get_poles()['y_coordinate'][pole_to_shift])
-                    random_consumer =\
-                        np.random.choice(grid_copy.get_consumers().index)
+                    random_consumer = np.random.choice(grid_copy.get_consumers().index)
                     coord_consumer = (
                         grid_copy.get_consumers()['x_coordinate'][
                             random_consumer],
@@ -3099,24 +1002,21 @@ class GridOptimizer:
 
             relaxation_df = self.nr_compute_relaxation_df(grid_copy,
                                                           weight_of_attraction)
-            list_resulting_vectors_current_step =\
-                relaxation_df['vector_resulting']
+            list_resulting_vectors_current_step = relaxation_df['vector_resulting']
             # For each pole, compute the scalar product of the resulting vector
             # from the previous and current step. The values will be used to
             # adapt the damping value
-            list_scalar_product_vectors = \
-                [x[0] * y[0] + x[1] * y[1] for x, y in zip(
-                    list_resulting_vectors_current_step,
-                    list_resulting_vectors_previous_step)]
+            list_scalar_product_vectors = [x[0] * y[0] + x[1] * y[1] for x, y in zip(
+                list_resulting_vectors_current_step,
+                list_resulting_vectors_previous_step)]
             if min(list_scalar_product_vectors) >= 0:
                 damping_factor = damping_factor * 2.5
             else:
                 damping_factor = damping_factor / 1.5
             for pole, row in relaxation_df.iterrows():
-                row['vector_resulting'] =\
-                    [(x / norm_longest_vector * smaller_link_distance
-                      * damping_factor)
-                     for x in row['vector_resulting']]
+                row['vector_resulting'] = [(x / norm_longest_vector * smaller_link_distance
+                                            * damping_factor)
+                                           for x in row['vector_resulting']]
 
             # Shift virtual poles in direction 'vector_resulting'
             virtual_poles = grid_copy.get_poles()[
@@ -3129,24 +1029,22 @@ class GridOptimizer:
                 vector_resulting = relaxation_df['vector_resulting'][pole]
                 grid_copy.shift_node(
                     node=pole,
-                    delta_x=vector_resulting[0] / meter_per_default_unit,
-                    delta_y=vector_resulting[1] / meter_per_default_unit)
-            self.connect_nodes(grid_copy)
+                    delta_x=vector_resulting[0],
+                    delta_y=vector_resulting[1])
+            self.connect_grid_elements(grid_copy)
             algo_run_log['time'][n] = time.time() - start_time
             algo_run_log['virtual_price'][n] = (grid_copy.price()
                                                 - (number_of_virtual_poles
                                                    * cost_connection))
-            algo_run_log['norm_longest_shift'][n] = \
-                self.nr_get_norm_of_longest_vector_resulting(
-                    relaxation_df) * meter_per_default_unit
+            algo_run_log['norm_longest_shift'][n] = self.nr_get_norm_of_longest_vector_resulting(
+                relaxation_df)
             if print_progress_bar:
-                self.printProgressBar(
+                self.print_progress_bar(
                     n + 1,
                     number_of_relaxation_steps + 1,
                     price=(grid_copy.price() - (number_of_virtual_poles
                                                 * cost_connection)))
-            list_resulting_vectors_previous_step =\
-                list_resulting_vectors_current_step
+            list_resulting_vectors_previous_step = list_resulting_vectors_current_step
 
         # if number_of_hill_climbers_runs is non-zero, perform hill climber
         # runs
@@ -3159,7 +1057,7 @@ class GridOptimizer:
                 else:
                     current_price = grid_copy.price() - (number_of_virtual_poles
                                                          * cost_connection)
-                self.printProgressBar(
+                self.print_progress_bar(
                     iteration=i,
                     total=number_of_hill_climbers_runs,
                     price=current_price
@@ -3172,7 +1070,7 @@ class GridOptimizer:
                     grid=grid_copy,
                     pole=pole,
                     gradient=gradient)
-                self.connect_nodes(grid_copy)
+                self.connect_grid_elements(grid_copy)
                 if save_output:
                     algo_run_log.loc[f'{algo_run_log.shape[0]}'] = [
                         time.time() - start_time,
@@ -3185,7 +1083,7 @@ class GridOptimizer:
                     else:
                         current_price = (grid_copy.price() - (number_of_virtual_poles
                                                               * cost_connection))
-                    self.printProgressBar(
+                    self.print_progress_bar(
                         iteration=i + ((counter + 1) /
                                        grid_copy.get_poles().shape[0]),
                         total=number_of_hill_climbers_runs,
@@ -3216,13 +1114,12 @@ class GridOptimizer:
             for node_chosen in node_choosen_to_be_poles:
                 grid_copy.flip_node(node_chosen)
 
-            self.connect_nodes(grid_copy)
+            self.connect_grid_elements(grid_copy)
         n_final = number_of_relaxation_steps + 1
         algo_run_log['time'][n_final] = time.time() - start_time
         algo_run_log['virtual_price'][n_final] = grid_copy.price()
-        algo_run_log['norm_longest_shift'][n_final] =\
-            self.nr_get_norm_of_longest_vector_resulting(
-                relaxation_df) * meter_per_default_unit
+        algo_run_log['norm_longest_shift'][n_final] = self.nr_get_norm_of_longest_vector_resulting(
+            relaxation_df)
         if save_output:
             print(f"\n\nFinal price: {grid_copy.price()} $\n")
 
@@ -3306,16 +1203,15 @@ class GridOptimizer:
             grid.get_nodes().index[0],
             grid.get_nodes().index[1])
 
-        node_indices = grid.get_consumers().index
+        node_indices = grid.consumers().index
         for i in range(len(node_indices)):
             for j in range(len(node_indices)):
                 if i > j:
                     if grid.distance_between_nodes(
                             node_indices[i],
                             node_indices[j]) < smaller_distance:
-                        smaller_distance =\
-                            grid.distance_between_nodes(node_indices[i],
-                                                        node_indices[j])
+                        smaller_distance = grid.distance_between_nodes(node_indices[i],
+                                                                       node_indices[j])
         return smaller_distance
 
     def nr_compute_relaxation_df(self, grid: Grid, weight_of_attraction='constant'):
@@ -3362,7 +1258,7 @@ class GridOptimizer:
                 [0, 0],
                 [0, 0],
                 [0, 0]]
-            for link, row_link in grid.get_links().iterrows():
+            for link, row_link in grid.links().iterrows():
                 if row_link['from'] == pole:
                     if row_link['to'] in grid.get_poles().index:
                         relaxation_df['connected_poles'][pole].append(
@@ -3373,11 +1269,11 @@ class GridOptimizer:
                             'connected_poles'][pole].append(row_link['from'])
 
                 if row_link['from'] == pole:
-                    if row_link['to'] in grid.get_consumers().index:
+                    if row_link['to'] in grid.consumers().index:
                         relaxation_df[
                             'connected_consumers'][pole].append(row_link['to'])
                 if row_link['to'] == pole:
-                    if row_link['from'] in grid.get_consumers().index:
+                    if row_link['from'] in grid.consumers().index:
                         relaxation_df[
                             'connected_consumers'
                         ][pole].append(row_link['from'])
@@ -3442,35 +1338,35 @@ class GridOptimizer:
         grid.shift_node(node=pole,
                         delta_x=delta,
                         delta_y=0)
-        self.connect_nodes(grid)
-        price_pos_x = grid.price()
+        self.connect_grid_elements(grid)
+        price_pos_x = grid.cost()
 
         # compute price of configuration with pole shifted from (- delta, 0)
         grid.shift_node(node=pole,
                         delta_x=- 2 * delta,
                         delta_y=0)
-        self.connect_nodes(grid)
-        price_neg_x = grid.price()
+        self.connect_grid_elements(grid)
+        price_neg_x = grid.cost()
 
         # compute price of configuration with pole shifted from (0, delta)
         grid.shift_node(node=pole,
                         delta_x=delta,
                         delta_y=delta)
-        self.connect_nodes(grid)
-        price_pos_y = grid.price()
+        self.connect_grid_elements(grid)
+        price_pos_y = grid.cost()
 
         # compute price of configuration with pole shifted from (0, - delta)
         grid.shift_node(node=pole,
                         delta_x=0,
                         delta_y=- 2 * delta)
-        self.connect_nodes(grid)
-        price_neg_y = grid.price()
+        self.connect_grid_elements(grid)
+        price_neg_y = grid.cost()
 
         # Shift pole back to initial position
         grid.shift_node(node=pole,
                         delta_x=0,
                         delta_y=delta)
-        self.connect_nodes(grid)
+        self.connect_grid_elements(grid)
 
         gradient = ((price_pos_x - price_neg_x) / delta,
                     (price_pos_y - price_neg_y) / delta)
@@ -3497,42 +1393,43 @@ class GridOptimizer:
 
         # Store initial coordinates of pole to be shifted
         nodes = grid.get_nodes()
-        links = grid.get_links()
+        links = grid.links()
 
         amplitude = 15
-        price_after_shift = grid.price()
-        price_before_shift = grid.price()
+        price_after_shift = grid.cost()
+        price_before_shift = grid.cost()
 
         counter = 0
         while price_after_shift <= price_before_shift and counter < 20:
             nodes = grid.get_nodes()
-            links = grid.get_links()
-            price_before_shift = grid.price()
+            links = grid.links()
+            price_before_shift = grid.cost()
             grid.shift_node(pole,
                             - amplitude * gradient[0],
                             - amplitude * gradient[1])
-            self.connect_nodes(grid)
+            self.connect_grid_elements(grid)
             amplitude *= 3
             counter += 1
 
-            price_after_shift = grid.price()
+            price_after_shift = grid.cost()
         grid.set_nodes(nodes)
         grid.set_links(links)
-        self.connect_nodes(grid)
+        self.connect_grid_elements(grid)
 
 
 # Progress bar
 
-    def printProgressBar(self,
-                         iteration,
-                         total,
-                         prefix='',
-                         suffix='',
-                         decimals=1,
-                         length=50,
-                         fill='█',
-                         printEnd="\r",
-                         price=None):
+    def print_progress_bar(self,
+                           iteration,
+                           total,
+                           prefix='',
+                           suffix='',
+                           decimals=1,
+                           length=50,
+                           fill='█',
+                           printEnd="\r",
+                           price=None
+                           ):
         """
         Call in a loop to create terminal progress bar.
 
@@ -3552,10 +1449,9 @@ class GridOptimizer:
             -----
                 Funtion inspired from https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console/30740258 # noqa: E501
         """
-        percent = ("{0:." + str(decimals) + "f}").format(
-            100 * (iteration / float(total)))
-        filledLength = int(length * iteration // total)
-        bar = fill * filledLength + '-' * (length - filledLength)
+        percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+        filled_length = int(length * iteration // total)
+        bar = fill * filled_length + '-' * (length - filled_length)
         if price is None:
             print(f'\r{prefix} |{bar}| {percent}% {suffix}',
                   end=printEnd)
