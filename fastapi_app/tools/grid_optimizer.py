@@ -935,40 +935,37 @@ class GridOptimizer:
 
         norm_longest_vector = self.nr_get_max_length_weighted_vector(
             relaxation_df)
-        # Store vector resulting from current and previous step in order
-        # to adapt the damping_factor value at each step. At each step, the
-        # scalar product between the vector_resulting form the previous
-        # and current step will be computed and used to adapt the
-        # damping_factor value
-        list_resulting_vectors_previous_step = self.nr_compute_relaxation_df(
-            grid_copy,
-            weight_of_attraction)['vector_resulting']
-        list_resulting_vectors_current_step = self.nr_compute_relaxation_df(
-            grid_copy,
-            weight_of_attraction)['vector_resulting']
-        cost_connection = grid.get_price_consumer()
+        # Store the 'weighted_vector' from the current and the previous steps
+        # to adapt the 'damping_factor'.
+        # At each step, the scalar product between the 'weighted_vector'
+        # form the previous and current step will be computed and used
+        # to adapt the 'damping_factor' value
+        weighted_vectors_previous_step = self.nr_compute_relaxation_df(grid)['weighted_vector']
+        weighted_vectors_current_step = self.nr_compute_relaxation_df(grid)['weighted_vector']
+        #cost_connection = grid.get_price_consumer()
 
-        # Compute damping_factor such that:
-        # The norm of the longest 'vector_resulting' of the relaxation_df at
-        # step 0 is equal to half the distance of the smallest link
-
-        smaller_link_distance = min(
-            [x for x in grid_copy.get_links()['distance'] if x > 0]
+        # Compute the 'damping_factor' such that:
+        # The norm of the 'weighted_vector' at step 0
+        # is equal to n% of the smallest link in the grid
+        # (n is specified when calling nr_optimization)
+        smallest_link_distance = min(
+            [x for x in grid.links.length if x > 0]
         )
 
-        # Apply damping_factor to vector_resulting for each pole
-        for pole, row in relaxation_df.iterrows():
-            row['vector_resulting'] = [(x / norm_longest_vector * smaller_link_distance
-                                        * damping_factor)
-                                       for x in row['vector_resulting']]
+        # Apply the 'damping_factor' to the 'weighted_vector' for each pole
+        for pole in relaxation_df.index:
+            multiplier = damping_factor * smallest_link_distance / norm_longest_vector
+            relaxation_df.weighted_vector.loc[pole] = np.multiply(
+                relaxation_df.weighted_vector.loc[pole], multiplier)
 
-        # Shift virtual poles in direction 'vector_resulting'
-        for pole, row_pole in grid_copy.get_poles()[
-                - grid_copy.get_poles()['type_fixed']].iterrows():
-            vector_resulting = relaxation_df['vector_resulting'][pole]
-            grid_copy.shift_node(node=pole,
-                                 delta_x=vector_resulting[0],
-                                 delta_y=vector_resulting[1])
+        # Shift poles in the direction of the 'weighted_vector'
+        for pole in grid.poles().index:
+            grid.shift_node(node=pole,
+                            delta_x=relaxation_df.weighted_vector[pole][0],
+                            delta_y=relaxation_df.weighted_vector[pole][1])
+
+        # update the (lon,lat) coordinates based on the new (x,y) coordinates for poles
+        grid.convert_lonlat_xy(inverse=True)
 
         self.connect_grid_elements(grid_copy)
         algo_run_log['time'][0] = time.time() - start_time
@@ -978,7 +975,7 @@ class GridOptimizer:
             grid_copy.price()
             - number_of_virtual_poles * cost_connection)
         algo_run_log['norm_longest_shift'][0] = (norm_longest_vector
-                                                 / smaller_link_distance)
+                                                 / smallest_link_distance)
         if print_progress_bar:
             self.print_progress_bar(1, number_of_relaxation_steps + 1)
 
@@ -1003,19 +1000,19 @@ class GridOptimizer:
 
             relaxation_df = self.nr_compute_relaxation_df(grid_copy,
                                                           weight_of_attraction)
-            list_resulting_vectors_current_step = relaxation_df['vector_resulting']
+            weighted_vectors_current_step = relaxation_df['vector_resulting']
             # For each pole, compute the scalar product of the resulting vector
             # from the previous and current step. The values will be used to
             # adapt the damping value
             list_scalar_product_vectors = [x[0] * y[0] + x[1] * y[1] for x, y in zip(
-                list_resulting_vectors_current_step,
-                list_resulting_vectors_previous_step)]
+                weighted_vectors_current_step,
+                weighted_vectors_previous_step)]
             if min(list_scalar_product_vectors) >= 0:
                 damping_factor = damping_factor * 2.5
             else:
                 damping_factor = damping_factor / 1.5
             for pole, row in relaxation_df.iterrows():
-                row['vector_resulting'] = [(x / norm_longest_vector * smaller_link_distance
+                row['vector_resulting'] = [(x / norm_longest_vector * smallest_link_distance
                                             * damping_factor)
                                            for x in row['vector_resulting']]
 
@@ -1045,7 +1042,7 @@ class GridOptimizer:
                     number_of_relaxation_steps + 1,
                     price=(grid_copy.price() - (number_of_virtual_poles
                                                 * cost_connection)))
-            list_resulting_vectors_previous_step = list_resulting_vectors_current_step
+            weighted_vectors_previous_step = weighted_vectors_current_step
 
         # if number_of_hill_climbers_runs is non-zero, perform hill climber
         # runs
@@ -1252,15 +1249,15 @@ class GridOptimizer:
         }).set_index('pole')
 
         for pole in grid.poles().index:
-            # relaxation_df.loc[pole] = [
-            #     [],
-            #     [],
-            #     [0, 0],
-            #     [],
-            #     [],
-            #     [0, 0],
-            #     [0, 0]
-            # ]
+            relaxation_df.loc[pole] = [
+                [],
+                [],
+                [0, 0],
+                [],
+                [],
+                [0, 0],
+                [0, 0]
+            ]
             # find the connected poles and consumers to each pole
             for link in grid.links.index:
                 # Links labels are strings in '(from, to)' format. So, first both
@@ -1413,6 +1410,7 @@ class GridOptimizer:
 
 
 # Progress bar
+
 
     def print_progress_bar(self,
                            iteration,

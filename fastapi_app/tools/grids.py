@@ -1001,18 +1001,15 @@ class Grid:
         Parameters
         ----------
             node: str
-                Index of the node that should be shift.
-            delta_x: int
-                Integer representing the number in default unit that should be added
-                to 'x_coordinate' of the given node.
+                Index of the node that should be moved.
+            delta_x: float
+                The value that must be added to the 'x_coordinate' of the given node.
             delta_y: int
-                Integer representing the number in default unit that should be added
-                to 'y_coordinate' of the given node.
+                The value that must be added to the 'y_coordinate' of the given node.
         """
 
-        # shift node
-        self.nodes.at[node, 'x_coordinate'] = self.nodes['x_coordinate'][node] + delta_x
-        self.nodes.at[node, 'y_coordinate'] = self.nodes['y_coordinate'][node] + delta_y
+        self.nodes.x[node] += delta_x
+        self.nodes.y[node] += delta_y
 
     # ----------------------- MANIPULATE LINKS ------------------------ #
 
