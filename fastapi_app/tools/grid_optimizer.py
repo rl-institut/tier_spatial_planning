@@ -482,7 +482,7 @@ class GridOptimizer:
         # call kmeans clustering with constraints (min and max number of members in each cluster )
         kmeans = KMeansConstrained(
             n_clusters=n_clusters,
-            init='k-means++',  # 'k-means++' or 'random
+            init='k-means++',  # 'k-means++' or 'random'
             n_init=10,
             max_iter=300,
             tol=1e-4,
@@ -838,9 +838,9 @@ class GridOptimizer:
 
         # find out the range of (x,y) coordinate for all nodes of the grid
         x_range = [grid.nodes.x.min(),
-                   grid.nodes.x.min()]
+                   grid.nodes.x.max()]
         y_range = [grid.nodes.y.min(),
-                   grid.nodes.y.min()]
+                   grid.nodes.y.max()]
 
         # create log dataframe that will store info about run
         algo_run_log = pd.DataFrame(
@@ -851,8 +851,8 @@ class GridOptimizer:
             }
         )
 
-        # FIXME: I think the first guess strategy can be deleted
         """
+        # FIXME: I think the first guess strategy can be deleted
         # Define number of virtual poles
         number_of_virtual_poles = (number_of_poles
                                    - grid_copy.get_poles()[
@@ -929,10 +929,11 @@ class GridOptimizer:
         # ---------- STEP 0 - Initialization step -------- #
         if print_progress_bar:
             self.print_progress_bar(0, 1)
-        # Compute new relaxation_df
-        relaxation_df = self.nr_compute_relaxation_df(
-            grid_copy, weight_of_attraction)
-        norm_longest_vector = self.nr_get_norm_of_longest_vector_resulting(
+
+        # Compute the new relaxation_df
+        relaxation_df = self.nr_compute_relaxation_df(grid)
+
+        norm_longest_vector = self.nr_get_max_length_weighted_vector(
             relaxation_df)
         # Store vector resulting from current and previous step in order
         # to adapt the damping_factor value at each step. At each step, the
@@ -1036,7 +1037,7 @@ class GridOptimizer:
             algo_run_log['virtual_price'][n] = (grid_copy.price()
                                                 - (number_of_virtual_poles
                                                    * cost_connection))
-            algo_run_log['norm_longest_shift'][n] = self.nr_get_norm_of_longest_vector_resulting(
+            algo_run_log['norm_longest_shift'][n] = self.nr_get_max_length_weighted_vector(
                 relaxation_df)
             if print_progress_bar:
                 self.print_progress_bar(
@@ -1118,7 +1119,7 @@ class GridOptimizer:
         n_final = number_of_relaxation_steps + 1
         algo_run_log['time'][n_final] = time.time() - start_time
         algo_run_log['virtual_price'][n_final] = grid_copy.price()
-        algo_run_log['norm_longest_shift'][n_final] = self.nr_get_norm_of_longest_vector_resulting(
+        algo_run_log['norm_longest_shift'][n_final] = self.nr_get_max_length_weighted_vector(
             relaxation_df)
         if save_output:
             print(f"\n\nFinal price: {grid_copy.price()} $\n")
@@ -1156,10 +1157,10 @@ class GridOptimizer:
         grid.set_nodes(grid_copy.get_nodes())
         grid.set_links(grid_copy.get_links())
 
-    def nr_get_norm_of_longest_vector_resulting(self, relaxation_df):
+    def nr_get_max_length_weighted_vector(self, relaxation_df):
         """
-        This method returns the norm of the longest vector_resulting
-        from the relaxation df DataFrame.
+        This method returns the norm (i.e. magnitude) of the longest 'weighted_vector'
+        from the relaxation DataFrame.
 
         Parameter
         ---------
@@ -1173,14 +1174,16 @@ class GridOptimizer:
                 Norm of the longest vector in vector_resulting.
         """
 
-        norm_longest_vector = 0.0
+        max_length = 0.0
 
-        for index, row in relaxation_df.iterrows():
-            if np.sqrt(row['vector_resulting'][0]**2
-                       + row['vector_resulting'][1]**2) > norm_longest_vector:
-                norm_longest_vector = np.sqrt(row['vector_resulting'][0]**2
-                                              + row['vector_resulting'][1]**2)
-        return norm_longest_vector
+        for pole in relaxation_df.index:
+            x_weighted_vector = relaxation_df.weighted_vector.loc[pole][0]
+            y_weighted_vector = relaxation_df.weighted_vector.loc[pole][1]
+            norm_weighted_vector = np.sqrt(x_weighted_vector**2 + y_weighted_vector**2)
+            if norm_weighted_vector > max_length:
+                max_length = norm_weighted_vector
+
+        return max_length
 
     def nr_get_smaller_distance_between_nodes(self, grid: Grid):
         """
@@ -1214,7 +1217,7 @@ class GridOptimizer:
                                                                        node_indices[j])
         return smaller_distance
 
-    def nr_compute_relaxation_df(self, grid: Grid, weight_of_attraction='constant'):
+    def nr_compute_relaxation_df(self, grid: Grid):
         """
         This method computes the vectors between all poles and the nodes
         that are connected to it. The Series 'vector_resulting' is the
@@ -1234,79 +1237,71 @@ class GridOptimizer:
         """
         # Importing required parameters
 
-        interpole_cable_price = grid.get_interpole_cable_price()
-        distribution_cable_price = grid.get_distribution_cable_price()
+        capex_interpole = grid.capex.interpole_cable
+        capex_distribution = grid.capex.distribution_cable
 
         relaxation_df = pd.DataFrame({
-            'pole': pd.Series([]),
+            'pole': pd.Series([], dtype=str),
             'connected_consumers': pd.Series([]),
+            'xy_each_consumer': pd.Series([]),
+            'xy_equivalent_consumers': pd.Series([]),
             'connected_poles': pd.Series([]),
-            'relative_position_consumers': pd.Series([]),
-            'relative_position_poles': pd.Series([]),
-            'vector_consumers': pd.Series([]),
-            'vector_poles': pd.Series([]),
-            'vector_resulting': pd.Series([])
-        })
-        relaxation_df = relaxation_df.set_index('pole')
+            'xy_each_pole': pd.Series([]),
+            'xy_equivalent_poles': pd.Series([]),
+            'weighted_vector': pd.Series([]),
+        }).set_index('pole')
 
-        for pole, row_pole in grid.get_poles().iterrows():
-            relaxation_df.loc[pole] = [
-                [],
-                [],
-                [],
-                [],
-                [0, 0],
-                [0, 0],
-                [0, 0]]
-            for link, row_link in grid.links().iterrows():
-                if row_link['from'] == pole:
-                    if row_link['to'] in grid.get_poles().index:
-                        relaxation_df['connected_poles'][pole].append(
-                            row_link['to'])
-                if row_link['to'] == pole:
-                    if row_link['from'] in grid.get_poles().index:
-                        relaxation_df[
-                            'connected_poles'][pole].append(row_link['from'])
+        for pole in grid.poles().index:
+            # relaxation_df.loc[pole] = [
+            #     [],
+            #     [],
+            #     [0, 0],
+            #     [],
+            #     [],
+            #     [0, 0],
+            #     [0, 0]
+            # ]
+            # find the connected poles and consumers to each pole
+            for link in grid.links.index:
+                # Links labels are strings in '(from, to)' format. So, first both
+                # parentheses and the comma must be removed to get 'from' and 'to' separately
+                link_from = (link.replace('(', '')).replace(')', '').split(', ')[0]
+                link_to = (link.replace('(', '')).replace(')', '').split(', ')[1]
 
-                if row_link['from'] == pole:
-                    if row_link['to'] in grid.consumers().index:
-                        relaxation_df[
-                            'connected_consumers'][pole].append(row_link['to'])
-                if row_link['to'] == pole:
-                    if row_link['from'] in grid.consumers().index:
-                        relaxation_df[
-                            'connected_consumers'
-                        ][pole].append(row_link['from'])
+                if link_from == pole:
+                    if link_to in grid.poles().index:
+                        relaxation_df['connected_poles'][pole].append(link_to)
+                    elif link_to in grid.consumers().index:
+                        relaxation_df['connected_consumers'][pole].append(link_to)
 
-        for pole, row_pole in grid.get_poles().iterrows():
+                elif link_to == pole:
+                    if link_from in grid.poles().index:
+                        relaxation_df['connected_poles'][pole].append(link_from)
+                    elif link_from in grid.consumers().index:
+                        relaxation_df['connected_consumers'][pole].append(link_from)
+
+            # calculate the relative (x,y) positions of poles and consumers connected to
+            # the pole being investigated
             for consumer in relaxation_df['connected_consumers'][pole]:
-                delta_x = (grid.get_nodes()['x_coordinate'][consumer]
-                           - grid.get_nodes()['x_coordinate'][pole])
-                delta_y = (grid.get_nodes()['y_coordinate'][consumer]
-                           - grid.get_nodes()['y_coordinate'][pole])
-                relaxation_df[
-                    'relative_position_consumers'][pole].append(
-                        [delta_x, delta_y])
-                relaxation_df['vector_consumers'][pole][0] += delta_x
-                relaxation_df['vector_consumers'][pole][1] += delta_y
-
-                relaxation_df['vector_resulting'][pole][0] +=\
-                    (delta_x * distribution_cable_price / interpole_cable_price)
-                relaxation_df['vector_resulting'][pole][1] +=\
-                    (delta_y * distribution_cable_price / interpole_cable_price)
+                delta_x = grid.nodes.x[consumer] - grid.nodes.x[pole]
+                delta_y = grid.nodes.y[consumer] - grid.nodes.y[pole]
+                relaxation_df['xy_each_consumer'][pole].append([delta_x, delta_y])
+                relaxation_df['xy_equivalent_consumers'][pole][0] += delta_x
+                relaxation_df['xy_equivalent_consumers'][pole][1] += delta_y
+                relaxation_df['weighted_vector'][pole][0] += (
+                    delta_x * capex_distribution / capex_interpole)
+                relaxation_df['weighted_vector'][pole][1] += (
+                    delta_y * capex_distribution / capex_interpole)
 
             for pole_2 in relaxation_df['connected_poles'][pole]:
-                delta_x = (grid.get_nodes()['x_coordinate'][pole_2]
-                           - grid.get_nodes()['x_coordinate'][pole])
-                delta_y = (grid.get_nodes()['y_coordinate'][pole_2]
-                           - grid.get_nodes()['y_coordinate'][pole])
-                relaxation_df['relative_position_poles'][pole].append(
-                    [delta_x, delta_y])
-                relaxation_df['vector_poles'][pole][0] += delta_x
-                relaxation_df['vector_poles'][pole][1] += delta_y
+                delta_x = grid.nodes.x[pole_2] - grid.nodes.x[pole]
+                delta_y = grid.nodes.y[pole_2] - grid.nodes.y[pole]
+                relaxation_df['xy_each_pole'][pole].append([delta_x, delta_y])
+                relaxation_df['xy_equivalent_poles'][pole][0] += delta_x
+                relaxation_df['xy_equivalent_poles'][pole][1] += delta_y
+                relaxation_df['weighted_vector'][pole][0] += delta_x
+                relaxation_df['weighted_vector'][pole][1] += delta_y
 
-                relaxation_df['vector_resulting'][pole][0] += delta_x
-                relaxation_df['vector_resulting'][pole][1] += delta_y
         return relaxation_df
 
     def nr_compute_local_price_gradient(self, grid: Grid, pole, delta=1):
