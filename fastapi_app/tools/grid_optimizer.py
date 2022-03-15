@@ -11,6 +11,7 @@ from munkres import Munkres
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import minimum_spanning_tree
 from sklearn.datasets import make_blobs
+from sklearn.metrics import precision_recall_curve
 
 from fastapi_app.tools.io import make_folder
 from fastapi_app.tools.grids import Grid
@@ -37,6 +38,8 @@ class GridOptimizer:
 
     def connect_grid_elements(self, grid: Grid):
         """
+        +++ ok +++
+
         This method create links between:
             - each consumer and the nearest pole
             - all poles together based on the specified algorithm for minimum spanning tree
@@ -843,10 +846,10 @@ class GridOptimizer:
                    grid.nodes.y.max()]
 
         # create log dataframe that will store info about run
-        algo_run_log = pd.DataFrame(
+        info_log = pd.DataFrame(
             {
                 'time': pd.Series([0] * number_of_relaxation_steps, dtype=float),
-                'virtual_price': pd.Series([0] * number_of_relaxation_steps, dtype=float),
+                'cost': pd.Series([0] * number_of_relaxation_steps, dtype=float),
                 'norm_longest_shift': pd.Series([0] * number_of_relaxation_steps, dtype=float)
             }
         )
@@ -933,8 +936,6 @@ class GridOptimizer:
         # Compute the new relaxation_df
         relaxation_df = self.nr_compute_relaxation_df(grid)
 
-        norm_longest_vector = self.nr_get_max_length_weighted_vector(
-            relaxation_df)
         # Store the 'weighted_vector' from the current and the previous steps
         # to adapt the 'damping_factor'.
         # At each step, the scalar product between the 'weighted_vector'
@@ -944,17 +945,13 @@ class GridOptimizer:
         weighted_vectors_current_step = self.nr_compute_relaxation_df(grid)['weighted_vector']
         #cost_connection = grid.get_price_consumer()
 
-        # Compute the 'damping_factor' such that:
-        # The norm of the 'weighted_vector' at step 0
-        # is equal to n% of the smallest link in the grid
-        # (n is specified when calling nr_optimization)
-        smallest_link_distance = min(
-            [x for x in grid.links.length if x > 0]
-        )
-
-        # Apply the 'damping_factor' to the 'weighted_vector' for each pole
+        # Compute the 'damping_factor' such that the norm of the 'weighted_vector'
+        # at step 0 is equal to n% of the smallest link in the grid.
+        # 'n' is specified when calling nr_optimization.
+        # The the 'damping_factor' is applied to the 'weighted_vector' for each pole
         for pole in relaxation_df.index:
-            multiplier = damping_factor * smallest_link_distance / norm_longest_vector
+            multiplier = damping_factor * self.nr_smallest_link(grid) / \
+                self.nr_max_length_weighted_vector(relaxation_df)
             relaxation_df.weighted_vector.loc[pole] = np.multiply(
                 relaxation_df.weighted_vector.loc[pole], multiplier)
 
@@ -967,81 +964,67 @@ class GridOptimizer:
         # update the (lon,lat) coordinates based on the new (x,y) coordinates for poles
         grid.convert_lonlat_xy(inverse=True)
 
-        self.connect_grid_elements(grid_copy)
-        algo_run_log['time'][0] = time.time() - start_time
-        # The solution have number_of_virtual_poles consumers less than the
-        # intermediate layout containing virtual poles
-        algo_run_log['virtual_price'][0] = (
-            grid_copy.price()
-            - number_of_virtual_poles * cost_connection)
-        algo_run_log['norm_longest_shift'][0] = (norm_longest_vector
-                                                 / smallest_link_distance)
+        # create a new network based on the new coordinates of the poles in the grid
+        self.connect_grid_elements(grid)
+
+        # update the log file
+        info_log['time'][0] = time.time() - start_time
+        info_log['cost'][0] = grid.cost()
+        info_log['norm_longest_shift'][0] = (
+            self.nr_max_length_weighted_vector(relaxation_df) / self.nr_smallest_link(grid))
         if print_progress_bar:
-            self.print_progress_bar(1, number_of_relaxation_steps + 1)
+            self.print_progress_bar(
+                iteration=1, total=number_of_relaxation_steps + 1, cost=grid.cost())
 
         # ------------ STEP n + 1 - ITERATIVE STEP ------------- #
         for n in range(1, number_of_relaxation_steps + 1):
-            if number_of_steps_bewteen_random_shifts > 0:
-                if n % (number_of_steps_bewteen_random_shifts) == 0:
-                    pole_to_shift = np.random.choice(grid_copy.get_poles().index)
-                    coord_pole = (
-                        grid_copy.get_poles()['x_coordinate'][pole_to_shift],
-                        grid_copy.get_poles()['y_coordinate'][pole_to_shift])
-                    random_consumer = np.random.choice(grid_copy.get_consumers().index)
-                    coord_consumer = (
-                        grid_copy.get_consumers()['x_coordinate'][
-                            random_consumer],
-                        grid_copy.get_consumers()['y_coordinate'][
-                            random_consumer])
-                    grid_copy.shift_node(
-                        pole_to_shift,
-                        coord_consumer[0] - coord_pole[0],
-                        coord_consumer[1] - coord_pole[1])
+            # Compute the new relaxation_df after the previous changes.
+            relaxation_df = self.nr_compute_relaxation_df(grid)
 
-            relaxation_df = self.nr_compute_relaxation_df(grid_copy,
-                                                          weight_of_attraction)
-            weighted_vectors_current_step = relaxation_df['vector_resulting']
-            # For each pole, compute the scalar product of the resulting vector
-            # from the previous and current step. The values will be used to
-            # adapt the damping value
-            list_scalar_product_vectors = [x[0] * y[0] + x[1] * y[1] for x, y in zip(
+            # Update the current 'weighted_vector'
+            weighted_vectors_current_step = relaxation_df['weighted_vector']
+
+            # For each pole, compute the scalar product of the 'weighted_vector'
+            # from the previous and the current step.
+            # The values will be used to adapt the damping value
+            scalar_product_weighted_vectors = [x1[0] * x2[0] + x1[1] * x2[1] for x1, x2 in zip(
                 weighted_vectors_current_step,
                 weighted_vectors_previous_step)]
-            if min(list_scalar_product_vectors) >= 0:
+            if min(scalar_product_weighted_vectors) >= 0:
                 damping_factor = damping_factor * 2.5
             else:
                 damping_factor = damping_factor / 1.5
-            for pole, row in relaxation_df.iterrows():
-                row['vector_resulting'] = [(x / norm_longest_vector * smallest_link_distance
-                                            * damping_factor)
-                                           for x in row['vector_resulting']]
 
-            # Shift virtual poles in direction 'vector_resulting'
-            virtual_poles = grid_copy.get_poles()[
-                [(True if index[0] == "V" else False)
-                 for index in grid_copy.get_poles().index]
-            ]
+            # Apply the 'damping_factor' to the 'weighted_vector' for each pole.
+            for pole in relaxation_df.index:
+                multiplier = damping_factor * self.nr_smallest_link(grid) / \
+                    self.nr_max_length_weighted_vector(relaxation_df)
+                relaxation_df.weighted_vector.loc[pole] = np.multiply(
+                    relaxation_df.weighted_vector.loc[pole], multiplier)
 
-            for pole, row_pole in virtual_poles[
-                    - virtual_poles['type_fixed']].iterrows():
-                vector_resulting = relaxation_df['vector_resulting'][pole]
-                grid_copy.shift_node(
-                    node=pole,
-                    delta_x=vector_resulting[0],
-                    delta_y=vector_resulting[1])
-            self.connect_grid_elements(grid_copy)
-            algo_run_log['time'][n] = time.time() - start_time
-            algo_run_log['virtual_price'][n] = (grid_copy.price()
-                                                - (number_of_virtual_poles
-                                                   * cost_connection))
-            algo_run_log['norm_longest_shift'][n] = self.nr_get_max_length_weighted_vector(
-                relaxation_df)
+            # Shift poles in the direction of the 'weighted_vector'.
+            for pole in grid.poles().index:
+                grid.shift_node(node=pole,
+                                delta_x=relaxation_df.weighted_vector[pole][0],
+                                delta_y=relaxation_df.weighted_vector[pole][1])
+
+            # Update the (lon,lat) coordinates based on the new (x,y) coordinates for poles.
+            grid.convert_lonlat_xy(inverse=True)
+
+            # Create a new network based on the new coordinates of the poles in the grid.
+            self.connect_grid_elements(grid)
+
+            # Update the log file.
+            info_log['time'][n] = time.time() - start_time
+            info_log['cost'][n] = grid.cost()
+            info_log['norm_longest_shift'][n] = (
+                self.nr_max_length_weighted_vector(relaxation_df) / self.nr_smallest_link(grid))
+
+            # Update the progress bar.
             if print_progress_bar:
                 self.print_progress_bar(
-                    n + 1,
-                    number_of_relaxation_steps + 1,
-                    price=(grid_copy.price() - (number_of_virtual_poles
-                                                * cost_connection)))
+                    iteration=n+1, total=number_of_relaxation_steps + 1, cost=grid.cost())
+
             weighted_vectors_previous_step = weighted_vectors_current_step
 
         # if number_of_hill_climbers_runs is non-zero, perform hill climber
@@ -1050,27 +1033,24 @@ class GridOptimizer:
             print('\n\nHill climber runs...\n')
         for i in range(number_of_hill_climbers_runs):
             if print_progress_bar:
-                if locate_new_poles_freely:
-                    current_price = grid_copy.price()
-                else:
-                    current_price = grid_copy.price() - (number_of_virtual_poles
-                                                         * cost_connection)
+                current_price = grid.price()
                 self.print_progress_bar(
                     iteration=i,
                     total=number_of_hill_climbers_runs,
-                    price=current_price
+                    cost=current_price
                 )
+
             counter = 0
-            for pole in grid_copy.get_poles().index:
+            for pole in grid.poles().index:
                 counter += 1
-                gradient = self.nr_compute_local_price_gradient(grid_copy, pole)
+                gradient = self.nr_compute_local_price_gradient(grid, pole)
                 self.nr_shift_pole_toward_minus_gradient(
                     grid=grid_copy,
                     pole=pole,
                     gradient=gradient)
                 self.connect_grid_elements(grid_copy)
                 if save_output:
-                    algo_run_log.loc[f'{algo_run_log.shape[0]}'] = [
+                    info_log.loc[f'{info_log.shape[0]}'] = [
                         time.time() - start_time,
                         grid_copy.price() - (number_of_virtual_poles
                                              * cost_connection),
@@ -1085,44 +1065,18 @@ class GridOptimizer:
                         iteration=i + ((counter + 1) /
                                        grid_copy.get_poles().shape[0]),
                         total=number_of_hill_climbers_runs,
-                        price=current_price)
+                        cost=current_price)
 
-        if not locate_new_poles_freely:
-            # Set closest node to every virtual pole to poles and remove virtual
-            # poles
-            node_choosen_to_be_poles = []
-            for pole in grid_copy.get_poles()[
-                    - grid_copy.get_poles()['type_fixed']].index:
-                closest_node = grid_copy.get_consumers().index[0]
-                distance_to_closest_node = grid_copy.distance_between_nodes(
-                    pole,
-                    closest_node)
-                for node in grid_copy.get_consumers().index:
-                    if (grid_copy.distance_between_nodes(pole, node) <
-                            distance_to_closest_node) & (node not in node_choosen_to_be_poles):
-                        distance_to_closest_node = (
-                            grid_copy.distance_between_nodes(
-                                pole,
-                                node)
-                        )
-                        closest_node = node
-                node_choosen_to_be_poles.append(closest_node)
-                grid_copy.remove_node(pole)
-
-            for node_chosen in node_choosen_to_be_poles:
-                grid_copy.flip_node(node_chosen)
-
-            self.connect_grid_elements(grid_copy)
         n_final = number_of_relaxation_steps + 1
-        algo_run_log['time'][n_final] = time.time() - start_time
-        algo_run_log['virtual_price'][n_final] = grid_copy.price()
-        algo_run_log['norm_longest_shift'][n_final] = self.nr_get_max_length_weighted_vector(
+        info_log['time'][n_final] = time.time() - start_time
+        info_log['cost'][n_final] = grid.price()
+        info_log['norm_longest_shift'][n_final] = self.nr_max_length_weighted_vector(
             relaxation_df)
         if save_output:
             print(f"\n\nFinal price: {grid_copy.price()} $\n")
 
-            algo_run_log.to_csv(path_to_folder + '/' +
-                                folder_name + '/log.csv')
+            info_log.to_csv(path_to_folder + '/' +
+                            folder_name + '/log.csv')
             grid_copy.export(backup_name=folder_name,
                              folder=path_to_folder,
                              allow_saving_in_existing_backup_folder=True)
@@ -1154,8 +1108,26 @@ class GridOptimizer:
         grid.set_nodes(grid_copy.get_nodes())
         grid.set_links(grid_copy.get_links())
 
-    def nr_get_max_length_weighted_vector(self, relaxation_df):
+    def nr_smallest_link(self, grid: Grid):
         """
+        +++ ok +++
+
+        This method returns the length of the smallest link in the grid.
+
+        Parameter
+        ---------
+            grid (~grids.Grid): Grid object.
+
+        Return
+        ------
+            float: length of the smallest link in the grid
+        """
+        return min([x for x in grid.links.length if x > 0])
+
+    def nr_max_length_weighted_vector(self, relaxation_df):
+        """
+        +++ ok +++
+
         This method returns the norm (i.e. magnitude) of the longest 'weighted_vector'
         from the relaxation DataFrame.
 
@@ -1165,7 +1137,7 @@ class GridOptimizer:
                 DataFrame containing all relaxation vectors for each invidiuda
                 poles.
 
-        Output
+        Return
         ------
             float
                 Norm of the longest vector in vector_resulting.
@@ -1216,27 +1188,30 @@ class GridOptimizer:
 
     def nr_compute_relaxation_df(self, grid: Grid):
         """
-        This method computes the vectors between all poles and the nodes
-        that are connected to it. The Series 'vector_resulting' is the
-        sum of the vector multiplied by the appropriate price per cable
-        length (i.e. distribution_cable_per_meter for distribution links
-        and interpole_cable_per_meter for inter-pole links).
+        +++ ok +++
+
+        This method computes the vectors between all poles and nodes
+        that are connected to it. The Series 'weighted_vector' is the
+        sum of the vector multiplied by the corresponding costs per cable
+        length (i.e., distribution and interpole cabes).
 
         Parameters
         ----------
             grid (~grids.Grid):
                 Grid object.
-        Output
+
+        Return
         ------
             class:`pandas.core.frame.DataFrame`
                 DataFrame containing all relaxation vectors for each invidiudal
-                poles.
+                poles and the final equivalent vector called 'weighted_vector'
         """
-        # Importing required parameters
 
+        # Get costs per meter of cables.
         capex_interpole = grid.capex.interpole_cable
         capex_distribution = grid.capex.distribution_cable
 
+        # A dataframe including all data required for relaxation.
         relaxation_df = pd.DataFrame({
             'pole': pd.Series([], dtype=str),
             'connected_consumers': pd.Series([]),
@@ -1248,6 +1223,7 @@ class GridOptimizer:
             'weighted_vector': pd.Series([]),
         }).set_index('pole')
 
+        # Update the 'relaxation_df' for all poles in the grid object.
         for pole in grid.poles().index:
             relaxation_df.loc[pole] = [
                 [],
@@ -1258,10 +1234,12 @@ class GridOptimizer:
                 [0, 0],
                 [0, 0]
             ]
-            # find the connected poles and consumers to each pole
+
+            # Find the connected poles and consumers to each pole
             for link in grid.links.index:
+
                 # Links labels are strings in '(from, to)' format. So, first both
-                # parentheses and the comma must be removed to get 'from' and 'to' separately
+                # parentheses and the comma must be removed to get 'from' and 'to' separately.
                 link_from = (link.replace('(', '')).replace(')', '').split(', ')[0]
                 link_to = (link.replace('(', '')).replace(')', '').split(', ')[1]
 
@@ -1277,8 +1255,8 @@ class GridOptimizer:
                     elif link_from in grid.consumers().index:
                         relaxation_df['connected_consumers'][pole].append(link_from)
 
-            # calculate the relative (x,y) positions of poles and consumers connected to
-            # the pole being investigated
+            # Calculate the relative (x,y) positions of poles and consumers connected to
+            # the pole being investigated.
             for consumer in relaxation_df['connected_consumers'][pole]:
                 delta_x = grid.nodes.x[consumer] - grid.nodes.x[pole]
                 delta_y = grid.nodes.y[consumer] - grid.nodes.y[pole]
@@ -1408,50 +1386,55 @@ class GridOptimizer:
         grid.set_links(links)
         self.connect_grid_elements(grid)
 
-
-# Progress bar
-
-
     def print_progress_bar(self,
-                           iteration,
-                           total,
-                           prefix='',
-                           suffix='',
-                           decimals=1,
-                           length=50,
-                           fill='█',
-                           printEnd="\r",
-                           price=None
+                           iteration: int,
+                           total: int,
+                           prefix: str = '',
+                           suffix: str = '',
+                           decimals: int = 1,
+                           length: int = 50,
+                           fill: str = '█',
+                           print_end: str = '\r',
+                           cost: float = None
                            ):
         """
+        +++ ok +++
+
         Call in a loop to create terminal progress bar.
 
         Parameters
         ----------
-            iteration   - Required  : current iteration (Int)
-            total       - Required  : total iterations (Int)
-            prefix      - Optional  : prefix string (Str)
-            suffix      - Optional  : suffix string (Str)
+            iteration   - Required  : current iteration (int)
+            total       - Required  : total iterations (int)
+            prefix      - Optional  : prefix string (str)
+            suffix      - Optional  : suffix string (str)
             decimals    - Optional  : positive number of decimals in percent
-                                    complete (Int)
-            length      - Optional  : character length of bar (Int)
-            fill        - Optional  : bar fill character (Str)
-            printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+                                    complete (int)
+            length      - Optional  : character length of bar (int)
+            fill        - Optional  : bar fill character (str)
+            print_end   - Optional  : end character (e.g., "\r", "\r\n") (str)
 
             Notes
             -----
                 Funtion inspired from https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console/30740258 # noqa: E501
         """
-        percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+        # the precentage which is shown next to the progress bar
+        precision = '{:.' + str(decimals) + 'f}'
+        percent = precision.format(100 * iteration / total)
+
+        # fill some part of the progress bar depending on the iteration number
         filled_length = int(length * iteration // total)
         bar = fill * filled_length + '-' * (length - filled_length)
-        if price is None:
+
+        # update the progress bar based on the iteration number and cost
+        if cost is None:
             print(f'\r{prefix} |{bar}| {percent}% {suffix}',
-                  end=printEnd)
+                  end=print_end)
         else:
-            print(f'\r{prefix} |{bar}| {percent}% {suffix}, price: {price} $',
-                  end=printEnd)
-        # Print New Line on Complete
+            print(f'\r{prefix} |{bar}| {percent}% {suffix}, Cost: {cost:.2f} USD',
+                  end=print_end)
+
+        # print a new empty line after all iterations
         if iteration == total:
             print()
 
