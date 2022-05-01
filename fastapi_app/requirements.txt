@@ -35,5 +35,5 @@ urllib3==1.26.3
 uvicorn==0.13.3
 shapely==1.8.1
 openpyxl==3.0.7
-pyproj==3.3.0
+pyproj==3.3.1 # brew install proj for Apple M1
 k_means_constrained==0.6.0
