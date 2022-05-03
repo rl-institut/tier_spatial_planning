@@ -199,19 +199,9 @@ var markerDefault = new L.Icon({
   popupAnchor: [0, 0],
 });
 
-var markerHighDemand = new L.Icon({
-  iconUrl: "fastapi_app/static/images/markers/markerHighDemand.png",
-  iconSize: [18, 18],
-});
-
-var markerMediumDemand = new L.Icon({
-  iconUrl: "fastapi_app/static/images/markers/markerMediumDemand.png",
+var markerConsumer = new L.Icon({
+  iconUrl: "fastapi_app/static/images/markers/markerConsumer.png",
   iconSize: [16, 16],
-});
-
-var markerLowDemand = new L.Icon({
-  iconUrl: "fastapi_app/static/images/markers/markerLowDemand.png",
-  iconSize: [14, 14],
 });
 
 var markerPole = new L.Icon({
@@ -227,11 +217,9 @@ var markerShs = new L.Icon({
 var legend = L.control({ position: "bottomright" });
 legend.onAdd = function (map) {
   var div = L.DomUtil.create("div", "info legend"),
-    description = ["High Demand", "Medium Demand", "Low Demand", "Pole", "SHS"],
+    description = ["Consumer", "Pole", "SHS"],
     image = [
-      "fastapi_app/static/images/markers/markerHighDemand.png",
-      "fastapi_app/static/images/markers/markerMediumDemand.png",
-      "fastapi_app/static/images/markers/markerLowDemand.png",
+      "fastapi_app/static/images/markers/markerConsumer.png",
       "fastapi_app/static/images/markers/markerPole.png",
       "fastapi_app/static/images/markers/markerShs.png",
     ];
@@ -259,15 +247,12 @@ mainMap.on("click", function (e) {
         {
           latitude: poplocation.lat,
           longitude: poplocation.lng,
-          node_type: "consumer",
-          consumer_type: 'household',
-          demand_type: 'high-demand',
         }
       );
       drawMarker(
         poplocation.lat,
         poplocation.lng,
-        "high-demand"
+        'consumer'
       );
     }
 
@@ -357,12 +342,8 @@ mainMap.on("click", function (e) {
 // INTERACTION WITH LEAFLET MAP
 
 function drawMarker(latitude, longitude, type) {
-  if (type === "high-demand") {
-    icon_type = markerHighDemand;
-  } else if (type === "medium-demand") {
-    icon_type = markerMediumDemand;
-  } else if (type === "low-demand") {
-    icon_type = markerLowDemand;
+  if (type === "consumer") {
+    icon_type = markerConsumer;
   } else if (type === "pole") {
     icon_type = markerPole;
   } else if (type === "shs") {

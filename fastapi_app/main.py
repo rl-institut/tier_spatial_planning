@@ -143,6 +143,7 @@ async def import_data(import_files: import_structure = None):
     await database_initialization(nodes=True, links=True)
 
     # add nodes from the 'nodes' sheet of the excel file to the 'nodes.csv' file
+    # TODO: update the template for adding nodes
     nodes = import_files['nodes_to_import']
     links = import_files['links_to_import']
     if len(nodes) > 0:
@@ -169,19 +170,19 @@ async def database_initialization(nodes, links):
     header_nodes = [
         "latitude",
         "longitude",
-        "area",
         "node_type",
         "consumer_type",
+        "consumer_detail",
+        "average_consumption",
         "peak_demand",
-        "demand_type",
         "is_connected",
         "how_added"
     ]
     header_links = [
         "lat_from",
-        "long_from",
+        "lon_from",
         "lat_to",
-        "long_to",
+        "lon_to",
         "link_type",
         "length"
     ]
@@ -193,6 +194,7 @@ async def database_initialization(nodes, links):
 
 
 # add new manually-selected nodes to the *.csv file
+# TODO: update the template for adding nodes
 @app.post("/database_add_manual")
 async def database_add_manual(
         add_node_request: models.AddNodeRequest):
@@ -201,11 +203,11 @@ async def database_add_manual(
     nodes = {}
     nodes[headers[0]] = [add_node_request.latitude]
     nodes[headers[1]] = [add_node_request.longitude]
-    nodes[headers[2]] = [add_node_request.area]
     nodes[headers[3]] = [add_node_request.node_type]
     nodes[headers[4]] = [add_node_request.consumer_type]
+    nodes[headers[5]] = [add_node_request.consumer_detail]
+    nodes[headers[5]] = [add_node_request.average_consumption]
     nodes[headers[5]] = [add_node_request.peak_demand]
-    nodes[headers[6]] = [add_node_request.demand_type]
     nodes[headers[7]] = [add_node_request.is_connected]
     nodes[headers[8]] = [add_node_request.how_added]
 
@@ -224,7 +226,6 @@ def database_add(add_nodes: bool,
         df = pd.DataFrame.from_dict(nodes)
         df.latitude = df.latitude.map(lambda x: "%.6f" % x)
         df.longitude = df.longitude.map(lambda x: "%.6f" % x)
-        df.area = df.area.map(lambda x: "%.2f" % x)
 
         # getting existing latitudes from the csv file as a list of float numbers
         # and checking if some of the new nodes already exist in the database or not
@@ -243,9 +244,9 @@ def database_add(add_nodes: bool,
         # defining the precision of data
         df = pd.DataFrame.from_dict(links)
         df.lat_from = df.lat_from.map(lambda x: "%.6f" % x)
-        df.long_from = df.long_from.map(lambda x: "%.6f" % x)
+        df.lon_from = df.lon_from.map(lambda x: "%.6f" % x)
         df.lat_to = df.lat_to.map(lambda x: "%.6f" % x)
-        df.long_to = df.long_to.map(lambda x: "%.6f" % x)
+        df.lon_to = df.lon_to.map(lambda x: "%.6f" % x)
 
         # adding the links to the existing csv file
         if len(df.index) != 0:
@@ -256,8 +257,7 @@ def database_add(add_nodes: bool,
 def database_remove_nodes(nodes,
                           nodes_index_removing):
 
-    number_of_nodes = nodes.shape[0]
-    for index in range(number_of_nodes):
+    for index in nodes.index:
         if index in nodes_index_removing:
             nodes.drop(labels=index, axis=0, inplace=True)
 
@@ -305,8 +305,7 @@ async def database_add_remove_automatic(
         # then obtaining coordinates and surface areas of all buildings inside the
         # 'big' rectangle.
         formated_geojson = bi.convert_overpass_json_to_geojson(data)
-        building_coord, building_area = bi.obtain_areas_and_mean_coordinates_from_geojson(
-            formated_geojson)
+        building_coord = bi.obtain_mean_coordinates_from_geojson(formated_geojson)
 
         # excluding the buildings which are outside the drawn boundary
         features = formated_geojson['features']
@@ -330,30 +329,17 @@ async def database_add_remove_automatic(
         for label, coordinates in building_coordidates_within_boundaries.items():
             nodes["latitude"].append(coordinates[0])
             nodes["longitude"].append(coordinates[1])
-            nodes["area"].append(building_area[label])
             nodes["node_type"].append("consumer")
+            nodes["consumer_type"].append("household")
+            nodes["consumer_detail"].append("default")
 
-            # a very rough estimation about the type of the consumer based on the surface area
-            if nodes["area"][-1] <= 150:
-                nodes["consumer_type"].append("household")
-            else:
-                nodes["consumer_type"].append("productive")
+            # average consumption and peak demand are not yet known
+            nodes["average_consumption"].append('')
+            nodes["peak_demand"].append('')
 
-            # a very rough estimation for peak_demand at each node depending on the node_type
-            if nodes["consumer_type"][-1] == "household":
-                peak_demand_per_sq_meter = 2
-            else:
-                peak_demand_per_sq_meter = 6
-
-            nodes["peak_demand"].append(building_area[label] * peak_demand_per_sq_meter)
-            # categorization of node_type based on the peak_demand value
-            if nodes["peak_demand"][-1] >= 100:
-                nodes["demand_type"].append("high-demand")
-            elif 40 < nodes["peak_demand"][-1] < 100:
-                nodes["demand_type"].append("medium-demand")
-            else:
-                nodes["demand_type"].append("low-demand")
             # it is assumed that all nodes are parts of the mini-grid
+            # later, when the shs candidates are obtained, the corresponding
+            # values will be changed to 'False'
             nodes["is_connected"].append(True)
 
             # the node is selected automatically after drawing boundaries
@@ -398,15 +384,15 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
             "message": "Empty grid cannot be optimized!"
         }
 
-    # TODO: why initialization?!
     # initialite the database (remove contents of the CSV files)
-    await database_initialization(nodes=True, links=False)
+    # otherwise, when clicking on the 'optimize' button, the existing system won't be removed
+    await database_initialization(nodes=True, links=True)
 
     # nodes obtained from a previous optimization (e.g., poles)
     # will not be considered in the grid optimization
     nodes_index_removing = []
     for node_index in nodes.index:
-        if (nodes.how_added[node_index] == 'optimization'):
+        if ('optimization' in nodes.how_added[node_index]):
             nodes_index_removing.append(node_index)
 
     database_remove_nodes(nodes=nodes,
@@ -468,73 +454,30 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     opt.nr_optimization(grid=grid,
                         number_of_poles=number_of_poles,
                         number_of_relaxation_steps=number_of_relaxation_steps_nr,
-                        locate_new_poles_freely=True,
                         first_guess_strategy='random',
                         save_output=False,
                         number_of_hill_climbers_runs=0)
 
-    # inserting "poles" in the node database
-    poles_list = defaultdict(list)
-    for index in grid.get_nodes().index:
+    # get all poles obtained by the network relaxation method
+    poles = grid.poles().reset_index(drop=True)
 
-        # the indices of the poles in the nr_optimization method
-        # all start with 'V', because they represent "virtual" poles
-        if 'V' in index:
-            # nodes = models.Nodes()
+    # remove the unnecessary columns to make it compatible with the CSV files
+    # TODO: When some of these columns are removed in the future, this part here needs to be updated too.
+    poles.drop(labels=['x', 'y', 'cluster_label', 'segment', 'type_fixed',
+                       'allocation_capacity'], axis=1, inplace=True)
 
-            pole_latitude, pole_longitude = conv.latitude_longitude_from_xy_coordinates(
-                x_coord=grid.get_nodes().at[index, "x_coordinate"],
-                y_coord=grid.get_nodes().at[index, "y_coordinate"],
-                ref_latitude=ref_latitude,
-                ref_longitude=ref_longitude)
+    # store the list of poles in the "node" database
+    database_add(add_nodes=True, add_links=False, inlet=poles.to_dict())
 
-            poles_list["latitude"].append(pole_latitude)
-            poles_list["longitude"].append(pole_longitude)
-            poles_list["area"].append(float(0))
-            poles_list["node_type"].append('pole')
-            poles_list["consumer_type"].append('-')
-            poles_list["peak_demand"].append(float(0))
-            poles_list["demand_type"].append('-')
-            poles_list["is_connected"].append(True)
-            poles_list["how_added"].append('optimization')
+    # get all links obtained by the network relaxation method
+    links = grid.links.reset_index(drop=True)
 
-    # storing the list of poles in the "node" database
-    database_add(add_nodes=True, add_links=False, inlet=poles_list)
+    # remove the unnecessary columns to make it compatible with the CSV files
+    # TODO: When some of these columns are removed in the future, this part here needs to be updated too.
+    links.drop(labels=['x_from', 'y_from', 'x_to', 'y_to'], axis=1, inplace=True)
 
-    # removing the content of the existing CSV file for the links
-    await database_initialization(nodes=False, links=True)
-
-    # storing the newly obtained "links" from the optimization solution to the CSV file
-    links = defaultdict(list)
-    for index, row in grid.links().iterrows():
-        x_from = grid.get_nodes().loc[row['from']]['x_coordinate']
-        y_from = grid.get_nodes().loc[row['from']]['y_coordinate']
-
-        x_to = grid.get_nodes().loc[row['to']]['x_coordinate']
-        y_to = grid.get_nodes().loc[row['to']]['y_coordinate']
-
-        lat_from, long_from = conv.latitude_longitude_from_xy_coordinates(
-            x_coord=x_from,
-            y_coord=y_from,
-            ref_latitude=ref_latitude,
-            ref_longitude=ref_longitude
-        )
-
-        lat_to, long_to = conv.latitude_longitude_from_xy_coordinates(
-            x_coord=x_to,
-            y_coord=y_to,
-            ref_latitude=ref_latitude,
-            ref_longitude=ref_longitude
-        )
-
-        links["lat_from"].append(lat_from)
-        links["long_from"].append(long_from)
-        links["lat_to"].append(lat_to)
-        links["long_to"].append(long_to)
-        links["link_type"].append(row['type'])
-        links["length"].append(row['distance'])
-
-    database_add(add_nodes=False, add_links=True, inlet=links)
+    # store the list of poles in the "node" database
+    database_add(add_nodes=False, add_links=True, inlet=links.to_dict())
 
 
 @app.post("/shs_identification/")

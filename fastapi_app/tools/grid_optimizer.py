@@ -509,6 +509,7 @@ class GridOptimizer:
                 x=centroids_coord[i, 0],
                 y=centroids_coord[i, 1],
                 node_type='pole',
+                how_added='nr-optimization',
                 cluster_label=counter
             )
             counter += 1
@@ -693,7 +694,6 @@ class GridOptimizer:
                         grid,
                         number_of_poles: int,
                         number_of_relaxation_steps: int,
-                        locate_new_poles_freely: bool = False,
                         damping_factor: float = 0.5,
                         weight_of_attraction: str = 'constant',
                         first_guess_strategy='random',
@@ -716,15 +716,6 @@ class GridOptimizer:
 
             number_of_poles (int):
                 number of poles in the grid
-
-            TODO: Remove this parameter because in our case, poles must be different from consumers
-            locate_new_poles_freely (float):
-                defines if poles identified will be new nodes that can be
-                located freely on the plane or not. If locate_new_poles_freely
-                is True, the poles will be new nodes added to the network and
-                can be located freely on the plane. If locate_new_poles_freely
-                is False, some nodes node_type will be set to poles, no
-                additional nodes are added to the grid.
 
             number_of_relaxation_steps (int):
                 number of iteration in the relaxation process
@@ -789,8 +780,8 @@ class GridOptimizer:
 
         Notes
         -----
-            The 'virtual_cost' is the cost of the grid containing the freely
-            located virtual poles. Since, during the process, the layout is
+            The 'virtual_cost' is the cost of the grid containing the poles. 
+            Since, during the process, the layout is
             not a feasible solution (the virtual poles are not located at house
             location), the price that is computed cannot be interpreted as the
             price of a feasible grid layout
@@ -834,10 +825,6 @@ class GridOptimizer:
             else:
                 folder_name_with_path = f'{path_to_folder}/{folder_name}'
                 make_folder(folder_name_with_path)
-
-        # if (not locate_new_poles_freely) & (grid.get_total_pole_capacity() > 0):
-        #    grid.set_default_pole_capacity(
-        #        grid.get_default_pole_capacity())
 
         # find out the range of (x,y) coordinate for all nodes of the grid
         x_range = [grid.nodes.x.min(),
@@ -941,8 +928,7 @@ class GridOptimizer:
         # At each step, the scalar product between the 'weighted_vector'
         # form the previous and current step will be computed and used
         # to adapt the 'damping_factor' value
-        weighted_vectors_previous_step = self.nr_compute_relaxation_df(grid)['weighted_vector']
-        weighted_vectors_current_step = self.nr_compute_relaxation_df(grid)['weighted_vector']
+        weighted_vectors_previous_step = relaxation_df['weighted_vector']
         #cost_connection = grid.get_price_consumer()
 
         # Compute the 'damping_factor' such that the norm of the 'weighted_vector'
@@ -1056,11 +1042,8 @@ class GridOptimizer:
                                              * cost_connection),
                         0]
                 if print_progress_bar:
-                    if locate_new_poles_freely:
-                        current_price = grid_copy.price()
-                    else:
-                        current_price = (grid_copy.price() - (number_of_virtual_poles
-                                                              * cost_connection))
+                    current_price = (grid_copy.price() - (number_of_virtual_poles
+                                                          * cost_connection))
                     self.print_progress_bar(
                         iteration=i + ((counter + 1) /
                                        grid_copy.get_poles().shape[0]),
@@ -1069,9 +1052,10 @@ class GridOptimizer:
 
         n_final = number_of_relaxation_steps + 1
         info_log['time'][n_final] = time.time() - start_time
-        info_log['cost'][n_final] = grid.price()
-        info_log['norm_longest_shift'][n_final] = self.nr_max_length_weighted_vector(
-            relaxation_df)
+        info_log['cost'][n_final] = grid.cost()
+        info_log['norm_longest_shift'][n_final] = (self.nr_max_length_weighted_vector(
+            relaxation_df) / self.nr_smallest_link(grid))
+
         if save_output:
             print(f"\n\nFinal price: {grid_copy.price()} $\n")
 
@@ -1102,11 +1086,6 @@ class GridOptimizer:
             with open(path_to_folder + '/' + folder_name + '/about_run.json',
                       'w') as about:
                 about.write(json.dumps(about_dict))
-
-        # set grid equal to grid_copy
-
-        grid.set_nodes(grid_copy.get_nodes())
-        grid.set_links(grid_copy.get_links())
 
     def nr_smallest_link(self, grid: Grid):
         """

@@ -107,10 +107,14 @@ class Grid:
         links=pd.DataFrame(
             {
                 'label': pd.Series([], dtype=str),
-                'latlon_from': pd.Series([[]], dtype=np.dtype(float)),
-                'latlon_to': pd.Series([[]], dtype=np.dtype(float)),
-                'xy_from': pd.Series([[]], dtype=np.dtype(float)),
-                'xy_to': pd.Series([[]], dtype=np.dtype(float)),
+                'lat_from': pd.Series([], dtype=np.dtype(float)),
+                'lon_from': pd.Series([], dtype=np.dtype(float)),
+                'lat_to': pd.Series([], dtype=np.dtype(float)),
+                'lon_to': pd.Series([], dtype=np.dtype(float)),
+                'x_from': pd.Series([], dtype=np.dtype(float)),
+                'y_from': pd.Series([], dtype=np.dtype(float)),
+                'x_to': pd.Series([], dtype=np.dtype(float)),
+                'y_to': pd.Series([], dtype=np.dtype(float)),
                 'link_type': pd.Series([], dtype=str),
                 'length': pd.Series([], dtype=int)
             }
@@ -189,9 +193,10 @@ class Grid:
         node_type='consumer',
         consumer_type='household',
         consumer_detail='default',
-        average_consumption=200,  # FIXME: must be read automatically
-        peak_demand=100,  # FIXME: must be read automatically
+        average_consumption=0,  # FIXME: must be read automatically
+        peak_demand=0,  # FIXME: must be read automatically
         is_connected=True,
+        how_added='automatic',
         type_fixed=False,
         segment='0',
         cluster_label=0,
@@ -218,6 +223,7 @@ class Grid:
         self.nodes.at[label, 'average_consumption'] = average_consumption
         self.nodes.at[label, 'peak_demand'] = peak_demand
         self.nodes.at[label, 'is_connected'] = is_connected
+        self.nodes.at[label, 'how_added'] = how_added
         self.nodes.at[label, 'type_fixed'] = type_fixed
         self.nodes.at[label, 'segment'] = segment
         self.nodes.at[label, 'cluster_label'] = cluster_label
@@ -293,6 +299,8 @@ class Grid:
 
     def add_links(self, label_node_from: str, label_node_to: str):
         """
+        +++ ok +++
+
         Adds a link between two nodes of the grid and
         calculates the distance of the link.
 
@@ -310,8 +318,9 @@ class Grid:
         """
 
         # specify the type of the link which is obtained based on the start/end nodes of the link
-        if (self.nodes.node_type.loc[label_node_from] == 'pole') and \
-           (self.nodes.node_type.loc[label_node_to] == 'pole'):
+        if (self.nodes.node_type.loc[label_node_from] and self.nodes.node_type.loc[label_node_to]) == 'pole':
+            # convention: if two poles are getting connected, the begining will be the one with lower number
+            (label_node_from, label_node_to) = sorted([label_node_from, label_node_to])
             link_type = 'interpole'
         else:
             link_type = 'distribution'
@@ -321,25 +330,18 @@ class Grid:
             label_node_1=label_node_from, label_node_2=label_node_to
         )
 
-        # convention: if two poles are getting connected, the begining will be the one with lower number
-        if (self.nodes.node_type.loc[label_node_from] and self.nodes.node_type.loc[label_node_to]) == 'pole':
-            (label_node_from, label_node_to) = sorted([label_node_from, label_node_to])
-
         # define a label for the link and add all other charateristics to the grid object
         label = f'({label_node_from}, {label_node_to})'
-        latlon_from = [self.nodes.latitude.loc[label_node_from],
-                       self.nodes.longitude.loc[label_node_from]]
-        latlon_to = [self.nodes.latitude.loc[label_node_to],
-                     self.nodes.longitude.loc[label_node_to]]
-        xy_from = [self.nodes.x.loc[label_node_from], self.nodes.y.loc[label_node_from]]
-        xy_to = [self.nodes.x.loc[label_node_to], self.nodes.y.loc[label_node_to]]
-
+        self.links.at[label, 'lat_from'] = self.nodes.latitude.loc[label_node_from]
+        self.links.at[label, 'lon_from'] = self.nodes.longitude.loc[label_node_from]
+        self.links.at[label, 'lat_to'] = self.nodes.latitude.loc[label_node_to]
+        self.links.at[label, 'lon_to'] = self.nodes.longitude.loc[label_node_to]
+        self.links.at[label, 'x_from'] = self.nodes.x.loc[label_node_from]
+        self.links.at[label, 'y_from'] = self.nodes.y.loc[label_node_from]
+        self.links.at[label, 'x_to'] = self.nodes.x.loc[label_node_to]
+        self.links.at[label, 'y_to'] = self.nodes.y.loc[label_node_to]
         self.links.at[label, 'link_type'] = link_type
         self.links.at[label, 'length'] = length
-        self.links.at[label, 'latlon_from'] = np.array(latlon_from)
-        self.links.at[label, 'latlon_to'] = np.array(latlon_to)
-        self.links.at[label, 'xy_from'] = np.array(xy_from)
-        self.links.at[label, 'xy_to'] = np.array(xy_to)
 
     def total_length_interpole_cable(self):
         """
@@ -367,6 +369,8 @@ class Grid:
 
     def convert_lonlat_xy(self, inverse: bool = False):
         """
+        +++ ok +++
+
         Converts (longitude, latitude) coordinates into (x, y)
         plane coordinates using a python package 'pyproj'.
 
@@ -995,7 +999,9 @@ class Grid:
                    delta_x: float,
                    delta_y: float):
         """
-        This method increment the 'x_coordinate' value by delta_x and the
+        +++ ok +++
+
+        This method increments the 'x_coordinate' value by delta_x and the
         'y_coordinate' value by delta_y for the node given as parameter.
 
         Parameters

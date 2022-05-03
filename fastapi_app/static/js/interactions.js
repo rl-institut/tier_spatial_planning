@@ -108,25 +108,11 @@ function database_read(nodes_or_links, map_or_export, callback) {
                                 }).addTo(mainMap)
                             );
                         } else {
-                            if (nodes["demand_type"][counter] === "high-demand") {
-                                markers.push(
-                                    L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                                        icon: markerHighDemand,
-                                    }).addTo(mainMap)
-                                );
-                            } else if (nodes["demand_type"][counter] === "medium-demand") {
-                                markers.push(
-                                    L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                                        icon: markerMediumDemand,
-                                    }).addTo(mainMap)
-                                );
-                            } else if (nodes["demand_type"][counter] === "low-demand") {
-                                markers.push(
-                                    L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                                        icon: markerLowDemand,
-                                    }).addTo(mainMap)
-                                );
-                            }
+                            markers.push(
+                                L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
+                                    icon: markerConsumer,
+                                }).addTo(mainMap)
+                            );
                         }
                     }
                     if (document.getElementById("radio_button_nodes_boundaries").checked) {
@@ -141,9 +127,9 @@ function database_read(nodes_or_links, map_or_export, callback) {
                         var weight = links.link_type[index] === "interpole" ? 5 : 3;
                         drawLinkOnMap(
                             links.lat_from[index],
-                            links.long_from[index],
+                            links.lon_from[index],
                             links.lat_to[index],
-                            links.long_to[index],
+                            links.lon_to[index],
                             color,
                             mainMap,
                             weight
@@ -160,10 +146,10 @@ function database_read(nodes_or_links, map_or_export, callback) {
 function database_add_manual(
     { latitude,
         longitude,
-        area = 0,
-        node_type,
-        consumer_type,
-        demand_type,
+        node_type = 'consumer',
+        consumer_type = 'household',
+        consumer_detail = 'default',
+        average_consumption = 0,
         peak_demand = 0,
         is_connected = true,
         how_added = 'manual' } = {}
@@ -176,10 +162,10 @@ function database_add_manual(
         data: JSON.stringify({
             latitude: latitude,
             longitude: longitude,
-            area: area,
             node_type: node_type,
             consumer_type: consumer_type,
-            demand_type: demand_type,
+            consumer_detail: consumer_detail,
+            average_consumption: average_consumption,
             peak_demand: peak_demand,
             is_connected: is_connected,
             how_added: how_added,

@@ -1,42 +1,59 @@
 <html>
+  <head>
+    <title>Optimization Tool for Off-Grid Energy Supply and Distribution</title>
+    <script
+      src="https://code.jquery.com/jquery-3.1.1.min.js"
+      integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+      crossorigin="anonymous"
+    ></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.1/leaflet.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet-geosearch@latest/assets/css/leaflet.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.6.3/css/foundation.min.css"
+    />
+    <link rel="stylesheet" href={{ url_for('static', path='styles/main.css' ) }}
+    /> <link rel="stylesheet" href={{ url_for('static',
+    path='styles/styles_general.css' ) }}> <link rel="stylesheet" href={{
+    url_for('static', path='styles/styles_title.css' ) }}> <link
+    rel="stylesheet" href={{ url_for('static', path='styles/styles_sidebar.css'
+    ) }}>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.6.3/js/foundation.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.1/leaflet.js"></script>
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=Promise"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.js"></script>
+    <script src="https://unpkg.com/leaflet-geosearch@latest/dist/bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+    <script
+      lang="javascript"
+      src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"
+    ></script>
+    <style media="screen">
+      #loading {
+        position: fixed;
+        top: 42vh;
+        left: 63vw;
+        z-index: 999;
+        width: 10vw;
+        height: auto;
+      }
+    </style>
+  </head>
 
-<head>
-  <title>PYNEST: Python-Based Network and Energy Supply Optimization Tool for Off-Grid Electricity Supply Systems in
-    Nigeria</title>
-  <script src="https://code.jquery.com/jquery-3.1.1.min.js"
-    integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.1/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@latest/assets/css/leaflet.css" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.6.3/css/foundation.min.css">
-  <link rel="stylesheet" href={{ url_for('static', path='styles/main.css' ) }} />
-  <link rel="stylesheet" href={{ url_for('static', path='styles/styles_general.css' ) }}>
-  <link rel="stylesheet" href={{ url_for('static', path='styles/styles_title.css' ) }}>
-  <link rel="stylesheet" href={{ url_for('static', path='styles/styles_sidebar.css' ) }}>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.6.3/js/foundation.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.1/leaflet.js"></script>
-  <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=Promise"></script>
-  <script src="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.js"></script>
-  <script src="https://unpkg.com/leaflet-geosearch@latest/dist/bundle.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
-  <script lang="javascript" src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-  <style media="screen">
-    #loading {
-      position: fixed;
-      top: 42vh;
-      left: 63vw;
-      z-index: 999;
-      width: 10vW;
-      height: auto;
-    }
-  </style>
-
-</head>
-
-<body>
-  {% block content %} {% endblock %}
-</body>
-
+  <body>
+    {% block content %} {% endblock %}
+  </body>
 </html>

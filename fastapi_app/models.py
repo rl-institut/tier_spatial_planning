@@ -41,9 +41,9 @@ class Links(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     lat_from = Column(Numeric(10, 5))
-    long_from = Column(Numeric(10, 5))
+    lon_from = Column(Numeric(10, 5))
     lat_to = Column(Numeric(10, 5))
-    long_to = Column(Numeric(10, 5))
+    lon_to = Column(Numeric(10, 5))
     x_from = Column(Numeric(10, 5))
     y_from = Column(Numeric(10, 5))
     x_to = Column(Numeric(10, 5))
@@ -56,10 +56,10 @@ class Links(Base):
 class AddNodeRequest(BaseModel):
     latitude: float
     longitude: float
-    area: float
     node_type: str
     consumer_type: str
-    demand_type: str
+    consumer_detail: str
+    average_consumption: float
     peak_demand: float
     is_connected: bool
     how_added: str
