@@ -48,7 +48,7 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css"
     />
-    <title>Project Setup - PeopleSuN</title>
+    <title>Customer Selection - PeopleSuN</title>
   </head>
 
   <body>
@@ -107,10 +107,8 @@
       <div>
         <div class="wizard__steps">
           <ul>
-            <li class="active">
-              <a href="project-setup.html">Project Setup</a>
-            </li>
-            <li><a href="customer-selection.html">Customer Selection</a></li>
+            <li><a href="project-setup.html">Project Setup</a></li>
+            <li class="active">Customer Selection</li>
             <li>Energy System Design</li>
             <li>Constraints</li>
             <li>Simulation</li>
@@ -125,41 +123,36 @@
           <div>
             <form>
               <div class="input-item">
-                <label for="projectName" class="form-label">
-                  Project name
-                  <span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Maximum of 50 characters"
-                  >
-                  </span>
-                </label>
+                <label for="projectName" class="form-label">Project name</label>
                 <input
                   type="text"
                   class="form-control"
                   id="projectName"
                   placeholder="Name"
                   value="Off-Grid System"
+                  aria-describedby="projectNameHelp"
                   required
                 />
+                <div id="projectNameHelp" class="form-text">
+                  Maximum of 50 characters
+                </div>
               </div>
               <div class="input-item optional">
                 <label for="projectDescription" class="form-label"
-                  >Project description
-                  <span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Maximum of 300 characters"
-                  >
-                  </span>
-                </label>
+                  >Project description</label
+                >
                 <textarea
                   class="form-control"
                   id="projectDescription"
+                  rows="3"
                   placeholder="Description"
+                  aria-describedby="projectDescriptionHelp"
                 >
 Simulation and optimization of power supply and distribution for an off-grid system in a rural settlement.
                 </textarea>
+                <div id="projectDescriptionHelp" class="form-text">
+                  Maximum of 300 characters
+                </div>
               </div>
               <div class="input-item">
                 <label for="country" class="form-label">Country</label>
@@ -172,12 +165,7 @@ Simulation and optimization of power supply and distribution for an off-grid sys
                 <label for="state" class="form-label">State</label>
                 <span id="state-code"><input type="text" id="state" /></span>
               </div>
-            </form>
-          </div>
-        </div>
-        <div class="right">
-          <div>
-            <form>
+
               <div class="input-item">
                 <label for="interestRate" class="form-label">
                   Interest rate
@@ -295,6 +283,12 @@ Simulation and optimization of power supply and distribution for an off-grid sys
             </form>
           </div>
         </div>
+        <div class="right">
+          <!-- Insert map -->
+          <div class="map">
+            <div id="leafletMap"></div>
+          </div>
+        </div>
       </section>
     </main>
 
@@ -303,12 +297,11 @@ Simulation and optimization of power supply and distribution for an off-grid sys
         <div class="step-footer__left"></div>
         <div class="step-footer__center">
           <a
-            class="btn btn--medium btn--hollow btn--previous disabled hidden"
-            href=""
-            aria-disabled="true"
-            >Previous</a
-          >
-          <a class="btn btn--medium" href="customer-selection.html">Next</a>
+            class="btn btn--medium btn--hollow btn--previous"
+            href="project-setup.html"
+            >Previous
+          </a>
+          <a class="btn btn--medium" href="scenario-creation-2.html">Next</a>
         </div>
         <div class="step-footer__right">
           <a class="btn btn--medium btn--transparent" href="#"

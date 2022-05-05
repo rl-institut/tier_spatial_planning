@@ -1348,7 +1348,8 @@ form .text-item .form-text.to-right {
 
 form .input-item textarea,
 form .text-item textarea {
-  max-height: 10rem;
+  height: 7.75rem;
+  /* max-height: 10rem; */
 }
 
 form .input-item .input-group-text,
@@ -1733,7 +1734,7 @@ nav.navbar .dropdown-menu li {
   position: relative;
   background-color: #F4F7F9;
   height: 5.5rem;
-  min-height: 5.5rem;
+  min-height: 4.5rem;
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;
@@ -1744,7 +1745,7 @@ nav.navbar .dropdown-menu li {
   -webkit-box-pack: center;
       -ms-flex-pack: center;
           justify-content: center;
-  padding-bottom: 2rem;
+  padding-bottom: 0; /*it was 2rem before */
 }
 
 .wizard > div {
@@ -1769,7 +1770,7 @@ nav.navbar .dropdown-menu li {
   max-width: 82rem;
   padding-left: 1rem;
   padding-right: 1rem;
-  padding-top: 2rem;
+  padding-top: 0; /*it was 2rem before */
   position: relative;
 }
 
@@ -1862,6 +1863,11 @@ nav.navbar .dropdown-menu li {
   font-weight: 700;
   font-size: 0.875rem;
 }
+
+.wizard__steps li a {
+  text-decoration: none;
+  color: inherit !important;
+  }
 
 .wizard__steps li:not(:last-of-type) {
   padding-right: 2rem;
@@ -3791,7 +3797,7 @@ nav.navbar .dropdown-menu li {
           justify-content: flex-end;
 }
 
-.project-setup.two-columns .left > div {
+.project-setup.two-columns > div {
   padding-left: 1rem;
   padding-right: 1.5rem;
 }
@@ -3823,9 +3829,9 @@ nav.navbar .dropdown-menu li {
           justify-content: flex-start;
 }
 
-.project-setup.two-columns .right > div {
+/* .project-setup.two-columns .right > div {
   padding-right: 0rem;
-}
+} */
 
 .project-setup.two-columns .right .map {
   margin-left: 1.5rem;
