@@ -1,5 +1,5 @@
 $(document).ready(function () {
-    $(document).foundation();
+    // $(document).foundation();
     database_initialization(nodes = true, links = true);
 });
 
@@ -197,49 +197,70 @@ function database_add_remove_automatic(
     });
 }
 
+/************************************************************/
+/*                   SWITCHING HTML PAGES                   */
+/************************************************************/
+function customer_selection() {
+    var xhr = new XMLHttpRequest();
+    url = "customer_selection/";
+    xhr.open("GET", url, true);
+    xhr.send()
+}
 
+/************************************************************/
+/*                ACTIVATION / INACTIVATION                 */
+/************************************************************/
+function activation_check() {
+    if (document.getElementById('selectionFile').checked) {
+        document.getElementById('fileImport').disabled = false
+        document.getElementById('btnImport').classList.remove('disabled');
+        document.getElementById('lblDrawBoundariesAdd').classList.toggle('disabled');
+        document.getElementById('btnDrawBoundariesAdd').classList.toggle('disabled');
+        document.getElementById('lblDrawBoundariesRemove').classList.toggle('disabled');
+        document.getElementById('btnDrawBoundariesRemove').classList.toggle('disabled');
+        document.getElementById('lblDownloadLocations').classList.remove('disabled');
+        document.getElementById('btnDownloadLocations').classList.remove('disabled');
+    } else if (document.getElementById('selectionBoundaries').checked) {
+        document.getElementById('fileImport').disabled = true
+        document.getElementById('btnImport').classList.toggle('disabled');
+        document.getElementById('lblDrawBoundariesAdd').classList.remove('disabled');
+        document.getElementById('btnDrawBoundariesAdd').classList.remove('disabled');
+        document.getElementById('lblDrawBoundariesRemove').classList.remove('disabled');
+        document.getElementById('btnDrawBoundariesRemove').classList.remove('disabled');
+        document.getElementById('lblDownloadLocations').classList.remove('disabled');
+        document.getElementById('btnDownloadLocations').classList.remove('disabled');
+    } else if (document.getElementById('selectionMap').checked) {
+        document.getElementById('fileImport').disabled = true
+        document.getElementById('btnImport').classList.toggle('disabled');
+        document.getElementById('lblDrawBoundariesAdd').classList.toggle('disabled');
+        document.getElementById('btnDrawBoundariesAdd').classList.toggle('disabled');
+        document.getElementById('lblDrawBoundariesRemove').classList.toggle('disabled');
+        document.getElementById('btnDrawBoundariesRemove').classList.toggle('disabled');
+        document.getElementById('lblDownloadLocations').classList.remove('disabled');
+        document.getElementById('btnDownloadLocations').classList.remove('disabled');
+    }
+}
 /************************************************************/
 /*                    BOUNDARY SELECTION                    */
 /************************************************************/
-
 // selecting boundaries of the site for adding new nodes
 function boundary_select(mode) {
+    button_text = 'Start'
     if (mode == 'add') {
-        button_text = 'Select'
-        button_class = 'success'
-        var textButtonDrawBoundaries = document.getElementById(
-            "button_draw_boundaries_add"
-        );
+        button_class = 'btn--success'
+        var btnAddRemove = document.getElementById("btnDrawBoundariesAdd");
     } else {
-        var textButtonDrawBoundaries = document.getElementById(
-            "button_draw_boundaries_remove"
-        );
-        button_text = 'Remove'
-        button_class = 'alert'
+        var btnAddRemove = document.getElementById("btnDrawBoundariesRemove");
+        button_class = 'btn--error'
     }
 
     // changing the label of the button
-    if (textButtonDrawBoundaries.innerHTML === button_text) {
-        textButtonDrawBoundaries.innerHTML = "Draw Lines";
-        textButtonDrawBoundaries.setAttribute(
-            "title",
-            "Draw a polygon on the map to" + mode + "nodes"
-        );
+    if (btnAddRemove.innerText === button_text) {
+        btnAddRemove.innerText = "Draw Lines";
+        btnAddRemove.classList.toggle(button_class)
     } else {
-        textButtonDrawBoundaries.innerHTML = button_text;
-        textButtonDrawBoundaries.setAttribute(
-            "title",
-            button_text + "all nodes inside the drawn polygon"
-        );
-    }
-
-    // changing the type of the button (primary <-> success)
-    if ($(textButtonDrawBoundaries).hasClass("primary")) {
-        $(textButtonDrawBoundaries).removeClass("primary");
-        $(textButtonDrawBoundaries).addClass(button_class);
-    } else {
-        $(textButtonDrawBoundaries).removeClass(button_class);
-        $(textButtonDrawBoundaries).addClass("primary");
+        btnAddRemove.innerText = button_text;
+        btnAddRemove.classList.remove(button_class)
     }
 
     // add a line to the polyline object in the map
@@ -254,7 +275,7 @@ function boundary_select(mode) {
     if (siteBoundaryLines.length > 0) {
         database_add_remove_automatic({ add_remove: mode, boundariesCoordinates: siteBoundaries });
         removeBoundaries();
-        textButtonDrawBoundaries.innerHTML = "Draw Lines";
+        btnAddRemove.innerText = "Draw Lines";
     }
 }
 

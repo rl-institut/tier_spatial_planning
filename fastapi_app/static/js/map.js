@@ -37,7 +37,7 @@ var esriSatelliteMap = {
 };
 
 var mainMap = L.map("leafletMap", {
-  center: [11.3929, 9.1248], // 1st arg.: latitude, 2nd arg.: longitude
+  center: [9.8838, 5.9231], // 1st arg.: latitude, 2nd arg.: longitude
   zoom: 17,
   layers: [osmLayer],
 });
@@ -69,7 +69,7 @@ L.Control.zoomHome = L.Control.extend({
     zoomOutText: "&#8722", //this is a long minus sign
     zoomOutTitle: "Zoom out",
     zoomHomeText:
-      '<img src="fastapi_app/static/images/imgZoomToAll.png"></img>',
+      '<img style="width: 90%" src="../assets/icons/i_zoom_to_all.png"></img>',
     zoomHomeTitle: "Show all nodes",
   },
 
@@ -167,7 +167,7 @@ function zoomAll(mainMap) {
 }
 
 L.easyButton(
-  '<img class="leaflet-touch" src="fastapi_app/static/images/imgClearAll.png">',
+  '<img class="leaflet-touch" src="../assets/icons/i_clear_all.png">',
   function (btn, map) {
     database_initialization(nodes = true, links = true);
     database_read(nodes_or_links = 'nodes', map_or_export = 'map')
@@ -241,79 +241,25 @@ legend.addTo(mainMap);
 mainMap.on("click", function (e) {
   var poplocation = e.latlng;
 
-  if (document.getElementById("radio_button_nodes_manually").checked) {
-    if (document.getElementsByName("radio_button_nodes_manually")[0].checked) {
-      database_add_manual(
-        {
-          latitude: poplocation.lat,
-          longitude: poplocation.lng,
-        }
-      );
-      drawMarker(
-        poplocation.lat,
-        poplocation.lng,
-        'consumer'
-      );
-    }
-
-    if (document.getElementsByName("radio_button_nodes_manually")[1].checked) {
-      database_add_manual(
-        {
-          latitude: poplocation.lat,
-          longitude: poplocation.lng,
-          node_type: "consumer",
-          consumer_type: 'household',
-          demand_type: 'medium-demand',
-        }
-      );
-      drawMarker(
-        poplocation.lat,
-        poplocation.lng,
-        "medium-demand"
-      );
-    }
-
-    if (document.getElementsByName("radio_button_nodes_manually")[2].checked) {
-      database_add_manual(
-        {
-          latitude: poplocation.lat,
-          longitude: poplocation.lng,
-          node_type: "consumer",
-          consumer_type: 'household',
-          demand_type: 'low-demand',
-        }
-      );
-      drawMarker(
-        poplocation.lat,
-        poplocation.lng,
-        "low-demand"
-      );
-    }
-
-    if (document.getElementsByName("radio_button_nodes_manually")[3].checked) {
-      database_add_manual(
-        {
-          latitude: poplocation.lat,
-          longitude: poplocation.lng,
-          node_type: "pole",
-          consumer_type: '-',
-          demand_type: '-',
-        }
-      );
-      drawMarker(
-        poplocation.lat,
-        poplocation.lng,
-        "pole"
-      );
-    }
+  if (document.getElementById("selectionMap").checked) {
+    database_add_manual(
+      {
+        latitude: poplocation.lat,
+        longitude: poplocation.lng,
+      }
+    );
+    drawMarker(
+      poplocation.lat,
+      poplocation.lng,
+      'consumer'
+    );
   }
 
   if (
-    document.getElementById("radio_button_nodes_boundaries").checked &&
-    (document.getElementById("button_draw_boundaries_add").innerHTML ===
-      "Select" ||
-      document.getElementById("button_draw_boundaries_remove").innerHTML ===
-      "Remove")
+    document.getElementById("selctionBoundaries").checked &&
+    (document.getElementById("btnDrawBoundariesAdd").innerText ||
+      document.getElementById("btnDrawBoundariesRemove").innerText ===
+      "Draw Lines")
   ) {
     siteBoundaries.push([poplocation.lat, poplocation.lng]);
 

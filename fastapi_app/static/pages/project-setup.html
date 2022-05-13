@@ -1,12 +1,6 @@
 <!DOCTYPE html>
 <html lang="en-us">
   <head>
-    <script
-      src="https://code.jquery.com/jquery-3.1.1.min.js"
-      integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
-      crossorigin="anonymous"
-    ></script>
-
     <meta charset="utf-8" />
     <meta
       name="viewport"
@@ -35,22 +29,14 @@
       href="../assets/favicon/safari-pinned-tab.svg"
       color="#5bbad5"
     /> -->
-    <!-- <meta name="msapplication-TileColor" content="#2b5797" /> -->
-    <!-- <meta name="theme-color" content="#ffffff" /> -->
-    <link rel="stylesheet" href="../stylesheets/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="../node_modules/aos/dist/aos.css" />
-    <link rel="stylesheet" href="../stylesheets/css/main.css" />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css"
-    />
+    <meta name="msapplication-TileColor" content="#2b5797" />
+    <meta name="theme-color" content="#ffffff" />
+    <link href="../stylesheets/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="../node_modules/aos/dist/aos.css" rel="stylesheet" />
+    <link href="../stylesheets/css/main.css" rel="stylesheet" />
+
     <title>Project Setup - PeopleSuN</title>
   </head>
-
   <body>
     <!-- don't forget 'navbar--scenario' CSS class -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light navbar--scenario">
@@ -72,7 +58,7 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
           <ul class="navbar-nav mb-2 mb-lg-0">
             <li class="nav-item locale">
-              <a class="nav-link" href="#">DE</a>
+              <a class="nav-link" href="#">EN</a>
             </li>
             <li class="nav-item dropdown profile">
               <a
@@ -108,9 +94,16 @@
         <div class="wizard__steps">
           <ul>
             <li class="active">
-              <a href="project-setup.html">Project Setup</a>
+              <a href="/fastapi_app/static/pages/project-setup.html"
+                >Project Setup</a
+              >
             </li>
-            <li><a href="customer-selection.html">Customer Selection</a></li>
+            <li>
+              <!-- <a onclick="customer_selection();">Customer Selection</a> -->
+              <a href="/fastapi_app/static/pages/customer-selection.html"
+                >Customer Selection</a
+              >
+            </li>
             <li>Energy System Design</li>
             <li>Constraints</li>
             <li>Simulation</li>
@@ -317,16 +310,14 @@ Simulation and optimization of power supply and distribution for an off-grid sys
         </div>
       </div>
     </footer>
-
-    <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"></script>
-    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=Promise"></script>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.js"></script>
-    <script src="https://unpkg.com/leaflet-geosearch@latest/dist/bundle.min.js"></script>
-    <script src="../js/bootstrap.bundle.min.js"></script>
-    <script src="../node_modules/aos/dist/aos.js"></script>
-    <script src="../js/project.js"></script>
-    <script src="../js/country-states.js"></script>
-    <script src="../js/interactions.js"></script>
-    <script src="../js/map.js"></script>
   </body>
+  <script
+    src="https://code.jquery.com/jquery-3.6.0.js"
+    integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
+    crossorigin="anonymous"
+  ></script>
+  <script src="../js/bootstrap.bundle.min.js"></script>
+  <script src="../node_modules/aos/dist/aos.js"></script>
+  <script src="../js/country-states.js"></script>
+  <script src="../js/interactions.js"></script>
 </html>

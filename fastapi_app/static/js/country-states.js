@@ -49,7 +49,7 @@ let user_country_code = "NG";
         if (states.length > 0) {
             option = '<select id="state" class="form-select">\n';
             for (let i = 0; i < states.length; i++) {
-                if (country_code == 'NG' & states[i].code == 'PL'){
+                if (country_code == 'NG' & states[i].code == 'NI'){
                     option += '<option selected="selected" value="'+states[i].code+'">'+states[i].name+'</option>';
                 }
                 else {

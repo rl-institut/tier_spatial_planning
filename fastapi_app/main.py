@@ -33,12 +33,12 @@ from typing import Any, Dict, List, Union
 
 app = FastAPI()
 
-app.mount("/fastapi_app/static",
-          StaticFiles(directory="fastapi_app/static"), name="static")
+app.mount("/fastapi_app",
+          StaticFiles(directory="fastapi_app/"), name="static")
 
 models.Base.metadata.create_all(bind=engine)
 
-templates = Jinja2Templates(directory="fastapi_app/templates")
+templates = Jinja2Templates(directory="fastapi_app/static/pages")
 
 # define different directories for:
 # (1) database: *.csv files for nodes and links,
@@ -77,7 +77,7 @@ import_structure = Union[json_array, json_object]
 @app.get("/favicon.ico")
 async def redirect():
     """ Redirects request to location of favicon.ico logo in static folder """
-    response = RedirectResponse(url='/fastapi_app/static/favicon.ico')
+    response = RedirectResponse(url='/fastapi_app/static/assets/favicon/favicon.ico')
     return response
 
 
@@ -157,9 +157,18 @@ async def import_data(import_files: import_structure = None):
 
 @app.get("/")
 def home(request: Request):
-    return templates.TemplateResponse("home.html", {
+    return templates.TemplateResponse("project-setup.html", {
         "request": request
     })
+
+
+@app.get("/customer_selection")
+# async def customer_selection(request: Request):
+#     return templates.TemplateResponse("customer-selection.html", {
+#         "request": request
+#     })
+async def customer_selection():
+    return "customer-selection.html"
 
 
 @app.get("/database_initialization/{nodes}/{links}")

@@ -31,18 +31,9 @@
     /> -->
     <!-- <meta name="msapplication-TileColor" content="#2b5797" /> -->
     <!-- <meta name="theme-color" content="#ffffff" /> -->
-    <link
-      href="/fastapi_app/static/stylesheets/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <link
-      href="/fastapi_app/static/node_modules/aos/dist/aos.css"
-      rel="stylesheet"
-    />
-    <link
-      href="/fastapi_app/static/stylesheets/css/main.css"
-      rel="stylesheet"
-    />
+    <link rel="stylesheet" href="../stylesheets/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="../node_modules/aos/dist/aos.css" />
+    <link rel="stylesheet" href="../stylesheets/css/main.css" />
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
@@ -114,7 +105,7 @@
       <div>
         <div class="wizard__steps">
           <ul>
-            <li><a href="project-setup.html">Project Setup</a></li>
+            <li><a href="../pages/project-setup.html">Project Setup</a></li>
             <li class="active">Customer Selection</li>
             <li>Energy System Design</li>
             <li>Constraints</li>
@@ -162,38 +153,32 @@
                   <input
                     type="radio"
                     class="btn-check"
-                    name="customerSelection"
-                    id="selectionFile"
+                    name="btnradio"
+                    id="btnradio1"
                     autocomplete="off"
-                    onclick="activation_check();"
                     checked
                   />
-                  <label class="btn btn-outline-secondary" for="selectionFile"
+                  <label class="btn btn-outline-secondary" for="btnradio1"
                     >Import from File</label
                   >
                   <input
                     type="radio"
                     class="btn-check"
-                    name="customerSelection"
-                    id="selectionBoundaries"
+                    name="btnradio"
+                    id="btnradio3"
                     autocomplete="off"
-                    onclick="activation_check();"
                   />
-                  <label
-                    class="btn btn-outline-secondary"
-                    for="selectionBoundaries"
+                  <label class="btn btn-outline-secondary" for="btnradio3"
                     >Select Boundaries</label
                   >
                   <input
                     type="radio"
                     class="btn-check"
-                    name="customerSelection"
-                    id="selectionMap"
+                    name="btnradio"
+                    id="btnradio2"
                     autocomplete="off"
-                    onclick="activation_check();"
-                    x
                   />
-                  <label class="btn btn-outline-secondary" for="selectionMap"
+                  <label class="btn btn-outline-secondary" for="btnradio2"
                     >Click on the Map</label
                   >
                 </div>
@@ -203,10 +188,10 @@
                   <input
                     type="file"
                     class="form-control"
-                    id="fileImport"
+                    id="inputGroupFile03"
                     accept=".xls, .xlsx"
                   />
-                  <button id="btnImport" class="btn" type="button">
+                  <button class="btn btn-outline-secondary" type="button">
                     Import
                   </button>
                 </div>
@@ -214,7 +199,6 @@
                 <div class="row input-item">
                   <div class="col-9">
                     <label
-                      id="lblDrawBoundariesAdd"
                       class="form-label disabled text-left"
                       for="btnDrawBoundariesAdd"
                       >Add customers by selecting boundaries of the settlement
@@ -226,7 +210,6 @@
                       type="button"
                       id="btnDrawBoundariesAdd"
                       aria-disabled="true"
-                      onclick="boundary_select('add');"
                     >
                       Start
                     </button>
@@ -235,9 +218,8 @@
                 <div class="row input-item">
                   <div class="col-9">
                     <label
-                      id="lblDrawBoundariesRemove"
                       class="form-label disabled text-left"
-                      for="btnDrawBoundariesRemove"
+                      for="btnDrawBoundariesAdd"
                       >Remove customers by selecting boundaries of the
                       settlement
                     </label>
@@ -246,9 +228,8 @@
                     <button
                       class="btn btn--long disabled text-right"
                       type="button"
-                      id="btnDrawBoundariesRemove"
+                      id="btnDrawBoundariesAdd"
                       aria-disabled="true"
-                      onclick="boundary_select('remove');"
                     >
                       Start
                     </button>
@@ -257,9 +238,8 @@
                 <div class="row input-item">
                   <div class="col-9">
                     <label
-                      id="lblDownloadLocations"
                       class="form-label disabled text-left"
-                      for="btnDownloadLocations"
+                      for="btnDrawBoundariesAdd"
                       >Download locations of selected customers
                     </label>
                   </div>
@@ -267,7 +247,7 @@
                     <button
                       class="btn btn--long disabled"
                       type="button"
-                      id="btnDownloadLocations"
+                      id="btnDrawBoundariesAdd"
                       aria-disabled="true"
                     >
                       Download
@@ -311,18 +291,18 @@
         </div>
       </div>
     </footer>
-    <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"></script>
   </body>
   <script
     src="https://code.jquery.com/jquery-3.6.0.js"
     integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
     crossorigin="anonymous"
   ></script>
+  <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"></script>
   <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=Promise"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.js"></script>
   <script src="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.umd.js"></script>
-  <script src="/fastapi_app/static/js/bootstrap.bundle.min.js"></script>
-  <script src="/fastapi_app/static/node_modules/aos/dist/aos.js"></script>
-  <script src="/fastapi_app/static/js/interactions.js"></script>
-  <script src="/fastapi_app/static/js/map.js"></script>
+  <script src="../js/bootstrap.bundle.min.js"></script>
+  <script src="../node_modules/aos/dist/aos.js"></script>
+  <script src="../js/interactions.js"></script>
+  <script src="../js/map.js"></script>
 </html>
