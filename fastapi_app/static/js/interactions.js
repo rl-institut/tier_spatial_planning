@@ -181,7 +181,7 @@ function database_add_remove_automatic(
 ) {
     $("#loading").show();
     $.ajax({
-        url: "database_add_remove_automatic/" + add_remove,
+        url: "/database_add_remove_automatic/" + add_remove,
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify({
@@ -200,12 +200,17 @@ function database_add_remove_automatic(
 /************************************************************/
 /*                   SWITCHING HTML PAGES                   */
 /************************************************************/
-function customer_selection() {
-    var xhr = new XMLHttpRequest();
-    url = "customer_selection/";
-    xhr.open("GET", url, true);
-    xhr.send()
-}
+// function customer_selection() {
+//     $.ajax({
+//         url: "/customer_selection",
+//         type: "POST",
+//         dataType: "json",
+//         contentType: "application/json",
+//         data: JSON.stringify({
+            
+//         }),
+//     });
+// }
 
 /************************************************************/
 /*                ACTIVATION / INACTIVATION                 */

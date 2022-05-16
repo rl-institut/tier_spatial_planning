@@ -256,10 +256,9 @@ mainMap.on("click", function (e) {
   }
 
   if (
-    document.getElementById("selctionBoundaries").checked &&
-    (document.getElementById("btnDrawBoundariesAdd").innerText ||
-      document.getElementById("btnDrawBoundariesRemove").innerText ===
-      "Draw Lines")
+    document.getElementById("selectionBoundaries").checked &&
+    (document.getElementById("btnDrawBoundariesAdd").innerText === 'Draw Lines' ||
+      document.getElementById("btnDrawBoundariesRemove").innerText === 'Draw Lines')
   ) {
     siteBoundaries.push([poplocation.lat, poplocation.lng]);
 

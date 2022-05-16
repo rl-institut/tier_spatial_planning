@@ -6,43 +6,30 @@
       name="viewport"
       content="width=device-width, initial-scale=1, shrink-to-fit=no"
     />
-    <!-- <link
-      rel="apple-touch-icon"
-      sizes="180x180"
-      href="../assets/favicon/apple-touch-icon.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href="../assets/favicon/favicon-32x32.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="16x16"
-      href="../assets/favicon/favicon-16x16.png"
-    />
-    <link rel="manifest" href="../assets/favicon/site.webmanifest" />
-    <link
-      rel="mask-icon"
-      href="../assets/favicon/safari-pinned-tab.svg"
-      color="#5bbad5"
-    /> -->
     <meta name="msapplication-TileColor" content="#2b5797" />
     <meta name="theme-color" content="#ffffff" />
-    <link href="../stylesheets/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="../node_modules/aos/dist/aos.css" rel="stylesheet" />
-    <link href="../stylesheets/css/main.css" rel="stylesheet" />
-
+    <link
+      href="{{ url_for('static', path='stylesheets/css/bootstrap.min.css') }} "
+      rel="stylesheet"
+    />
+    <link
+      href="{{ url_for('static', path='node_modules/aos/dist/aos.css') }}"
+      rel="stylesheet"
+    />
+    <link
+      href="{{ url_for('static', path='stylesheets/css/main.css') }}"
+      rel="stylesheet"
+    />
     <title>Project Setup - PeopleSuN</title>
   </head>
   <body>
-    <!-- don't forget 'navbar--scenario' CSS class -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light navbar--scenario">
       <div class="container-fluid">
         <span class="navbar-brand">
-          <img src="../assets/logos/peoplesun_logo.webp" alt="peoplesun Logo" />
+          <img
+            src="{{ url_for('static', path='assets/logos/peoplesun_logo.webp') }}"
+            alt="peoplesun Logo"
+          />
         </span>
         <button
           class="navbar-toggler"
@@ -69,7 +56,10 @@
                 data-bs-toggle="dropdown"
                 aria-expanded="false"
               >
-                <img src="../assets/icons/i_profile.svg" alt="Profile icon" />
+                <img
+                  src="{{ url_for('static', path='assets/icons/i_profile.svg') }}"
+                  alt="Profile icon"
+                />
               </a>
               <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                 <li><a class="dropdown-item" href="#">Use cases</a></li>
@@ -94,13 +84,11 @@
         <div class="wizard__steps">
           <ul>
             <li class="active">
-              <a href="/fastapi_app/static/pages/project-setup.html"
-                >Project Setup</a
-              >
+              <a href="{{ url_for('home') }}">Project Setup</a>
             </li>
             <li>
               <!-- <a onclick="customer_selection();">Customer Selection</a> -->
-              <a href="/fastapi_app/static/pages/customer-selection.html"
+              <a href="{{ url_for('customer_selection') }}"
                 >Customer Selection</a
               >
             </li>
@@ -311,13 +299,14 @@ Simulation and optimization of power supply and distribution for an off-grid sys
       </div>
     </footer>
   </body>
+
   <script
     src="https://code.jquery.com/jquery-3.6.0.js"
     integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
     crossorigin="anonymous"
   ></script>
-  <script src="../js/bootstrap.bundle.min.js"></script>
-  <script src="../node_modules/aos/dist/aos.js"></script>
-  <script src="../js/country-states.js"></script>
-  <script src="../js/interactions.js"></script>
+  <script src="{{ url_for('static', path='js/bootstrap.bundle.min.js') }}"></script>
+  <script src="{{ url_for('static', path='node_modules/aos/dist/aos.js') }}"></script>
+  <script src="{{ url_for('static', path='js/country-states.js') }}"></script>
+  <script src="{{ url_for('static', path='js/interactions.js') }}"></script>
 </html>

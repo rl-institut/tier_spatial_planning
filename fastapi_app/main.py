@@ -9,6 +9,7 @@ from fastapi.param_functions import Query
 from fastapi import FastAPI, Request, Depends, BackgroundTasks, File, UploadFile
 from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi_app.database import SessionLocal, engine
 from sqlalchemy.orm import Session, raiseload
@@ -33,12 +34,12 @@ from typing import Any, Dict, List, Union
 
 app = FastAPI()
 
-app.mount("/fastapi_app",
-          StaticFiles(directory="fastapi_app/"), name="static")
+app.mount("/fastapi_app/static",
+          StaticFiles(directory="fastapi_app/static"), name="static")
 
 models.Base.metadata.create_all(bind=engine)
 
-templates = Jinja2Templates(directory="fastapi_app/static/pages")
+templates = Jinja2Templates(directory="fastapi_app/pages")
 
 # define different directories for:
 # (1) database: *.csv files for nodes and links,
@@ -163,12 +164,14 @@ def home(request: Request):
 
 
 @app.get("/customer_selection")
-# async def customer_selection(request: Request):
-#     return templates.TemplateResponse("customer-selection.html", {
-#         "request": request
-#     })
-async def customer_selection():
-    return "customer-selection.html"
+async def customer_selection(request: Request):
+    return templates.TemplateResponse("customer-selection.html", {
+        "request": request
+    })
+    # redirect_url = request.url_for('customer-selection.html')
+    # return RedirectResponse(redirect_url)
+# async def customer_selection():
+    # return "customer-selection.html"
 
 
 @app.get("/database_initialization/{nodes}/{links}")
