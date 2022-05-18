@@ -1828,8 +1828,7 @@ nav.navbar .dropdown-menu li {
   -webkit-box-pack: center;
   -ms-flex-pack: center;
   justify-content: center;
-  padding-bottom: 0;
-  /*it was 2rem before */
+  padding-bottom: 2rem;
 }
 
 .wizard>div {
@@ -1854,8 +1853,7 @@ nav.navbar .dropdown-menu li {
   max-width: 82rem;
   padding-left: 1rem;
   padding-right: 1rem;
-  padding-top: 0;
-  /*it was 2rem before */
+  padding-top: 2rem;
   position: relative;
 }
 
@@ -1984,6 +1982,10 @@ nav.navbar .dropdown-menu li {
 
 .wizard__steps li:nth-child(4)::before {
   content: "4";
+}
+
+.wizard__steps li:nth-child(5)::before {
+  content: "5";
 }
 
 .wizard__steps li.active {
