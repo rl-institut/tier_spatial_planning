@@ -92,9 +92,17 @@
                 >Customer Selection</a
               >
             </li>
-            <li>Energy System Design</li>
-            <li>Constraints</li>
-            <li>Simulation</li>
+            <li>Demand Estimation</li>
+            <li>
+              <a href="{{ url_for('energy_system_design') }}"
+                >Energy System Design</a
+              >
+            </li>
+            <li>
+              <a href="{{ url_for('simulation_results') }}"
+                >Simulation Results</a
+              >
+            </li>
           </ul>
         </div>
       </div>
@@ -289,13 +297,11 @@ Simulation and optimization of power supply and distribution for an off-grid sys
             aria-disabled="true"
             >Previous</a
           >
-          <a class="btn btn--medium" href="customer-selection.html">Next</a>
-        </div>
-        <div class="step-footer__right">
-          <a class="btn btn--medium btn--transparent" href="#"
-            >Go to simulation</a
+          <a class="btn btn--medium" href="{{ url_for('customer_selection')}}"
+            >Next</a
           >
         </div>
+        <div class="step-footer__right"></div>
       </div>
     </footer>
   </body>

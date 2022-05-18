@@ -49,10 +49,11 @@ def convert_overpass_json_to_geojson(json_dict):
 # TODO: Remove the area in the final version of the tool
 
 
-def obtain_mean_coordinates_from_geojson(geojson: dict):
+def obtain_areas_and_mean_coordinates_from_geojson(geojson: dict):
     """
     This function creates a dictionnary with the 'id' of each building as a key
-    and the mean loaction of the building as value in the form [lat, long].
+    and the mean loaction of the building as value in the form [lat, long] as well as
+    the surface area of each buolding.
 
     Parameters
     ----------
@@ -65,19 +66,33 @@ def obtain_mean_coordinates_from_geojson(geojson: dict):
     -------
         Dict containing the 'id' of each building as a key
         and the mean loaction of the building as value in the form [long, lat].
+
+        Dict containing the 'id' of each building as a key
+        and the surface area of the buildings.
     """
 
     building_mean_coordinates = {}
+    building_surface_areas = {}
+
     if len(geojson["features"]) != 0:
         reference_coordinate = geojson["features"][0]["geometry"]["coordinates"][0][0]
         for building in geojson["features"]:
+            xy_coordinates = []
             latitudes_longitudes = [coord for coord in building["geometry"]["coordinates"][0]]
             latitudes = [x[0] for x in latitudes_longitudes]
             longitudes = [x[1] for x in latitudes_longitudes]
             mean_coord = [np.mean(latitudes), np.mean(longitudes)]
+            for edge in range(len(latitudes)):
+                xy_coordinates.append(conv.xy_coordinates_from_latitude_longitude(
+                    latitude=latitudes_longitudes[edge][0],
+                    longitude=latitudes_longitudes[edge][1],
+                    ref_latitude=reference_coordinate[0],
+                    ref_longitude=reference_coordinate[1]))
+            surface_area = geometry.Polygon(xy_coordinates).area
             building_mean_coordinates[building["property"]["@id"]] = mean_coord
+            building_surface_areas[building["property"]["@id"]] = surface_area
 
-    return building_mean_coordinates
+    return building_mean_coordinates, building_surface_areas
 
 
 def are_segments_crossing(segment1, segment2):

@@ -344,3 +344,12 @@ function removeBoundaries() {
   siteBoundaryLines.length = 0;
   dashedBoundaryLine = null;
 }
+
+
+function mapSetView(lat, lon) {
+  mainMap.setView(new L.LatLng(lat, lon), 12);    
+}
+
+// function zoomTo(location) {
+//   mainMap.panTo(new L.LatLng(40.737, -73.923), 12);
+// }

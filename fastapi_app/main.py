@@ -50,6 +50,7 @@ directory_parent = "fastapi_app"
 directory_database = os.path.join(directory_parent, 'data', 'database').replace("\\", "/")
 full_path_nodes = os.path.join(directory_database, 'nodes.csv').replace("\\", "/")
 full_path_links = os.path.join(directory_database, 'links.csv').replace("\\", "/")
+full_path_demands = os.path.join(directory_database, 'demands.csv').replace("\\", "/")
 os.makedirs(directory_database, exist_ok=True)
 
 directory_inputs = os.path.join(directory_parent, 'data', 'inputs').replace("\\", "/")
@@ -168,10 +169,20 @@ async def customer_selection(request: Request):
     return templates.TemplateResponse("customer-selection.html", {
         "request": request
     })
-    # redirect_url = request.url_for('customer-selection.html')
-    # return RedirectResponse(redirect_url)
-# async def customer_selection():
-    # return "customer-selection.html"
+
+
+@app.get("/energy_system_design")
+async def energy_system_design(request: Request):
+    return templates.TemplateResponse("energy-system-design.html", {
+        "request": request
+    })
+
+
+@app.get("/simulation_results")
+async def simulation_results(request: Request):
+    return templates.TemplateResponse("simulation-results.html", {
+        "request": request
+    })
 
 
 @app.get("/database_initialization/{nodes}/{links}")
@@ -185,8 +196,9 @@ async def database_initialization(nodes, links):
         "node_type",
         "consumer_type",
         "consumer_detail",
-        "average_consumption",
+        "surface_area",
         "peak_demand",
+        "average_consumption",
         "is_connected",
         "how_added"
     ]
@@ -218,8 +230,8 @@ async def database_add_manual(
     nodes[headers[3]] = [add_node_request.node_type]
     nodes[headers[4]] = [add_node_request.consumer_type]
     nodes[headers[5]] = [add_node_request.consumer_detail]
-    nodes[headers[5]] = [add_node_request.average_consumption]
     nodes[headers[5]] = [add_node_request.peak_demand]
+    nodes[headers[5]] = [add_node_request.average_consumption]
     nodes[headers[7]] = [add_node_request.is_connected]
     nodes[headers[8]] = [add_node_request.how_added]
 
@@ -249,7 +261,7 @@ def database_add(add_nodes: bool,
 
         # finally adding the refined dataframe (if it is not empty) to the existing csv file
         if len(df.index) != 0:
-            df.to_csv(full_path_nodes, mode='a', header=False, index=False, float_format='%.0f')
+            df.to_csv(full_path_nodes, mode='a', header=False, index=False, float_format='%.3f')
 
     if add_links:
         links = inlet
@@ -317,7 +329,8 @@ async def database_add_remove_automatic(
         # then obtaining coordinates and surface areas of all buildings inside the
         # 'big' rectangle.
         formated_geojson = bi.convert_overpass_json_to_geojson(data)
-        building_coord = bi.obtain_mean_coordinates_from_geojson(formated_geojson)
+        building_coord, building_area = bi.obtain_areas_and_mean_coordinates_from_geojson(
+            formated_geojson)
 
         # excluding the buildings which are outside the drawn boundary
         features = formated_geojson['features']
@@ -345,9 +358,45 @@ async def database_add_remove_automatic(
             nodes["consumer_type"].append("household")
             nodes["consumer_detail"].append("default")
 
-            # average consumption and peak demand are not yet known
-            nodes["average_consumption"].append('')
-            nodes["peak_demand"].append('')
+            # surface area is taken from the open street map
+            nodes["surface_area"].append(building_area[label])
+
+        # after collecting all surface areas, based on a simple assumption, the peak demand will be obtained
+        max_surface_area = max(nodes['surface_area'])
+        for area in nodes['surface_area']:
+            if area <= 0.2 * max_surface_area:
+                nodes['peak_demand'].append(0.01 * area)
+            elif area < 0.4 * max_surface_area:
+                nodes['peak_demand'].append(0.02 * area)
+            elif area < 0.6 * max_surface_area:
+                nodes['peak_demand'].append(0.03 * area)
+            elif area < 0.8 * max_surface_area:
+                nodes['peak_demand'].append(0.04 * area)
+            else:
+                nodes['peak_demand'].append(0.05 * area)
+
+        demands = pd.read_csv(full_path_demands, delimiter=';')
+
+        max_peak_demand = max(nodes['peak_demand'])
+        counter = 0
+        for peak_demand in nodes['peak_demand']:
+            if peak_demand <= 0.2 * max_peak_demand:
+                nodes['average_consumption'].append(
+                    demands.iloc[:, 0].sum() * nodes['peak_demand'][counter])
+            elif peak_demand < 0.4 * max_peak_demand:
+                nodes['average_consumption'].append(
+                    demands.iloc[:, 1].sum() * nodes['peak_demand'][counter])
+            elif peak_demand < 0.6 * max_peak_demand:
+                nodes['average_consumption'].append(
+                    demands.iloc[:, 2].sum() * nodes['peak_demand'][counter])
+            elif peak_demand < 0.8 * max_peak_demand:
+                nodes['average_consumption'].append(
+                    demands.iloc[:, 3].sum() * nodes['peak_demand'][counter])
+            else:
+                nodes['average_consumption'].append(
+                    demands.iloc[:, 4].sum() * nodes['peak_demand'][counter])
+
+            counter += 1
 
             # it is assumed that all nodes are parts of the mini-grid
             # later, when the shs candidates are obtained, the corresponding
