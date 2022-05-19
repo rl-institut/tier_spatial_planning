@@ -61,6 +61,8 @@ full_path_offgridders_timeseries = os.path.join(
 os.makedirs(directory_inputs, exist_ok=True)
 
 directory_outputs = os.path.join(directory_parent, 'data', 'outputs').replace("\\", "/")
+full_path_output_demand_coverage = os.path.join(
+    directory_outputs, 'demand_coverage.csv').replace("\\", "/")
 os.makedirs(directory_outputs, exist_ok=True)
 
 # this is to avoid problems in "urllib" by not authenticating SSL certificate, otherwise following error occurs:
@@ -183,6 +185,12 @@ async def simulation_results(request: Request):
     return templates.TemplateResponse("simulation-results.html", {
         "request": request
     })
+
+
+@app.get("/visualization_demand_coverage")
+async def visualization_demand_coverage():
+
+    return json.loads(pd.read_csv(full_path_output_demand_coverage).to_json())
 
 
 @app.get("/database_initialization/{nodes}/{links}")

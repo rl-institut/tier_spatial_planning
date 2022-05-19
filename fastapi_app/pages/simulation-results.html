@@ -20,6 +20,18 @@
       href="{{ url_for('static', path='stylesheets/css/main.css') }}"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.css"
+    />
     <title>Simulation Results - PeopleSuN</title>
   </head>
   <body>
@@ -111,11 +123,11 @@
       <section class="dashboard">
         <div>
           <div class="row">
-            <div class="col col-md-8">
+            <div class="col col-md-7">
               <div class="chart">
                 <div class="chart__header">
                   <div>
-                    <span class="title">Energy Flow</span>
+                    <span class="title">Distribution Network</span>
                   </div>
                   <div class="dropdown">
                     <button
@@ -141,11 +153,14 @@
                   </div>
                 </div>
                 <div class="chart__plot">
-                  <div id="tester"></div>
+                  <!-- <div id="optimalSizes2"></div> -->
+                </div>
+                <div class="map">
+                  <div id="leafletMap"></div>
                 </div>
               </div>
             </div>
-            <div class="col col-md-4">
+            <div class="col col-md-5">
               <div class="chart chart--small">
                 <div class="chart__header">
                   <div>
@@ -266,11 +281,11 @@
             </div>
           </div>
           <div class="row">
-            <div class="col">
+            <div class="col col-md-6">
               <div class="chart">
                 <div class="chart__header">
                   <div>
-                    <span class="title">Time series</span>
+                    <span class="title">Optimal Capacity of Components</span>
                   </div>
                   <div class="dropdown">
                     <button
@@ -296,7 +311,116 @@
                   </div>
                 </div>
                 <div class="chart__plot">
-                  <div id="tester2"></div>
+                  <div id="optimalSizes"></div>
+                </div>
+              </div>
+            </div>
+            <div class="col col-md-6">
+              <div class="chart">
+                <div class="chart__header">
+                  <div>
+                    <span class="title">Breakdown of LCOE</span>
+                  </div>
+                  <div class="dropdown">
+                    <button
+                      class="btn dropdown-toggle btn--transparent"
+                      type="button"
+                      id="dropdownMenuButton1"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      <span class="icon icon-more"></span>
+                    </button>
+                    <ul
+                      class="dropdown-menu"
+                      aria-labelledby="dropdownMenuButton1"
+                    >
+                      <li>
+                        <a class="dropdown-item" href="#">Export as .xls</a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#">Export as PDF</a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="chart__plot">
+                  <div id="lcoeBreakdown"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <div class="chart">
+                <div class="chart__header">
+                  <div>
+                    <span class="title">Sankey Diagram</span>
+                  </div>
+                  <div class="dropdown">
+                    <button
+                      class="btn dropdown-toggle btn--transparent"
+                      type="button"
+                      id="dropdownMenuButton1"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      <span class="icon icon-more"></span>
+                    </button>
+                    <ul
+                      class="dropdown-menu"
+                      aria-labelledby="dropdownMenuButton1"
+                    >
+                      <li>
+                        <a class="dropdown-item" href="#">Export as .xls</a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#">Export as PDF</a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="chart__plot">
+                  <div id="sankeyDiagram"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <div class="chart">
+                <div class="chart__header">
+                  <div>
+                    <span class="title"
+                      >Demand Coverage by Renewable and Non-Renewable
+                      Resources</span
+                    >
+                  </div>
+                  <div class="dropdown">
+                    <button
+                      class="btn dropdown-toggle btn--transparent"
+                      type="button"
+                      id="dropdownMenuButton1"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      <span class="icon icon-more"></span>
+                    </button>
+                    <ul
+                      class="dropdown-menu"
+                      aria-labelledby="dropdownMenuButton1"
+                    >
+                      <li>
+                        <a class="dropdown-item" href="#">Export as .xls</a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#">Export as PDF</a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="chart__plot">
+                  <div id="demandCoverage"></div>
                 </div>
               </div>
             </div>
@@ -334,8 +458,15 @@
     integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
     crossorigin="anonymous"
   ></script>
+  <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"></script>
+  <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=Promise"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.js"></script>
+  <script src="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.umd.js"></script>
   <script src="{{ url_for('static', path='js/bootstrap.bundle.min.js') }}"></script>
   <script src="{{ url_for('static', path='node_modules/aos/dist/aos.js') }}"></script>
-  <script src="{{ url_for('static', path='js/country-states.js') }}"></script>
+  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script src="https://cdn.plot.ly/plotly-2.0.0.min.js"></script>
   <script src="{{ url_for('static', path='js/interactions.js') }}"></script>
+  <script src="{{ url_for('static', path='js/plots.js') }}"></script>
+  <script src="{{ url_for('static', path='js/map.js') }}"></script>
 </html>

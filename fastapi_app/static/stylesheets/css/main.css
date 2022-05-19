@@ -2096,6 +2096,9 @@ nav.navbar .dropdown-menu li {
   justify-content: space-between;
   border-bottom: 2px solid #F4F7F9;
   padding: .75rem 1rem .5rem;
+  /* added by me :) */
+  font-size: 1.2rem;
+  font-weight: 700;
 }
 
 .dashboard .chart__header .view {
@@ -3934,9 +3937,16 @@ nav.navbar .dropdown-menu li {
 } */
 
 .project-setup.two-columns .right .map {
-  margin-left: 1.5rem;
+  margin-left: 0rem;
   width: calc(100% - 1.5rem);
-  height: 125%;
+  height: 100%;
+  background-color: #E3EAEE;
+}
+
+.dashboard .chart .map {
+  /* margin-left: 1.5rem; */
+  /* width: calc(100% - 1.5rem); */
+  height: calc(100% - 3.2rem);
   background-color: #E3EAEE;
 }
 
