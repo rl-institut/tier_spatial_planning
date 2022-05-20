@@ -10,21 +10,25 @@ h11==0.12.0
 httptools==0.2.0
 idna==2.10
 Jinja2==3.1.2
+k_means_constrained==0.7.1
 lxml==4.6.2
 multitasking==0.0.9
 munkres==1.1.2
 numpy==1.22.3
 networkx==2.5.1
+oemof.solph==0.4.4
 openpyxl==3.0.7
 pandas==1.3.4
 pickleshare==0.7.5
 PuLP==2.2
 pycodestyle==2.6.0
 pydantic==1.9.0
+pyproj==3.3.1 # brew install proj for Apple M1
 python-dateutil==2.8.1
 python-multipart==0.0.5
 requests==2.25.1
 scipy==1.8.0
+shapely==1.8.1
 six==1.15.0
 sklearn==0.0
 SQLAlchemy==1.3.23
@@ -33,7 +37,3 @@ toml==0.10.2
 typing-extensions==3.7.4.3
 urllib3==1.26.3
 uvicorn==0.13.3
-shapely==1.8.1
-openpyxl==3.0.7
-pyproj==3.3.1 # brew install proj for Apple M1
-k_means_constrained==0.7.1

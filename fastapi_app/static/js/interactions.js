@@ -288,6 +288,7 @@ function boundary_select(mode) {
 /************************************************************/
 /*                       OPTIMIZATION                       */
 /************************************************************/
+function optimize_energy_system()
 
 function optimize_grid() {
     $("#loading").show();

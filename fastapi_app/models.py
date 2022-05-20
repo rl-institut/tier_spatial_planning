@@ -2,7 +2,7 @@ from sqlalchemy import Boolean, Column, Integer, String, Numeric
 #from sqlalchemy.orm import relationship
 from pydantic import BaseModel
 from fastapi_app.database import Base
-from typing import List
+from typing import List, Dict
 
 # Models
 
@@ -72,6 +72,18 @@ class OptimizeGridRequest(BaseModel):
     cost_distribution_cable: float
     number_of_relaxation_steps_nr: int
     max_connection_poles: int
+
+
+class OptimizeEnergySystemRequest(BaseModel):
+    diesel_genset: Dict[str, float]
+    pv: Dict[str, float]
+    battery: Dict[str, float]
+    inverter: Dict[str, float]
+    rectifier: Dict[str, float]
+    hv_cable: Dict[str, float]
+    lv_cable: Dict[str, float]
+    pole: Dict[str, float]
+    connection: Dict[str, float]
 
 
 class ShsIdentificationRequest(BaseModel):

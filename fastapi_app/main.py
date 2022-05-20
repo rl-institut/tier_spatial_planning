@@ -1,5 +1,7 @@
+from statistics import mode
 from sqlalchemy.sql.expression import column, false, true
 from sqlalchemy.sql.sqltypes import Boolean
+from fastapi_app.tools import energy_system_optimizer
 import fastapi_app.tools.boundary_identification as bi
 import fastapi_app.tools.coordinates_conversion as conv
 import fastapi_app.tools.shs_identification as shs_ident
@@ -16,6 +18,7 @@ from sqlalchemy.orm import Session, raiseload
 import sqlite3
 from fastapi_app.tools.grids import Grid
 from fastapi_app.tools.grid_optimizer import GridOptimizer
+from fastapi_app.tools.energy_system_optimizer import EnergySystemOptimizer
 import math
 import urllib.request
 import ssl
@@ -54,10 +57,9 @@ full_path_demands = os.path.join(directory_database, 'demands.csv').replace("\\"
 os.makedirs(directory_database, exist_ok=True)
 
 directory_inputs = os.path.join(directory_parent, 'data', 'inputs').replace("\\", "/")
-full_path_import_export = os.path.join(directory_inputs, 'import_export.xlsx').replace("\\", "/")
-full_path_offgridders_inputs = os.path.join(directory_inputs, 'input_data.xlsx').replace("\\", "/")
-full_path_offgridders_timeseries = os.path.join(
-    directory_inputs, 'site_data.xlsx').replace("\\", "/")
+full_path_solar_potential = os.path.join(directory_inputs, 'solar_potential.csv').replace("\\", "/")
+full_path_total_demand = os.path.join(directory_inputs, 'total_demand.csv').replace("\\", "/")
+full_path_all_inputs = os.path.join(directory_inputs, 'timeseries.csv').replace("\\", "/")
 os.makedirs(directory_inputs, exist_ok=True)
 
 directory_outputs = os.path.join(directory_parent, 'data', 'outputs').replace("\\", "/")
@@ -74,6 +76,12 @@ json_object = Dict[Any, Any]
 json_array = List[Any]
 import_structure = Union[json_array, json_object]
 
+
+ensys_opt = EnergySystemOptimizer(start_date='2022-01-01', n_days=365)
+ensys_opt.create_datetime_objects()
+ensys_opt.import_data(path=full_path_all_inputs)
+ensys_opt.optimize_energy_system()
+ensys_opt.process_results()
 
 # --------------------- REDIRECT REQUEST TO FAVICON LOG ----------------------#
 
@@ -547,6 +555,12 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
 
     # store the list of poles in the "node" database
     database_add(add_nodes=False, add_links=True, inlet=links.to_dict())
+
+
+@ app.post('/optimize_energy_system')
+async def optimize_energy_system(optimize_energy_system_request: models.OptimizeEnergySystemRequest):
+
+    print('Hi')
 
 
 @app.post("/shs_identification/")
