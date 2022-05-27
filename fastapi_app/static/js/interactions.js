@@ -1,7 +1,10 @@
-$(document).ready(function () {
-    // $(document).foundation();
-    database_initialization(nodes = true, links = true);
-});
+// $(document).ready(function () {
+//     // $(document).foundation();
+//     database_read(nodes_or_links = 'nodes', map_or_export = 'map');
+
+//     // database_initialization(nodes = true, links = true);
+// });
+
 
 // SET FUNCTIONS
 function setVisibilityNodeBox() {
@@ -115,9 +118,7 @@ function database_read(nodes_or_links, map_or_export, callback) {
                             );
                         }
                     }
-                    if (document.getElementById("radio_button_nodes_boundaries").checked) {
-                        zoomAll(mainMap);
-                    }
+                    zoomAll(mainMap);
                 } else {
                     // push links to the map
                     links = this.response;
@@ -219,30 +220,24 @@ function activation_check() {
     if (document.getElementById('selectionFile').checked) {
         document.getElementById('fileImport').disabled = false
         document.getElementById('btnImport').classList.remove('disabled');
-        document.getElementById('lblDrawBoundariesAdd').classList.toggle('disabled');
-        document.getElementById('btnDrawBoundariesAdd').classList.toggle('disabled');
-        document.getElementById('lblDrawBoundariesRemove').classList.toggle('disabled');
-        document.getElementById('btnDrawBoundariesRemove').classList.toggle('disabled');
-        document.getElementById('lblDownloadLocations').classList.remove('disabled');
-        document.getElementById('btnDownloadLocations').classList.remove('disabled');
+        document.getElementById('lblDrawBoundariesAdd').classList.add('disabled');
+        document.getElementById('btnDrawBoundariesAdd').classList.add('disabled');
+        document.getElementById('lblDrawBoundariesRemove').classList.add('disabled');
+        document.getElementById('btnDrawBoundariesRemove').classList.add('disabled');
     } else if (document.getElementById('selectionBoundaries').checked) {
         document.getElementById('fileImport').disabled = true
-        document.getElementById('btnImport').classList.toggle('disabled');
+        document.getElementById('btnImport').classList.add('disabled');
         document.getElementById('lblDrawBoundariesAdd').classList.remove('disabled');
         document.getElementById('btnDrawBoundariesAdd').classList.remove('disabled');
         document.getElementById('lblDrawBoundariesRemove').classList.remove('disabled');
         document.getElementById('btnDrawBoundariesRemove').classList.remove('disabled');
-        document.getElementById('lblDownloadLocations').classList.remove('disabled');
-        document.getElementById('btnDownloadLocations').classList.remove('disabled');
     } else if (document.getElementById('selectionMap').checked) {
         document.getElementById('fileImport').disabled = true
-        document.getElementById('btnImport').classList.toggle('disabled');
-        document.getElementById('lblDrawBoundariesAdd').classList.toggle('disabled');
-        document.getElementById('btnDrawBoundariesAdd').classList.toggle('disabled');
-        document.getElementById('lblDrawBoundariesRemove').classList.toggle('disabled');
-        document.getElementById('btnDrawBoundariesRemove').classList.toggle('disabled');
-        document.getElementById('lblDownloadLocations').classList.remove('disabled');
-        document.getElementById('btnDownloadLocations').classList.remove('disabled');
+        document.getElementById('btnImport').classList.add('disabled');
+        document.getElementById('lblDrawBoundariesAdd').classList.add('disabled');
+        document.getElementById('btnDrawBoundariesAdd').classList.add('disabled');
+        document.getElementById('lblDrawBoundariesRemove').classList.add('disabled');
+        document.getElementById('btnDrawBoundariesRemove').classList.add('disabled');
     }
 }
 /************************************************************/
@@ -261,7 +256,7 @@ function boundary_select(mode) {
 
     // changing the label of the button
     if (btnAddRemove.innerText === button_text) {
-        btnAddRemove.innerText = "Draw Lines";
+        btnAddRemove.innerText = 'Draw Lines';
         btnAddRemove.classList.toggle(button_class)
     } else {
         btnAddRemove.innerText = button_text;
@@ -271,7 +266,7 @@ function boundary_select(mode) {
     // add a line to the polyline object in the map
     siteBoundaryLines.push(
         L.polyline([siteBoundaries[0], siteBoundaries.slice(-1)[0]], {
-            color: "black",
+            color: 'black',
         })
     );
     siteBoundaryLines[siteBoundaryLines.length - 1].addTo(mainMap);
@@ -280,7 +275,6 @@ function boundary_select(mode) {
     if (siteBoundaryLines.length > 0) {
         database_add_remove_automatic({ add_remove: mode, boundariesCoordinates: siteBoundaries });
         removeBoundaries();
-        btnAddRemove.innerText = "Draw Lines";
     }
 }
 
@@ -288,33 +282,84 @@ function boundary_select(mode) {
 /************************************************************/
 /*                       OPTIMIZATION                       */
 /************************************************************/
-function optimize_energy_system()
+
+function optimize_energy_system() {
+    // $("#loading").show();
+    $.ajax({
+        url: "optimize_energy_system/",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({
+            start_date: localStorage.start_date,
+            n_days: (localStorage.n_days),
+            project_lifetime: parseInt(localStorage.project_lifetime),
+            wacc: parseFloat(localStorage.interest_rate)/100,
+            tax: 0,
+            pv: {'lifetime': pvLifetime.value, 'capex': pvCapex.value, 'opex': pvOpex.value},
+            diesel_genset: {'lifetime': dieselGensetLifetime.value, 'capex': dieselGensetCapex.value, 
+                            'opex': dieselGensetOpex.value, 'variable_cost': dieselGensetVariableCost.value,
+                            'fuel_cost': fuelCost.value, 'fuel_lhv': fuelLhv.value, 
+                            'min_load': dieselGensetMinLoad.value/100, 'efficiency': dieselGensetEfficiency.value/100},
+            battery: {'lifetime': batteryLifetime.value, 'capex': batteryCapex.value, 'opex': batteryOpex.value,
+                      'soc_min': batterySocMin.value/100, 'soc_max': batterySocMax.value/100, 'c_rate_in': batteryCrateIn.value, 
+                      'c_rate_out': batteryCrateOut.value, 'efficiency': batteryEfficiency.value/100},
+            inverter: {'lifetime': inverterLifetime.value, 'capex': inverterCapex.value, 'opex': inverterOpex.value, 'efficiency': inverterEfficiency.value/100},
+            rectifier: {'lifetime': rectifierLifetime.value, 'capex': rectifierCapex.value, 'opex': rectifierOpex.value, 'efficiency': rectifierEfficiency.value/100},
+                }),
+        dataType: "json",
+    });
+}
 
 function optimize_grid() {
-    $("#loading").show();
+    document.getElementById('spnSpinner').style.display = "";
+    
     $.ajax({
         url: "optimize_grid/",
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify({
-            cost_pole: cost_pole.value,
-            cost_connection: cost_connection.value,
-            cost_interpole_cable: cost_interpole_cable.value,
-            cost_distribution_cable: cost_distribution_cable.value,
-            number_of_relaxation_steps_nr: number_of_relaxation_steps_nr.value,
-            max_connection_poles: max_connection_poles.value,
-        }),
+            start_date: localStorage.start_date,
+            n_days: (localStorage.n_days),
+            project_lifetime: parseInt(localStorage.project_lifetime),
+            wacc: parseFloat(localStorage.interest_rate)/100,
+            tax: 0,
+            hv_cable: {'lifetime': hvCableLifetime.value, 'capex': hvCableCapex.value, 'opex': hvCableOpex.value},
+            hv_cable: {'lifetime': hvCableLifetime.value, 'capex': hvCableCapex.value, 'opex': hvCableOpex.value},
+            lv_cable: {'lifetime': lvCableLifetime.value, 'capex': lvCableCapex.value, 'opex': lvCableOpex.value},
+            pole: {'lifetime': poleLifetime.value, 'capex': poleCapex.value, 'opex': poleOpex.value, 'max_connections': 4},
+            connection: {'lifetime': connectionLifetime.value, 'capex': connectionCapex.value, 'opex': connectionOpex.value},
+            optimization: {'n_relaxation_steps': 10},
+                }),
         dataType: "json",
-        statusCode: {
-            200: function () {
-                database_read(nodes_or_link = 'nodes', map_or_export = 'map');
-                database_read(nodes_or_link = 'links', map_or_export = 'map');
-                $("#loading").hide();
-            },
-        },
     });
+
+    // window.open("{{ url_for('simulation_results')}}");
 }
 
+function load_results(){
+    var xhr = new XMLHttpRequest();
+    url = "load_results/";
+    xhr.open("GET", url, true);
+    xhr.responseType = "json";
+    xhr.send();
+    
+    xhr.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+            // push nodes to the map
+            results = this.response;
+            document.getElementById("nPoles").innerText = results['n_poles'];
+            document.getElementById("nConsumers").innerText = results['n_consumers'];
+            document.getElementById("lengthHvCable").innerText = results['length_hv_cable'];
+            document.getElementById("lengthLvCable").innerText = results['length_lv_cable'];
+            document.getElementById("costGrid").innerText = results['cost_grid'];
+        }
+    };
+}
+
+function refresh_map(){
+    database_read(nodes_or_link = 'nodes', map_or_export = 'map');
+    database_read(nodes_or_link = 'links', map_or_export = 'map');
+}
 /************************************************************/
 /*                    SOLAR-HOME-SYSTEM                     */
 /************************************************************/
@@ -347,4 +392,11 @@ function identify_shs() {
             },
         },
     });
+}
+
+function project_setup_variables(){
+    localStorage.start_date = document.getElementById("startDate").value;
+    localStorage.n_days = document.getElementById("nDays").value;
+    localStorage.project_lifetime = document.getElementById("projectLifetime").value;
+    localStorage.interest_rate = document.getElementById("interestRate").value;
 }

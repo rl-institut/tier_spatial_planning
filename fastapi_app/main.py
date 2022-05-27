@@ -1,7 +1,6 @@
 from statistics import mode
 from sqlalchemy.sql.expression import column, false, true
 from sqlalchemy.sql.sqltypes import Boolean
-from fastapi_app.tools import energy_system_optimizer
 import fastapi_app.tools.boundary_identification as bi
 import fastapi_app.tools.coordinates_conversion as conv
 import fastapi_app.tools.shs_identification as shs_ident
@@ -17,8 +16,7 @@ from fastapi_app.database import SessionLocal, engine
 from sqlalchemy.orm import Session, raiseload
 import sqlite3
 from fastapi_app.tools.grids import Grid
-from fastapi_app.tools.grid_optimizer import GridOptimizer
-from fastapi_app.tools.energy_system_optimizer import EnergySystemOptimizer
+from fastapi_app.tools.optimizer import Optimizer, GridOptimizer, EnergySystemOptimizer
 import math
 import urllib.request
 import ssl
@@ -54,6 +52,7 @@ directory_database = os.path.join(directory_parent, 'data', 'database').replace(
 full_path_nodes = os.path.join(directory_database, 'nodes.csv').replace("\\", "/")
 full_path_links = os.path.join(directory_database, 'links.csv').replace("\\", "/")
 full_path_demands = os.path.join(directory_database, 'demands.csv').replace("\\", "/")
+full_path_stored_data = os.path.join(directory_database, 'stored_data.csv').replace("\\", "/")
 os.makedirs(directory_database, exist_ok=True)
 
 directory_inputs = os.path.join(directory_parent, 'data', 'inputs').replace("\\", "/")
@@ -77,14 +76,7 @@ json_array = List[Any]
 import_structure = Union[json_array, json_object]
 
 
-ensys_opt = EnergySystemOptimizer(start_date='2022-01-01', n_days=365)
-ensys_opt.create_datetime_objects()
-ensys_opt.import_data(path=full_path_all_inputs)
-ensys_opt.optimize_energy_system()
-ensys_opt.process_results()
-
 # --------------------- REDIRECT REQUEST TO FAVICON LOG ----------------------#
-
 
 @app.get("/favicon.ico")
 async def redirect():
@@ -226,11 +218,21 @@ async def database_initialization(nodes, links):
         "link_type",
         "length"
     ]
+
+    header_stored_data = [
+        "n_consumers",
+        "n_poles",
+        "length_hv_cable",
+        "length_lv_cable",
+        "cost_grid"
+    ]
     if nodes:
         pd.DataFrame(columns=header_nodes).to_csv(full_path_nodes, index=False)
 
     if links:
         pd.DataFrame(columns=header_links).to_csv(full_path_links, index=False)
+
+    pd.DataFrame(columns=header_stored_data).to_csv(full_path_stored_data, index=False)
 
 
 # add new manually-selected nodes to the *.csv file
@@ -316,6 +318,30 @@ async def database_read(nodes_or_links: str):
     else:
         links_list = json.loads(pd.read_csv(full_path_links).to_json())
         return links_list
+
+
+@app.get("/load_results")
+async def load_results():
+
+    results = {}
+
+    df = pd.read_csv(full_path_stored_data)
+
+    # df.loc[0, 'n_consumers'] = len(grid.consumers())
+    # df.loc[0, 'n_poles'] = len(grid.poles())
+    # df.loc[0, 'length_hv_cable'] = grid.links[grid.links.link_type == 'interpole']['length'].sum()
+    # df.loc[0, 'length_lv_cable'] = grid.links[grid.links.link_type == 'distribution']['length'].sum()
+    # df.loc[0, 'cost_grid'] = grid.cost()
+    # df.to_csv(full_path_stored_data, mode='a', header=False, index=False, float_format='%.0f')
+
+    results['n_poles'] = str(df.loc[0, 'n_poles'])
+    results['n_consumers'] = str(df.loc[0, 'n_consumers'])
+    results['length_hv_cable'] = str(df.loc[0, 'length_hv_cable']) + ' m'
+    results['length_lv_cable'] = str(df.loc[0, 'length_lv_cable']) + ' m'
+    results['cost_grid'] = str(df.loc[0, 'cost_grid']) + ' USD/a'
+
+    # importing nodes and links from the csv files to the map
+    return results
 
 
 @app.post("/database_add_remove_automatic/{add_remove}")
@@ -446,7 +472,11 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                         background_tasks: BackgroundTasks):
 
     # create GridOptimizer object
-    opt = GridOptimizer()
+    opt = GridOptimizer(start_date=optimize_grid_request.start_date,
+                        n_days=optimize_grid_request.n_days,
+                        project_lifetime=optimize_grid_request.project_lifetime,
+                        wacc=optimize_grid_request.wacc,
+                        tax=optimize_grid_request.tax)
 
     # get nodes from the database (CSV file) as a dictionary
     # then convert it again to a panda dataframe for simplicity
@@ -476,12 +506,36 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                           nodes_index_removing=nodes_index_removing)
 
     # create a new "grid" object from the Grid class
+    epc_hv_cable = opt.crf * Optimizer.capex_multi_investment(
+        opt,
+        capex_0=optimize_grid_request.hv_cable['capex'],
+        component_lifetime=optimize_grid_request.hv_cable['lifetime']
+    ) + optimize_grid_request.hv_cable['opex']
+
+    epc_lv_cable = opt.crf * Optimizer.capex_multi_investment(
+        opt,
+        capex_0=optimize_grid_request.lv_cable['capex'],
+        component_lifetime=optimize_grid_request.lv_cable['lifetime']
+    ) + optimize_grid_request.lv_cable['opex']
+
+    epc_connection = opt.crf * Optimizer.capex_multi_investment(
+        opt,
+        capex_0=optimize_grid_request.connection['capex'],
+        component_lifetime=optimize_grid_request.connection['lifetime']
+    ) + optimize_grid_request.connection['opex']
+
+    epc_pole = opt.crf * Optimizer.capex_multi_investment(
+        opt,
+        capex_0=optimize_grid_request.pole['capex'],
+        component_lifetime=optimize_grid_request.pole['lifetime']
+    ) + optimize_grid_request.pole['opex']
+
     grid = Grid(
-        capex_pole=optimize_grid_request.cost_pole,
-        capex_connection=optimize_grid_request.cost_connection,
-        capex_interpole=optimize_grid_request.cost_interpole_cable,
-        capex_distribution=optimize_grid_request.cost_distribution_cable,
-        pole_max_connection=optimize_grid_request.max_connection_poles
+        epc_hv_cable=epc_hv_cable,
+        epc_lv_cable=epc_lv_cable,
+        epc_connection=epc_connection,
+        epc_pole=epc_pole,
+        pole_max_connection=optimize_grid_request.pole['max_connections']
     )
 
     # make sure that the new grid object is empty before adding nodes to it
@@ -526,7 +580,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
         min_n_clusters=min_number_of_poles
     )
 
-    number_of_relaxation_steps_nr = optimize_grid_request.number_of_relaxation_steps_nr
+    number_of_relaxation_steps_nr = optimize_grid_request.optimization['n_relaxation_steps']
 
     opt.nr_optimization(grid=grid,
                         number_of_poles=number_of_poles,
@@ -556,11 +610,34 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     # store the list of poles in the "node" database
     database_add(add_nodes=False, add_links=True, inlet=links.to_dict())
 
+    # store data for showing in the final results
+    df = pd.read_csv(full_path_stored_data)
+    df.loc[0, 'n_consumers'] = len(grid.consumers())
+    df.loc[0, 'n_poles'] = len(grid.poles())
+    df.loc[0, 'length_hv_cable'] = int(
+        grid.links[grid.links.link_type == 'interpole']['length'].sum())
+    df.loc[0, 'length_lv_cable'] = int(
+        grid.links[grid.links.link_type == 'distribution']['length'].sum())
+    df.loc[0, 'cost_grid'] = int(grid.cost())
+    df.to_csv(full_path_stored_data, mode='a', header=False, index=False, float_format='%.0f')
+
 
 @ app.post('/optimize_energy_system')
 async def optimize_energy_system(optimize_energy_system_request: models.OptimizeEnergySystemRequest):
-
-    print('Hi')
+    ensys_opt = EnergySystemOptimizer(
+        start_date=optimize_energy_system_request.start_date,
+        n_days=optimize_energy_system_request.n_days,
+        project_lifetime=optimize_energy_system_request.project_lifetime,
+        wacc=optimize_energy_system_request.wacc,
+        tax=optimize_energy_system_request.tax,
+        path_data=full_path_all_inputs,
+        pv=optimize_energy_system_request.pv,
+        diesel_genset=optimize_energy_system_request.diesel_genset,
+        battery=optimize_energy_system_request.battery,
+        inverter=optimize_energy_system_request.inverter,
+        rectifier=optimize_energy_system_request.rectifier,
+    )
+    ensys_opt.optimize_energy_system()
 
 
 @app.post("/shs_identification/")

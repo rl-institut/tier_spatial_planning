@@ -16,8 +16,69 @@ from sklearn.metrics import precision_recall_curve
 from fastapi_app.tools.io import make_folder
 from fastapi_app.tools.grids import Grid
 
+import oemof.solph as solph
+from datetime import datetime, timedelta
 
-class GridOptimizer:
+
+class Optimizer:
+    """
+    This is a general parent class for both grid and energy system optimizers
+    """
+
+    def __init__(self,
+                 start_date='2021-01-01',
+                 n_days=365,
+                 project_lifetime=20,
+                 wacc=0.1,
+                 tax=0):
+        """
+        Initialize the grid optimizer object
+        """
+        self.start_date = start_date
+        self.n_days = n_days
+        self.project_lifetime = project_lifetime
+        self.wacc = wacc
+        self.tax = tax
+
+        self.crf = (self.wacc * (1 + self.wacc) ** self.project_lifetime) / \
+            ((1 + self.wacc) ** self.project_lifetime - 1)
+
+    def capex_multi_investment(self, capex_0, component_lifetime):
+        """
+        Calculates the equivalent CAPEX for components with lifetime less than the project lifetime.
+
+        """
+        if self.project_lifetime == component_lifetime:
+            number_of_investments = 1
+        else:
+            number_of_investments = int(round(self.project_lifetime / component_lifetime + 0.5))
+
+        first_time_investment = capex_0 * (1 + self.tax)
+
+        for count_of_replacements in range(0, number_of_investments):
+            if count_of_replacements == 0:
+                capex = first_time_investment
+            else:
+                if count_of_replacements * component_lifetime != self.project_lifetime:
+                    capex = capex + first_time_investment / (
+                        (1 + self.wacc) ** (count_of_replacements * component_lifetime)
+                    )
+
+        # Substraction of component value at end of life with last replacement (= number_of_investments - 1)
+        # This part calculates the salvage costs
+        if number_of_investments * component_lifetime > self.project_lifetime:
+            last_investment = first_time_investment / (
+                (1 + self.wacc) ** ((number_of_investments - 1) * component_lifetime)
+            )
+            linear_depreciation_last_investment = last_investment / component_lifetime
+            capex = capex - linear_depreciation_last_investment * (
+                number_of_investments * component_lifetime - self.project_lifetime
+            ) / ((1 + self.wacc) ** (self.project_lifetime))
+
+        return capex
+
+
+class GridOptimizer(Optimizer):
     """
     This class includes:
         - methods for optimizing the "grid" object
@@ -28,10 +89,11 @@ class GridOptimizer:
     ???
     """
 
-    def __init__(self, mst_algorithm="Kruskal"):
+    def __init__(self, start_date, n_days, project_lifetime, wacc, tax, mst_algorithm="Kruskal"):
         """
         Initialize the grid optimizer object
         """
+        super().__init__(start_date, n_days, project_lifetime, wacc, tax)
         self.mst_algorithm = mst_algorithm
 
     # ------------ CONNECT NODES USING TREE-STAR SHAPE ------------#
@@ -1187,8 +1249,8 @@ class GridOptimizer:
         """
 
         # Get costs per meter of cables.
-        capex_interpole = grid.capex.interpole_cable
-        capex_distribution = grid.capex.distribution_cable
+        epc_hv_cable = grid.epc_hv_cable
+        epc_lv_cable = grid.epc_lv_cable
 
         # A dataframe including all data required for relaxation.
         relaxation_df = pd.DataFrame({
@@ -1243,9 +1305,9 @@ class GridOptimizer:
                 relaxation_df['xy_equivalent_consumers'][pole][0] += delta_x
                 relaxation_df['xy_equivalent_consumers'][pole][1] += delta_y
                 relaxation_df['weighted_vector'][pole][0] += (
-                    delta_x * capex_distribution / capex_interpole)
+                    delta_x * epc_lv_cable / epc_hv_cable)
                 relaxation_df['weighted_vector'][pole][1] += (
-                    delta_y * capex_distribution / capex_interpole)
+                    delta_y * epc_lv_cable / epc_hv_cable)
 
             for pole_2 in relaxation_df['connected_poles'][pole]:
                 delta_x = grid.nodes.x[pole_2] - grid.nodes.x[pole]
@@ -1444,3 +1506,314 @@ class GridOptimizer:
         bar = '█' * current_in_percent + '-' * remaining
         print(f"\r|{bar}|  {int(current / final * 100)}%   {message}",
               end='')
+
+
+class EnergySystemOptimizer(Optimizer):
+    """
+    This class includes:
+        - methods for optimizing the "energy system" object
+        - attributes containing all default values for the optimization parameters.
+
+    Attributes
+    ----------
+    ???
+    """
+
+    def __init__(self,
+                 start_date,
+                 n_days,
+                 project_lifetime,
+                 wacc,
+                 tax,
+                 path_data='',
+                 pv={'capex': 1000, 'opex': 20, 'lifetime': 20},
+                 diesel_genset={'capex': 1000, 'opex': 20, 'variable_cost': 0.045, 'lifetime': 8,
+                                'fuel_cost': 1.214, 'fuel_lhv': 11.87, 'min_load': 0.3, 'efficiency': 0.3},
+                 battery={'capex': 350, 'opex': 7, 'lifetime': 6, 'soc_min': 0.3,
+                          'soc_max': 1, 'c_rate_in': 1, 'c_rate_out': 0.5, 'efficiency': 0.8},
+                 inverter={'capex': 400, 'opex': 8, 'lifetime': 10, 'efficiency': 0.98},
+                 rectifier={'capex': 400, 'opex': 8, 'lifetime': 10, 'efficiency': 0.98},):
+        """
+        Initialize the grid optimizer object
+        """
+        super().__init__(start_date, n_days, project_lifetime, wacc, tax)
+        self.path_data = path_data
+        self.pv = pv
+        self.diesel_genset = diesel_genset
+        self.battery = battery
+        self.inverter = inverter
+        self.rectifier = rectifier
+
+    def create_datetime_objects(self):
+        """
+        explanation
+        """
+        start_date_obj = datetime.strptime(self.start_date, '%Y-%m-%d')
+        self.start_date = start_date_obj.date()
+        self.start_time = start_date_obj.time()
+        self.start_datetime = datetime.combine(start_date_obj.date(), start_date_obj.time())
+        self.end_datetime = self.start_datetime + timedelta(days=self.n_days)
+
+    def import_data(self):
+        data = pd.read_csv(filepath_or_buffer=self.path_data, delimiter=';')
+        data.index = pd.date_range(start=self.start_datetime, periods=len(data), freq='H')
+
+        self.solar_potential = data.SolarGen.loc[self.start_datetime:self.end_datetime]
+        self.demand = data.Demand.loc[self.start_datetime:self.end_datetime]
+        self.solar_potential_peak = self.solar_potential.max()
+        self.demand_peak = self.demand.max()
+
+    def optimize_energy_system(self):
+        self.create_datetime_objects()
+        self.import_data()
+
+        # define an empty dictionary for all epc values
+        self.epc = {}
+        date_time_index = pd.date_range(start=self.start_date, periods=self.n_days * 24, freq="H")
+        energy_system = solph.EnergySystem(timeindex=date_time_index)
+
+        # -------------------- BUSES --------------------
+        # create electricity and fuel buses
+        b_el_ac = solph.Bus(label="electricity_ac")
+        b_el_dc = solph.Bus(label="electricity_dc")
+        b_fuel = solph.Bus(label="fuel")
+
+        # -------------------- SOURCES --------------------
+        fuel_cost = self.diesel_genset['fuel_cost'] / self.diesel_genset['fuel_lhv']
+        fuel_source = solph.Source(
+            label="fuel_source",
+            outputs={
+                b_fuel: solph.Flow(variable_costs=fuel_cost)
+            }
+        )
+
+        self.epc['pv'] = self.crf * \
+            self.capex_multi_investment(
+                capex_0=self.pv['capex'], component_lifetime=self.pv['lifetime']) + self.pv['opex']
+        pv = solph.Source(
+            label="pv",
+            outputs={
+                b_el_dc: solph.Flow(
+                    fix=self.solar_potential,
+                    nominal_value=None,
+                    investment=solph.Investment(
+                        ep_costs=self.epc['pv'] * self.n_days / 365),
+                    variable_costs=0,
+                )
+            },
+        )
+
+        # -------------------- TRANSFORMERS --------------------
+        # optimize capacity of the fuel generator
+        self.epc['diesel_genset'] = self.crf * \
+            self.capex_multi_investment(
+                capex_0=self.diesel_genset['capex'], component_lifetime=self.diesel_genset['lifetime']) + self.diesel_genset['opex']
+        diesel_genset = solph.Transformer(
+            label="diesel_genset",
+            inputs={b_fuel: solph.Flow()},
+            outputs={
+                b_el_ac: solph.Flow(
+                    nominal_value=None,
+                    variable_costs=self.diesel_genset['variable_cost'],
+                    investment=solph.Investment(
+                        ep_costs=self.epc['diesel_genset'] * self.n_days / 365),
+                )
+            },
+            conversion_factors={b_el_ac: self.diesel_genset['efficiency']},
+        )
+
+        self.epc['rectifier'] = self.crf * \
+            self.capex_multi_investment(
+                capex_0=self.rectifier['capex'], component_lifetime=self.rectifier['lifetime']) + self.rectifier['opex']
+        rectifier = solph.Transformer(
+            label="rectifier",
+            inputs={
+                b_el_ac: solph.Flow(
+                    nominal_value=None,
+                    investment=solph.Investment(ep_costs=self.epc['rectifier'] * self.n_days / 365),
+                    variable_costs=0,
+                )
+            },
+            outputs={b_el_dc: solph.Flow()},
+            conversion_factor={
+                b_el_dc: self.rectifier['efficiency'],
+            },
+        )
+
+        self.epc['inverter'] = self.crf * \
+            self.capex_multi_investment(
+                capex_0=self.inverter['capex'], component_lifetime=self.inverter['lifetime']) + self.inverter['opex']
+        inverter = solph.Transformer(
+            label="inverter",
+            inputs={
+                b_el_dc: solph.Flow(
+                    nominal_value=None,
+                    investment=solph.Investment(ep_costs=self.epc['inverter'] * self.n_days / 365),
+                    variable_costs=0,
+                )
+            },
+            outputs={b_el_ac: solph.Flow()},
+            conversion_factor={
+                b_el_ac: self.inverter['efficiency'],
+            },
+        )
+        # -------------------- battery --------------------
+        self.epc['battery'] = self.crf * \
+            self.capex_multi_investment(
+                capex_0=self.battery['capex'], component_lifetime=self.battery['lifetime']) + self.battery['opex']
+        battery = solph.GenericStorage(
+            label="battery",
+            nominal_storage_capacity=None,
+            investment=solph.Investment(ep_costs=self.epc['battery'] * self.n_days / 365),
+            inputs={b_el_dc: solph.Flow(variable_costs=0)},
+            outputs={b_el_dc: solph.Flow(
+                investment=solph.Investment(ep_costs=0))},
+            initial_storage_capacity=0.0,
+            min_storage_level=self.battery['soc_min'],
+            max_storage_level=self.battery['soc_max'],
+            balanced=True,
+            inflow_conversion_factor=self.battery['efficiency'],
+            outflow_conversion_factor=self.battery['efficiency'],
+            invest_relation_input_capacity=self.battery['c_rate_in'],
+            invest_relation_output_capacity=self.battery['c_rate_out'],
+        )
+
+        # -------------------- SINKS --------------------
+        demand_el = solph.Sink(
+            label="electricity_demand",
+            inputs={
+                b_el_ac: solph.Flow(
+                    fix=self.demand / self.demand_peak,
+                    nominal_value=self.demand_peak
+                )
+            },
+        )
+
+        excess_sink = solph.Sink(
+            label="excess_sink",
+            inputs={b_el_dc: solph.Flow()},
+        )
+
+        # add all objects to the energy system
+        energy_system.add(
+            pv,
+            fuel_source,
+            b_el_dc,
+            b_el_ac,
+            b_fuel,
+            inverter,
+            rectifier,
+            diesel_genset,
+            battery,
+            demand_el,
+            excess_sink,
+        )
+
+        model = solph.Model(energy_system)
+
+        # optimize the energy system
+        # gurobi --> 'MipGap': '0.01'
+        # cbc --> 'ratioGap': '0.01'
+        model.solve(solver="gurobi", solve_kwargs={
+            "tee": True}, cmdline_options={'MipGap': '0.02'})
+        energy_system.results["meta"] = solph.processing.meta_results(model)
+        self.results_main = solph.processing.results(model)
+
+        self.process_results()
+
+    def process_results(self):
+        results_pv = solph.views.node(results=self.results_main, node='pv')
+        results_fuel_source = solph.views.node(
+            results=self.results_main, node='fuel_source')
+        results_diesel_genset = solph.views.node(
+            results=self.results_main, node='diesel_genset')
+        results_inverter = solph.views.node(results=self.results_main, node='inverter')
+        results_rectifier = solph.views.node(results=self.results_main, node='rectifier')
+        results_battery = solph.views.node(results=self.results_main, node='battery')
+        results_demand_el = solph.views.node(
+            results=self.results_main, node='electricity_demand')
+        results_excess_sink = solph.views.node(
+            results=self.results_main, node='excess_sink')
+
+        # -------------------- SEQUENCES (DYNAMIC) --------------------
+        # hourly demand profile
+        self.sequences_demand = results_demand_el['sequences'][(
+            ('electricity_ac', 'electricity_demand'), 'flow')]
+
+        # hourly profiles for solar potential and pv production
+        self.sequences_pv = results_pv['sequences'][(('pv', 'electricity_dc'), 'flow')]
+
+        # hourly profiles for fuel consumption and electricity production in the fuel genset
+        # the 'flow' from oemof is in kWh and must be converted to liter
+        self.sequences_fuel_consumption = results_fuel_source['sequences'][
+            (('fuel_source', 'fuel'), 'flow')] / 11.87  # convert to [l]
+
+        self.sequences_genset = results_diesel_genset['sequences'][
+            (('diesel_genset', 'electricity_ac'), 'flow')]
+
+        # hourly profiles for charge, discharge, and content of the battery
+        self.sequences_battery_charge = results_battery['sequences'][
+            (('electricity_dc', 'battery'), 'flow')]
+
+        self.sequences_battery_discharge = results_battery['sequences'][
+            (('battery', 'electricity_dc'), 'flow')]
+
+        self.sequences_battery_content = results_battery['sequences'][
+            (('battery', 'None'), 'storage_content')]
+
+        # hourly profiles for inverted electricity from dc to ac
+        self.sequences_inverter = results_inverter['sequences'][(
+            ('inverter', 'electricity_ac'), 'flow')]
+
+        # hourly profiles for inverted electricity from ac to dc
+        self.sequences_rectifier = results_rectifier['sequences'][(
+            ('rectifier', 'electricity_dc'), 'flow')]
+
+        # hourly profiles for excess ac and dc electricity production
+        self.sequences_excess = results_excess_sink['sequences'][
+            (('electricity_dc', 'excess_sink'), 'flow')]
+
+        # -------------------- SCALARS (STATIC) --------------------
+        self.capacity_genset = results_diesel_genset['scalars'][
+            (('diesel_genset', 'electricity_ac'), 'invest')]
+        self.capacity_pv = results_pv['scalars'][(('pv', 'electricity_dc'), 'invest')]
+        self.capacity_inverter = results_inverter['scalars'][(
+            ('electricity_dc', 'inverter'), 'invest')]
+        self.capacity_rectifier = results_rectifier['scalars'][(
+            ('electricity_ac', 'rectifier'), 'invest')]
+        self.capacity_battery = results_battery['scalars'][(
+            ('electricity_dc', 'battery'), 'invest')]
+
+        self.total_component = (self.epc['diesel_genset'] * self.capacity_genset + self.epc['pv'] * self.capacity_pv
+                                + self.epc['inverter'] * self.capacity_inverter + self.epc['rectifier'] * self.capacity_rectifier + self.epc['battery'] * self.capacity_battery) * self.n_days / 365
+        self.total_variale = self.diesel_genset['variable_cost'] * self.sequences_genset.sum(axis=0)
+        self.total_fuel = self.diesel_genset['fuel_cost'] * \
+            self.sequences_fuel_consumption.sum(axis=0)
+        self.total_revenue = self.total_component + self.total_variale + self.total_fuel
+        self.total_demand = self.sequences_demand.sum(axis=0)
+        self.lcoe = 100 * self.total_revenue / self.total_demand
+
+        self.res = 100 * self.sequences_pv.sum(axis=0) / \
+            (self.sequences_genset.sum(axis=0) + self.sequences_pv.sum(axis=0))
+
+        self.excess_rate = 100 * \
+            self.sequences_excess.sum(
+                axis=0) / (self.sequences_genset.sum(axis=0) + self.sequences_pv.sum(axis=0))
+        self.genset_to_dc = 100 * \
+            self.sequences_rectifier.sum(axis=0) / self.sequences_genset.sum(axis=0)
+
+        print('')
+        print(40 * '*')
+        print(f'LCOE:\t {self.lcoe:.2f} cent/kWh')
+        print(f'RES:\t {self.res:.0f}%')
+        print(f'Excess:\t {self.excess_rate:.1f}% of the total production')
+        print(f'AC--DC:\t {self.genset_to_dc:.1f}% of the genset production')
+        print(40 * '*')
+        print(f'genset:\t {self.capacity_genset:.0f} kW')
+        print(f'pv:\t {self.capacity_pv:.0f} kW')
+        print(f'st:\t {self.capacity_battery:.0f} kW')
+        print(f'inv:\t {self.capacity_inverter:.0f} kW')
+        print(f'rect:\t {self.capacity_rectifier:.0f} kW')
+        print(f'peak:\t {self.sequences_demand.max():.0f} kW')
+        print(f'excess:\t {self.sequences_excess.max():.0f} kW')
+        print(40 * '*')

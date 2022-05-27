@@ -55,10 +55,10 @@
       rel="stylesheet"
       href="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.css"
     />
-    <title>Customer Selection - PeopleSuN</title>
+    <title>Customer Selection</title>
   </head>
 
-  <body>
+  <body onload="refresh_map();">
     <!-- don't forget 'navbar--scenario' CSS class -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light navbar--scenario">
       <div class="container-fluid">
@@ -185,7 +185,6 @@
                     id="selectionFile"
                     autocomplete="off"
                     onclick="activation_check();"
-                    checked
                   />
                   <label class="btn btn-outline-secondary" for="selectionFile"
                     >Import from File</label
@@ -197,6 +196,7 @@
                     id="selectionBoundaries"
                     autocomplete="off"
                     onclick="activation_check();"
+                    checked
                   />
                   <label
                     class="btn btn-outline-secondary"
@@ -224,8 +224,9 @@
                     class="form-control"
                     id="fileImport"
                     accept=".xls, .xlsx"
+                    disabled
                   />
-                  <button id="btnImport" class="btn" type="button">
+                  <button id="btnImport" class="btn disabled" type="button">
                     Import
                   </button>
                 </div>
@@ -234,14 +235,14 @@
                   <div class="col-9">
                     <label
                       id="lblDrawBoundariesAdd"
-                      class="form-label disabled text-left"
+                      class="form-label text-left"
                       for="btnDrawBoundariesAdd"
                       >Add customers by selecting boundaries of the settlement
                     </label>
                   </div>
                   <div class="col-3">
                     <button
-                      class="btn btn--long disabled"
+                      class="btn btn--long"
                       type="button"
                       id="btnDrawBoundariesAdd"
                       aria-disabled="true"
@@ -255,7 +256,7 @@
                   <div class="col-9">
                     <label
                       id="lblDrawBoundariesRemove"
-                      class="form-label disabled text-left"
+                      class="form-label text-left"
                       for="btnDrawBoundariesRemove"
                       >Remove customers by selecting boundaries of the
                       settlement
@@ -263,7 +264,7 @@
                   </div>
                   <div class="col-3">
                     <button
-                      class="btn btn--long disabled text-right"
+                      class="btn btn--long text-right"
                       type="button"
                       id="btnDrawBoundariesRemove"
                       aria-disabled="true"

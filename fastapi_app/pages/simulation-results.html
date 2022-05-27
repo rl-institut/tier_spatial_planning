@@ -32,9 +32,9 @@
       rel="stylesheet"
       href="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.css"
     />
-    <title>Simulation Results - PeopleSuN</title>
+    <title>Simulation Results</title>
   </head>
-  <body>
+  <body onload="refresh_map();load_results();">
     <nav class="navbar navbar-expand-lg navbar-light bg-light navbar--scenario">
       <div class="container-fluid">
         <span class="navbar-brand">
@@ -164,7 +164,7 @@
               <div class="chart chart--small">
                 <div class="chart__header">
                   <div>
-                    <span class="title">Emission Costs</span>
+                    <span class="title">Final Results</span>
                   </div>
                   <div class="dropdown">
                     <button
@@ -191,90 +191,24 @@
                 </div>
                 <div class="chart__content">
                   <div class="item item--best">
-                    <div class="item__name">Scenario name 5</div>
-                    <div class="item__value">500.000 EUR</div>
+                    <div class="item__name">Poles</div>
+                    <div id="nPoles" class="item__value"></div>
                   </div>
-                  <div class="item item--worst">
-                    <div class="item__name">Scenario name 10</div>
-                    <div class="item__value">1.000.000 EUR</div>
-                  </div>
-                </div>
-              </div>
-              <div class="chart chart--small">
-                <div class="chart__header">
-                  <div>
-                    <span class="title">Investment Costs</span>
-                  </div>
-                  <div class="dropdown">
-                    <button
-                      class="btn dropdown-toggle btn--transparent"
-                      type="button"
-                      id="dropdownMenuButton2"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <span class="icon icon-more"></span>
-                    </button>
-                    <ul
-                      class="dropdown-menu"
-                      aria-labelledby="dropdownMenuButton2"
-                    >
-                      <li>
-                        <a class="dropdown-item" href="#">Export as .xls</a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="#">Export as PDF</a>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                <div class="chart__content">
                   <div class="item item--best">
-                    <div class="item__name">Scenario name 5</div>
-                    <div class="item__value">500.000 EUR</div>
+                    <div class="item__name">Consumers</div>
+                    <div id="nConsumers" class="item__value"></div>
                   </div>
-                  <div class="item item--worst">
-                    <div class="item__name">Scenario name 10</div>
-                    <div class="item__value">1.000.000 EUR</div>
-                  </div>
-                </div>
-              </div>
-              <div class="chart chart--small">
-                <div class="chart__header">
-                  <div>
-                    <span class="title">Emission Costs</span>
-                  </div>
-                  <div class="dropdown">
-                    <button
-                      class="btn dropdown-toggle btn--transparent"
-                      type="button"
-                      id="dropdownMenuButton3"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <span class="icon icon-more"></span>
-                    </button>
-                    <ul
-                      class="dropdown-menu"
-                      aria-labelledby="dropdownMenuButton3"
-                    >
-                      <li>
-                        <a class="dropdown-item" href="#">Export as .xls</a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="#">Export as PDF</a>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                <div class="chart__content">
                   <div class="item item--best">
-                    <div class="item__name">Scenario name 5</div>
-                    <div class="item__value">500.000 EUR</div>
+                    <div class="item__name">HV cable</div>
+                    <div id="lengthHvCable" class="item__value"></div>
+                  </div>
+                  <div class="item item--best">
+                    <div class="item__name">LV cable</div>
+                    <div id="lengthLvCable" class="item__value"></div>
                   </div>
                   <div class="item item--worst">
-                    <div class="item__name">Scenario name 10</div>
-                    <div class="item__value">1.000.000 EUR</div>
+                    <div class="item__name">Grid Cost</div>
+                    <div id="costGrid" class="item__value"></div>
                   </div>
                 </div>
               </div>

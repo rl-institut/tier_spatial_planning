@@ -20,7 +20,7 @@
       href="{{ url_for('static', path='stylesheets/css/main.css') }}"
       rel="stylesheet"
     />
-    <title>Project Setup - PeopleSuN</title>
+    <title>Project Setup</title>
   </head>
   <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light navbar--scenario">
@@ -297,7 +297,10 @@ Simulation and optimization of power supply and distribution for an off-grid sys
             aria-disabled="true"
             >Previous</a
           >
-          <a class="btn btn--medium" href="{{ url_for('customer_selection')}}"
+          <a
+            class="btn btn--medium"
+            href="{{ url_for('customer_selection')}}"
+            onclick="project_setup_variables();"
             >Next</a
           >
         </div>

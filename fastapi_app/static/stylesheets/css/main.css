@@ -3939,7 +3939,7 @@ nav.navbar .dropdown-menu li {
 .project-setup.two-columns .right .map {
   margin-left: 0rem;
   width: calc(100% - 1.5rem);
-  height: 100%;
+  height: 150%;
   background-color: #E3EAEE;
 }
 

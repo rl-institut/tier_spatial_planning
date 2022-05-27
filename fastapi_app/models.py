@@ -66,24 +66,37 @@ class AddNodeRequest(BaseModel):
 
 
 class OptimizeGridRequest(BaseModel):
-    cost_pole: float
-    cost_connection: float
-    cost_interpole_cable: float
-    cost_distribution_cable: float
-    number_of_relaxation_steps_nr: int
-    max_connection_poles: int
-
-
-class OptimizeEnergySystemRequest(BaseModel):
-    diesel_genset: Dict[str, float]
-    pv: Dict[str, float]
-    battery: Dict[str, float]
-    inverter: Dict[str, float]
-    rectifier: Dict[str, float]
+    start_date: str
+    n_days: int
+    project_lifetime: int
+    wacc: float
+    tax: float
     hv_cable: Dict[str, float]
     lv_cable: Dict[str, float]
     pole: Dict[str, float]
     connection: Dict[str, float]
+    optimization: Dict[str, int]
+
+    # cost_pole: float
+    # cost_connection: float
+    # cost_interpole_cable: float
+    # cost_distribution_cable: float
+    # number_of_relaxation_steps_nr: int
+    # max_connection_poles: int
+
+
+class OptimizeEnergySystemRequest(BaseModel):
+    start_date: str
+    n_days: int
+    project_lifetime: int
+    wacc: float
+    tax: float
+    pv: Dict[str, float]
+    diesel_genset: Dict[str, float]
+    battery: Dict[str, float]
+    inverter: Dict[str, float]
+    rectifier: Dict[str, float]
+    # path_data: str
 
 
 class ShsIdentificationRequest(BaseModel):

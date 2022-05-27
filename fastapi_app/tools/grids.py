@@ -119,14 +119,10 @@ class Grid:
                 'length': pd.Series([], dtype=int)
             }
         ).set_index('label'),
-        capex_pole=600,
-        capex_connection=50,
-        capex_interpole=5,  # per meter
-        capex_distribution=2,  # per meter
-        opex_pole=5,
-        opex_connection=0.5,
-        opex_interpole=0,  # per meter
-        opex_distribution=0,  # per meter
+        epc_hv_cable=2,  # per meter
+        epc_lv_cable=0.5,  # per meter
+        epc_connection=12,
+        epc_pole=100,
         pole_max_connection=0,
         max_current=10,  # [A]
         voltage=230,  # [V]
@@ -143,27 +139,15 @@ class Grid:
         self.nodes = nodes
         self.ref_node = ref_node
         self.links = links
-        self.capex = pd.Series(
-            {
-                'pole': capex_pole,
-                'connection': capex_connection,
-                'interpole_cable': capex_interpole,
-                'distribution_cable': capex_distribution
-            }, dtype=np.dtype(float)
-        )
-        self.opex = pd.Series(
-            {
-                'pole': opex_pole,
-                'connection': opex_connection,
-                'interpole_cable': opex_interpole,
-                'distribution_cable': opex_distribution
-            }, dtype=np.dtype(float)
-        )
         self.pole_max_connection = pole_max_connection
         self.max_current = max_current
         self.voltage = voltage
         self.cables = cables
         self.grid_mst = grid_mst
+        self.epc_hv_cable = epc_hv_cable  # per meter
+        self.epc_lv_cable = epc_lv_cable  # per meter
+        self.epc_connection = epc_connection
+        self.epc_pole = epc_pole
 
     # -------------------- NODES -------------------- #
 
@@ -443,9 +427,9 @@ class Grid:
         # calculate the total length of the distribution cable between poles and consumers
         total_length_distribution_cable = self.total_length_distribution_cable()
 
-        grid_cost = number_of_poles * self.capex.pole + number_of_consumers * self.capex.connection + \
-            total_length_distribution_cable * self.capex.distribution_cable + \
-            total_length_interpole_cable * self.capex.distribution_cable
+        grid_cost = number_of_poles * self.epc_pole + number_of_consumers * self.epc_connection + \
+            total_length_distribution_cable * self.epc_lv_cable + \
+            total_length_interpole_cable * self.epc_hv_cable
 
         return np.around(grid_cost, decimals=2)
 
