@@ -222,7 +222,18 @@ async def database_initialization(nodes, links):
         "n_poles",
         "length_hv_cable",
         "length_lv_cable",
-        "cost_grid"
+        "cost_grid",
+        "cost_renewable_assets",
+        "cost_non_renewable_assets",
+        "cost_fuel",
+        "pv_capacity",
+        "battery_capacity",
+        "inverter_capacity",
+        "rectifier_capacity",
+        "diesel_genset_capacity",
+        "peak_demand",
+        "surplus",
+
     ]
     if nodes:
         pd.DataFrame(columns=header_nodes).to_csv(full_path_nodes, index=False)
@@ -325,13 +336,6 @@ async def load_results():
 
     df = pd.read_csv(full_path_stored_data)
 
-    # df.loc[0, 'n_consumers'] = len(grid.consumers())
-    # df.loc[0, 'n_poles'] = len(grid.poles())
-    # df.loc[0, 'length_hv_cable'] = grid.links[grid.links.link_type == 'interpole']['length'].sum()
-    # df.loc[0, 'length_lv_cable'] = grid.links[grid.links.link_type == 'distribution']['length'].sum()
-    # df.loc[0, 'cost_grid'] = grid.cost()
-    # df.to_csv(full_path_stored_data, mode='a', header=False, index=False, float_format='%.0f')
-
     results['n_poles'] = str(df.loc[0, 'n_poles'])
     results['n_consumers'] = str(df.loc[0, 'n_consumers'])
     results['length_hv_cable'] = str(df.loc[0, 'length_hv_cable']) + ' m'
@@ -340,6 +344,41 @@ async def load_results():
 
     # importing nodes and links from the csv files to the map
     return results
+
+
+@app.get("/get_optimal_capacities")
+async def get_optimal_capacities():
+
+    optimal_capacities = {}
+
+    df = pd.read_csv(full_path_stored_data)
+
+    optimal_capacities['pv'] = str(df.loc[0, 'pv_capacity'])
+    optimal_capacities['battery'] = str(df.loc[0, 'battery_capacity'])
+    optimal_capacities['inverter'] = str(df.loc[0, 'inverter_capacity'])
+    optimal_capacities['rectifier'] = str(df.loc[0, 'rectifier_capacity'])
+    optimal_capacities['diesel_genset'] = str(df.loc[0, 'diesel_genset_capacity'])
+    optimal_capacities['peak_demand'] = str(df.loc[0, 'peak_demand'])
+    optimal_capacities['surplus'] = str(df.loc[0, 'surplus'])
+
+    # importing nodes and links from the csv files to the map
+    return optimal_capacities
+
+
+@app.get("/get_lcoe_breakdown")
+async def get_lcoe_breakdown():
+
+    lcoe_breakdown = {}
+
+    df = pd.read_csv(full_path_stored_data)
+
+    lcoe_breakdown['renewable_assets'] = str(df.loc[0, 'cost_renewable_assets'])
+    lcoe_breakdown['non_renewable_assets'] = str(df.loc[0, 'cost_non_renewable_assets'])
+    lcoe_breakdown['grid'] = str(df.loc[0, 'cost_grid'])
+    lcoe_breakdown['fuel'] = str(df.loc[0, 'cost_fuel'])
+
+    # importing nodes and links from the csv files to the map
+    return lcoe_breakdown
 
 
 @app.post("/database_add_remove_automatic/{add_remove}")
@@ -469,7 +508,7 @@ async def database_add_remove_automatic(
             normalized_demands.iloc[:, 4] * peak_very_high_demand
 
         # load timeseries data
-        timeseries = pd.read_csv(full_path_timeseries, delimiter=';')
+        timeseries = pd.read_csv(full_path_timeseries)
 
         # replace the demand column in the timeseries file with the total demand calculated here
         timeseries['Demand'] = total_demand
@@ -664,6 +703,20 @@ async def optimize_energy_system(optimize_energy_system_request: models.Optimize
         rectifier=optimize_energy_system_request.rectifier,
     )
     ensys_opt.optimize_energy_system()
+
+    # store data for showing in the final results
+    df = pd.read_csv(full_path_stored_data)
+    df.loc[0, 'cost_renewable_assets'] = ensys_opt.total_renewable
+    df.loc[0, 'cost_non_renewable_assets'] = ensys_opt.total_non_renewable
+    df.loc[0, 'cost_fuel'] = ensys_opt.total_fuel
+    df.loc[0, 'pv_capacity'] = ensys_opt.capacity_pv
+    df.loc[0, 'battery_capacity'] = ensys_opt.capacity_battery
+    df.loc[0, 'inverter_capacity'] = ensys_opt.capacity_inverter
+    df.loc[0, 'rectifier_capacity'] = ensys_opt.capacity_rectifier
+    df.loc[0, 'diesel_genset_capacity'] = ensys_opt.capacity_genset
+    df.loc[0, 'peak_demand'] = ensys_opt.demand_peak
+    df.loc[0, 'surplus'] = ensys_opt.sequences_excess.max()
+    df.to_csv(full_path_stored_data, index=False, float_format='%.2f')
 
 
 @app.post("/shs_identification/")

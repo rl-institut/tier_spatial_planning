@@ -1555,7 +1555,7 @@ class EnergySystemOptimizer(Optimizer):
         self.end_datetime = self.start_datetime + timedelta(days=self.n_days)
 
     def import_data(self):
-        data = pd.read_csv(filepath_or_buffer=self.path_data, delimiter=';')
+        data = pd.read_csv(filepath_or_buffer=self.path_data)
         data.index = pd.date_range(start=self.start_datetime, periods=len(data), freq='H')
 
         self.solar_potential = data.SolarGen.loc[self.start_datetime:self.end_datetime]
@@ -1784,12 +1784,14 @@ class EnergySystemOptimizer(Optimizer):
         self.capacity_battery = results_battery['scalars'][(
             ('electricity_dc', 'battery'), 'invest')]
 
-        self.total_component = (self.epc['diesel_genset'] * self.capacity_genset + self.epc['pv'] * self.capacity_pv
-                                + self.epc['inverter'] * self.capacity_inverter + self.epc['rectifier'] * self.capacity_rectifier + self.epc['battery'] * self.capacity_battery) * self.n_days / 365
-        self.total_variale = self.diesel_genset['variable_cost'] * self.sequences_genset.sum(axis=0)
+        self.total_renewable = (self.epc['pv'] * self.capacity_pv + self.epc['inverter'] *
+                                self.capacity_inverter + self.epc['battery'] * self.capacity_battery) * self.n_days / 365
+        self.total_non_renewable = (self.epc['diesel_genset'] * self.capacity_genset +
+                                    self.epc['rectifier'] * self.capacity_rectifier) * self.n_days / 365 + self.diesel_genset['variable_cost'] * self.sequences_genset.sum(axis=0)
+        self.total_component = self.total_renewable + self.total_non_renewable
         self.total_fuel = self.diesel_genset['fuel_cost'] * \
             self.sequences_fuel_consumption.sum(axis=0)
-        self.total_revenue = self.total_component + self.total_variale + self.total_fuel
+        self.total_revenue = self.total_component + self.total_fuel
         self.total_demand = self.sequences_demand.sum(axis=0)
         self.lcoe = 100 * self.total_revenue / self.total_demand
 
