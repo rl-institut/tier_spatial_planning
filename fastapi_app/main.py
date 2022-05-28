@@ -56,9 +56,7 @@ full_path_stored_data = os.path.join(directory_database, 'stored_data.csv').repl
 os.makedirs(directory_database, exist_ok=True)
 
 directory_inputs = os.path.join(directory_parent, 'data', 'inputs').replace("\\", "/")
-full_path_solar_potential = os.path.join(directory_inputs, 'solar_potential.csv').replace("\\", "/")
-full_path_total_demand = os.path.join(directory_inputs, 'total_demand.csv').replace("\\", "/")
-full_path_all_inputs = os.path.join(directory_inputs, 'timeseries.csv').replace("\\", "/")
+full_path_timeseries = os.path.join(directory_inputs, 'timeseries.csv').replace("\\", "/")
 os.makedirs(directory_inputs, exist_ok=True)
 
 directory_outputs = os.path.join(directory_parent, 'data', 'outputs').replace("\\", "/")
@@ -405,38 +403,52 @@ async def database_add_remove_automatic(
 
         # after collecting all surface areas, based on a simple assumption, the peak demand will be obtained
         max_surface_area = max(nodes['surface_area'])
+
+        # calculate the total peak demand for each of the five demand profiles to make the final demand profile
+        peak_very_low_demand = 0
+        peak_low_demand = 0
+        peak_medium_demand = 0
+        peak_high_demand = 0
+        peak_very_high_demand = 0
+
         for area in nodes['surface_area']:
             if area <= 0.2 * max_surface_area:
                 nodes['peak_demand'].append(0.01 * area)
+                peak_very_low_demand += (0.01 * area)
             elif area < 0.4 * max_surface_area:
                 nodes['peak_demand'].append(0.02 * area)
+                peak_low_demand += (0.02 * area)
             elif area < 0.6 * max_surface_area:
                 nodes['peak_demand'].append(0.03 * area)
+                peak_medium_demand += (0.03 * area)
             elif area < 0.8 * max_surface_area:
                 nodes['peak_demand'].append(0.04 * area)
+                peak_high_demand += (0.04 * area)
             else:
                 nodes['peak_demand'].append(0.05 * area)
+                peak_very_high_demand += (0.05 * area)
 
-        demands = pd.read_csv(full_path_demands, delimiter=';')
+        # normalized demands is a CSV file with 5 columns representing the very low to very high demand profiles
+        normalized_demands = pd.read_csv(full_path_demands, delimiter=';', header=None)
 
         max_peak_demand = max(nodes['peak_demand'])
         counter = 0
         for peak_demand in nodes['peak_demand']:
             if peak_demand <= 0.2 * max_peak_demand:
                 nodes['average_consumption'].append(
-                    demands.iloc[:, 0].sum() * nodes['peak_demand'][counter])
+                    normalized_demands.iloc[:, 0].sum() * nodes['peak_demand'][counter])
             elif peak_demand < 0.4 * max_peak_demand:
                 nodes['average_consumption'].append(
-                    demands.iloc[:, 1].sum() * nodes['peak_demand'][counter])
+                    normalized_demands.iloc[:, 1].sum() * nodes['peak_demand'][counter])
             elif peak_demand < 0.6 * max_peak_demand:
                 nodes['average_consumption'].append(
-                    demands.iloc[:, 2].sum() * nodes['peak_demand'][counter])
+                    normalized_demands.iloc[:, 2].sum() * nodes['peak_demand'][counter])
             elif peak_demand < 0.8 * max_peak_demand:
                 nodes['average_consumption'].append(
-                    demands.iloc[:, 3].sum() * nodes['peak_demand'][counter])
+                    normalized_demands.iloc[:, 3].sum() * nodes['peak_demand'][counter])
             else:
                 nodes['average_consumption'].append(
-                    demands.iloc[:, 4].sum() * nodes['peak_demand'][counter])
+                    normalized_demands.iloc[:, 4].sum() * nodes['peak_demand'][counter])
 
             counter += 1
 
@@ -450,6 +462,20 @@ async def database_add_remove_automatic(
 
         # storing the nodes in the database
         database_add(add_nodes=True, add_links=False, inlet=nodes)
+
+        # create the total demand profile of the selected buildings
+        total_demand = normalized_demands.iloc[:, 0] * peak_very_low_demand + normalized_demands.iloc[:, 1] * peak_low_demand + \
+            normalized_demands.iloc[:, 2] * peak_medium_demand + normalized_demands.iloc[:, 3] * peak_high_demand + \
+            normalized_demands.iloc[:, 4] * peak_very_high_demand
+
+        # load timeseries data
+        timeseries = pd.read_csv(full_path_timeseries, delimiter=';')
+
+        # replace the demand column in the timeseries file with the total demand calculated here
+        timeseries['Demand'] = total_demand
+
+        # update the CSV file
+        timeseries.to_csv(full_path_timeseries, index=False)
 
     else:
         # reading the existing CSV file of nodes, and then removing the corresponding row
@@ -630,7 +656,7 @@ async def optimize_energy_system(optimize_energy_system_request: models.Optimize
         project_lifetime=optimize_energy_system_request.project_lifetime,
         wacc=optimize_energy_system_request.wacc,
         tax=optimize_energy_system_request.tax,
-        path_data=full_path_all_inputs,
+        path_data=full_path_timeseries,
         pv=optimize_energy_system_request.pv,
         diesel_genset=optimize_energy_system_request.diesel_genset,
         battery=optimize_energy_system_request.battery,
