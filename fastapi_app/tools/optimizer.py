@@ -1526,9 +1526,10 @@ class EnergySystemOptimizer(Optimizer):
                  wacc,
                  tax,
                  path_data='',
+                 solver='gurobi',
                  pv={'capex': 1000, 'opex': 20, 'lifetime': 20},
                  diesel_genset={'capex': 1000, 'opex': 20, 'variable_cost': 0.045, 'lifetime': 8,
-                                'fuel_cost': 1.214, 'fuel_lhv': 11.87, 'min_load': 0.3, 'efficiency': 0.3},
+                                'fuel_cost': 1.214, 'fuel_lhv': 11.83, 'min_load': 0.3, 'efficiency': 0.3},
                  battery={'capex': 350, 'opex': 7, 'lifetime': 6, 'soc_min': 0.3,
                           'soc_max': 1, 'c_rate_in': 1, 'c_rate_out': 0.5, 'efficiency': 0.8},
                  inverter={'capex': 400, 'opex': 8, 'lifetime': 10, 'efficiency': 0.98},
@@ -1538,6 +1539,7 @@ class EnergySystemOptimizer(Optimizer):
         """
         super().__init__(start_date, n_days, project_lifetime, wacc, tax)
         self.path_data = path_data
+        self.solver = solver
         self.pv = pv
         self.diesel_genset = diesel_genset
         self.battery = battery
@@ -1579,7 +1581,8 @@ class EnergySystemOptimizer(Optimizer):
         b_fuel = solph.Bus(label="fuel")
 
         # -------------------- SOURCES --------------------
-        fuel_cost = self.diesel_genset['fuel_cost'] / self.diesel_genset['fuel_lhv']
+        # fuel density is assumed 0.846 kg/l
+        fuel_cost = self.diesel_genset['fuel_cost'] / 0.846 / self.diesel_genset['fuel_lhv']
         fuel_source = solph.Source(
             label="fuel_source",
             outputs={
@@ -1594,7 +1597,7 @@ class EnergySystemOptimizer(Optimizer):
             label="pv",
             outputs={
                 b_el_dc: solph.Flow(
-                    fix=self.solar_potential,
+                    fix=self.solar_potential / self.solar_potential_peak,
                     nominal_value=None,
                     investment=solph.Investment(
                         ep_costs=self.epc['pv'] * self.n_days / 365),
@@ -1714,7 +1717,7 @@ class EnergySystemOptimizer(Optimizer):
         # optimize the energy system
         # gurobi --> 'MipGap': '0.01'
         # cbc --> 'ratioGap': '0.01'
-        model.solve(solver="gurobi", solve_kwargs={
+        model.solve(solver=self.solver, solve_kwargs={
             "tee": True}, cmdline_options={'MipGap': '0.02'})
         energy_system.results["meta"] = solph.processing.meta_results(model)
         self.results_main = solph.processing.results(model)
@@ -1746,7 +1749,7 @@ class EnergySystemOptimizer(Optimizer):
         # hourly profiles for fuel consumption and electricity production in the fuel genset
         # the 'flow' from oemof is in kWh and must be converted to liter
         self.sequences_fuel_consumption = results_fuel_source['sequences'][
-            (('fuel_source', 'fuel'), 'flow')] / 11.87  # convert to [l]
+            (('fuel_source', 'fuel'), 'flow')] / self.diesel_genset['fuel_lhv'] / 0.846  # conversion: kWh -> kg -> l
 
         self.sequences_genset = results_diesel_genset['sequences'][
             (('diesel_genset', 'electricity_ac'), 'flow')]

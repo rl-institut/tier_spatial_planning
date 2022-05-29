@@ -170,13 +170,14 @@ class Grid:
     def add_node(
         self,
         label,
-        longitude=0,
         latitude=0,
+        longitude=0,
         x=0,
         y=0,
         node_type='consumer',
         consumer_type='household',
         consumer_detail='default',
+        surface_area=0,
         average_consumption=0,  # FIXME: must be read automatically
         peak_demand=0,  # FIXME: must be read automatically
         is_connected=True,
@@ -204,6 +205,7 @@ class Grid:
         self.nodes.at[label, 'node_type'] = node_type
         self.nodes.at[label, 'consumer_type'] = consumer_type
         self.nodes.at[label, 'consumer_detail'] = consumer_detail
+        self.nodes.at[label, 'surface_area'] = surface_area
         self.nodes.at[label, 'average_consumption'] = average_consumption
         self.nodes.at[label, 'peak_demand'] = peak_demand
         self.nodes.at[label, 'is_connected'] = is_connected

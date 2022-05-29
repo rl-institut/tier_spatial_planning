@@ -127,7 +127,7 @@
               <div class="chart">
                 <div class="chart__header">
                   <div>
-                    <span class="title">Distribution Network</span>
+                    <span class="title">Grid Layout</span>
                   </div>
                   <div class="dropdown">
                     <button
@@ -164,7 +164,7 @@
               <div class="chart chart--small">
                 <div class="chart__header">
                   <div>
-                    <span class="title">Final Results</span>
+                    <span class="title">Grid Results</span>
                   </div>
                   <div class="dropdown">
                     <button
@@ -212,6 +212,96 @@
                   </div>
                 </div>
               </div>
+              <div class="chart chart--small">
+                <div class="chart__header">
+                  <div>
+                    <span class="title">Energy System Results</span>
+                  </div>
+                  <div class="dropdown">
+                    <button
+                      class="btn dropdown-toggle btn--transparent"
+                      type="button"
+                      id="dropdownMenuButton1"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      <span class="icon icon-more"></span>
+                    </button>
+                    <ul
+                      class="dropdown-menu"
+                      aria-labelledby="dropdownMenuButton1"
+                    >
+                      <li>
+                        <a class="dropdown-item" href="#">Export as .xls</a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#">Export as PDF</a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="chart__content">
+                  <div class="item item--worst">
+                    <div class="item__name">LCOE</div>
+                    <div id="lcoe" class="item__value"></div>
+                  </div>
+                  <div class="item item--best">
+                    <div class="item__name">RES</div>
+                    <div id="res" class="item__value"></div>
+                  </div>
+                  <div class="item item--best">
+                    <div class="item__name">CO2 Savings</div>
+                    <div id="co2Savings" class="item__value"></div>
+                  </div>
+                  <div class="item item--worst">
+                    <div class="item__name">Excess</div>
+                    <div id="excessShare" class="item__value"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="chart chart--small">
+                <div class="chart__header">
+                  <div>
+                    <span class="title">Optimization Verbose</span>
+                  </div>
+                  <div class="dropdown">
+                    <button
+                      class="btn dropdown-toggle btn--transparent"
+                      type="button"
+                      id="dropdownMenuButton1"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      <span class="icon icon-more"></span>
+                    </button>
+                    <ul
+                      class="dropdown-menu"
+                      aria-labelledby="dropdownMenuButton1"
+                    >
+                      <li>
+                        <a class="dropdown-item" href="#">Export as .xls</a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#">Export as PDF</a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="chart__content">
+                  <div class="item item--best">
+                    <div class="item__name">Solver</div>
+                    <div id="solver" class="item__value"></div>
+                  </div>
+                  <div class="item item--best">
+                    <div class="item__name">Grid Optimization</div>
+                    <div id="gridOptimization" class="item__value"></div>
+                  </div>
+                  <div class="item item--best">
+                    <div class="item__name">Time</div>
+                    <div id="time" class="item__value"></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <div class="row">
@@ -253,7 +343,7 @@
               <div class="chart">
                 <div class="chart__header">
                   <div>
-                    <span class="title">Breakdown of LCOE</span>
+                    <span class="title">Breakdown of the LCOE</span>
                   </div>
                   <div class="dropdown">
                     <button
@@ -289,7 +379,10 @@
               <div class="chart">
                 <div class="chart__header">
                   <div>
-                    <span class="title">Sankey Diagram</span>
+                    <span class="title"
+                      >Sankey Diagram Representing the Energy Flow in the
+                      System</span
+                    >
                   </div>
                   <div class="dropdown">
                     <button
@@ -316,6 +409,44 @@
                 </div>
                 <div class="chart__plot">
                   <div id="sankeyDiagram"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <div class="chart">
+                <div class="chart__header">
+                  <div>
+                    <span class="title"
+                      >Annual Energy Flows with 1-Hour Resolution</span
+                    >
+                  </div>
+                  <div class="dropdown">
+                    <button
+                      class="btn dropdown-toggle btn--transparent"
+                      type="button"
+                      id="dropdownMenuButton1"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      <span class="icon icon-more"></span>
+                    </button>
+                    <ul
+                      class="dropdown-menu"
+                      aria-labelledby="dropdownMenuButton1"
+                    >
+                      <li>
+                        <a class="dropdown-item" href="#">Export as .xls</a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#">Export as PDF</a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="chart__plot">
+                  <div id="energyFlows"></div>
                 </div>
               </div>
             </div>
@@ -359,12 +490,76 @@
               </div>
             </div>
           </div>
-          <div class="row dashboard__create">
-            <div class="col">
-              <button class="btn btn--medium" type="submit">
-                <span class="icon icon-add"></span>
-                Create graph
-              </button>
+          <div class="row">
+            <div class="col col-md-7">
+              <div class="chart">
+                <div class="chart__header">
+                  <div>
+                    <span class="title"
+                      >Duration Curves for All Components</span
+                    >
+                  </div>
+                  <div class="dropdown">
+                    <button
+                      class="btn dropdown-toggle btn--transparent"
+                      type="button"
+                      id="dropdownMenuButton1"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      <span class="icon icon-more"></span>
+                    </button>
+                    <ul
+                      class="dropdown-menu"
+                      aria-labelledby="dropdownMenuButton1"
+                    >
+                      <li>
+                        <a class="dropdown-item" href="#">Export as .xls</a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#">Export as PDF</a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="chart__plot">
+                  <div id="durationCurves"></div>
+                </div>
+              </div>
+            </div>
+            <div class="col col-md-5">
+              <div class="chart">
+                <div class="chart__header">
+                  <div>
+                    <span class="title">Cumulative CO2 Emissions</span>
+                  </div>
+                  <div class="dropdown">
+                    <button
+                      class="btn dropdown-toggle btn--transparent"
+                      type="button"
+                      id="dropdownMenuButton1"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      <span class="icon icon-more"></span>
+                    </button>
+                    <ul
+                      class="dropdown-menu"
+                      aria-labelledby="dropdownMenuButton1"
+                    >
+                      <li>
+                        <a class="dropdown-item" href="#">Export as .xls</a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#">Export as PDF</a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="chart__plot">
+                  <div id="co2Emissions"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -380,7 +575,6 @@
             href="{{ url_for('energy_system_design')}}"
             >Previous
           </a>
-          <a class="btn btn--medium" href=""></a>
         </div>
         <div class="step-footer__right"></div>
       </div>

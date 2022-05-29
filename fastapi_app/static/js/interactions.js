@@ -352,6 +352,13 @@ function load_results(){
             document.getElementById("lengthHvCable").innerText = results['length_hv_cable'];
             document.getElementById("lengthLvCable").innerText = results['length_lv_cable'];
             document.getElementById("costGrid").innerText = results['cost_grid'];
+            document.getElementById("lcoe").innerText = results['lcoe'];
+            document.getElementById("res").innerText = results['res'];
+            document.getElementById("co2Savings").innerText = results['co2_savings'];
+            document.getElementById("excessShare").innerText = results['excess_share'];
+            document.getElementById("solver").innerText = results['solver'];
+            document.getElementById("gridOptimization").innerText = results['grid_optimization'];
+            document.getElementById("time").innerText = results['time'];
         }
     };
 }
