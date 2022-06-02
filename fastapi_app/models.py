@@ -59,8 +59,9 @@ class AddNodeRequest(BaseModel):
     node_type: str
     consumer_type: str
     consumer_detail: str
-    average_consumption: float
+    surface_area: float
     peak_demand: float
+    average_consumption: float
     is_connected: bool
     how_added: str
 

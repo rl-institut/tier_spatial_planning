@@ -317,13 +317,14 @@ async def database_add_manual(
     nodes = {}
     nodes[headers[0]] = [add_node_request.latitude]
     nodes[headers[1]] = [add_node_request.longitude]
-    nodes[headers[3]] = [add_node_request.node_type]
-    nodes[headers[4]] = [add_node_request.consumer_type]
-    nodes[headers[5]] = [add_node_request.consumer_detail]
-    nodes[headers[5]] = [add_node_request.peak_demand]
-    nodes[headers[5]] = [add_node_request.average_consumption]
-    nodes[headers[7]] = [add_node_request.is_connected]
-    nodes[headers[8]] = [add_node_request.how_added]
+    nodes[headers[2]] = [add_node_request.node_type]
+    nodes[headers[3]] = [add_node_request.consumer_type]
+    nodes[headers[4]] = [add_node_request.consumer_detail]
+    nodes[headers[5]] = [add_node_request.surface_area]
+    nodes[headers[6]] = [add_node_request.peak_demand]
+    nodes[headers[7]] = [add_node_request.average_consumption]
+    nodes[headers[8]] = [add_node_request.is_connected]
+    nodes[headers[9]] = [add_node_request.how_added]
 
     database_add(add_nodes=True, add_links=False, inlet=nodes)
 

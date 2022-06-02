@@ -150,8 +150,9 @@ function database_add_manual(
         node_type = 'consumer',
         consumer_type = 'household',
         consumer_detail = 'default',
-        average_consumption = 0,
+        surface_area = 0,
         peak_demand = 0,
+        average_consumption = 0,
         is_connected = true,
         how_added = 'manual' } = {}
 ) {
@@ -166,8 +167,9 @@ function database_add_manual(
             node_type: node_type,
             consumer_type: consumer_type,
             consumer_detail: consumer_detail,
-            average_consumption: average_consumption,
+            surface_area: surface_area,
             peak_demand: peak_demand,
+            average_consumption: average_consumption,
             is_connected: is_connected,
             how_added: how_added,
         }),
