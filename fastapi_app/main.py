@@ -37,7 +37,7 @@ import time
 from datetime import timedelta
 
 # Grab Currrent Time Before Running the Code
-start_time = time.monotonic()
+start_execution_time = time.monotonic()
 
 app = FastAPI()
 
@@ -675,7 +675,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     nodes_index_removing = []
     for node_index in nodes.index:
         # TODO: actually it must check .how_added not .is_connected. Must be corrected.
-        if ('nr-optimization' in nodes.is_connected[node_index]):
+        if ('nr-optimization' in nodes.how_added[node_index]):
             nodes_index_removing.append(node_index)
 
     database_remove_nodes(nodes=nodes,
@@ -871,8 +871,8 @@ async def optimize_energy_system(optimize_energy_system_request: models.Optimize
     df.loc[0, 'inverter_to_demand'] = ensys_opt.sequences_inverter.sum() / 1000
     df.loc[0, 'solver'] = ensys_opt.solver
     # Grab Currrent Time After Running the Code
-    end_time = time.monotonic()
-    df.loc[0, 'time'] = end_time - start_time
+    end_execution_time = time.monotonic()
+    df.loc[0, 'time'] = end_execution_time - start_execution_time
     df.to_csv(full_path_stored_data, index=False, float_format='%.1f')
 
     # store energy flows

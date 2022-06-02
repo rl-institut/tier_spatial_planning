@@ -92,8 +92,9 @@ class Grid:
                 'node_type': pd.Series([], dtype=str),
                 'consumer_type': pd.Series([], dtype=str),
                 'consumer_detail': pd.Series([], dtype=str),
-                'average_consumption': pd.Series([], dtype=np.dtype(float)),
+                'surface_area': pd.Series([], dtype=np.dtype(float)),
                 'peak_demand': pd.Series([], dtype=np.dtype(float)),
+                'average_consumption': pd.Series([], dtype=np.dtype(float)),
                 'is_connected': pd.Series([], dtype=bool),
                 'how_added': pd.Series([], dtype=str),
                 'type_fixed': pd.Series([], dtype=bool),
@@ -178,8 +179,8 @@ class Grid:
         consumer_type='household',
         consumer_detail='default',
         surface_area=0,
-        average_consumption=0,  # FIXME: must be read automatically
         peak_demand=0,  # FIXME: must be read automatically
+        average_consumption=0,  # FIXME: must be read automatically
         is_connected=True,
         how_added='automatic',
         type_fixed=False,
@@ -195,9 +196,6 @@ class Grid:
         already defined in the 'Grid' object definition
         """
 
-        if 'pole' in node_type:
-            pole_max_connection = self.pole_max_connection
-
         self.nodes.at[label, 'longitude'] = longitude
         self.nodes.at[label, 'latitude'] = latitude
         self.nodes.at[label, 'x'] = x
@@ -206,8 +204,8 @@ class Grid:
         self.nodes.at[label, 'consumer_type'] = consumer_type
         self.nodes.at[label, 'consumer_detail'] = consumer_detail
         self.nodes.at[label, 'surface_area'] = surface_area
-        self.nodes.at[label, 'average_consumption'] = average_consumption
         self.nodes.at[label, 'peak_demand'] = peak_demand
+        self.nodes.at[label, 'average_consumption'] = average_consumption
         self.nodes.at[label, 'is_connected'] = is_connected
         self.nodes.at[label, 'how_added'] = how_added
         self.nodes.at[label, 'type_fixed'] = type_fixed

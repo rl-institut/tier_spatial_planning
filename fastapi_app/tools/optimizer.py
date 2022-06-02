@@ -571,6 +571,9 @@ class GridOptimizer(Optimizer):
                 x=centroids_coord[i, 0],
                 y=centroids_coord[i, 1],
                 node_type='pole',
+                consumer_type='n.a.',
+                consumer_detail='n.a.',
+                is_connected=True,
                 how_added='nr-optimization',
                 cluster_label=counter
             )
