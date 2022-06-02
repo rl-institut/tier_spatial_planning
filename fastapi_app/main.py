@@ -336,23 +336,33 @@ def database_add(add_nodes: bool,
     # updating csv files based on the added nodes
     if add_nodes:
         nodes = inlet
-        # defining the precision of data
-        df = pd.DataFrame.from_dict(nodes)
-        df.latitude = df.latitude.map(lambda x: "%.6f" % x)
-        df.longitude = df.longitude.map(lambda x: "%.6f" % x)
+        # newly added nodes
+        df = pd.DataFrame.from_dict(nodes).round(decimals=6)
+        # the existing database
+        df_existing = pd.read_csv(full_path_nodes)
+        # append the existing database with the new nodes and remove duplicates (only when both lat and lon are identical)
+        df_total = df_existing.append(df).drop_duplicates(
+            subset=['latitude', 'longitude'], inplace=False)
 
-        # getting existing latitudes from the csv file as a list of float numbers
-        # and checking if some of the new nodes already exist in the database or not
-        # and then excluding the entire row from the dataframe that is going to be added to the csv file
-        df_existing = list(pd.read_csv(full_path_nodes)["latitude"])
-        for latitude in [float(x) for x in list(df["latitude"])]:
-            if latitude in df_existing:
-                df = df[df.latitude != str(latitude)]
+        # nodes obtained from a previous optimization (e.g., poles)
+        # will not be considered in the grid optimization
+        for node_index in df_total.index:
+            if ('nr-optimization' in df_total.how_added[node_index]):
+                df_total.drop(labels=node_index, axis=0, inplace=True)
+        # storing the nodes in the database (updating the existing CSV file)
+        df_total = df_total.reset_index(drop=True)
+
+        # defining the precision of data
+        df_total.latitude = df_total.latitude.map(lambda x: "%.6f" % x)
+        df_total.longitude = df_total.longitude.map(lambda x: "%.6f" % x)
+        df_total.surface_area = df_total.surface_area.map(lambda x: "%.2f" % x)
+        df_total.peak_demand = df_total.peak_demand.map(lambda x: "%.3f" % x)
+        df_total.average_consumption = df_total.average_consumption.map(lambda x: "%.3f" % x)
 
         # finally adding the refined dataframe (if it is not empty) to the existing csv file
-        if len(df.index) != 0:
-            df.to_csv(full_path_nodes, mode='a', header=False, index=False, float_format='%.3f')
-
+        if len(df_total.index) != 0:
+            df_total.to_csv(full_path_nodes, index=False,
+                            header=df_existing.head)
     if add_links:
         links = inlet
         # defining the precision of data
@@ -367,17 +377,21 @@ def database_add(add_nodes: bool,
             df.to_csv(full_path_links, mode='a', header=False, index=False, float_format='%.0f')
 
 
-# remove some nodes from the database
-def database_remove_nodes(nodes,
-                          nodes_index_removing):
+# # remove some nodes from the database
+# def database_remove_nodes(nodes):
 
-    for index in nodes.index:
-        if index in nodes_index_removing:
-            nodes.drop(labels=index, axis=0, inplace=True)
+#     nodes_index_removing = []
+#     for node_index in nodes.index:
+#         if ('nr-optimization' in nodes.how_added[node_index]):
+#             nodes_index_removing.append(node_index)
 
-    # storing the nodes in the database (updating the existing CSV file)
-    nodes = nodes.reset_index(drop=True)
-    database_add(add_nodes=True, add_links=False, inlet=nodes.to_dict())
+#     for index in nodes.index:
+#         if index in nodes_index_removing:
+#             nodes.drop(labels=index, axis=0, inplace=True)
+
+#     # storing the nodes in the database (updating the existing CSV file)
+#     nodes = nodes.reset_index(drop=True)
+#     database_add(add_nodes=True, add_links=False, inlet=nodes.to_dict())
 
 
 @app.get("/database_to_js/{nodes_or_links}")
@@ -668,18 +682,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
 
     # initialite the database (remove contents of the CSV files)
     # otherwise, when clicking on the 'optimize' button, the existing system won't be removed
-    await database_initialization(nodes=True, links=True)
-
-    # nodes obtained from a previous optimization (e.g., poles)
-    # will not be considered in the grid optimization
-    nodes_index_removing = []
-    for node_index in nodes.index:
-        # TODO: actually it must check .how_added not .is_connected. Must be corrected.
-        if ('nr-optimization' in nodes.how_added[node_index]):
-            nodes_index_removing.append(node_index)
-
-    database_remove_nodes(nodes=nodes,
-                          nodes_index_removing=nodes_index_removing)
+    await database_initialization(nodes=False, links=True)
 
     # create a new "grid" object from the Grid class
     epc_hv_cable = (opt.crf * Optimizer.capex_multi_investment(
