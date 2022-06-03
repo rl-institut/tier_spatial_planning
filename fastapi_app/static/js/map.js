@@ -242,8 +242,9 @@ mainMap.on("click", function (e) {
   var poplocation = e.latlng;
 
   if (document.getElementById("selectionMap").checked) {
-    database_add_manual(
+    database_add_remove_manual(
       {
+        add_remove: 'add',
         latitude: poplocation.lat,
         longitude: poplocation.lng,
       }
@@ -253,8 +254,7 @@ mainMap.on("click", function (e) {
       poplocation.lng,
       'consumer'
     );
-  }
-
+  };
   if (
     document.getElementById("selectionBoundaries").checked &&
     (document.getElementById("btnDrawBoundariesAdd").innerText === 'Draw Lines' ||
@@ -279,7 +279,7 @@ mainMap.on("click", function (e) {
 
     // adding the new dashed line to the map
     dashedBoundaryLine.addTo(mainMap);
-  }
+  };
 });
 
 // --------------------FUNCTIONS DECLARATION----------------------//
@@ -295,8 +295,21 @@ function drawMarker(latitude, longitude, type) {
     icon_type = markerShs;
   }
   markers.push(
-    L.marker([latitude, longitude], { icon: icon_type }).addTo(mainMap)
+    L.marker([latitude, longitude], { icon: icon_type }).on('click', markerOnClick).addTo(mainMap)
   );
+}
+
+function markerOnClick(e)
+{
+  L.DomEvent.stopPropagation(e);
+  database_add_remove_manual (
+    {
+      add_remove: 'remove',
+      latitude: e.latlng.lat,
+      longitude: e.latlng.lng,
+    }
+  );
+  database_read(nodes_or_links = 'nodes', map_or_export = 'map');
 }
 
 function drawLinkOnMap(

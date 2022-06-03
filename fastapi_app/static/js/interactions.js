@@ -101,20 +101,20 @@ function database_read(nodes_or_links, map_or_export, callback) {
                             markers.push(
                                 L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
                                     icon: markerPole,
-                                }).addTo(mainMap)
+                                }).on('click', markerOnClick).addTo(mainMap)
                             );
                         } else if (nodes["is_connected"][counter] === false) {
                             // if the node is not connected to the grid, it will be a SHS consumer
                             markers.push(
                                 L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
                                     icon: markerShs,
-                                }).addTo(mainMap)
+                                }).on('click', markerOnClick).addTo(mainMap)
                             );
                         } else {
                             markers.push(
                                 L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
                                     icon: markerConsumer,
-                                }).addTo(mainMap)
+                                }).on('click', markerOnClick).addTo(mainMap)
                             );
                         }
                     }
@@ -144,8 +144,9 @@ function database_read(nodes_or_links, map_or_export, callback) {
 
 
 // add single nodes selected manually to the *.csv file
-function database_add_manual(
-    { latitude,
+function database_add_remove_manual(
+    { add_remove = "add",
+        latitude,
         longitude,
         node_type = 'consumer',
         consumer_type = 'household',
@@ -157,11 +158,12 @@ function database_add_manual(
         how_added = 'manual' } = {}
 ) {
     $.ajax({
-        url: "/database_add_manual",
+        url: "/database_add_remove_manual/" + add_remove,
         type: "POST",
         dataType: "json",
         contentType: "application/json",
         data: JSON.stringify({
+            add_remove: add_remove,
             latitude: latitude,
             longitude: longitude,
             node_type: node_type,

@@ -309,9 +309,8 @@ async def database_initialization(nodes, links):
 
 # add new manually-selected nodes to the *.csv file
 # TODO: update the template for adding nodes
-@app.post("/database_add_manual")
-async def database_add_manual(
-        add_node_request: models.AddNodeRequest):
+@app.post("/database_add_remove_manual/{add_remove}")
+async def database_add_remove_manual(add_remove: str, add_node_request: models.AddNodeRequest):
 
     headers = pd.read_csv(full_path_nodes).columns
     nodes = {}
@@ -326,7 +325,22 @@ async def database_add_manual(
     nodes[headers[8]] = [add_node_request.is_connected]
     nodes[headers[9]] = [add_node_request.how_added]
 
-    database_add(add_nodes=True, add_links=False, inlet=nodes)
+    if add_remove == "remove":
+        # reading the existing CSV file of nodes, and then removing the corresponding row
+        df = pd.read_csv(full_path_nodes)
+        number_of_nodes = df.shape[0]
+        for index in range(number_of_nodes):
+            if (round(add_node_request.latitude, 6) == df.to_dict()['latitude'][index]) and (round(add_node_request.longitude, 6) == df.to_dict()['longitude'][index]):
+                df.drop(labels=index, axis=0, inplace=True)
+
+        # removing all nodes and links
+        await database_initialization(nodes=True, links=True)
+
+        # storing the nodes in the database (updating the existing CSV file)
+        df = df.reset_index(drop=True)
+        database_add(add_nodes=True, add_links=False, inlet=df.to_dict())
+    else:
+        database_add(add_nodes=True, add_links=False, inlet=nodes)
 
 
 # add new nodes/links to the database
