@@ -66,12 +66,17 @@ class AddNodeRequest(BaseModel):
     how_added: str
 
 
-class OptimizeGridRequest(BaseModel):
+class SavePreviousDataRequest(BaseModel):
+    project_name: str
+    project_description: str
+    interest_rate: str
+    project_lifetime: str
     start_date: str
-    n_days: int
-    project_lifetime: int
-    wacc: float
-    tax: float
+    temporal_resolution: str
+    n_days: str
+
+
+class OptimizeGridRequest(BaseModel):
     hv_cable: Dict[str, float]
     lv_cable: Dict[str, float]
     pole: Dict[str, float]
@@ -87,11 +92,6 @@ class OptimizeGridRequest(BaseModel):
 
 
 class OptimizeEnergySystemRequest(BaseModel):
-    start_date: str
-    n_days: int
-    project_lifetime: int
-    wacc: float
-    tax: float
     pv: Dict[str, float]
     diesel_genset: Dict[str, float]
     battery: Dict[str, float]

@@ -1557,7 +1557,8 @@ class EnergySystemOptimizer(Optimizer):
         self.start_date = start_date_obj.date()
         self.start_time = start_date_obj.time()
         self.start_datetime = datetime.combine(start_date_obj.date(), start_date_obj.time())
-        self.end_datetime = self.start_datetime + timedelta(days=self.n_days)
+        # conversion to in() is needed becasue self.n_days is a <class 'numpy.int64'> and it causes troubles
+        self.end_datetime = self.start_datetime + timedelta(days=int(self.n_days))
 
     def import_data(self):
         data = pd.read_csv(filepath_or_buffer=self.path_data)

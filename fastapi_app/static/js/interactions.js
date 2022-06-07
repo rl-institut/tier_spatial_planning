@@ -5,7 +5,6 @@
 //     // database_initialization(nodes = true, links = true);
 // });
 
-
 // SET FUNCTIONS
 function setVisibilityNodeBox() {
     if (document.getElementById("radio_button_nodes_manually").checked) {
@@ -286,7 +285,6 @@ function boundary_select(mode) {
 /************************************************************/
 /*                       OPTIMIZATION                       */
 /************************************************************/
-
 function optimize_energy_system() {
     // $("#loading").show();
     $.ajax({
@@ -294,11 +292,6 @@ function optimize_energy_system() {
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify({
-            start_date: localStorage.start_date,
-            n_days: (localStorage.n_days),
-            project_lifetime: parseInt(localStorage.project_lifetime),
-            wacc: parseFloat(localStorage.interest_rate)/100,
-            tax: 0,
             pv: {'lifetime': pvLifetime.value, 'capex': pvCapex.value, 'opex': pvOpex.value},
             diesel_genset: {'lifetime': dieselGensetLifetime.value, 'capex': dieselGensetCapex.value, 
                             'opex': dieselGensetOpex.value, 'variable_cost': dieselGensetVariableCost.value,
@@ -314,6 +307,8 @@ function optimize_energy_system() {
     });
 }
 
+// TODO: start date, interest rate, lifetime and wacc that come from another page are not recognized. 
+// Either global parameters must be defined or something else.
 function optimize_grid() {
     document.getElementById('spnSpinner').style.display = "";
     
@@ -322,11 +317,6 @@ function optimize_grid() {
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify({
-            start_date: localStorage.start_date,
-            n_days: (localStorage.n_days),
-            project_lifetime: parseInt(localStorage.project_lifetime),
-            wacc: parseFloat(localStorage.interest_rate)/100,
-            tax: 0,
             hv_cable: {'lifetime': hvCableLifetime.value, 'capex': hvCableCapex.value, 'opex': hvCableOpex.value},
             hv_cable: {'lifetime': hvCableLifetime.value, 'capex': hvCableCapex.value, 'opex': hvCableOpex.value},
             lv_cable: {'lifetime': lvCableLifetime.value, 'capex': lvCableCapex.value, 'opex': lvCableOpex.value},
@@ -371,6 +361,48 @@ function refresh_map(){
     database_read(nodes_or_link = 'nodes', map_or_export = 'map');
     database_read(nodes_or_link = 'links', map_or_export = 'map');
 }
+
+function save_previous_data(page_name) {
+    // $("#loading").show();
+    $.ajax({
+        url: "save_previous_data/" + page_name,
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({
+            project_name: projectName.value,
+            project_description: projectDescription.value.trim(),
+            interest_rate: interestRate.value,
+            project_lifetime: projectLifetime.value,
+            start_date: startDate.value,
+            temporal_resolution: temporalResolution.value,
+            n_days: nDays.value,
+                }),
+        dataType: "json",
+    });
+}
+
+function load_previous_data(page_name){
+    var xhr = new XMLHttpRequest();
+    url = "load_previous_data/" + page_name;
+    xhr.open("GET", url, true);
+    xhr.responseType = "json";
+    xhr.send();
+    
+    xhr.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+            // push nodes to the map
+            results = this.response;
+            document.getElementById("projectName").value = results['project_name'];
+            document.getElementById("projectDescription").value = results['project_description'];
+            document.getElementById("interestRate").value = results['interest_rate'];
+            document.getElementById("projectLifetime").value = results['project_lifetime'];
+            document.getElementById("startDate").value = results['start_date'];
+            document.getElementById("temporalResolution").value = results['temporal_resolution'];
+            document.getElementById("nDays").value = results['n_days'];
+        }
+    };
+}
+
 /************************************************************/
 /*                    SOLAR-HOME-SYSTEM                     */
 /************************************************************/
@@ -403,11 +435,4 @@ function identify_shs() {
             },
         },
     });
-}
-
-function project_setup_variables(){
-    localStorage.start_date = document.getElementById("startDate").value;
-    localStorage.n_days = document.getElementById("nDays").value;
-    localStorage.project_lifetime = document.getElementById("projectLifetime").value;
-    localStorage.interest_rate = document.getElementById("interestRate").value;
 }

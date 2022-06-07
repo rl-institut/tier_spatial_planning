@@ -58,7 +58,8 @@ directory_database = os.path.join(directory_parent, 'data', 'database').replace(
 full_path_nodes = os.path.join(directory_database, 'nodes.csv').replace("\\", "/")
 full_path_links = os.path.join(directory_database, 'links.csv').replace("\\", "/")
 full_path_demands = os.path.join(directory_database, 'demands.csv').replace("\\", "/")
-full_path_stored_data = os.path.join(directory_database, 'stored_data.csv').replace("\\", "/")
+full_path_stored_inputs = os.path.join(directory_database, 'stored_inputs.csv').replace("\\", "/")
+full_path_stored_results = os.path.join(directory_database, 'stored_results.csv').replace("\\", "/")
 full_path_demand_coverage = os.path.join(
     directory_database, 'demand_coverage.csv').replace("\\", "/")
 full_path_energy_flows = os.path.join(
@@ -168,6 +169,18 @@ async def import_data(import_files: import_structure = None):
 
 @app.get("/")
 def home(request: Request):
+    if os.path.exists(full_path_stored_inputs) is False:
+        header_stored_inputs = [
+            "project_name",
+            "project_description",
+            "interest_rate",
+            "project_lifetime",
+            "start_date",
+            "temporal_resolution",
+            "n_days",
+        ]
+        pd.DataFrame(columns=header_stored_inputs).to_csv(full_path_stored_inputs, index=False)
+
     return templates.TemplateResponse("project-setup.html", {
         "request": request
     })
@@ -225,7 +238,7 @@ async def database_initialization(nodes, links):
         "link_type",
         "length"
     ]
-    header_stored_data = [
+    header_stored_results = [
         "n_consumers",
         "n_poles",
         "length_hv_cable",
@@ -300,7 +313,7 @@ async def database_initialization(nodes, links):
     if links:
         pd.DataFrame(columns=header_links).to_csv(full_path_links, index=False)
 
-    pd.DataFrame(columns=header_stored_data).to_csv(full_path_stored_data, index=False)
+    pd.DataFrame(columns=header_stored_results).to_csv(full_path_stored_results, index=False)
     pd.DataFrame(columns=header_energy_flows).to_csv(full_path_energy_flows, index=False)
     pd.DataFrame(columns=header_duration_curves).to_csv(full_path_duration_curves, index=False)
     pd.DataFrame(columns=header_co2_emissions).to_csv(full_path_co2_emissions, index=False)
@@ -308,7 +321,6 @@ async def database_initialization(nodes, links):
 
 
 # add new manually-selected nodes to the *.csv file
-# TODO: update the template for adding nodes
 @app.post("/database_add_remove_manual/{add_remove}")
 async def database_add_remove_manual(add_remove: str, add_node_request: models.AddNodeRequest):
 
@@ -392,23 +404,6 @@ def database_add(add_nodes: bool,
             df.to_csv(full_path_links, mode='a', header=False, index=False, float_format='%.0f')
 
 
-# # remove some nodes from the database
-# def database_remove_nodes(nodes):
-
-#     nodes_index_removing = []
-#     for node_index in nodes.index:
-#         if ('nr-optimization' in nodes.how_added[node_index]):
-#             nodes_index_removing.append(node_index)
-
-#     for index in nodes.index:
-#         if index in nodes_index_removing:
-#             nodes.drop(labels=index, axis=0, inplace=True)
-
-#     # storing the nodes in the database (updating the existing CSV file)
-#     nodes = nodes.reset_index(drop=True)
-#     database_add(add_nodes=True, add_links=False, inlet=nodes.to_dict())
-
-
 @app.get("/database_to_js/{nodes_or_links}")
 async def database_read(nodes_or_links: str):
 
@@ -426,7 +421,7 @@ async def load_results():
 
     results = {}
 
-    df = pd.read_csv(full_path_stored_data)
+    df = pd.read_csv(full_path_stored_results)
 
     results['n_poles'] = str(df.loc[0, 'n_poles'])
     results['n_consumers'] = str(df.loc[0, 'n_consumers'])
@@ -445,12 +440,50 @@ async def load_results():
     return results
 
 
+@app.get("/load_previous_data/{page_name}")
+async def load_previous_data(page_name):
+
+    previous_data = {}
+
+    df = pd.read_csv(full_path_stored_inputs)
+
+    if page_name == 'project_setup':
+        previous_data['project_name'] = str(df.loc[0, 'project_name'])
+        previous_data['project_description'] = str(df.loc[0, 'project_description'])
+        previous_data['interest_rate'] = str(df.loc[0, 'interest_rate'])
+        previous_data['project_lifetime'] = str(df.loc[0, 'project_lifetime'])
+        previous_data['start_date'] = str(df.loc[0, 'start_date'])
+        previous_data['temporal_resolution'] = str(df.loc[0, 'temporal_resolution'])
+        previous_data['n_days'] = str(df.loc[0, 'n_days'])
+
+    # importing nodes and links from the csv files to the map
+    return previous_data
+
+
+@app.post("/save_previous_data/{page_name}")
+async def save_previous_data(page_name: str, save_previous_data_request: models.SavePreviousDataRequest):
+
+    df = pd.read_csv(full_path_stored_inputs)
+
+    if page_name == 'project_setup':
+        df.loc[0, 'project_name'] = save_previous_data_request.project_name
+        df.loc[0, 'project_description'] = save_previous_data_request.project_description
+        df.loc[0, 'interest_rate'] = save_previous_data_request.interest_rate
+        df.loc[0, 'project_lifetime'] = save_previous_data_request.project_lifetime
+        df.loc[0, 'start_date'] = save_previous_data_request.start_date
+        df.loc[0, 'temporal_resolution'] = save_previous_data_request.temporal_resolution
+        df.loc[0, 'n_days'] = save_previous_data_request.n_days
+
+    # save the updated dataframe
+    df.to_csv(full_path_stored_inputs, index=False)
+
+
 @app.get("/get_optimal_capacities")
 async def get_optimal_capacities():
 
     optimal_capacities = {}
 
-    df = pd.read_csv(full_path_stored_data)
+    df = pd.read_csv(full_path_stored_results)
 
     optimal_capacities['pv'] = str(df.loc[0, 'pv_capacity'])
     optimal_capacities['battery'] = str(df.loc[0, 'battery_capacity'])
@@ -469,7 +502,7 @@ async def get_lcoe_breakdown():
 
     lcoe_breakdown = {}
 
-    df = pd.read_csv(full_path_stored_data)
+    df = pd.read_csv(full_path_stored_results)
 
     lcoe_breakdown['renewable_assets'] = str(df.loc[0, 'cost_renewable_assets'])
     lcoe_breakdown['non_renewable_assets'] = str(df.loc[0, 'cost_non_renewable_assets'])
@@ -485,7 +518,7 @@ async def get_data_for_sankey_diagram():
 
     sankey_data = {}
 
-    df = pd.read_csv(full_path_stored_data)
+    df = pd.read_csv(full_path_stored_results)
 
     sankey_data['fuel_to_diesel_genset'] = str(df.loc[0, 'fuel_to_diesel_genset'])
     sankey_data['diesel_genset_to_rectifier'] = str(df.loc[0, 'diesel_genset_to_rectifier'])
@@ -676,11 +709,13 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                         background_tasks: BackgroundTasks):
 
     # create GridOptimizer object
-    opt = GridOptimizer(start_date=optimize_grid_request.start_date,
-                        n_days=optimize_grid_request.n_days,
-                        project_lifetime=optimize_grid_request.project_lifetime,
-                        wacc=optimize_grid_request.wacc,
-                        tax=optimize_grid_request.tax)
+    df = pd.read_csv(full_path_stored_inputs)
+
+    opt = GridOptimizer(start_date=df.loc[0, 'start_date'],
+                        n_days=df.loc[0, 'n_days'],
+                        project_lifetime=df.loc[0, 'project_lifetime'],
+                        wacc=df.loc[0, 'interest_rate']/100,
+                        tax=0)
 
     # get nodes from the database (CSV file) as a dictionary
     # then convert it again to a panda dataframe for simplicity
@@ -805,7 +840,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     database_add(add_nodes=False, add_links=True, inlet=links.to_dict())
 
     # store data for showing in the final results
-    df = pd.read_csv(full_path_stored_data)
+    df = pd.read_csv(full_path_stored_results)
     df.loc[0, 'n_consumers'] = len(grid.consumers())
     df.loc[0, 'n_poles'] = len(grid.poles())
     df.loc[0, 'length_hv_cable'] = int(
@@ -814,17 +849,20 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
         grid.links[grid.links.link_type == 'distribution']['length'].sum())
     df.loc[0, 'cost_grid'] = int(grid.cost())
     df.loc[0, 'grid_optimization'] = 'NR'
-    df.to_csv(full_path_stored_data, mode='a', header=False, index=False, float_format='%.0f')
+    df.to_csv(full_path_stored_results, mode='a', header=False, index=False, float_format='%.0f')
 
 
 @ app.post('/optimize_energy_system')
 async def optimize_energy_system(optimize_energy_system_request: models.OptimizeEnergySystemRequest):
+
+    df = pd.read_csv(full_path_stored_inputs)
+
     ensys_opt = EnergySystemOptimizer(
-        start_date=optimize_energy_system_request.start_date,
-        n_days=optimize_energy_system_request.n_days,
-        project_lifetime=optimize_energy_system_request.project_lifetime,
-        wacc=optimize_energy_system_request.wacc,
-        tax=optimize_energy_system_request.tax,
+        start_date=df.loc[0, 'start_date'],
+        n_days=df.loc[0, 'n_days'],
+        project_lifetime=df.loc[0, 'project_lifetime'],
+        wacc=df.loc[0, 'interest_rate']/100,
+        tax=0,
         path_data=full_path_timeseries,
         solver='gurobi',
         pv=optimize_energy_system_request.pv,
@@ -856,7 +894,7 @@ async def optimize_energy_system(optimize_energy_system_request: models.Optimize
     co2_savings = df.loc[:, 'co2_savings'][-2]  # takes the last element of the cumulative sum
 
     # store data for showing in the final results
-    df = pd.read_csv(full_path_stored_data)
+    df = pd.read_csv(full_path_stored_results)
     df.loc[0, 'cost_renewable_assets'] = ensys_opt.total_renewable
     df.loc[0, 'cost_non_renewable_assets'] = ensys_opt.total_non_renewable
     df.loc[0, 'cost_fuel'] = ensys_opt.total_fuel
@@ -891,7 +929,7 @@ async def optimize_energy_system(optimize_energy_system_request: models.Optimize
     # Grab Currrent Time After Running the Code
     end_execution_time = time.monotonic()
     df.loc[0, 'time'] = end_execution_time - start_execution_time
-    df.to_csv(full_path_stored_data, index=False, float_format='%.1f')
+    df.to_csv(full_path_stored_results, index=False, float_format='%.1f')
 
     # store energy flows
     df = pd.read_csv(full_path_energy_flows)

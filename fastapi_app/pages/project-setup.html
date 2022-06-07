@@ -22,7 +22,7 @@
     />
     <title>Project Setup</title>
   </head>
-  <body>
+  <body onload="load_previous_data('project_setup')">
     <nav class="navbar navbar-expand-lg navbar-light bg-light navbar--scenario">
       <div class="container-fluid">
         <span class="navbar-brand">
@@ -85,18 +85,24 @@
             </li>
             <li>
               <!-- <a onclick="customer_selection();">Customer Selection</a> -->
-              <a href="{{ url_for('customer_selection') }}"
+              <a
+                href="{{ url_for('customer_selection') }}"
+                onclick="save_previous_data('project_setup');"
                 >Customer Selection</a
               >
             </li>
             <li>Demand Estimation</li>
             <li>
-              <a href="{{ url_for('energy_system_design') }}"
+              <a
+                href="{{ url_for('energy_system_design') }}"
+                onclick="save_previous_data('project_setup');"
                 >Energy System Design</a
               >
             </li>
             <li>
-              <a href="{{ url_for('simulation_results') }}"
+              <a
+                href="{{ url_for('simulation_results') }}"
+                onclick="save_previous_data('project_setup');"
                 >Simulation Results</a
               >
             </li>
@@ -144,7 +150,7 @@
                   id="projectDescription"
                   placeholder="Description"
                 >
-Simulation and optimization of power supply and distribution for an off-grid system in a rural settlement.
+ Simulation and optimization of power supply and distribution for an off-grid system in a rural settlement.
                 </textarea>
               </div>
               <div class="input-item">
@@ -297,7 +303,7 @@ Simulation and optimization of power supply and distribution for an off-grid sys
           <a
             class="btn btn--medium"
             href="{{ url_for('customer_selection')}}"
-            onclick="project_setup_variables();"
+            onclick="save_previous_data('project_setup');"
             >Next</a
           >
         </div>
