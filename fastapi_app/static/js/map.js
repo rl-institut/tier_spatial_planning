@@ -36,8 +36,12 @@ var esriSatelliteMap = {
   esriBaseMap: esriWorldImageryLayer,
 };
 
+lat_lon = gpsCoordinates.value.split(",");
+lat = Number(lat_lon[0]);
+lon = Number(lat_lon[1]);
+
 var mainMap = L.map("leafletMap", {
-  center: [9.8838, 5.9231], // 1st arg.: latitude, 2nd arg.: longitude
+  center: [lat, lon], // 1st arg.: latitude, 2nd arg.: longitude
   zoom: 17,
   layers: [osmLayer],
 });
@@ -64,12 +68,14 @@ mainMap.removeControl(mainMap.zoomControl);
 L.Control.zoomHome = L.Control.extend({
   options: {
     position: "topleft",
-    zoomInText: "+",
+    // zoomInText: "+",
+    zoomInText:'<img class="leaflet-zoom-in-out" src="/fastapi_app/static/assets/icons/i_zoom_in.svg"></img>',
     zoomInTitle: "Zoom in",
-    zoomOutText: "&#8722", //this is a long minus sign
+    // zoomOutText: "&#8722", //this is a long minus sign
+    zoomOutText:'<img class="leaflet-zoom-in-out" src="/fastapi_app/static/assets/icons/i_zoom_out.svg"></img>',
     zoomOutTitle: "Zoom out",
     zoomHomeText:
-      '<img style="width: 90%" src="../assets/icons/i_zoom_to_all.png"></img>',
+      '<img class="leaflet-zoom-fit" src="/fastapi_app/static/assets/icons/i_zoom_fit.svg"></img>',
     zoomHomeTitle: "Show all nodes",
   },
 
@@ -167,7 +173,8 @@ function zoomAll(mainMap) {
 }
 
 L.easyButton(
-  '<img class="leaflet-touch" src="../assets/icons/i_clear_all.png">',
+  // '<img class="leaflet-touch" src="'+src_clear+'">',
+  '<img class="leaflet-touch" src="/fastapi_app/static/assets/icons/i_clear_all.svg">',
   function (btn, map) {
     database_initialization(nodes = true, links = true);
     database_read(nodes_or_links = 'nodes', map_or_export = 'map')
@@ -179,11 +186,11 @@ L.easyButton(
 
 var layer = L.geoJson(null).addTo(mainMap);
 
-layer.fire("data:loading");
-$.getJSON("http://server/path.geojson", function (data) {
-  layer.fire("data:loaded");
-  layer.addData(data);
-});
+// layer.fire("data:loading");
+// $.getJSON("http://server/path.geojson", function (data) {
+//   layer.fire("data:loaded");
+//   layer.addData(data);
+// });
 
 var siteBoundaries = [];
 
@@ -358,11 +365,22 @@ function removeBoundaries() {
   dashedBoundaryLine = null;
 }
 
-
-function mapSetView(lat, lon) {
-  mainMap.setView(new L.LatLng(lat, lon), 12);    
+function upgrade_map_center(gps_coordinates){
+  lat_lon = gps_coordinates.split(",");
+  lat = Number(lat_lon[0]);
+  lon = Number(lat_lon[1]);
+  mainMap.setView(new L.LatLng(lat, lon), 17);
+  document.getElementById("gpsCoordinates").setAttribute('value', gps_coordinates);
 }
 
-// function zoomTo(location) {
-//   mainMap.panTo(new L.LatLng(40.737, -73.923), 12);
-// }
+// let btn_import = document
+// .getElementById("btnImport")
+// .addEventListener("click", () => {
+//   Papa.parse(document.getElementById("fileImport").files[0], {
+//     download: true,
+//     header: false,
+//     complete: function (results) {
+//       console.log(results);
+//     },
+//   });
+// });

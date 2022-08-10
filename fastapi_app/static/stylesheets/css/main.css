@@ -3958,12 +3958,17 @@ nav.navbar .dropdown-menu li {
 }
 
 .leaflet-touch {
-  width: 2rem;
-  font-size: x-large;
-  font-family: Verdana;
-  padding-left: -1rem;
+  width: 100%;
 }
 
 .leaflet-touch :hover {
   font-weight: bold;
+}
+
+.leaflet-zoom-in-out {
+  width: 40%;
+}
+
+.leaflet-zoom-fit {
+  width: 70%;
 }

@@ -864,7 +864,7 @@ async def optimize_energy_system(optimize_energy_system_request: models.Optimize
         wacc=df.loc[0, 'interest_rate']/100,
         tax=0,
         path_data=full_path_timeseries,
-        solver='gurobi',
+        solver='cbc',
         pv=optimize_energy_system_request.pv,
         diesel_genset=optimize_energy_system_request.diesel_genset,
         battery=optimize_energy_system_request.battery,

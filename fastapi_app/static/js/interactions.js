@@ -94,6 +94,15 @@ function database_read(nodes_or_links, map_or_export, callback) {
                     }
                     markers.length = 0;
                     number_of_nodes = Object.keys(nodes["node_type"]).length;
+                    // as soon as there are nodes in the database, the download option will be activated
+                    // otherwise, it will be disables.
+                    if (number_of_nodes > 0) {
+                        document.getElementById('btnDownloadLocations').classList.remove('disabled');
+                        document.getElementById('lblDownloadLocations').classList.remove('disabled');
+                    } else {
+                        document.getElementById('btnDownloadLocations').classList.add('disabled');
+                        document.getElementById('lblDownloadLocations').classList.add('disabled');
+                    }
                     var counter;
                     for (counter = 0; counter < number_of_nodes; counter++) {
                         if (nodes["node_type"][counter] === "pole") {
@@ -360,6 +369,7 @@ function load_results(){
 function refresh_map(){
     database_read(nodes_or_link = 'nodes', map_or_export = 'map');
     database_read(nodes_or_link = 'links', map_or_export = 'map');
+
 }
 
 function save_previous_data(page_name) {
@@ -402,6 +412,77 @@ function load_previous_data(page_name){
         }
     };
 }
+
+
+/************************************************************/
+/*                   EXPORT DATA AS CSV                     */
+/************************************************************/
+
+function export_data() {
+    // Create the excel workbook and fill it out with some properties
+    var workbook = XLSX.utils.book_new();
+    workbook.Props = {
+      Title: "Import and Export Data form/to the Optimization Web App.",
+      Subject: "Off-Grid Network and Energy Supply System",
+      Author: "Saeed Sayadi",
+      CreatedDate: new Date(2022, 08, 08)
+    };
+  
+    // Get all nodes from the database.
+    database_read(nodes_or_links = 'nodes', map_or_export = 'export', function (data_nodes) {
+        
+        // Since the format of the JSON file exported by the `database_read` is
+        // not compatible with the `Sheetjs` library, we need to restructure it
+        // first. For this purpose, we require an array consisting of the same
+        // number of elements as the number of nodes (representing the rows) and
+        // for each element we should write down all properties in a dictionaty.
+
+        // Here, all the properties of the nodes are read from the `data_nodes`
+        // e.g., latitude, longitude, ...
+        var headers = Object.keys(data_nodes);
+
+        // To obtain the number of nodes, we take the first property of the
+        // node, which can be any parameter depending on the `data_nodes`, and
+        // obtain its length.
+        var number_of_nodes = Object.keys(data_nodes[Object.keys(data_nodes)[0]]).length
+
+        // The final JSON file must be like [{}, {}, {}, ...], which means there
+        // are several numbers of single dictionaries (i.e., for each node),
+        // and just one array that includes all these dictionaries.
+        // This array is then put into the Excel file.
+        var single_dict = {};
+        var array_of_dicts = [];
+
+        for(var item = 0; item < number_of_nodes; item++) {
+            for(var header in headers) {
+                single_dict[headers[header]] = data_nodes[headers[header]][item];
+            }
+            array_of_dicts.push(single_dict);
+            // Remove the content of the `single_dict` to avoid using the same
+            // numbers for different elements of the array.
+            single_dict = {};
+        }
+        
+        // Create an Excel worksheet from the the array consisting several
+        // single dictionaries.
+        const worksheet = XLSX.utils.json_to_sheet(array_of_dicts);
+
+        // Create a new sheet in the Excel workbook with the given name and
+        // copy the content of the `worksheet` into it.
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Nodes')           
+
+        // Specify the proper write options.
+        let wopts = { bookType: 'xlsx', type: 'array'};
+
+        // Get the current date and time with this format YYYY_M_D_H_M_S to add
+        // to the end of the Excel file.
+        const current_date = new Date(Date.now());
+        const time_extension = current_date.getFullYear() + '_' +  (current_date.getMonth() + 1) + '_' +  current_date.getDate() + '_' + current_date.getHours() + '_' + current_date.getMinutes() + '_' + current_date.getSeconds();
+        
+        XLSX.writeFile(workbook, 'import_export_' + time_extension + '.xlsx', wopts);
+    });
+}
+
 
 /************************************************************/
 /*                    SOLAR-HOME-SYSTEM                     */
