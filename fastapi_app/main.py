@@ -151,9 +151,6 @@ async def download_export_file():
 @app.post("/import_data")
 async def import_data(import_files: import_structure = None):
 
-    # empty *.csv files cotaining nodes and links
-    await database_initialization(nodes=True, links=True)
-
     # add nodes from the 'nodes' sheet of the excel file to the 'nodes.csv' file
     # TODO: update the template for adding nodes
     nodes = import_files['nodes_to_import']
