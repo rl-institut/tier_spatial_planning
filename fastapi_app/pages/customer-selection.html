@@ -221,10 +221,15 @@
                     type="file"
                     class="form-control"
                     id="fileImport"
-                    accept=".csv"
+                    accept=".xlsx"
                     disabled
                   />
-                  <button id="btnImport" class="btn disabled" type="button">
+                  <button
+                    id="btnImport"
+                    class="btn disabled"
+                    type="button"
+                    onclick="import_data();"
+                  >
                     Import
                   </button>
                 </div>

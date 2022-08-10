@@ -415,7 +415,7 @@ function load_previous_data(page_name){
 
 
 /************************************************************/
-/*                   EXPORT DATA AS CSV                     */
+/*                   EXPORT DATA AS XLSX                    */
 /************************************************************/
 
 function export_data() {
@@ -483,6 +483,56 @@ function export_data() {
     });
 }
 
+
+/************************************************************/
+/*                   IMPORT DATA AS XLSX                    */
+/************************************************************/
+
+function import_data() {
+    // Choose the selected file in the web app.
+    var selected_file = document.getElementById("fileImport").files[0];
+    let file_reader = new FileReader();
+    file_reader.readAsBinaryString(selected_file);
+    
+    // In case that the file can be loaded without any problem, this will be 
+    // executed.
+    file_reader.onload = function (event) {
+        let import_data = event.target.result;
+        let workbook = XLSX.read(import_data, { type: "binary" });
+
+        // TODO: must be finalized later
+        // // import settings to the web app
+        // let settings_row_object = XLSX.utils.sheet_to_row_object_array(workbook.Sheets['settings'], {
+        //     blankrows: false,
+        //     header: 1,
+        //     raw: true,
+        //     rawNumbers: true
+        // });
+        // settings_row_object.shift(); // remove the first array only containing the sheet name ("settings") and "value"
+        // settings_dict = settings_row_object.reduce((dict, [key, value]) => Object.assign(dict, { [key]: value }), {}); // convert the array to dictionary
+        // import_settings_to_webapp(settings_dict);
+
+        // copy nodes and links into the existing *.csv files (Databases)
+        let nodes_to_import = XLSX.utils.sheet_to_row_object_array(workbook.Sheets['Nodes']);
+        let links_to_import = XLSX.utils.sheet_to_row_object_array(workbook.Sheets['Links']);
+        $.ajax({
+            url: "/import_data",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({
+            nodes_to_import,
+            links_to_import
+            }),
+            dataType: "json",
+            statusCode: {
+            200: function () {
+                database_read(nodes_or_links = 'nodes', map_or_export = 'map');
+                database_read(nodes_or_links = 'links', map_or_export = 'map');
+            },
+            },
+        });
+    }
+  }
 
 /************************************************************/
 /*                    SOLAR-HOME-SYSTEM                     */
