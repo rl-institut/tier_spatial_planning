@@ -94,15 +94,17 @@ function database_read(nodes_or_links, map_or_export, callback) {
                     }
                     markers.length = 0;
                     number_of_nodes = Object.keys(nodes["node_type"]).length;
-                    // as soon as there are nodes in the database, the download option will be activated
-                    // otherwise, it will be disables.
-                    if (number_of_nodes > 0) {
-                        document.getElementById('btnDownloadLocations').classList.remove('disabled');
-                        document.getElementById('lblDownloadLocations').classList.remove('disabled');
-                    } else {
-                        document.getElementById('btnDownloadLocations').classList.add('disabled');
-                        document.getElementById('lblDownloadLocations').classList.add('disabled');
-                    }
+                    // As soon as there are nodes in the database, the download option will be activated
+                    // otherwise, it will be disables. This only happens in the `customer-selection` page.
+                    if (document.getElementById('btnDownloadLocations')) {
+                        if (number_of_nodes > 0) {
+                            document.getElementById('btnDownloadLocations').classList.remove('disabled');
+                            document.getElementById('lblDownloadLocations').classList.remove('disabled');
+                        } else {
+                            document.getElementById('btnDownloadLocations').classList.add('disabled');
+                            document.getElementById('lblDownloadLocations').classList.add('disabled');
+                        }
+                    };
                     var counter;
                     for (counter = 0; counter < number_of_nodes; counter++) {
                         if (nodes["node_type"][counter] === "pole") {
