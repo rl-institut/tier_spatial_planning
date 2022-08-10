@@ -36,9 +36,11 @@ var esriSatelliteMap = {
   esriBaseMap: esriWorldImageryLayer,
 };
 
-lat_lon = gpsCoordinates.value.split(",");
-lat = Number(lat_lon[0]);
-lon = Number(lat_lon[1]);
+lat = 9.8838;
+lon = 5.9231;
+// lat_lon = gpsCoordinates.value.split(",");
+// lat = Number(lat_lon[0]);
+// lon = Number(lat_lon[1]);
 
 var mainMap = L.map("leafletMap", {
   center: [lat, lon], // 1st arg.: latitude, 2nd arg.: longitude
