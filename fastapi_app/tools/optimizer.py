@@ -1529,7 +1529,7 @@ class EnergySystemOptimizer(Optimizer):
                  wacc,
                  tax,
                  path_data='',
-                 solver='gurobi',
+                 solver='cbc',
                  pv={'capex': 1000, 'opex': 20, 'lifetime': 20},
                  diesel_genset={'capex': 1000, 'opex': 20, 'variable_cost': 0.045, 'lifetime': 8,
                                 'fuel_cost': 1.214, 'fuel_lhv': 11.83, 'min_load': 0.3, 'efficiency': 0.3},
@@ -1721,8 +1721,10 @@ class EnergySystemOptimizer(Optimizer):
         # optimize the energy system
         # gurobi --> 'MipGap': '0.01'
         # cbc --> 'ratioGap': '0.01'
+        solver_option = {"gurobi": {"MipGap": "0.03"}, "cbc": {"ratioGap": "0.03"}}
+
         model.solve(solver=self.solver, solve_kwargs={
-            "tee": True}, cmdline_options={'MipGap': '0.02'})
+            "tee": True}, cmdline_options=solver_option[self.solver])
         energy_system.results["meta"] = solph.processing.meta_results(model)
         self.results_main = solph.processing.results(model)
 

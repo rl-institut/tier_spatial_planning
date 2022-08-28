@@ -430,6 +430,7 @@ textarea {
  */
 [type="checkbox"],
 [type="radio"] {
+  cursor: pointer;
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
   /* 1 */
@@ -1323,8 +1324,8 @@ form .form-check-input:checked {
   background-color: #1F567D;
 }
 
-form .form-control {
-  color: #343434;
+.row .form-control {
+  line-height: 1;
 }
 
 form .form-control.input-updated {
@@ -1424,6 +1425,12 @@ form .text-item .input-group-text {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+}
+
+.input-group-text {
+  /* height: 1.5rem; */
+  padding-top: 1px;
+  padding-bottom: 1px;
 }
 
 form .btn {
@@ -2079,8 +2086,35 @@ nav.navbar .dropdown-menu li {
   border-radius: 8px;
   -webkit-box-shadow: 0px 0px 16px rgba(31, 86, 125, 0.08);
   box-shadow: 0px 0px 16px rgba(31, 86, 125, 0.08);
-  height: 32rem;
+  height: 34rem;
   margin-bottom: 1.5rem;
+}
+
+.dashboard .box {
+  background-color: #fff;
+  border-radius: 10px;
+  -webkit-box-shadow: 0px 0px 16px rgba(31, 86, 125, 0.08);
+  box-shadow: 0px 0px 16px rgba(31, 86, 125, 0.08);
+  height: 34rem;
+  margin-bottom: 1.0rem;
+  border: 2px solid #198754;
+}
+
+.dashboard .box__header {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: row;
+  flex-direction: row;
+  -webkit-box-pack: justify;
+  -ms-flex-pack: justify;
+  justify-content: space-between;
+  padding: 0rem 0.05rem 0.75rem;
+  /* added by me :) */
+  font-size: 1.2rem;
+  font-weight: 700;
 }
 
 .dashboard .chart__header {
@@ -2126,7 +2160,19 @@ nav.navbar .dropdown-menu li {
 }
 
 .dashboard .chart--small {
-  height: calc((32rem / 3) - ((2 * 1.5rem) / 3));
+  height: calc((34rem / 3) - ((2 * 1.5rem) / 3));
+}
+
+.dashboard .box--tiny{
+  height: calc((34rem / 2.45) - ((1 * 0.75rem) / 2));
+}
+
+.dashboard .box--small{
+  height: calc((34rem / 2) - ((1 * 0.75rem) / 2));
+}
+
+.dashboard .box--medium{
+  height: calc((34rem / 1.7) - ((1 * 0.75rem) / 2));
 }
 
 .dashboard .chart--small:not(:last-of-type) {
@@ -2153,6 +2199,15 @@ nav.navbar .dropdown-menu li {
   -webkit-box-flex: 1;
   -ms-flex: 1;
   flex: 1;
+}
+
+.dashboard .box {
+  padding: 0.5rem; 
+  margin-bottom: 0.75rem;
+}
+
+.dashboard .box .row {
+  margin-bottom: 0.65rem;
 }
 
 .dashboard .chart .item__name {
@@ -3971,4 +4026,122 @@ nav.navbar .dropdown-menu li {
 
 .leaflet-zoom-fit {
   width: 70%;
+}
+
+.btn-group .btn {
+  padding: 0.2rem;
+}
+
+.import-file{
+  padding-top: .85rem;
+}
+
+.components-block--design {
+  fill:#e9ecef;
+  stroke:black;
+  stroke-width:2;
+}
+
+.components-block--dispatch {
+  fill:#ffffffcd;
+  stroke:#6c757d;
+  stroke-width:2;
+}
+
+.components-block--demand {
+  fill:#e0fdef;
+  stroke:#198754;
+  stroke-width:2;
+}
+
+.components-block--constraints {
+  fill:#fcdbdf;
+  stroke:#dc3545;
+  stroke-width:2;
+}
+
+.components-text--design {
+  font-size: 1.10rem;
+  font-weight: 600;
+  fill:black;
+}
+
+.components-text--dispatch {
+  font-size: 1.10rem;
+  font-weight: 600;
+  fill:#6c757d;
+}
+.components-information--design {
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-style: italic;
+  fill:black;
+}
+
+.components-information--dispatch {
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-style: italic;
+  fill:#6c757d;
+}
+
+.components-information--constraints {
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-style: italic;
+  fill:#dc3545;
+}
+
+.components-text--demand {
+  font-size: 1.10rem;
+  font-weight: 600;
+  fill:#198754;
+}
+
+.components-text--constraints {
+  font-size: 1.10rem;
+  font-weight: 600;
+  fill:#dc3545;
+}
+
+.components-flow--design {
+  stroke:black;
+  stroke-width:3;
+  fill: none;
+}
+
+.components-flow--dispatch {
+  stroke:#6c757d;
+  stroke-width:3;
+  fill: none;
+}
+
+.components-flow--demand {
+  stroke:#198754;
+  stroke-width:3;
+  fill: none;
+}
+
+.components-flow--constraints {
+  stroke:#dc3545;
+  stroke-width:3;
+  fill: none;
+}
+
+.form-switch .form-check-input{
+  width:3.5em;
+  height:1.5em;
+  margin-left:-2.5em;
+  border-radius:1em;
+  transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;  
+}
+
+.form-switch .form-check-input:checked{
+  background-color:#17405C;
+  border-color: #17405C;
+}
+
+.form-check-input:focus {
+  -webkit-box-shadow: 0 0 0 0.25rem rgba(31, 86, 125, 0.1);
+  box-shadow: 0 0 0 0.25rem rgba(31, 86, 125, 0.1);
 }

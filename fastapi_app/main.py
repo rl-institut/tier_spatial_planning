@@ -36,9 +36,6 @@ from typing import Any, Dict, List, Union
 import time
 from datetime import timedelta
 
-# Grab Currrent Time Before Running the Code
-start_execution_time = time.monotonic()
-
 app = FastAPI()
 
 app.mount("/fastapi_app/static",
@@ -851,6 +848,9 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
 
 @ app.post('/optimize_energy_system')
 async def optimize_energy_system(optimize_energy_system_request: models.OptimizeEnergySystemRequest):
+
+    # Grab Currrent Time Before Running the Code
+    start_execution_time = time.monotonic()
 
     df = pd.read_csv(full_path_stored_inputs)
 
