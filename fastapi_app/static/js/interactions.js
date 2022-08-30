@@ -303,17 +303,74 @@ function optimize_energy_system() {
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify({
-            pv: {'lifetime': pvLifetime.value, 'capex': pvCapex.value, 'opex': pvOpex.value},
-            diesel_genset: {'lifetime': dieselGensetLifetime.value, 'capex': dieselGensetCapex.value, 
-                            'opex': dieselGensetOpex.value, 'variable_cost': dieselGensetVariableCost.value,
-                            'fuel_cost': fuelCost.value, 'fuel_lhv': fuelLhv.value, 
-                            'min_load': dieselGensetMinLoad.value/100, 'efficiency': dieselGensetEfficiency.value/100},
-            battery: {'lifetime': batteryLifetime.value, 'capex': batteryCapex.value, 'opex': batteryOpex.value,
-                      'soc_min': batterySocMin.value/100, 'soc_max': batterySocMax.value/100, 'c_rate_in': batteryCrateIn.value, 
-                      'c_rate_out': batteryCrateOut.value, 'efficiency': batteryEfficiency.value/100},
-            inverter: {'lifetime': inverterLifetime.value, 'capex': inverterCapex.value, 'opex': inverterOpex.value, 'efficiency': inverterEfficiency.value/100},
-            rectifier: {'lifetime': rectifierLifetime.value, 'capex': rectifierCapex.value, 'opex': rectifierOpex.value, 'efficiency': rectifierEfficiency.value/100},
-                }),
+            pv: {
+                'settings': {
+                    'is_selected': selectPv.checked, 
+                     'design': pvDesign.checked, 
+                },
+                 'parameters': {
+                    'nominal_capacity': pvNominalCapacity.value, 
+                    'lifetime': pvLifetime.value, 
+                    'capex': pvCapex.value, 
+                    'opex': pvOpex.value,
+                }
+            },
+            diesel_genset: {
+                'settings': {
+                    'is_selected': selectDieselGenset.checked, 
+                     'design': dieselGensetDesign.checked, 
+                },
+                'parameters': {
+                    'nominal_capacity': dieselGensetNominalCapacity.value,
+                    'lifetime': dieselGensetLifetime.value, 
+                    'capex': dieselGensetCapex.value, 
+                    'opex': dieselGensetOpex.value, 
+                    'variable_cost': dieselGensetVariableCost.value,
+                    'fuel_cost': fuelCost.value, 
+                    'fuel_lhv': fuelLhv.value, 
+                    'min_load': dieselGensetMinLoad.value/100, 
+                    'max_efficiency': dieselGensetMaxEfficiency.value/100,
+                }
+            },
+            battery: {
+                'settings': {
+                    'is_selected': selectBattery.checked, 
+                     'design': batteryDesign.checked, 
+                },
+                'parameters':{
+                    'nominal_capacity': batteryNominalCapacity.value,
+                    'lifetime': batteryLifetime.value, 'capex': batteryCapex.value, 'opex': batteryOpex.value,
+                    'soc_min': batterySocMin.value/100, 'soc_max': batterySocMax.value/100, 'c_rate_in': batteryCrateIn.value, 
+                    'c_rate_out': batteryCrateOut.value, 'efficiency': batteryEfficiency.value/100,
+                } 
+            },
+            inverter: {
+                'settings': {
+                    'is_selected': selectInverter.checked, 
+                    'design': inverterDesign.checked, 
+                },
+                'parameters': {
+                    'nominal_capacity': inverterNominalCapacity.value,
+                    'lifetime': inverterLifetime.value, 
+                    'capex': inverterCapex.value, 
+                    'opex': inverterOpex.value, 
+                    'efficiency': inverterEfficiency.value/100,
+                },
+            },
+            rectifier: {
+                'settings': {
+                    'is_selected': selectRectifier.checked, 
+                    'design': rectifierDesign.checked, 
+                },
+                'parameters': {
+                    'nominal_capacity': rectifierNominalCapacity.value,
+                    'lifetime': rectifierLifetime.value, 
+                    'capex': rectifierCapex.value, 
+                    'opex': rectifierOpex.value, 
+                    'efficiency': rectifierEfficiency.value/100
+                },
+            }
+        }),
         dataType: "json",
     });
 }
@@ -328,12 +385,8 @@ function optimize_grid() {
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify({
-            hv_cable: {'lifetime': hvCableLifetime.value, 'capex': hvCableCapex.value, 'opex': hvCableOpex.value},
-            hv_cable: {'lifetime': hvCableLifetime.value, 'capex': hvCableCapex.value, 'opex': hvCableOpex.value},
-            lv_cable: {'lifetime': lvCableLifetime.value, 'capex': lvCableCapex.value, 'opex': lvCableOpex.value},
-            pole: {'lifetime': poleLifetime.value, 'capex': poleCapex.value, 'opex': poleOpex.value, 'max_connections': 4},
-            connection: {'lifetime': connectionLifetime.value, 'capex': connectionCapex.value, 'opex': connectionOpex.value},
             optimization: {'n_relaxation_steps': 10},
+            constraints: {'pole_max_connections': 4},
                 }),
         dataType: "json",
     });
@@ -375,20 +428,60 @@ function refresh_map(){
 }
 
 function save_previous_data(page_name) {
-    // $("#loading").show();
+    if (page_name === "project_setup") {
+        transfer_data = JSON.stringify(
+            {
+                page_setup: {
+                    'project_name': projectName.value,
+                    'project_description': projectDescription.value.trim(),
+                    'interest_rate': interestRate.value,
+                    'project_lifetime': projectLifetime.value,
+                    'start_date': startDate.value,
+                    'temporal_resolution': temporalResolution.value,
+                    'n_days': nDays.value,
+                },
+                customer_selection: {
+                    'hv_cable_lifetime': 0,
+                    'hv_cable_capex': 0,
+                    'lv_cable_lifetime': 0,
+                    'lv_cable_capex': 0,
+                    'pole_lifetime': 0,
+                    'pole_capex': 0,
+                    'mg_connection_cost': 0,
+                    'shs_capex': 0,
+                }
+            }
+        );
+    } else if (page_name === "customer_selection") {
+        transfer_data = JSON.stringify(
+            {
+                page_setup: {
+                    'project_name': '',
+                    'project_description': '',
+                    'interest_rate': '',
+                    'project_lifetime': '',
+                    'start_date': '',
+                    'temporal_resolution': '',
+                    'n_days': '',
+                },
+                customer_selection: {
+                    'hv_cable_lifetime': hvCableLifetime.value,
+                    'hv_cable_capex': hvCableCapex.value,
+                    'lv_cable_lifetime': lvCableLifetime.value,
+                    'lv_cable_capex': lvCableCapex.value,
+                    'pole_lifetime': poleLifetime.value,
+                    'pole_capex': poleCapex.value,
+                    'mg_connection_cost': mgConnectionCost.value,
+                    'shs_capex': shsCapex.value,
+                }
+            }
+        );
+    }
     $.ajax({
         url: "save_previous_data/" + page_name,
         type: "POST",
         contentType: "application/json",
-        data: JSON.stringify({
-            project_name: projectName.value,
-            project_description: projectDescription.value.trim(),
-            interest_rate: interestRate.value,
-            project_lifetime: projectLifetime.value,
-            start_date: startDate.value,
-            temporal_resolution: temporalResolution.value,
-            n_days: nDays.value,
-                }),
+        data: transfer_data,
         dataType: "json",
     });
 }
@@ -400,21 +493,37 @@ function load_previous_data(page_name){
     xhr.responseType = "json";
     xhr.send();
     
-    xhr.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            // push nodes to the map
-            results = this.response;
-            document.getElementById("projectName").value = results['project_name'];
-            document.getElementById("projectDescription").value = results['project_description'];
-            document.getElementById("interestRate").value = results['interest_rate'];
-            document.getElementById("projectLifetime").value = results['project_lifetime'];
-            document.getElementById("startDate").value = results['start_date'];
-            document.getElementById("temporalResolution").value = results['temporal_resolution'];
-            document.getElementById("nDays").value = results['n_days'];
-        }
-    };
+    if (page_name === "project_setup") {
+        xhr.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+                // push nodes to the map
+                results = this.response;
+                document.getElementById("projectName").value = results['project_name'];
+                document.getElementById("projectDescription").value = results['project_description'];
+                document.getElementById("interestRate").value = results['interest_rate'];
+                document.getElementById("projectLifetime").value = results['project_lifetime'];
+                document.getElementById("startDate").value = results['start_date'];
+                document.getElementById("temporalResolution").value = results['temporal_resolution'];
+                document.getElementById("nDays").value = results['n_days'];
+            }
+        };
+    } else if (page_name === "customer_selection") {
+        xhr.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+                // push nodes to the map
+                results = this.response;
+                document.getElementById("hvCableLifetime").value = results['hv_cable_lifetime'];
+                document.getElementById("hvCableCapex").value = results['hv_cable_capex'];
+                document.getElementById("lvCableLifetime").value = results['lv_cable_lifetime'];
+                document.getElementById("lvCableCapex").value = results['lv_cable_capex'];
+                document.getElementById("poleLifetime").value = results['pole_lifetime'];
+                document.getElementById("poleCapex").value = results['pole_capex'];
+                document.getElementById("mgConnectionCost").value = results['mg_connection_cost'];
+                document.getElementById("shsCapex").value = results['shs_capex'];
+            }
+        };
+    }
 }
-
 
 /************************************************************/
 /*                   EXPORT DATA AS XLSX                    */

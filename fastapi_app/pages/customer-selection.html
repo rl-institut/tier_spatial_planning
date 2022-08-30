@@ -58,7 +58,7 @@
     <title>Customer Selection</title>
   </head>
 
-  <body onload="refresh_map();">
+  <body onload="refresh_map();load_previous_data('customer_selection')">
     <!-- don't forget 'navbar--scenario' CSS class -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light navbar--scenario">
       <div class="container-fluid">
@@ -144,28 +144,6 @@
         <div class="left">
           <div>
             <form>
-              <div class="input-item">
-                <label for="gpsCoordinates" class="form-label">
-                  GPS coordinates of the settlement
-                </label>
-                <div class="input-group mb-3">
-                  <input
-                    type="text"
-                    id="gpsCoordinates"
-                    class="form-control"
-                    placeholder="Add in this format: latitude, longitude"
-                    aria-label="Latitude and longitude of the settlement"
-                    value="9.8838, 5.9231"
-                  />
-                  <button
-                    id="updateCoordinates"
-                    class="btn btn-outline-secondary"
-                    onclick="upgrade_map_center(gpsCoordinates.value);"
-                  >
-                    Update
-                  </button>
-                </div>
-              </div>
               <div class="input-item">
                 <label for="nodesSelection" class="form-label"
                   >Customers' locations</label
@@ -304,6 +282,144 @@
                         accept=".xls, .xlsx"
                       /> -->
               </div>
+              <div class="row input-item">
+                <div class="col-2">
+                  <label class="form-label text-left">HV cable </label>
+                </div>
+                <div class="col-5">
+                  <div class="input-group">
+                    <span class="input-group-text">Lifetime</span>
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="hvCableLifetime"
+                      value="25"
+                      required
+                    />
+                    <span id="hvCableLifetimeUnit" class="input-group-text"
+                      >Year</span
+                    >
+                  </div>
+                </div>
+                <div class="col-5">
+                  <div class="input-group">
+                    <span class="input-group-text">CAPEX</span>
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="hvCableCapex"
+                      value="10"
+                      required
+                    />
+                    <span id="hvCableCapexUnit" class="input-group-text"
+                      >USD/m</span
+                    >
+                  </div>
+                </div>
+              </div>
+              <div class="row input-item">
+                <div class="col-2">
+                  <label class="form-label text-left">LV cable </label>
+                </div>
+                <div class="col-5">
+                  <div class="input-group">
+                    <span class="input-group-text">Lifetime</span>
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="lvCableLifetime"
+                      value="25"
+                      required
+                    />
+                    <span id="lvCableLifetimeUnit" class="input-group-text"
+                      >Year</span
+                    >
+                  </div>
+                </div>
+                <div class="col-5">
+                  <div class="input-group">
+                    <span class="input-group-text">CAPEX</span>
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="lvCableCapex"
+                      value="2"
+                      required
+                    />
+                    <span id="lvCableCapexUnit" class="input-group-text"
+                      >USD/m</span
+                    >
+                  </div>
+                </div>
+              </div>
+              <div class="row input-item">
+                <div class="col-2">
+                  <label class="form-label text-left">Pole</label>
+                </div>
+                <div class="col-5">
+                  <div class="input-group">
+                    <span class="input-group-text">Lifetime</span>
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="poleLifetime"
+                      value="250"
+                      required
+                    />
+                    <span id="poleLifetimeUnit" class="input-group-text"
+                      >Year</span
+                    >
+                  </div>
+                </div>
+                <div class="col-5">
+                  <div class="input-group">
+                    <span class="input-group-text">CAPEX</span>
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="poleCapex"
+                      value="800"
+                      required
+                    />
+                    <span id="poleCapexUnit" class="input-group-text">USD</span>
+                  </div>
+                </div>
+              </div>
+              <div class="row input-item">
+                <div class="col-2">
+                  <label class="form-label text-left">Connections</label>
+                </div>
+                <div class="col-5">
+                  <div class="input-group">
+                    <span class="input-group-text">MG</span>
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="mgConnectionCost"
+                      value="100"
+                      required
+                    />
+                    <span id="mgConnectionCostUnit" class="input-group-text"
+                      >USD</span
+                    >
+                  </div>
+                </div>
+                <div class="col-5">
+                  <div class="input-group">
+                    <span class="input-group-text">SHS</span>
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="shsCapex"
+                      value="6"
+                      required
+                    />
+                    <span id="shsCapexUnit" class="input-group-text"
+                      >USD/kW</span
+                    >
+                  </div>
+                </div>
+              </div>
             </form>
           </div>
         </div>
@@ -328,6 +444,7 @@
           <a
             class="btn btn--medium"
             href="{{ url_for('energy_system_design') }}"
+            onclick="save_previous_data('customer_selection');"
             >Next</a
           >
         </div>

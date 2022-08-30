@@ -223,45 +223,57 @@ function makeplot_energy_flows() {
             x: time,
             y: diesel_genset_production,
             mode: 'lines',
-            name: 'Diesel Genset'
-            
+            name: 'Diesel Genset',
+            line: {shape: 'vhv'},
+            type: 'scatter',                      
           };
           var trace2 = {
             x: time,
             y: pv_production,
             mode: 'lines',
-            name: 'PV'
-            
+            name: 'PV',
+            line: {shape: 'vhv'},
+            type: 'scatter',          
           };
           var trace3 = {
               x: time,
               y: battery_charge,
               mode: 'lines',
-              name: 'Battery - Charge'
+              name: 'Battery - Charge',
+              line: {shape: 'vhv'},
+              type: 'scatter',            
           };
           var trace4 = {
               x: time,
               y: battery_discharge,
               mode: 'lines',
-              name: 'Battery - Discharge'
+              name: 'Battery - Discharge',
+              line: {shape: 'vhv'},
+              type: 'scatter',        
           };
           var trace5 = {
               x: time,
               y: battery_content,
               mode: 'lines',
-              name: 'Battery - Content'
+              name: 'Battery - Content',
+              line: {shape: 'vhv'},
+              type: 'scatter',       
           };
           var trace6 = {
               x: time,
               y: demand,
               mode: 'lines',
               name: 'Demand',
+              line: {shape: 'vhv'},
+              type: 'scatter',            
           };
           var trace7 = {
               x: time,
               y: surplus,
               mode: 'lines',
               name: 'Excess',
+              line: {shape: 'vhv'},
+              type: 'scatter',
           };
         
           var data = [trace1, trace2, trace3, trace4, trace5, trace6, trace7];

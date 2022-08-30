@@ -172,6 +172,14 @@ def home(request: Request):
             "start_date",
             "temporal_resolution",
             "n_days",
+            "hv_cable_lifetime",
+            "hv_cable_capex",
+            "lv_cable_lifetime",
+            "lv_cable_capex",
+            "pole_lifetime",
+            "pole_capex",
+            "mg_connection_cost",
+            "shs_capex",
         ]
         pd.DataFrame(columns=header_stored_inputs).to_csv(full_path_stored_inputs, index=False)
 
@@ -421,7 +429,7 @@ async def load_results():
     results['n_consumers'] = str(df.loc[0, 'n_consumers'])
     results['length_hv_cable'] = str(df.loc[0, 'length_hv_cable']) + ' m'
     results['length_lv_cable'] = str(df.loc[0, 'length_lv_cable']) + ' m'
-    results['cost_grid'] = str(df.loc[0, 'cost_grid']) + ' EUR/a'
+    results['cost_grid'] = str(df.loc[0, 'cost_grid']) + ' USD/a'
     results['lcoe'] = str(df.loc[0, 'lcoe']) + ' c/kWh'
     results['res'] = str(df.loc[0, 'res']) + ' %'
     results['co2_savings'] = str(df.loc[0, 'co2_savings']) + ' t/a'
@@ -449,6 +457,15 @@ async def load_previous_data(page_name):
         previous_data['start_date'] = str(df.loc[0, 'start_date'])
         previous_data['temporal_resolution'] = str(df.loc[0, 'temporal_resolution'])
         previous_data['n_days'] = str(df.loc[0, 'n_days'])
+    elif page_name == "customer_selection":
+        previous_data['hv_cable_lifetime'] = str(df.loc[0, 'hv_cable_lifetime'])
+        previous_data['hv_cable_capex'] = str(df.loc[0, 'hv_cable_capex'])
+        previous_data['lv_cable_lifetime'] = str(df.loc[0, 'lv_cable_lifetime'])
+        previous_data['lv_cable_capex'] = str(df.loc[0, 'lv_cable_capex'])
+        previous_data['pole_lifetime'] = str(df.loc[0, 'pole_lifetime'])
+        previous_data['pole_capex'] = str(df.loc[0, 'pole_capex'])
+        previous_data['mg_connection_cost'] = str(df.loc[0, 'mg_connection_cost'])
+        previous_data['shs_capex'] = str(df.loc[0, 'shs_capex'])
 
     # importing nodes and links from the csv files to the map
     return previous_data
@@ -460,13 +477,22 @@ async def save_previous_data(page_name: str, save_previous_data_request: models.
     df = pd.read_csv(full_path_stored_inputs)
 
     if page_name == 'project_setup':
-        df.loc[0, 'project_name'] = save_previous_data_request.project_name
-        df.loc[0, 'project_description'] = save_previous_data_request.project_description
-        df.loc[0, 'interest_rate'] = save_previous_data_request.interest_rate
-        df.loc[0, 'project_lifetime'] = save_previous_data_request.project_lifetime
-        df.loc[0, 'start_date'] = save_previous_data_request.start_date
-        df.loc[0, 'temporal_resolution'] = save_previous_data_request.temporal_resolution
-        df.loc[0, 'n_days'] = save_previous_data_request.n_days
+        df.loc[0, 'project_name'] = save_previous_data_request.page_setup['project_name']
+        df.loc[0, 'project_description'] = save_previous_data_request.page_setup['project_description']
+        df.loc[0, 'interest_rate'] = save_previous_data_request.page_setup['interest_rate']
+        df.loc[0, 'project_lifetime'] = save_previous_data_request.page_setup['project_lifetime']
+        df.loc[0, 'start_date'] = save_previous_data_request.page_setup['start_date']
+        df.loc[0, 'temporal_resolution'] = save_previous_data_request.page_setup['temporal_resolution']
+        df.loc[0, 'n_days'] = save_previous_data_request.page_setup['n_days']
+    elif page_name == "customer_selection":
+        df.loc[0, 'hv_cable_lifetime'] = save_previous_data_request.customer_selection['hv_cable_lifetime']
+        df.loc[0, 'hv_cable_capex'] = save_previous_data_request.customer_selection['hv_cable_capex']
+        df.loc[0, 'lv_cable_lifetime'] = save_previous_data_request.customer_selection['lv_cable_lifetime']
+        df.loc[0, 'lv_cable_capex'] = save_previous_data_request.customer_selection['lv_cable_capex']
+        df.loc[0, 'pole_lifetime'] = save_previous_data_request.customer_selection['pole_lifetime']
+        df.loc[0, 'pole_capex'] = save_previous_data_request.customer_selection['pole_capex']
+        df.loc[0, 'mg_connection_cost'] = save_previous_data_request.customer_selection['mg_connection_cost']
+        df.loc[0, 'shs_capex'] = save_previous_data_request.customer_selection['shs_capex']
 
     # save the updated dataframe
     df.to_csv(full_path_stored_inputs, index=False)
@@ -728,37 +754,40 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     # otherwise, when clicking on the 'optimize' button, the existing system won't be removed
     await database_initialization(nodes=False, links=True)
 
+    # get all stored data related to the grid layout
+    grid_input_data = await load_previous_data('customer_selection')
+
     # create a new "grid" object from the Grid class
     epc_hv_cable = (opt.crf * Optimizer.capex_multi_investment(
         opt,
-        capex_0=optimize_grid_request.hv_cable['capex'],
-        component_lifetime=optimize_grid_request.hv_cable['lifetime']
-    ) + optimize_grid_request.hv_cable['opex']) * opt.n_days / 365
+        capex_0=grid_input_data['hv_cable_capex'],
+        component_lifetime=grid_input_data['hv_cable_lifetime']
+    )) * opt.n_days / 365
 
     epc_lv_cable = (opt.crf * Optimizer.capex_multi_investment(
         opt,
-        capex_0=optimize_grid_request.lv_cable['capex'],
-        component_lifetime=optimize_grid_request.lv_cable['lifetime']
-    ) + optimize_grid_request.lv_cable['opex']) * opt.n_days / 365
+        capex_0=grid_input_data['lv_cable_capex'],
+        component_lifetime=grid_input_data['lv_cable_lifetime']
+    )) * opt.n_days / 365
 
     epc_connection = (opt.crf * Optimizer.capex_multi_investment(
         opt,
-        capex_0=optimize_grid_request.connection['capex'],
-        component_lifetime=optimize_grid_request.connection['lifetime']
-    ) + optimize_grid_request.connection['opex']) * opt.n_days / 365
+        capex_0=grid_input_data['mg_connection_cost'],
+        component_lifetime=opt.project_lifetime
+    )) * opt.n_days / 365
 
     epc_pole = (opt.crf * Optimizer.capex_multi_investment(
         opt,
-        capex_0=optimize_grid_request.pole['capex'],
-        component_lifetime=optimize_grid_request.pole['lifetime']
-    ) + optimize_grid_request.pole['opex']) * opt.n_days / 365
+        capex_0=grid_input_data['pole_capex'],
+        component_lifetime=grid_input_data['pole_lifetime'],
+    )) * opt.n_days / 365
 
     grid = Grid(
         epc_hv_cable=epc_hv_cable,
         epc_lv_cable=epc_lv_cable,
         epc_connection=epc_connection,
         epc_pole=epc_pole,
-        pole_max_connection=optimize_grid_request.pole['max_connections']
+        pole_max_connection=optimize_grid_request.constraints['pole_max_connections']
     )
 
     # make sure that the new grid object is empty before adding nodes to it
@@ -861,7 +890,7 @@ async def optimize_energy_system(optimize_energy_system_request: models.Optimize
         wacc=df.loc[0, 'interest_rate']/100,
         tax=0,
         path_data=full_path_timeseries,
-        solver='cbc',
+        solver='gurobi',
         pv=optimize_energy_system_request.pv,
         diesel_genset=optimize_energy_system_request.diesel_genset,
         battery=optimize_energy_system_request.battery,
@@ -909,9 +938,9 @@ async def optimize_energy_system(optimize_energy_system_request: models.Optimize
     df.loc[0, 'surplus'] = ensys_opt.sequences_excess.max()
     # data for sankey diagram - all in MWh
     df.loc[0, 'fuel_to_diesel_genset'] = ensys_opt.sequences_fuel_consumption.sum() * 0.846 * \
-        ensys_opt.diesel_genset['fuel_lhv'] / 1000
+        ensys_opt.diesel_genset['parameters']['fuel_lhv'] / 1000
     df.loc[0, 'diesel_genset_to_rectifier'] = ensys_opt.sequences_rectifier.sum() / \
-        ensys_opt.rectifier['efficiency'] / 1000
+        ensys_opt.rectifier['parameters']['efficiency'] / 1000
     df.loc[0, 'diesel_genset_to_demand'] = ensys_opt.sequences_genset.sum() / 1000 - \
         df.loc[0, 'diesel_genset_to_rectifier']
     df.loc[0, 'rectifier_to_dc_bus'] = ensys_opt.sequences_rectifier.sum() / 1000
@@ -919,7 +948,7 @@ async def optimize_energy_system(optimize_energy_system_request: models.Optimize
     df.loc[0, 'battery_to_dc_bus'] = ensys_opt.sequences_battery_discharge.sum() / 1000
     df.loc[0, 'dc_bus_to_battery'] = ensys_opt.sequences_battery_charge.sum() / 1000
     df.loc[0, 'dc_bus_to_inverter'] = ensys_opt.sequences_inverter.sum() / \
-        ensys_opt.inverter['efficiency'] / 1000
+        ensys_opt.inverter['parameters']['efficiency'] / 1000
     df.loc[0, 'dc_bus_to_surplus'] = ensys_opt.sequences_excess.sum() / 1000
     df.loc[0, 'inverter_to_demand'] = ensys_opt.sequences_inverter.sum() / 1000
     df.loc[0, 'solver'] = ensys_opt.solver

@@ -38,9 +38,6 @@ var esriSatelliteMap = {
 
 lat = 9.8838;
 lon = 5.9231;
-// lat_lon = gpsCoordinates.value.split(",");
-// lat = Number(lat_lon[0]);
-// lon = Number(lat_lon[1]);
 
 var mainMap = L.map("leafletMap", {
   center: [lat, lon], // 1st arg.: latitude, 2nd arg.: longitude
@@ -366,23 +363,3 @@ function removeBoundaries() {
   siteBoundaryLines.length = 0;
   dashedBoundaryLine = null;
 }
-
-function upgrade_map_center(gps_coordinates){
-  lat_lon = gps_coordinates.split(",");
-  lat = Number(lat_lon[0]);
-  lon = Number(lat_lon[1]);
-  mainMap.setView(new L.LatLng(lat, lon), 17);
-  document.getElementById("gpsCoordinates").setAttribute('value', gps_coordinates);
-}
-
-// let btn_import = document
-// .getElementById("btnImport")
-// .addEventListener("click", () => {
-//   Papa.parse(document.getElementById("fileImport").files[0], {
-//     download: true,
-//     header: false,
-//     complete: function (results) {
-//       console.log(results);
-//     },
-//   });
-// });

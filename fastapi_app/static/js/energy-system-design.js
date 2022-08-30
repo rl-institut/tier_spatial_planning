@@ -22,6 +22,12 @@ function check_optimization_strategy(id) {
     styleLine(id);
     styleArrow(id);
     styleInformation(id);
+
+    if (document.getElementById(id+"Design").checked) {
+        document.getElementById(id+"NominalCapacity").disabled = true; 
+    } else {
+        document.getElementById(id+"NominalCapacity").disabled = false; 
+    }
 }
 
 function check_box_visibility(component) {
@@ -97,6 +103,7 @@ function refreshBlocksOnDiagramOnLoad(){
         refreshBlocksOnDiagram(component[i]);
         if (component[i] !== 'shortage' && component [i] !== 'surplus'){
             check_box_visibility(component[i]);
+            check_optimization_strategy(component[i]);
         };
     }
     refreshBlocksOnDiagram('demand');

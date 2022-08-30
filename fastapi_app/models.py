@@ -2,7 +2,7 @@ from sqlalchemy import Boolean, Column, Integer, String, Numeric
 #from sqlalchemy.orm import relationship
 from pydantic import BaseModel
 from fastapi_app.database import Base
-from typing import List, Dict
+from typing import List, Dict, Union
 
 # Models
 
@@ -67,36 +67,21 @@ class AddNodeRequest(BaseModel):
 
 
 class SavePreviousDataRequest(BaseModel):
-    project_name: str
-    project_description: str
-    interest_rate: str
-    project_lifetime: str
-    start_date: str
-    temporal_resolution: str
-    n_days: str
+    page_setup: Dict[str, str]
+    customer_selection: Dict[str, str]
 
 
 class OptimizeGridRequest(BaseModel):
-    hv_cable: Dict[str, float]
-    lv_cable: Dict[str, float]
-    pole: Dict[str, float]
-    connection: Dict[str, float]
     optimization: Dict[str, int]
-
-    # cost_pole: float
-    # cost_connection: float
-    # cost_interpole_cable: float
-    # cost_distribution_cable: float
-    # number_of_relaxation_steps_nr: int
-    # max_connection_poles: int
+    constraints: Dict[str, int]
 
 
 class OptimizeEnergySystemRequest(BaseModel):
-    pv: Dict[str, float]
-    diesel_genset: Dict[str, float]
-    battery: Dict[str, float]
-    inverter: Dict[str, float]
-    rectifier: Dict[str, float]
+    pv: Dict[str, Union[Dict[str, bool], Dict[str, float]]]
+    diesel_genset: Dict[str, Union[Dict[str, bool], Dict[str, float]]]
+    battery: Dict[str, Union[Dict[str, bool], Dict[str, float]]]
+    inverter: Dict[str, Union[Dict[str, bool], Dict[str, float]]]
+    rectifier: Dict[str, Union[Dict[str, bool], Dict[str, float]]]
     # path_data: str
 
 

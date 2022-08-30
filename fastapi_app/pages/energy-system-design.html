@@ -34,7 +34,9 @@
     />
     <title>Simulation Results</title>
   </head>
-  <body onload="refreshBlocksOnDiagramOnLoad();">
+  <body
+    onload="refreshBlocksOnDiagramOnLoad();check_box_visibility('constraints');"
+  >
     <nav class="navbar navbar-expand-lg navbar-light bg-light navbar--scenario">
       <div class="container-fluid">
         <span class="navbar-brand">
@@ -178,7 +180,7 @@
                         type="number"
                         class="form-control"
                         id="dieselGensetNominalCapacity"
-                        value="80"
+                        value="8"
                         required
                         disabled
                         onChange="styleInformation('dieselGenset');"
@@ -214,7 +216,7 @@
                       value="350"
                       required
                     />
-                    <span class="input-group-text">EUR/kW</span>
+                    <span class="input-group-text">USD/kW</span>
                   </div>
                 </div>
                 <div class="row">
@@ -227,7 +229,7 @@
                       value="25"
                       required
                     />
-                    <span class="input-group-text">EUR/kW.a</span>
+                    <span class="input-group-text">USD/kW.a</span>
                   </div>
                 </div>
                 <div class="row">
@@ -240,7 +242,7 @@
                       value="0.045"
                       required
                     />
-                    <span class="input-group-text">EUR/kWh</span>
+                    <span class="input-group-text">USD/kWh</span>
                   </div>
                 </div>
                 <div class="row">
@@ -254,7 +256,7 @@
                       value="1.214"
                       required
                     />
-                    <span class="input-group-text">EUR/L</span>
+                    <span class="input-group-text">USD/L</span>
                   </div>
                 </div>
                 <div class="row">
@@ -585,7 +587,7 @@
                         type="number"
                         class="form-control"
                         id="batteryNominalCapacity"
-                        value="80"
+                        value="7"
                         required
                         disabled
                         onChange="styleInformation('battery');"
@@ -618,10 +620,10 @@
                       type="number"
                       class="form-control"
                       id="batteryCapex"
-                      value="500"
+                      value="598"
                       required
                     />
-                    <span class="input-group-text">EUR/kWh</span>
+                    <span class="input-group-text">USD/kWh</span>
                   </div>
                 </div>
                 <div class="row">
@@ -631,10 +633,10 @@
                       type="number"
                       class="form-control"
                       id="batteryOpex"
-                      value="10"
+                      value="24"
                       required
                     />
-                    <span class="input-group-text">EUR/kW.a</span>
+                    <span class="input-group-text">USD/kW.a</span>
                   </div>
                 </div>
                 <div class="row">
@@ -683,7 +685,7 @@
                       type="number"
                       class="form-control"
                       id="batteryCrateOut"
-                      value="0.5"
+                      value="1"
                       required
                     />
                     <span class="input-group-text">-</span>
@@ -696,7 +698,7 @@
                       type="number"
                       class="form-control"
                       id="batteryEfficiency"
-                      value="80"
+                      value="96"
                       required
                     />
                     <span class="input-group-text">%</span>
@@ -762,7 +764,7 @@
                         type="number"
                         class="form-control"
                         id="inverterNominalCapacity"
-                        value="80"
+                        value="9"
                         required
                         disabled
                         onChange="styleInformation('inverter');"
@@ -782,7 +784,7 @@
                       type="number"
                       class="form-control"
                       id="inverterLifetime"
-                      value="10"
+                      value="15"
                       required
                     />
                     <span class="input-group-text">Year</span>
@@ -795,10 +797,10 @@
                       type="number"
                       class="form-control"
                       id="inverterCapex"
-                      value="400"
+                      value="450"
                       required
                     />
-                    <span class="input-group-text">EUR/kW</span>
+                    <span class="input-group-text">USD/kW</span>
                   </div>
                 </div>
                 <div class="row">
@@ -808,10 +810,10 @@
                       type="number"
                       class="form-control"
                       id="inverterOpex"
-                      value="8"
+                      value="0"
                       required
                     />
-                    <span class="input-group-text">EUR/kW.a</span>
+                    <span class="input-group-text">USD/kW.a</span>
                   </div>
                 </div>
                 <div class="row">
@@ -821,7 +823,7 @@
                       type="number"
                       class="form-control"
                       id="inverterEfficiency"
-                      value="98"
+                      value="95"
                       required
                     />
                     <span class="input-group-text">%</span>
@@ -885,7 +887,7 @@
                         type="number"
                         class="form-control"
                         id="rectifierNominalCapacity"
-                        value="80"
+                        value="5"
                         required
                         disabled
                         onChange="styleInformation('rectifier');"
@@ -905,7 +907,7 @@
                       type="number"
                       class="form-control"
                       id="rectifierLifetime"
-                      value="10"
+                      value="15"
                       required
                     />
                     <span class="input-group-text">Year</span>
@@ -918,10 +920,10 @@
                       type="number"
                       class="form-control"
                       id="rectifierCapex"
-                      value="400"
+                      value="450"
                       required
                     />
-                    <span class="input-group-text">EUR/kW</span>
+                    <span class="input-group-text">USD/kW</span>
                   </div>
                 </div>
                 <div class="row">
@@ -931,10 +933,10 @@
                       type="number"
                       class="form-control"
                       id="rectifierOpex"
-                      value="8"
+                      value="0"
                       required
                     />
-                    <span class="input-group-text">EUR/kW.a</span>
+                    <span class="input-group-text">USD/kW.a</span>
                   </div>
                 </div>
                 <div class="row">
@@ -944,7 +946,7 @@
                       type="number"
                       class="form-control"
                       id="rectifierEfficiency"
-                      value="98"
+                      value="95"
                       required
                     />
                     <span class="input-group-text">%</span>
@@ -1004,7 +1006,7 @@
                         type="number"
                         class="form-control"
                         id="pvNominalCapacity"
-                        value="80"
+                        value="20"
                         required
                         disabled
                         onChange="styleInformation('pv');"
@@ -1022,7 +1024,7 @@
                       type="number"
                       class="form-control"
                       id="pvLifetime"
-                      value="8"
+                      value="25"
                       required
                     />
                     <span class="input-group-text">Year</span>
@@ -1035,10 +1037,10 @@
                       type="number"
                       class="form-control"
                       id="pvCapex"
-                      value="350"
+                      value="883"
                       required
                     />
-                    <span class="input-group-text">EUR/kW</span>
+                    <span class="input-group-text">USD/kW</span>
                   </div>
                 </div>
                 <div class="row">
@@ -1048,10 +1050,10 @@
                       type="number"
                       class="form-control"
                       id="pvOpex"
-                      value="25"
+                      value="14.4"
                       required
                     />
-                    <span class="input-group-text">EUR/kW.a</span>
+                    <span class="input-group-text">USD/kW.a</span>
                   </div>
                 </div>
                 <div class="row">
@@ -1095,7 +1097,6 @@
                         class="form-check-input"
                         id="selectConstraints"
                         required
-                        checked
                         onclick="check_box_visibility('constraints');refreshBlocksOnDiagram('shortage');refreshBlocksOnDiagram('surplus');"
                       />
                       <label class="form-check-label" for="selectConstraints"
@@ -1208,7 +1209,7 @@
             >Previous
           </a>
           <a
-            id="btnSimulating"
+            id="btnSimulate"
             class="btn btn--medium"
             href="{{ url_for('simulation_results')}}"
             onclick="optimize_grid();optimize_energy_system();"
@@ -1239,9 +1240,6 @@
   <script src="{{ url_for('static', path='js/bootstrap.bundle.min.js') }}"></script>
   <script src="{{ url_for('static', path='node_modules/aos/dist/aos.js') }}"></script>
   <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-  <script src="https://cdn.plot.ly/plotly-2.0.0.min.js"></script>
   <script src="{{ url_for('static', path='js/energy-system-design.js') }}"></script>
   <script src="{{ url_for('static', path='js/interactions.js') }}"></script>
-  <script src="{{ url_for('static', path='js/plots.js') }}"></script>
-  <script src="{{ url_for('static', path='js/map.js') }}"></script>
 </html>

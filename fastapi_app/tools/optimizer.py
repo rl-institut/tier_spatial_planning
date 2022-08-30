@@ -1,4 +1,5 @@
 
+from sys import float_repr_style
 import numpy as np
 import pandas as pd
 import random
@@ -48,6 +49,10 @@ class Optimizer:
         Calculates the equivalent CAPEX for components with lifetime less than the project lifetime.
 
         """
+        # convert the string type into the float type for both inputs
+        capex_0 = float(capex_0)
+        component_lifetime = float(component_lifetime)
+
         if self.project_lifetime == component_lifetime:
             number_of_investments = 1
         else:
@@ -1530,13 +1535,78 @@ class EnergySystemOptimizer(Optimizer):
                  tax,
                  path_data='',
                  solver='cbc',
-                 pv={'capex': 1000, 'opex': 20, 'lifetime': 20},
-                 diesel_genset={'capex': 1000, 'opex': 20, 'variable_cost': 0.045, 'lifetime': 8,
-                                'fuel_cost': 1.214, 'fuel_lhv': 11.83, 'min_load': 0.3, 'efficiency': 0.3},
-                 battery={'capex': 350, 'opex': 7, 'lifetime': 6, 'soc_min': 0.3,
-                          'soc_max': 1, 'c_rate_in': 1, 'c_rate_out': 0.5, 'efficiency': 0.8},
-                 inverter={'capex': 400, 'opex': 8, 'lifetime': 10, 'efficiency': 0.98},
-                 rectifier={'capex': 400, 'opex': 8, 'lifetime': 10, 'efficiency': 0.98},):
+                 pv={
+                     'settings': {
+                        'is_selected': True,
+                        'design': True
+                     },
+                     'parameters': {
+                         'nominal_capacity': None,
+                         'capex': 1000,
+                         'opex': 20,
+                         'lifetime': 20
+                     }
+                 },
+                 diesel_genset={
+                     'settings': {
+                         'is_selected': True,
+                         'design': True
+                     },
+                     'parameters': {
+                         'nominal_capacity': None,
+                         'capex': 1000,
+                         'opex': 20,
+                         'variable_cost': 0.045,
+                         'lifetime': 8,
+                         'fuel_cost': 1.214,
+                         'fuel_lhv': 11.83,
+                         'min_load': 0.3,
+                         'max_efficiency': 0.3
+                     }
+                 },
+                 battery={
+                     'settings': {
+                         'is_selected': True,
+                         'design': True
+                     },
+                     'parameters': {
+                         'nominal_capacity': None,
+                         'capex': 350,
+                         'opex': 7,
+                         'lifetime': 6,
+                         'soc_min': 0.3,
+                         'soc_max': 1,
+                         'c_rate_in': 1,
+                         'c_rate_out': 0.5,
+                         'efficiency': 0.8
+                     }
+                 },
+                 inverter={
+                     'settings': {
+                         'is_selected': True,
+                         'design': True
+                     },
+                     'parameters': {
+                         'nominal_capacity': None,
+                         'capex': 400,
+                         'opex': 8,
+                         'lifetime': 10,
+                         'efficiency': 0.98
+                     }
+                 },
+                 rectifier={
+                     'settings': {
+                         'is_selected': True,
+                         'design': True
+                     },
+                     'parameters': {
+                         'nominal_capacity': None,
+                         'capex': 400,
+                         'opex': 8,
+                         'lifetime': 10,
+                         'efficiency': 0.98
+                     }
+                 }):
         """
         Initialize the grid optimizer object
         """
@@ -1586,7 +1656,8 @@ class EnergySystemOptimizer(Optimizer):
 
         # -------------------- SOURCES --------------------
         # fuel density is assumed 0.846 kg/l
-        fuel_cost = self.diesel_genset['fuel_cost'] / 0.846 / self.diesel_genset['fuel_lhv']
+        fuel_cost = self.diesel_genset['parameters']['fuel_cost'] / \
+            0.846 / self.diesel_genset['parameters']['fuel_lhv']
         fuel_source = solph.Source(
             label="fuel_source",
             outputs={
@@ -1596,94 +1667,179 @@ class EnergySystemOptimizer(Optimizer):
 
         self.epc['pv'] = self.crf * \
             self.capex_multi_investment(
-                capex_0=self.pv['capex'], component_lifetime=self.pv['lifetime']) + self.pv['opex']
-        pv = solph.Source(
-            label="pv",
-            outputs={
-                b_el_dc: solph.Flow(
-                    fix=self.solar_potential / self.solar_potential_peak,
-                    nominal_value=None,
-                    investment=solph.Investment(
-                        ep_costs=self.epc['pv'] * self.n_days / 365),
-                    variable_costs=0,
-                )
-            },
-        )
+                capex_0=self.pv['parameters']['capex'], component_lifetime=self.pv['parameters']['lifetime']) + self.pv['parameters']['opex']
+        # Make decision about optimization strategy of the PV
+        if self.pv['settings']['design'] == True:
+            # DESIGN
+            pv = solph.Source(
+                label="pv",
+                outputs={
+                    b_el_dc: solph.Flow(
+                        fix=self.solar_potential / self.solar_potential_peak,
+                        nominal_value=None,
+                        investment=solph.Investment(
+                            ep_costs=self.epc['pv'] * self.n_days / 365),
+                        variable_costs=0,
+                    )
+                },
+            )
+        else:
+            # DISPATCH
+            pv = solph.Source(
+                label="pv",
+                outputs={
+                    b_el_dc: solph.Flow(
+                        fix=self.solar_potential / self.solar_potential_peak,
+                        nominal_value=self.pv['parameters']['nominal_capacity'],
+                        variable_costs=0,
+                    )
+                },
+            )
 
         # -------------------- TRANSFORMERS --------------------
         # optimize capacity of the fuel generator
         self.epc['diesel_genset'] = self.crf * \
             self.capex_multi_investment(
-                capex_0=self.diesel_genset['capex'], component_lifetime=self.diesel_genset['lifetime']) + self.diesel_genset['opex']
-        diesel_genset = solph.Transformer(
-            label="diesel_genset",
-            inputs={b_fuel: solph.Flow()},
-            outputs={
-                b_el_ac: solph.Flow(
-                    nominal_value=None,
-                    variable_costs=self.diesel_genset['variable_cost'],
-                    investment=solph.Investment(
-                        ep_costs=self.epc['diesel_genset'] * self.n_days / 365),
-                )
-            },
-            conversion_factors={b_el_ac: self.diesel_genset['efficiency']},
-        )
+                capex_0=self.diesel_genset['parameters']['capex'], component_lifetime=self.diesel_genset['parameters']['lifetime']) + self.diesel_genset['parameters']['opex']
+
+        if self.diesel_genset['settings']['design'] == True:
+            # DESIGN
+            diesel_genset = solph.Transformer(
+                label="diesel_genset",
+                inputs={b_fuel: solph.Flow()},
+                outputs={
+                    b_el_ac: solph.Flow(
+                        nominal_value=None,
+                        variable_costs=self.diesel_genset['parameters']['variable_cost'],
+                        investment=solph.Investment(
+                            ep_costs=self.epc['diesel_genset'] * self.n_days / 365),
+                    )
+                },
+                conversion_factors={b_el_ac: self.diesel_genset['parameters']['max_efficiency']},
+            )
+        else:
+            # DISPATCH
+            diesel_genset = solph.Transformer(
+                label="diesel_genset",
+                inputs={b_fuel: solph.Flow()},
+                outputs={
+                    b_el_ac: solph.Flow(
+                        nominal_value=self.diesel_genset['parameters']['nominal_capacity'],
+                        variable_costs=self.diesel_genset['parameters']['variable_cost'],
+                    )
+                },
+                conversion_factors={b_el_ac: self.diesel_genset['parameters']['max_efficiency']},
+            )
 
         self.epc['rectifier'] = self.crf * \
             self.capex_multi_investment(
-                capex_0=self.rectifier['capex'], component_lifetime=self.rectifier['lifetime']) + self.rectifier['opex']
-        rectifier = solph.Transformer(
-            label="rectifier",
-            inputs={
-                b_el_ac: solph.Flow(
-                    nominal_value=None,
-                    investment=solph.Investment(ep_costs=self.epc['rectifier'] * self.n_days / 365),
-                    variable_costs=0,
-                )
-            },
-            outputs={b_el_dc: solph.Flow()},
-            conversion_factor={
-                b_el_dc: self.rectifier['efficiency'],
-            },
-        )
+                capex_0=self.rectifier['parameters']['capex'], component_lifetime=self.rectifier['parameters']['lifetime']) + self.rectifier['parameters']['opex']
+        if self.rectifier['settings']['design'] == True:
+            # DESIGN
+            rectifier = solph.Transformer(
+                label="rectifier",
+                inputs={
+                    b_el_ac: solph.Flow(
+                        nominal_value=None,
+                        investment=solph.Investment(
+                            ep_costs=self.epc['rectifier'] * self.n_days / 365),
+                        variable_costs=0,
+                    )
+                },
+                outputs={b_el_dc: solph.Flow()},
+                conversion_factor={
+                    b_el_dc: self.rectifier['parameters']['efficiency'],
+                },
+            )
+        else:
+            # DISPATCH
+            rectifier = solph.Transformer(
+                label="rectifier",
+                inputs={
+                    b_el_ac: solph.Flow(
+                        nominal_value=self.rectifier['parameters']['nominal_capacity'],
+                        variable_costs=0,
+                    )
+                },
+                outputs={b_el_dc: solph.Flow()},
+                conversion_factor={
+                    b_el_dc: self.rectifier['parameters']['efficiency'],
+                },
+            )
 
         self.epc['inverter'] = self.crf * \
             self.capex_multi_investment(
-                capex_0=self.inverter['capex'], component_lifetime=self.inverter['lifetime']) + self.inverter['opex']
-        inverter = solph.Transformer(
-            label="inverter",
-            inputs={
-                b_el_dc: solph.Flow(
-                    nominal_value=None,
-                    investment=solph.Investment(ep_costs=self.epc['inverter'] * self.n_days / 365),
-                    variable_costs=0,
-                )
-            },
-            outputs={b_el_ac: solph.Flow()},
-            conversion_factor={
-                b_el_ac: self.inverter['efficiency'],
-            },
-        )
+                capex_0=self.inverter['parameters']['capex'], component_lifetime=self.inverter['parameters']['lifetime']) + self.inverter['parameters']['opex']
+        if self.inverter['settings']['design'] == True:
+            # DESIGN
+            inverter = solph.Transformer(
+                label="inverter",
+                inputs={
+                    b_el_dc: solph.Flow(
+                        nominal_value=None,
+                        investment=solph.Investment(
+                            ep_costs=self.epc['inverter'] * self.n_days / 365),
+                        variable_costs=0,
+                    )
+                },
+                outputs={b_el_ac: solph.Flow()},
+                conversion_factor={
+                    b_el_ac: self.inverter['parameters']['efficiency'],
+                },
+            )
+        else:
+            # DISPATCH
+            inverter = solph.Transformer(
+                label="inverter",
+                inputs={
+                    b_el_dc: solph.Flow(
+                        nominal_value=self.inverter['parameters']['nominal_capacity'],
+                        variable_costs=0,
+                    )
+                },
+                outputs={b_el_ac: solph.Flow()},
+                conversion_factor={
+                    b_el_ac: self.inverter['parameters']['efficiency'],
+                },
+            )
         # -------------------- battery --------------------
         self.epc['battery'] = self.crf * \
             self.capex_multi_investment(
-                capex_0=self.battery['capex'], component_lifetime=self.battery['lifetime']) + self.battery['opex']
-        battery = solph.GenericStorage(
-            label="battery",
-            nominal_storage_capacity=None,
-            investment=solph.Investment(ep_costs=self.epc['battery'] * self.n_days / 365),
-            inputs={b_el_dc: solph.Flow(variable_costs=0)},
-            outputs={b_el_dc: solph.Flow(
-                investment=solph.Investment(ep_costs=0))},
-            initial_storage_capacity=0.0,
-            min_storage_level=self.battery['soc_min'],
-            max_storage_level=self.battery['soc_max'],
-            balanced=True,
-            inflow_conversion_factor=self.battery['efficiency'],
-            outflow_conversion_factor=self.battery['efficiency'],
-            invest_relation_input_capacity=self.battery['c_rate_in'],
-            invest_relation_output_capacity=self.battery['c_rate_out'],
-        )
+                capex_0=self.battery['parameters']['capex'], component_lifetime=self.battery['parameters']['lifetime']) + self.battery['parameters']['opex']
+        if self.battery['settings']['design'] == True:
+            # DESIGN
+            battery = solph.GenericStorage(
+                label="battery",
+                nominal_storage_capacity=None,
+                investment=solph.Investment(ep_costs=self.epc['battery'] * self.n_days / 365),
+                inputs={b_el_dc: solph.Flow(variable_costs=0)},
+                outputs={b_el_dc: solph.Flow(
+                    investment=solph.Investment(ep_costs=0))},
+                initial_storage_capacity=0.0,
+                min_storage_level=self.battery['parameters']['soc_min'],
+                max_storage_level=self.battery['parameters']['soc_max'],
+                balanced=True,
+                inflow_conversion_factor=self.battery['parameters']['efficiency'],
+                outflow_conversion_factor=self.battery['parameters']['efficiency'],
+                invest_relation_input_capacity=self.battery['parameters']['c_rate_in'],
+                invest_relation_output_capacity=self.battery['parameters']['c_rate_out'],
+            )
+        else:
+            # DISPATCH
+            battery = solph.GenericStorage(
+                label="battery",
+                nominal_storage_capacity=self.battery['parameters']['nominal_capacity'],
+                inputs={b_el_dc: solph.Flow(variable_costs=0)},
+                outputs={b_el_dc: solph.Flow()},
+                initial_storage_capacity=0.0,
+                min_storage_level=self.battery['parameters']['soc_min'],
+                max_storage_level=self.battery['parameters']['soc_max'],
+                balanced=True,
+                inflow_conversion_factor=self.battery['parameters']['efficiency'],
+                outflow_conversion_factor=self.battery['parameters']['efficiency'],
+                invest_relation_input_capacity=self.battery['parameters']['c_rate_in'],
+                invest_relation_output_capacity=self.battery['parameters']['c_rate_out'],
+            )
 
         # -------------------- SINKS --------------------
         demand_el = solph.Sink(
@@ -1755,7 +1911,7 @@ class EnergySystemOptimizer(Optimizer):
         # hourly profiles for fuel consumption and electricity production in the fuel genset
         # the 'flow' from oemof is in kWh and must be converted to liter
         self.sequences_fuel_consumption = results_fuel_source['sequences'][
-            (('fuel_source', 'fuel'), 'flow')] / self.diesel_genset['fuel_lhv'] / 0.846  # conversion: kWh -> kg -> l
+            (('fuel_source', 'fuel'), 'flow')] / self.diesel_genset['parameters']['fuel_lhv'] / 0.846  # conversion: kWh -> kg -> l
 
         self.sequences_genset = results_diesel_genset['sequences'][
             (('diesel_genset', 'electricity_ac'), 'flow')]
@@ -1783,22 +1939,41 @@ class EnergySystemOptimizer(Optimizer):
             (('electricity_dc', 'excess_sink'), 'flow')]
 
         # -------------------- SCALARS (STATIC) --------------------
-        self.capacity_genset = results_diesel_genset['scalars'][
-            (('diesel_genset', 'electricity_ac'), 'invest')]
-        self.capacity_pv = results_pv['scalars'][(('pv', 'electricity_dc'), 'invest')]
-        self.capacity_inverter = results_inverter['scalars'][(
-            ('electricity_dc', 'inverter'), 'invest')]
-        self.capacity_rectifier = results_rectifier['scalars'][(
-            ('electricity_ac', 'rectifier'), 'invest')]
-        self.capacity_battery = results_battery['scalars'][(
-            ('electricity_dc', 'battery'), 'invest')]
+        if self.diesel_genset['settings']['design'] == True:
+            self.capacity_genset = results_diesel_genset['scalars'][
+                (('diesel_genset', 'electricity_ac'), 'invest')]
+        else:
+            self.capacity_genset = self.diesel_genset['parameters']['nominal_capacity']
+
+        if self.pv['settings']['design'] == True:
+            self.capacity_pv = results_pv['scalars'][(('pv', 'electricity_dc'), 'invest')]
+        else:
+            self.capacity_pv = self.pv['parameters']['nominal_capacity']
+
+        if self.inverter['settings']['design'] == True:
+            self.capacity_inverter = results_inverter['scalars'][(
+                ('electricity_dc', 'inverter'), 'invest')]
+        else:
+            self.capacity_inverter = self.inverter['parameters']['nominal_capacity']
+
+        if self.rectifier['settings']['design'] == True:
+            self.capacity_rectifier = results_rectifier['scalars'][(
+                ('electricity_ac', 'rectifier'), 'invest')]
+        else:
+            self.capacity_rectifier = self.rectifier['parameters']['nominal_capacity']
+
+        if self.battery['settings']['design'] == True:
+            self.capacity_battery = results_battery['scalars'][(
+                ('electricity_dc', 'battery'), 'invest')]
+        else:
+            self.capacity_battery = self.battery['parameters']['nominal_capacity']
 
         self.total_renewable = (self.epc['pv'] * self.capacity_pv + self.epc['inverter'] *
                                 self.capacity_inverter + self.epc['battery'] * self.capacity_battery) * self.n_days / 365
         self.total_non_renewable = (self.epc['diesel_genset'] * self.capacity_genset +
-                                    self.epc['rectifier'] * self.capacity_rectifier) * self.n_days / 365 + self.diesel_genset['variable_cost'] * self.sequences_genset.sum(axis=0)
+                                    self.epc['rectifier'] * self.capacity_rectifier) * self.n_days / 365 + self.diesel_genset['parameters']['variable_cost'] * self.sequences_genset.sum(axis=0)
         self.total_component = self.total_renewable + self.total_non_renewable
-        self.total_fuel = self.diesel_genset['fuel_cost'] * \
+        self.total_fuel = self.diesel_genset['parameters']['fuel_cost'] * \
             self.sequences_fuel_consumption.sum(axis=0)
         self.total_revenue = self.total_component + self.total_fuel
         self.total_demand = self.sequences_demand.sum(axis=0)
