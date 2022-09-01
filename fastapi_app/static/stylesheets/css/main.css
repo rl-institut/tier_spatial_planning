@@ -3994,7 +3994,7 @@ nav.navbar .dropdown-menu li {
 .project-setup.two-columns .right .map {
   margin-left: 0rem;
   width: calc(100% - 1.5rem);
-  height: 150%;
+  height: 120%;
   background-color: #E3EAEE;
 }
 
