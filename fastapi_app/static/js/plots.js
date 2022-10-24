@@ -175,7 +175,7 @@ xhr.onreadystatechange = function () {
                     'Battery discharge',
                     'Battery charge',
                     'DC electricity sent to the inverter',
-                    'DC excess sink',
+                    'DC surplus sink',
                     'AC demand covered by the PV system'],
             color: 'rgb(168, 181, 192)', 
         }
@@ -271,7 +271,7 @@ function makeplot_energy_flows() {
               x: time,
               y: surplus,
               mode: 'lines',
-              name: 'Excess',
+              name: 'Surplus',
               line: {shape: 'vhv'},
               type: 'scatter',
           };
@@ -319,14 +319,14 @@ function makeplot_demand_coverage() {
           // push nodes to the map
           demand_coverage = this.response;
 
-          var time = [], renewable = [], non_renewable = [], demand = [], excess = [];
+          var time = [], renewable = [], non_renewable = [], demand = [], surplus = [];
               
           for (var i=0; i<Object.keys(demand_coverage['demand']).length; i++) {
             time.push( i );
             demand.push( demand_coverage['demand'][i] );
             renewable.push( demand_coverage['renewable'][i] );
             non_renewable.push( demand_coverage['non_renewable'][i] );
-            excess.push( demand_coverage['excess'][i]);
+            surplus.push( demand_coverage['surplus'][i]);
           }
   
           var demandCoverage = document.getElementById("demandCoverage");
@@ -359,11 +359,11 @@ function makeplot_demand_coverage() {
             };
           var trace4 = {
               x: time,
-              y: excess,
+              y: surplus,
               // mode: 'none',
               // fill: 'tonexty',
               stackgroup: 'one',
-              name: 'Excess',
+              name: 'surplus',
           };
         
           var layout = {

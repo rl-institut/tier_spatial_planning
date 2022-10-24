@@ -1673,17 +1673,7 @@ class EnergySystemOptimizer(Optimizer):
         b_el_dc = solph.Bus(label="electricity_dc")
         b_fuel = solph.Bus(label="fuel")
 
-        # -------------------- SOURCES --------------------
-        # fuel density is assumed 0.846 kg/l
-        fuel_cost = (
-            self.diesel_genset["parameters"]["fuel_cost"]
-            / 0.846
-            / self.diesel_genset["parameters"]["fuel_lhv"]
-        )
-        fuel_source = solph.Source(
-            label="fuel_source", outputs={b_fuel: solph.Flow(variable_costs=fuel_cost)}
-        )
-
+        # -------------------- PV --------------------
         self.epc["pv"] = (
             self.crf
             * self.capex_multi_investment(
@@ -1692,8 +1682,15 @@ class EnergySystemOptimizer(Optimizer):
             )
             + self.pv["parameters"]["opex"]
         )
-        # Make decision about optimization strategy of the PV
-        if self.pv["settings"]["design"] == True:
+        # Make decision about different simulation modes of the PV
+        if self.pv["settings"]["is_selected"] == False:
+            pv = solph.Source(
+                label="pv",
+                outputs={
+                    b_el_dc: solph.Flow(nominal_value=0)
+                },
+            )
+        elif self.pv["settings"]["design"] == True:
             # DESIGN
             pv = solph.Source(
                 label="pv",
@@ -1721,7 +1718,17 @@ class EnergySystemOptimizer(Optimizer):
                 },
             )
 
-        # -------------------- TRANSFORMERS --------------------
+        # -------------------- DIESEL GENSET --------------------
+        # fuel density is assumed 0.846 kg/l
+        fuel_cost = (
+            self.diesel_genset["parameters"]["fuel_cost"]
+            / 0.846
+            / self.diesel_genset["parameters"]["fuel_lhv"]
+        )
+        fuel_source = solph.Source(
+            label="fuel_source", outputs={b_fuel: solph.Flow(variable_costs=fuel_cost)}
+        )
+
         # optimize capacity of the fuel generator
         self.epc["diesel_genset"] = (
             self.crf
@@ -1732,7 +1739,15 @@ class EnergySystemOptimizer(Optimizer):
             + self.diesel_genset["parameters"]["opex"]
         )
 
-        if self.diesel_genset["settings"]["design"] == True:
+        if self.diesel_genset["settings"]["is_selected"] == False:
+            diesel_genset = solph.Transformer(
+                label="diesel_genset",
+                inputs={b_fuel: solph.Flow()},
+                outputs={
+                    b_el_ac: solph.Flow(nominal_value=0)
+                },
+            )
+        elif self.diesel_genset["settings"]["design"] == True:
             # DESIGN
             diesel_genset = solph.Transformer(
                 label="diesel_genset",
@@ -1772,6 +1787,7 @@ class EnergySystemOptimizer(Optimizer):
                 },
             )
 
+        # -------------------- RECTIFIER --------------------
         self.epc["rectifier"] = (
             self.crf
             * self.capex_multi_investment(
@@ -1780,7 +1796,16 @@ class EnergySystemOptimizer(Optimizer):
             )
             + self.rectifier["parameters"]["opex"]
         )
-        if self.rectifier["settings"]["design"] == True:
+
+        if self.rectifier["settings"]["is_selected"] == False:
+            rectifier = solph.Transformer(
+                label="rectifier",
+                inputs={
+                    b_el_ac: solph.Flow(nominal_value=0)
+                },
+                outputs={b_el_dc: solph.Flow()},
+            )
+        elif self.rectifier["settings"]["design"] == True:
             # DESIGN
             rectifier = solph.Transformer(
                 label="rectifier",
@@ -1814,6 +1839,7 @@ class EnergySystemOptimizer(Optimizer):
                 },
             )
 
+        # -------------------- INVERTER --------------------
         self.epc["inverter"] = (
             self.crf
             * self.capex_multi_investment(
@@ -1822,7 +1848,16 @@ class EnergySystemOptimizer(Optimizer):
             )
             + self.inverter["parameters"]["opex"]
         )
-        if self.inverter["settings"]["design"] == True:
+
+        if self.inverter["settings"]["is_selected"] == False:
+            inverter = solph.Transformer(
+                label="inverter",
+                inputs={
+                    b_el_dc: solph.Flow(nominal_value=0)
+                },
+                outputs={b_el_ac: solph.Flow()},
+            )
+        elif self.inverter["settings"]["design"] == True:
             # DESIGN
             inverter = solph.Transformer(
                 label="inverter",
@@ -1855,7 +1890,8 @@ class EnergySystemOptimizer(Optimizer):
                     b_el_ac: self.inverter["parameters"]["efficiency"],
                 },
             )
-        # -------------------- battery --------------------
+
+        # -------------------- BATTERY --------------------
         self.epc["battery"] = (
             self.crf
             * self.capex_multi_investment(
@@ -1864,7 +1900,15 @@ class EnergySystemOptimizer(Optimizer):
             )
             + self.battery["parameters"]["opex"]
         )
-        if self.battery["settings"]["design"] == True:
+
+        if self.battery["settings"]["is_selected"] == False:
+            battery = solph.GenericStorage(
+                label="battery",
+                nominal_storage_capacity=0,
+                inputs={b_el_dc: solph.Flow()},
+                outputs={b_el_dc: solph.Flow()},
+            )
+        elif self.battery["settings"]["design"] == True:
             # DESIGN
             battery = solph.GenericStorage(
                 label="battery",
@@ -1904,7 +1948,7 @@ class EnergySystemOptimizer(Optimizer):
                 ],
             )
 
-        # -------------------- SINKS --------------------
+        # -------------------- DEMAND --------------------
         demand_el = solph.Sink(
             label="electricity_demand",
             inputs={
@@ -1916,24 +1960,10 @@ class EnergySystemOptimizer(Optimizer):
             },
         )
 
-        excess_sink = solph.Sink(
-            label="excess_sink",
+        # -------------------- SURPLUS --------------------
+        surplus = solph.Sink(
+            label="surplus",
             inputs={b_el_ac: solph.Flow()},
-        )
-
-        # add all objects to the energy system
-        energy_system.add(
-            pv,
-            fuel_source,
-            b_el_dc,
-            b_el_ac,
-            b_fuel,
-            inverter,
-            rectifier,
-            diesel_genset,
-            battery,
-            demand_el,
-            excess_sink,
         )
 
         # -------------------- SHORTAGE --------------------
@@ -1959,7 +1989,22 @@ class EnergySystemOptimizer(Optimizer):
                     ),
                 },
             )
-        energy_system.add(shortage)
+
+        # add all objects to the energy system
+        energy_system.add(
+            pv,
+            fuel_source,
+            b_el_dc,
+            b_el_ac,
+            b_fuel,
+            inverter,
+            rectifier,
+            diesel_genset,
+            battery,
+            demand_el,
+            surplus,
+            shortage,
+        )
 
         model = solph.Model(energy_system)
 
@@ -1978,24 +2023,24 @@ class EnergySystemOptimizer(Optimizer):
                 model.TIMESTEPS, rule=shortage_per_timestep_rule
             )
 
-        def max_excess_electricity_total_rule(model):
-            max_excess_electricity = 0.05  # fraction
-            expr = 0
-            ## ------- Get generated at t ------- #
-            generated_diesel_genset = sum(model.flow[diesel_genset, b_el_ac, :])
-            generated_pv = sum(model.flow[inverter, b_el_ac, :])
-            ac_to_dc = sum(model.flow[b_el_ac, rectifier, :])
-            generated = generated_diesel_genset + generated_pv - ac_to_dc
-            expr += (generated * max_excess_electricity)
-            ## ------- Get excess at t------- #
-            excess = sum(model.flow[b_el_ac, excess_sink, :])
-            expr += -excess
+        # def max_surplus_electricity_total_rule(model):
+        #     max_surplus_electricity = 0.05  # fraction
+        #     expr = 0
+        #     ## ------- Get generated at t ------- #
+        #     generated_diesel_genset = sum(model.flow[diesel_genset, b_el_ac, :])
+        #     generated_pv = sum(model.flow[inverter, b_el_ac, :])
+        #     ac_to_dc = sum(model.flow[b_el_ac, rectifier, :])
+        #     generated = generated_diesel_genset + generated_pv - ac_to_dc
+        #     expr += (generated * max_surplus_electricity)
+        #     ## ------- Get surplus at t------- #
+        #     surplus_total = sum(model.flow[b_el_ac, surplus, :])
+        #     expr += -surplus_total
 
-            return expr >= 0
+        #     return expr >= 0
 
-        model.max_excess_electricity_total = po.Constraint(
-            rule=max_excess_electricity_total_rule
-        )
+        # model.max_surplus_electricity_total = po.Constraint(
+        #     rule=max_surplus_electricity_total_rule
+        # )
 
         # optimize the energy system
         # gurobi --> 'MipGap': '0.01'
@@ -2028,8 +2073,8 @@ class EnergySystemOptimizer(Optimizer):
         results_demand_el = solph.views.node(
             results=self.results_main, node="electricity_demand"
         )
-        results_excess_sink = solph.views.node(
-            results=self.results_main, node="excess_sink"
+        results_surplus = solph.views.node(
+            results=self.results_main, node="surplus"
         )
         results_shortage = solph.views.node(
             results=self.results_main, node="shortage"
@@ -2079,9 +2124,9 @@ class EnergySystemOptimizer(Optimizer):
             (("rectifier", "electricity_dc"), "flow")
         ]
 
-        # hourly profiles for excess ac and dc electricity production
-        self.sequences_excess = results_excess_sink["sequences"][
-            (("electricity_ac", "excess_sink"), "flow")
+        # hourly profiles for surplus ac and dc electricity production
+        self.sequences_surplus = results_surplus["sequences"][
+            (("electricity_ac", "surplus"), "flow")
         ]
 
         # hourly profiles for shortages in the demand coverage
@@ -2090,35 +2135,45 @@ class EnergySystemOptimizer(Optimizer):
         ]
 
         # -------------------- SCALARS (STATIC) --------------------
-        if self.diesel_genset["settings"]["design"] == True:
+        if self.diesel_genset["settings"]["is_selected"] == False:
+            self.capacity_genset = 0
+        elif self.diesel_genset["settings"]["design"] == True:
             self.capacity_genset = results_diesel_genset["scalars"][
                 (("diesel_genset", "electricity_ac"), "invest")
             ]
         else:
             self.capacity_genset = self.diesel_genset["parameters"]["nominal_capacity"]
 
-        if self.pv["settings"]["design"] == True:
+        if self.pv["settings"]["is_selected"] == False:
+            self.capacity_pv = 0
+        elif self.pv["settings"]["design"] == True:
             self.capacity_pv = results_pv["scalars"][
                 (("pv", "electricity_dc"), "invest")
             ]
         else:
             self.capacity_pv = self.pv["parameters"]["nominal_capacity"]
 
-        if self.inverter["settings"]["design"] == True:
+        if self.inverter["settings"]["is_selected"] == False:
+            self.capacity_inverter = 0
+        elif self.inverter["settings"]["design"] == True:
             self.capacity_inverter = results_inverter["scalars"][
                 (("electricity_dc", "inverter"), "invest")
             ]
         else:
             self.capacity_inverter = self.inverter["parameters"]["nominal_capacity"]
 
-        if self.rectifier["settings"]["design"] == True:
+        if self.rectifier["settings"]["is_selected"] == False:
+            self.capacity_rectifier = 0
+        elif self.rectifier["settings"]["design"] == True:
             self.capacity_rectifier = results_rectifier["scalars"][
                 (("electricity_ac", "rectifier"), "invest")
             ]
         else:
             self.capacity_rectifier = self.rectifier["parameters"]["nominal_capacity"]
 
-        if self.battery["settings"]["design"] == True:
+        if self.battery["settings"]["is_selected"] == False:
+            self.capacity_battery = 0
+        elif self.battery["settings"]["design"] == True:
             self.capacity_battery = results_battery["scalars"][
                 (("electricity_dc", "battery"), "invest")
             ]
@@ -2156,9 +2211,9 @@ class EnergySystemOptimizer(Optimizer):
             / (self.sequences_genset.sum(axis=0) + self.sequences_pv.sum(axis=0))
         )
 
-        self.excess_rate = (
+        self.surplus_rate = (
             100
-            * self.sequences_excess.sum(axis=0)
+            * self.sequences_surplus.sum(axis=0)
             / (self.sequences_genset.sum(axis=0) - self.sequences_rectifier.sum(axis=0) + self.sequences_inverter.sum(axis=0))
         )
         self.genset_to_dc = (
@@ -2175,7 +2230,7 @@ class EnergySystemOptimizer(Optimizer):
         print(40 * "*")
         print(f"LCOE:\t {self.lcoe:.2f} cent/kWh")
         print(f"RES:\t {self.res:.0f}%")
-        print(f"Excess:\t {self.excess_rate:.1f}% of the total production")
+        print(f"Surplus:\t {self.surplus_rate:.1f}% of the total production")
         print(f"Shortage: {self.shortage:.1f}% of the total demand")
         print(f"AC--DC:\t {self.genset_to_dc:.1f}% of the genset production")
         print(40 * "*")
@@ -2185,5 +2240,5 @@ class EnergySystemOptimizer(Optimizer):
         print(f"inv:\t {self.capacity_inverter:.0f} kW")
         print(f"rect:\t {self.capacity_rectifier:.0f} kW")
         print(f"peak:\t {self.sequences_demand.max():.0f} kW")
-        print(f"excess:\t {self.sequences_excess.max():.0f} kW")
+        print(f"surplus:\t {self.sequences_surplus.max():.0f} kW")
         print(40 * "*")

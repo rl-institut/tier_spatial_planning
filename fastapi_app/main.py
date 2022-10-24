@@ -249,7 +249,7 @@ async def database_initialization(nodes, links):
         "lcoe",
         "res",
         "co2_savings",
-        "excess_share",
+        "surplus_rate",
         "cost_renewable_assets",
         "cost_non_renewable_assets",
         "cost_fuel",
@@ -287,7 +287,7 @@ async def database_initialization(nodes, links):
         "demand",
         "renewable",
         "non-renewable",
-        "excess"
+        "surplus"
     ]
     header_duration_curves = [
         "diesel_genset_percentage",
@@ -433,7 +433,7 @@ async def load_results():
     results['lcoe'] = str(df.loc[0, 'lcoe']) + ' c/kWh'
     results['res'] = str(df.loc[0, 'res']) + ' %'
     results['co2_savings'] = str(df.loc[0, 'co2_savings']) + ' t/a'
-    results['excess_share'] = str(df.loc[0, 'excess_share']) + ' %'
+    results['surplus_rate'] = str(df.loc[0, 'surplus_rate']) + ' %'
     results['solver'] = str(df.loc[0, 'solver']).title()
     results['grid_optimization'] = str(df.loc[0, 'grid_optimization'])
     results['time'] = str(df.loc[0, 'time']) + ' s'
@@ -929,14 +929,14 @@ async def optimize_energy_system(optimize_energy_system_request: models.Optimize
                                df.loc[0, 'cost_grid']) / ensys_opt.total_demand
     df.loc[0, 'res'] = ensys_opt.res
     df.loc[0, 'co2_savings'] = co2_savings
-    df.loc[0, 'excess_share'] = ensys_opt.excess_rate
+    df.loc[0, 'surplus_rate'] = ensys_opt.surplus_rate
     df.loc[0, 'pv_capacity'] = ensys_opt.capacity_pv
     df.loc[0, 'battery_capacity'] = ensys_opt.capacity_battery
     df.loc[0, 'inverter_capacity'] = ensys_opt.capacity_inverter
     df.loc[0, 'rectifier_capacity'] = ensys_opt.capacity_rectifier
     df.loc[0, 'diesel_genset_capacity'] = ensys_opt.capacity_genset
     df.loc[0, 'peak_demand'] = ensys_opt.demand_peak
-    df.loc[0, 'surplus'] = ensys_opt.sequences_excess.max()
+    df.loc[0, 'surplus'] = ensys_opt.sequences_surplus.max()
     # data for sankey diagram - all in MWh
     df.loc[0, 'fuel_to_diesel_genset'] = ensys_opt.sequences_fuel_consumption.sum() * 0.846 * \
         ensys_opt.diesel_genset['parameters']['fuel_lhv'] / 1000
@@ -950,7 +950,7 @@ async def optimize_energy_system(optimize_energy_system_request: models.Optimize
     df.loc[0, 'dc_bus_to_battery'] = ensys_opt.sequences_battery_charge.sum() / 1000
     df.loc[0, 'dc_bus_to_inverter'] = ensys_opt.sequences_inverter.sum() / \
         ensys_opt.inverter['parameters']['efficiency'] / 1000
-    df.loc[0, 'dc_bus_to_surplus'] = ensys_opt.sequences_excess.sum() / 1000
+    df.loc[0, 'dc_bus_to_surplus'] = ensys_opt.sequences_surplus.sum() / 1000
     df.loc[0, 'inverter_to_demand'] = ensys_opt.sequences_inverter.sum() / 1000
     df.loc[0, 'solver'] = ensys_opt.solver
     # Grab Currrent Time After Running the Code
@@ -966,7 +966,7 @@ async def optimize_energy_system(optimize_energy_system_request: models.Optimize
     df.loc[:, 'battery_discharge'] = ensys_opt.sequences_battery_discharge
     df.loc[:, 'battery_content'] = ensys_opt.sequences_battery_content
     df.loc[:, 'demand'] = ensys_opt.sequences_demand
-    df.loc[:, 'surplus'] = ensys_opt.sequences_excess
+    df.loc[:, 'surplus'] = ensys_opt.sequences_surplus
     df.to_csv(full_path_energy_flows, index=True, index_label='time', float_format='%.3f')
 
     # store demand coverage
@@ -974,7 +974,7 @@ async def optimize_energy_system(optimize_energy_system_request: models.Optimize
     df.loc[:, 'demand'] = ensys_opt.sequences_demand
     df.loc[:, 'renewable'] = ensys_opt.sequences_inverter
     df.loc[:, 'non_renewable'] = ensys_opt.sequences_genset
-    df.loc[:, 'excess'] = ensys_opt.sequences_excess
+    df.loc[:, 'surplus'] = ensys_opt.sequences_surplus
     df.to_csv(full_path_demand_coverage, index=False, float_format='%.3f')
 
     # store duration curves
