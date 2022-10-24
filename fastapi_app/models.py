@@ -1,5 +1,5 @@
 from sqlalchemy import Boolean, Column, Integer, String, Numeric
-#from sqlalchemy.orm import relationship
+# from sqlalchemy.orm import relationship
 from pydantic import BaseModel
 from fastapi_app.database import Base
 from typing import List, Dict, Union
@@ -82,6 +82,7 @@ class OptimizeEnergySystemRequest(BaseModel):
     battery: Dict[str, Union[Dict[str, bool], Dict[str, float]]]
     inverter: Dict[str, Union[Dict[str, bool], Dict[str, float]]]
     rectifier: Dict[str, Union[Dict[str, bool], Dict[str, float]]]
+    shortage: Dict[str, Union[Dict[str, bool], Dict[str, float]]]
     # path_data: str
 
 

@@ -35,7 +35,7 @@
     <title>Simulation Results</title>
   </head>
   <body
-    onload="refreshBlocksOnDiagramOnLoad();check_box_visibility('constraints');"
+    onload="refreshBlocksOnDiagramOnLoad();check_box_visibility('shortage');"
   >
     <nav class="navbar navbar-expand-lg navbar-light bg-light navbar--scenario">
       <div class="container-fluid">
@@ -353,6 +353,9 @@
                     >
                       Demand
                     </text>
+                    <text id="informationDemand" dominant-baseline="bottom">
+                      100% covered
+                    </text>
                   </g>
                   <!-- SHORTAGE -->
                   <g id="groupShortage" visibility="hidden">
@@ -372,6 +375,10 @@
                     </text>
                     <text
                       id="informationShortage"
+                      dominant-baseline="bottom"
+                    ></text>
+                    <text
+                      id="informationShortageSecondLine"
                       dominant-baseline="bottom"
                     ></text>
                   </g>
@@ -1088,85 +1095,78 @@
                   </div>
                 </div>
               </div>
-              <div class="box box--tiny" id="selectConstraintsBox">
+              <div class="box box--tiny" id="selectShortageBox">
                 <div class="box__header">
                   <form class="was-validated">
                     <div class="form-check">
                       <input
                         type="checkbox"
                         class="form-check-input"
-                        id="selectConstraints"
+                        id="selectShortage"
                         required
-                        onclick="check_box_visibility('constraints');refreshBlocksOnDiagram('shortage');refreshBlocksOnDiagram('surplus');"
+                        onclick="check_box_visibility('shortage');refreshBlocksOnDiagram('shortage');"
                       />
-                      <label class="form-check-label" for="selectConstraints"
-                        >Constraints</label
+                      <label class="form-check-label" for="selectShortage"
+                        >Shortage</label
                       >
                     </div>
                   </form>
                 </div>
                 <div class="row">
-                  <div class="col-2">
-                    <div class="form-switch">
-                      <input
-                        class="form-check-input"
-                        type="checkbox"
-                        id="constraintsMaxShortageCheckbox"
-                        checked
-                        onclick="refreshBlocksOnDiagram('shortage');"
-                      />
-                    </div>
-                  </div>
-                  <div class="col-10">
-                    <div class="input-group">
-                      <span class="input-group-text">Maximum Shortage</span>
-                      <input
-                        type="number"
-                        class="form-control"
-                        id="constraintsMaxShortage"
-                        value="10"
-                        required
-                        onChange="styleInformation('shortage');"
-                      />
-                      <span
-                        id="constraintsMaxShortageUnit"
-                        class="input-group-text"
-                        >%</span
-                      >
-                    </div>
+                  <div class="input-group">
+                    <span class="input-group-text">Maximum Total Shortage</span>
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="maxShortageTotal"
+                      value="10"
+                      required
+                      onChange="styleInformation('shortage');"
+                    />
+                    <span id="maxShortageTotalUnit" class="input-group-text"
+                      >%</span
+                    >
                   </div>
                 </div>
                 <div class="row">
-                  <div class="col-2">
-                    <div class="form-switch">
-                      <input
-                        class="form-check-input"
-                        type="checkbox"
-                        id="constraintsMaxSurplusCheckbox"
-                        onclick="refreshBlocksOnDiagram('surplus');"
-                      />
-                    </div>
-                  </div>
-                  <div class="col-10">
-                    <div class="input-group">
-                      <span class="input-group-text">Maximum Surplus</span>
-                      <input
-                        type="number"
-                        class="form-control"
-                        id="constraintsMaxSurplus"
-                        value="5"
-                        required
-                        onChange="styleInformation('surplus');"
-                      />
-                      <span
-                        id="constraintsMaxSurplusUnit"
-                        class="input-group-text"
-                        >%</span
-                      >
-                    </div>
+                  <div class="input-group">
+                    <span class="input-group-text"
+                      >Maximum Shortage Each Timestep</span
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="maxShortageTimestep"
+                      value="20"
+                      required
+                      onChange="styleInformation('shortage');"
+                    />
+                    <span
+                      id="constraintsMaxSurplusUnit"
+                      class="input-group-text"
+                      >%</span
+                    >
                   </div>
                 </div>
                 <div class="row">
+                  <div class="input-group">
+                    <span class="input-group-text">Shortage Penalty Cost</span>
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="shortagePenaltyCost"
+                      value="0.4"
+                      required
+                      onChange="styleInformation('shortage');"
+                    />
+                    <span
+                      id="constraintsMaxSurplusUnit"
+                      class="input-group-text"
+                      >USD/kWh</span
+                    >
+                  </div>
+                </div>
+                <!-- <div class="row">
                   <div class="col-2">
                     <div class="form-switch">
                       <input
@@ -1179,7 +1179,7 @@
                   <div class="col-10">
                     <div class="input-group">
                       <span class="input-group-text"
-                        >Minimum Renwable Share</span
+                        >Max. Surplus Electricity</span
                       >
                       <input
                         type="number"
@@ -1191,7 +1191,7 @@
                       <span class="input-group-text">%</span>
                     </div>
                   </div>
-                </div>
+                </div> -->
               </div>
             </div>
           </div>

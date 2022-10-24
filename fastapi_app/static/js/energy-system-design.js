@@ -63,11 +63,8 @@ function check_box_visibility(component) {
             'rectifierNominalCapacity', 'rectifierLifetime', 'rectifierCapex', 'rectifierOpex',
             'rectifierEfficiency',
         ],
-        'constraints':[
-            'selectConstraints', 'selectConstraintsBox', 
-            'constraintsMaxShortageCheckbox', 'constraintsMaxShortage', 
-            'constraintsMaxSurplusCheckbox', 'constraintsMaxSurplus',
-            'constraintsMinResCheckbox', 'constraintsMinRes'
+        'shortage':[
+            'selectShortage', 'selectShortageBox', 'maxShortageTotal', 'maxShortageTimestep', 'shortagePenaltyCost'
         ]
     };
     number_of_properties = component_specifications[component].length;
@@ -96,12 +93,13 @@ function refreshBlocksOnDiagramOnLoad(){
         'inverter', 
         'rectifier',
         'shortage',
-        'surplus',
+        // 'surplus',
     ];
 
     for (let i=0; i<component.length; i++) {
         refreshBlocksOnDiagram(component[i]);
-        if (component[i] !== 'shortage' && component [i] !== 'surplus'){
+        if (component[i] !== 'shortage'){
+        // if (component[i] !== 'shortage' && component [i] !== 'surplus'){
             check_box_visibility(component[i]);
             check_optimization_strategy(component[i]);
         };
@@ -140,7 +138,8 @@ function styleBlock(id) {
 
     if (id === 'demand') {
         block.classList.add('components-block--demand');
-    } else if (id === 'shortage' || id === 'surplus') {
+    } else if (id === 'shortage') {
+    // } else if (id === 'shortage' || id === 'surplus') {
         block.classList.add('components-block--constraints');
     } else if (document.getElementById(id+"Design").checked) {
         block.classList.remove('components-block--dispatch');
@@ -164,10 +163,15 @@ function writeText(id, x, y) {
 
 function writeInformation(id, x, y) {
     const information = document.getElementById("information"+toTitleCase(id));
-
+    
     if (id !== 'demand') {
         information.setAttribute('x', x);
         information.setAttribute('y', y);
+        if (id == 'shortage'){
+            const informationSecondLine = document.getElementById("information"+toTitleCase(id)+"SecondLine");
+            informationSecondLine.setAttribute('x', x);
+            informationSecondLine.setAttribute('y', 0.9*y);
+        }
     }
 }
 
@@ -176,7 +180,8 @@ function styleText(id) {
 
     if (id === 'demand') {
         text.classList.add('components-text--demand');
-    } else if (id === 'shortage' || id === 'surplus') {
+    } else if (id === 'shortage') {
+    // } else if (id === 'shortage' || id === 'surplus') {
         text.classList.add('components-text--constraints');
     } else if (document.getElementById(id+"Design").checked) {
         text.classList.remove('components-text--dispatch');
@@ -191,12 +196,17 @@ function styleText(id) {
 function styleInformation(id) {
     const information = document.getElementById("information"+toTitleCase(id));
     if (id === 'demand') {
-
-    } else if (id === 'shortage' || id === 'surplus') {
-        const percentage = document.getElementById("constraintsMax"+toTitleCase(id)).value;
-        const unit = document.getElementById("constraintsMax"+toTitleCase(id)+"Unit").innerText;
-        information.textContent="maximum " + percentage + unit;
+        
+    } else if (id === 'shortage') {
+        // } else if (id === 'shortage' || id === 'surplus') {
+        const informationSecondLine = document.getElementById("information"+toTitleCase(id)+"SecondLine");
+        const percentageTotal = document.getElementById("max"+toTitleCase(id)+"Total").value;
+        const percentageTimestep = document.getElementById("max"+toTitleCase(id)+"Timestep").value;
+        const unit = document.getElementById("max"+toTitleCase(id)+"TotalUnit").innerText;
+        information.textContent="max. each timestep " + percentageTimestep + unit;
+        informationSecondLine.textContent="max. total " + percentageTotal + unit;
         information.classList.add('components-information--constraints');
+        informationSecondLine.classList.add('components-information--constraints');
     } else if (document.getElementById(id+"Design").checked) {
         information.textContent="design";
         information.classList.remove('components-information--dispatch');
@@ -238,7 +248,8 @@ function styleLine(id){
 
     if (id === 'demand') {
         line1.classList.add('components-flow--demand');
-    } else if (id === 'shortage' || id === 'surplus') {
+    } else if (id === 'shortage') {
+    // } else if (id === 'shortage' || id === 'surplus') {
         line1.classList.add('components-flow--constraints');
     } else if (document.getElementById(id+"Design").checked) {
         line1.classList.remove('components-flow--dispatch');
@@ -297,9 +308,9 @@ function styleArrow(id){
     } else if (id === 'shortage') {        
         $(arrowIn1).attr("visibility", "hidden");
         arrowOut1.classList.add('components-flow--constraints');
-    } else if (id === 'surplus') {        
-        $(arrowOut1).attr("visibility", "hidden");
-        arrowIn1.classList.add('components-flow--constraints');
+    // } else if (id === 'surplus') {        
+    //     $(arrowOut1).attr("visibility", "hidden");
+    //     arrowIn1.classList.add('components-flow--constraints');
     } else if (document.getElementById(id+"Design").checked) {
         if (id === 'pv' || id === 'dieselGenset' || id === 'shortage'){
             $(arrowIn1).attr("visibility", "hidden");
@@ -438,9 +449,10 @@ function refreshBlocksOnDiagram(id){
 
     if (id === 'demand') {
         var isSelected = true;
-    } else if (id === 'shortage' || id === 'surplus') {
-        if (document.getElementById("selectConstraints").checked){
-            var isSelected = document.getElementById("constraintsMax"+toTitleCase(id)+"Checkbox").checked;
+    } else if (id === 'shortage') {
+    // } else if (id === 'shortage' || id === 'surplus') {
+        if (document.getElementById("selectShortage").checked){
+            var isSelected = document.getElementById("select"+toTitleCase(id)).checked;
         } else {
             var isSelected = false;
         }
@@ -471,11 +483,11 @@ function refreshBlocksOnDiagram(id){
         },
         'shortage': {
             'x': xLeft+ 2 * widthBlock + 4 * lengthFlow + 2 * widthBus,
-            'y': yTop - heightBlock,
+            'y': yTop + 0.5 * heightBlock,
         },
         'demand': {
             'x': xLeft+ 2 * widthBlock + 4 * lengthFlow + 2 * widthBus,
-            'y': yTop - heightBlock + 2.5 * heightBlock,
+            'y': yTop - heightBlock + 3.5 * heightBlock,
         },
         'surplus': {
             'x': xLeft+ 2 * widthBlock + 4 * lengthFlow + 2 * widthBus,
@@ -506,7 +518,7 @@ function refreshBlocksOnDiagram(id){
             y=blockCoordinates[id].y + 0.5 * heightBlock
         )
         styleText(id);
-
+        
         writeInformation(
             id=id,
             x=blockCoordinates[id].x,
@@ -518,7 +530,8 @@ function refreshBlocksOnDiagram(id){
         /***********************/
         /*   LINES AND ARROWS  */
         /***********************/
-        if (id === 'demand' || id === 'surplus' || id === 'shortage') {
+        if (id === 'demand' || id === 'shortage') {
+        // if (id === 'demand' || id === 'surplus' || id === 'shortage') {
             lineCorrectionWidthBlock = 0;
             lineCorrectionLengthFlow = -1;
         } else {

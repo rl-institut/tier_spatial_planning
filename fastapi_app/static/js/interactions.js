@@ -369,7 +369,17 @@ function optimize_energy_system() {
                     'opex': rectifierOpex.value, 
                     'efficiency': rectifierEfficiency.value/100
                 },
-            }
+            },
+            shortage: {
+                'settings': {
+                    'is_selected': selectShortage.checked,
+                },
+                'parameters': {
+                    'max_shortage_total': maxShortageTotal.value/100,
+                    'max_shortage_timestep': maxShortageTimestep.value/100,
+                    'shortage_penalty_cost': shortagePenaltyCost.value
+                },
+            },
         }),
         dataType: "json",
     });

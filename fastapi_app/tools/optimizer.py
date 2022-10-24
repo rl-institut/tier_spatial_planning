@@ -1,10 +1,6 @@
-
-from sys import float_repr_style
 import numpy as np
 import pandas as pd
-import random
 import os
-import copy
 import time
 import json
 from k_means_constrained import KMeansConstrained
@@ -19,6 +15,7 @@ from fastapi_app.tools.grids import Grid
 
 import oemof.solph as solph
 from datetime import datetime, timedelta
+import pyomo.environ as po
 
 
 class Optimizer:
@@ -26,12 +23,9 @@ class Optimizer:
     This is a general parent class for both grid and energy system optimizers
     """
 
-    def __init__(self,
-                 start_date='2021-01-01',
-                 n_days=365,
-                 project_lifetime=20,
-                 wacc=0.1,
-                 tax=0):
+    def __init__(
+        self, start_date="2021-01-01", n_days=365, project_lifetime=20, wacc=0.1, tax=0
+    ):
         """
         Initialize the grid optimizer object
         """
@@ -41,8 +35,9 @@ class Optimizer:
         self.wacc = wacc
         self.tax = tax
 
-        self.crf = (self.wacc * (1 + self.wacc) ** self.project_lifetime) / \
-            ((1 + self.wacc) ** self.project_lifetime - 1)
+        self.crf = (self.wacc * (1 + self.wacc) ** self.project_lifetime) / (
+            (1 + self.wacc) ** self.project_lifetime - 1
+        )
 
     def capex_multi_investment(self, capex_0, component_lifetime):
         """
@@ -56,7 +51,9 @@ class Optimizer:
         if self.project_lifetime == component_lifetime:
             number_of_investments = 1
         else:
-            number_of_investments = int(round(self.project_lifetime / component_lifetime + 0.5))
+            number_of_investments = int(
+                round(self.project_lifetime / component_lifetime + 0.5)
+            )
 
         first_time_investment = capex_0 * (1 + self.tax)
 
@@ -94,7 +91,9 @@ class GridOptimizer(Optimizer):
     ???
     """
 
-    def __init__(self, start_date, n_days, project_lifetime, wacc, tax, mst_algorithm="Kruskal"):
+    def __init__(
+        self, start_date, n_days, project_lifetime, wacc, tax, mst_algorithm="Kruskal"
+    ):
         """
         Initialize the grid optimizer object
         """
@@ -124,21 +123,22 @@ class GridOptimizer(Optimizer):
 
         # calculate the number of clusters and their labels obtained from kmeans clustering
         n_clusters = grid.poles().shape[0]
-        cluster_labels = grid.poles()['cluster_label']
+        cluster_labels = grid.poles()["cluster_label"]
 
         # create links between each node and the corresponding centroid
         for cluster in range(n_clusters):
             # first filter the nodes and only select those with cluster labels equal to 'cluster'
-            filtered_nodes = grid.nodes[grid.nodes['cluster_label'] == cluster_labels[cluster]]
+            filtered_nodes = grid.nodes[
+                grid.nodes["cluster_label"] == cluster_labels[cluster]
+            ]
 
             # then obtain the label of the pole which is in this cluster (as the center)
-            pole_label = filtered_nodes.index[filtered_nodes['node_type'] == 'pole'][0]
+            pole_label = filtered_nodes.index[filtered_nodes["node_type"] == "pole"][0]
 
             for node_label in filtered_nodes.index:
                 # adding consumers
                 if node_label != pole_label:
-                    grid.add_links(
-                        label_node_from=pole_label, label_node_to=node_label)
+                    grid.add_links(label_node_from=pole_label, label_node_to=node_label)
 
         # ===== SECOND PART: CONNECT POLES TO EACH OTHER =====
 
@@ -192,62 +192,59 @@ class GridOptimizer(Optimizer):
         # create list to keep track of nodes that have already been added
         # to the forest
 
-        for segment in grid.get_poles()['segment'].unique():
+        for segment in grid.get_poles()["segment"].unique():
             # Create dataframe containing the poles from the segment
             # and add temporary column to keep track of wheter the
             # pole has already been added to the forest or not
-            poles = grid.get_poles()[grid.get_poles()['segment'] == segment]
-            poles['in_forest'] = [False] * poles.shape[0]
+            poles = grid.get_poles()[grid.get_poles()["segment"] == segment]
+            poles["in_forest"] = [False] * poles.shape[0]
 
             # Makes sure that there are at least two poles in segment
-            if poles[- (poles['in_forest'])].shape[0] > 0:
+            if poles[-(poles["in_forest"])].shape[0] > 0:
                 # First, pick one pole and add it to the forest by
                 # setting its value in 'in_forest' to True
-                index_first_forest_pole = poles[- poles['in_forest']].index[0]
-                poles.at[index_first_forest_pole, 'in_forest'] = True
+                index_first_forest_pole = poles[-poles["in_forest"]].index[0]
+                poles.at[index_first_forest_pole, "in_forest"] = True
 
                 # while there are poles not connected to the forest,
                 # find nereast pole to the forest and connect it to the forest
-                count = 0    # safety parameter to avoid staying stuck in loop
-                while len(poles[- poles['in_forest']]) and\
-                        count < poles.shape[0]:
+                count = 0  # safety parameter to avoid staying stuck in loop
+                while len(poles[-poles["in_forest"]]) and count < poles.shape[0]:
 
                     # create variables to compare poles distances and store best
                     # candidates
-                    shortest_dist_to_pole_outside_forest = (
-                        grid.distance_between_nodes(
-                            poles[poles['in_forest']].index[0],
-                            poles[- poles['in_forest']].index[0])
+                    shortest_dist_to_pole_outside_forest = grid.distance_between_nodes(
+                        poles[poles["in_forest"]].index[0],
+                        poles[-poles["in_forest"]].index[0],
                     )
-                    index_closest_pole_in_forest = (
-                        poles[poles['in_forest']].index[0]
-                    )
-                    index_closest_pole_to_forest = poles[- poles['in_forest']].index[0]
+                    index_closest_pole_in_forest = poles[poles["in_forest"]].index[0]
+                    index_closest_pole_to_forest = poles[-poles["in_forest"]].index[0]
 
                     # Iterate over all poles within the forest and over all the
                     # ones outside of the forest and find shortest distance
-                    for index_pole_in_forest, row_forest_pole in\
-                            poles[poles['in_forest']].iterrows():
-                        for (index_pole_outside_forest,
-                             row_pole_outside_forest) in (
-                            poles[- poles['in_forest']].iterrows()
-                        ):
+                    for index_pole_in_forest, row_forest_pole in poles[
+                        poles["in_forest"]
+                    ].iterrows():
+                        for (
+                            index_pole_outside_forest,
+                            row_pole_outside_forest,
+                        ) in poles[-poles["in_forest"]].iterrows():
                             if grid.distance_between_nodes(
-                                    index_pole_in_forest,
-                                    index_pole_outside_forest) <= (
-                                    shortest_dist_to_pole_outside_forest
-                            ):
-                                index_closest_pole_in_forest = (
-                                    index_pole_in_forest
-                                )
+                                index_pole_in_forest, index_pole_outside_forest
+                            ) <= (shortest_dist_to_pole_outside_forest):
+                                index_closest_pole_in_forest = index_pole_in_forest
                                 index_closest_pole_to_forest = index_pole_outside_forest
-                                shortest_dist_to_pole_outside_forest = grid.distance_between_nodes(
-                                    index_closest_pole_in_forest,
-                                    index_closest_pole_to_forest)
+                                shortest_dist_to_pole_outside_forest = (
+                                    grid.distance_between_nodes(
+                                        index_closest_pole_in_forest,
+                                        index_closest_pole_to_forest,
+                                    )
+                                )
                     # create a link between pole pair
-                    grid.add_links(index_closest_pole_in_forest,
-                                   index_closest_pole_to_forest)
-                    poles.at[index_closest_pole_to_forest, 'in_forest'] = True
+                    grid.add_links(
+                        index_closest_pole_in_forest, index_closest_pole_to_forest
+                    )
+                    poles.at[index_closest_pole_to_forest, "in_forest"] = True
                     count += 1
 
     def mst_using_kruskal(self, grid: Grid):
@@ -272,8 +269,7 @@ class GridOptimizer(Optimizer):
                 # since the graph does not have a direction, only the upper part of the matrix must be flled
                 if j > i:
                     graph_matrix[i, j] = grid.distance_between_nodes(
-                        label_node_1=poles.index[i],
-                        label_node_2=poles.index[j]
+                        label_node_1=poles.index[i], label_node_2=poles.index[j]
                     )
 
         # obtain the optimal links between all poles (grid_mst) and copy it in the grid object
@@ -294,28 +290,32 @@ class GridOptimizer(Optimizer):
         """
 
         # Iterate over all segment containing poles
-        for segment in grid.get_poles()['segment'].unique():
+        for segment in grid.get_poles()["segment"].unique():
             # Iterate over all consumers and connect each of them
             # to the closest pole or powerhub in the segment
-            for index_node, row_node in\
-                    grid.consumers()[
-                        grid.consumers()['segment']
-                        == segment].iterrows():
+            for index_node, row_node in grid.consumers()[
+                grid.consumers()["segment"] == segment
+            ].iterrows():
                 # This variable is a temporary variable that is used to find
                 # the nearest meter pole to a node
-                index_closest_pole = grid.get_poles()[grid.get_poles()['segment']
-                                                      == segment].index[0]
-                shortest_dist_to_pole = grid.distance_between_nodes(index_node,
-                                                                    index_closest_pole)
-                for index_pole, row_pole in\
-                        grid.get_poles()[grid.get_poles()['segment']
-                                         == segment].iterrows():
+                index_closest_pole = grid.get_poles()[
+                    grid.get_poles()["segment"] == segment
+                ].index[0]
+                shortest_dist_to_pole = grid.distance_between_nodes(
+                    index_node, index_closest_pole
+                )
+                for index_pole, row_pole in grid.get_poles()[
+                    grid.get_poles()["segment"] == segment
+                ].iterrows():
                     # Store which pole is the clostest and what the
                     # distance to it is
-                    if grid.distance_between_nodes(index_node, index_pole)\
-                            < shortest_dist_to_pole:
-                        shortest_dist_to_pole = grid.distance_between_nodes(index_node,
-                                                                            index_pole)
+                    if (
+                        grid.distance_between_nodes(index_node, index_pole)
+                        < shortest_dist_to_pole
+                    ):
+                        shortest_dist_to_pole = grid.distance_between_nodes(
+                            index_node, index_pole
+                        )
                         index_closest_pole = index_pole
                 # Finally add the link to the grid
                 grid.add_links(index_node, index_closest_pole)
@@ -334,12 +334,11 @@ class GridOptimizer(Optimizer):
             Grid object.
         """
 
-        for segment in grid.get_poles()['segment'].unique():
-            poles_in_segment = grid.get_poles()[grid.get_poles()['segment']
-                                                == segment]
+        for segment in grid.get_poles()["segment"].unique():
+            poles_in_segment = grid.get_poles()[grid.get_poles()["segment"] == segment]
             consumers_in_segment = grid.consumers()[
-                grid.consumers()['segment']
-                == segment]
+                grid.consumers()["segment"] == segment
+            ]
             num_consumers = consumers_in_segment.shape[0]
             segment_pole_capacity = grid.get_segment_pole_capacity(segment)
 
@@ -347,25 +346,30 @@ class GridOptimizer(Optimizer):
             # all the consumers to the grid
             if segment_pole_capacity < num_consumers:
                 raise Exception(
-                    'pole capacity only allows '
+                    "pole capacity only allows "
                     + str(segment_pole_capacity)
-                    + ' consumers to be connected to poles of segment '
-                    + str(segment) + ', but there are '
+                    + " consumers to be connected to poles of segment "
+                    + str(segment)
+                    + ", but there are "
                     + str(num_consumers)
-                    + ' consumers in the segment')
+                    + " consumers in the segment"
+                )
             else:
                 # Create matrix containing the distances between the
                 # consumers and the hus
                 distance_matrix = []
                 index_list = []
                 for pole in poles_in_segment.index:
-                    for allocation_slot in range(grid.get_poles()[
-                            'allocation_capacity'][pole]):
+                    for allocation_slot in range(
+                        grid.get_poles()["allocation_capacity"][pole]
+                    ):
                         distance_list = [
                             grid.distance_between_nodes(pole, consumer)
-                            for consumer in consumers_in_segment.index]
-                        distance_list.extend([0] * (segment_pole_capacity
-                                                    - num_consumers))
+                            for consumer in consumers_in_segment.index
+                        ]
+                        distance_list.extend(
+                            [0] * (segment_pole_capacity - num_consumers)
+                        )
                         distance_matrix.append(distance_list)
                         index_list.append(pole)
                 # Call munkres_sol function for solveing allocation problem
@@ -375,8 +379,8 @@ class GridOptimizer(Optimizer):
                 for x in indices:
                     if x[1] < consumers_in_segment.shape[0]:
                         grid.add_links(
-                            index_list[x[0]],
-                            consumers_in_segment.index[int(x[1])])
+                            index_list[x[0]], consumers_in_segment.index[int(x[1])]
+                        )
 
     # --------------------- SEGMENTATION ---------------------#
 
@@ -400,20 +404,14 @@ class GridOptimizer(Optimizer):
             index (label) of the segment to be set for the nodes.
 
         """
-        for index_neighbour in grid.links()[(grid.links()['from']
-                                             == index)]['to']:
-            if not grid.get_nodes()['segment'][index_neighbour] == segment:
+        for index_neighbour in grid.links()[(grid.links()["from"] == index)]["to"]:
+            if not grid.get_nodes()["segment"][index_neighbour] == segment:
                 grid.set_segment(index_neighbour, segment)
-                self.propagate_segment_to_neighbours(grid,
-                                                     index_neighbour,
-                                                     segment)
-        for index_neighbour in grid.links()[(grid.links()['to']
-                                             == index)]['from']:
-            if not grid.get_nodes()['segment'][index_neighbour] == segment:
+                self.propagate_segment_to_neighbours(grid, index_neighbour, segment)
+        for index_neighbour in grid.links()[(grid.links()["to"] == index)]["from"]:
+            if not grid.get_nodes()["segment"][index_neighbour] == segment:
                 grid.set_segment(index_neighbour, segment)
-                self.propagate_segment_to_neighbours(grid,
-                                                     index_neighbour,
-                                                     segment)
+                self.propagate_segment_to_neighbours(grid, index_neighbour, segment)
 
     def split_segment(self, grid: Grid, segment, min_segment_size):
         """
@@ -443,23 +441,23 @@ class GridOptimizer(Optimizer):
             property of the node to the ones identified earlier
         """
         # make sure that segment index matches a node segment
-        if segment not in grid.get_nodes()['segment'].unique():
-            raise Warning(
-                "the segment index doesn't correspond to any grid segment")
+        if segment not in grid.get_nodes()["segment"].unique():
+            raise Warning("the segment index doesn't correspond to any grid segment")
             return
 
         # make sure that the initial segment is big enough to be split into
         # two subsegments of size at least min_segment_size
-        if grid.get_nodes()[grid.get_nodes()['segment']
-                            == segment].shape[0] < 2 * min_segment_size:
+        if (
+            grid.get_nodes()[grid.get_nodes()["segment"] == segment].shape[0]
+            < 2 * min_segment_size
+        ):
             return
 
         # Store grid's nodes in dataframe since the actual grid is modified
         # during method
         node_backup = grid.get_nodes()
         # filter nodes to keep only the ones belongging to the initial segment
-        grid.set_nodes(grid.get_nodes()[grid.get_nodes()['segment']
-                                        == segment])
+        grid.set_nodes(grid.get_nodes()[grid.get_nodes()["segment"] == segment])
         # changes all nodes into poles
         grid.set_all_node_type_to_poles()
         # Connect the nodes using MST
@@ -469,40 +467,40 @@ class GridOptimizer(Optimizer):
 
         # Create list containing links index sorted by link's distance
         index_link_sorted_by_distance = [
-            index for index in grid.links()[
-                'distance'
-            ].nlargest(grid.links().shape[0]).index]
+            index
+            for index in grid.links()["distance"].nlargest(grid.links().shape[0]).index
+        ]
         # Try to split the segment removing the longest link and see if
         # resulting sub-segments meet the minimum size criterion, if not,
         # try with next links (the ones just smaller) until criterion meet
 
         for link in index_link_sorted_by_distance:
-            index_node_from = grid.links()['from'][link]
-            index_node_to = grid.links()['to'][link]
-            old_segment = grid.get_nodes()['segment'][index_node_from]
-            segment_1 = grid.get_nodes()['segment'][index_node_from]
-            segment_2 = grid.get_nodes()['segment'][index_node_to] + '_2'
+            index_node_from = grid.links()["from"][link]
+            index_node_to = grid.links()["to"][link]
+            old_segment = grid.get_nodes()["segment"][index_node_from]
+            segment_1 = grid.get_nodes()["segment"][index_node_from]
+            segment_2 = grid.get_nodes()["segment"][index_node_to] + "_2"
             grid.set_segment(index_node_from, segment_2)
             grid.set_segment(index_node_to, segment_2)
 
-            self.propagate_segment_to_neighbours(grid,
-                                                 index_node_to,
-                                                 segment_2)
+            self.propagate_segment_to_neighbours(grid, index_node_to, segment_2)
             grid.set_segment(index_node_from, segment_1)
 
-            if grid.get_nodes()[
-                    grid.get_nodes()['segment']
-                    == segment_1].shape[0] >= min_segment_size\
-                    and grid.get_nodes()[
-                        grid.get_nodes()['segment']
-                        == segment_2].shape[0] >= min_segment_size:
+            if (
+                grid.get_nodes()[grid.get_nodes()["segment"] == segment_1].shape[0]
+                >= min_segment_size
+                and grid.get_nodes()[grid.get_nodes()["segment"] == segment_2].shape[0]
+                >= min_segment_size
+            ):
                 break
             else:
                 for node_label in grid.get_nodes().index:
                     grid.set_segment(node_label, old_segment)
 
-        segment_dict = {index: grid.get_nodes()['segment'][index]
-                        for index in grid.get_nodes().index}
+        segment_dict = {
+            index: grid.get_nodes()["segment"][index]
+            for index in grid.get_nodes().index
+        }
 
         grid.set_nodes(node_backup)
         for index in segment_dict:
@@ -536,9 +534,11 @@ class GridOptimizer(Optimizer):
         grid.clear_poles()
 
         # gets (x,y) coordinates of all nodes in the grid
-        nodes_coord = np.array([
-            [grid.nodes.x.loc[index], grid.nodes.y.loc[index]]
-            for index in grid.nodes.index]
+        nodes_coord = np.array(
+            [
+                [grid.nodes.x.loc[index], grid.nodes.y.loc[index]]
+                for index in grid.nodes.index
+            ]
         )
 
         # features, true_labels = make_blobs(
@@ -552,13 +552,13 @@ class GridOptimizer(Optimizer):
         # call kmeans clustering with constraints (min and max number of members in each cluster )
         kmeans = KMeansConstrained(
             n_clusters=n_clusters,
-            init='k-means++',  # 'k-means++' or 'random'
+            init="k-means++",  # 'k-means++' or 'random'
             n_init=10,
             max_iter=300,
             tol=1e-4,
             size_min=0,
             size_max=grid.pole_max_connection,
-            random_state=0
+            random_state=0,
         )
 
         # fit clusters to the data
@@ -570,17 +570,17 @@ class GridOptimizer(Optimizer):
         # add the obtained centroids as poles to the grid
         counter = 0
         for i in range(n_clusters):
-            centroids_label = f'p-{counter}'
+            centroids_label = f"p-{counter}"
             grid.add_node(
                 label=centroids_label,
                 x=centroids_coord[i, 0],
                 y=centroids_coord[i, 1],
-                node_type='pole',
-                consumer_type='n.a.',
-                consumer_detail='n.a.',
+                node_type="pole",
+                consumer_type="n.a.",
+                consumer_detail="n.a.",
                 is_connected=True,
-                how_added='nr-optimization',
-                cluster_label=counter
+                how_added="nr-optimization",
+                cluster_label=counter,
             )
             counter += 1
 
@@ -594,7 +594,9 @@ class GridOptimizer(Optimizer):
         # this parameter shows the label of the associated cluster to each node
         nodes_cluster_labels = kmeans.predict(nodes_coord)
         for node_label in grid.consumers().index:
-            grid.nodes.cluster_label.loc[node_label] = nodes_cluster_labels[int(node_label)]
+            grid.nodes.cluster_label.loc[node_label] = nodes_cluster_labels[
+                int(node_label)
+            ]
 
     def find_opt_number_of_poles(self, grid: Grid, min_n_clusters: int):
         """
@@ -643,10 +645,7 @@ class GridOptimizer(Optimizer):
         number_of_nodes = grid.nodes.shape[0]
 
         # obtain the location of poles using kmeans clustering method
-        self.kmeans_clustering(
-            grid=grid,
-            n_clusters=min_n_clusters
-        )
+        self.kmeans_clustering(grid=grid, n_clusters=min_n_clusters)
 
         # create the minimum spanning tree to obtain the optimal links between poles
         self.create_minimum_spanning_tree(grid)
@@ -658,8 +657,7 @@ class GridOptimizer(Optimizer):
         number_of_poles = grid.poles().shape[0]
 
         # initialize dataframe to store number of poles and corresponding costs
-        grid_costs = pd.DataFrame({'poles': [],
-                                   'cost': []}).set_index('poles')
+        grid_costs = pd.DataFrame({"poles": [], "cost": []}).set_index("poles")
 
         # put the first row of this dataframe
         grid_costs.loc[number_of_poles] = grid.cost()
@@ -675,9 +673,9 @@ class GridOptimizer(Optimizer):
         stop_counter = 3
 
         while (
-                ((grid.cost() >= compare_cost) or (counter < stop_counter)) and
-                (number_of_poles < int(number_of_nodes*0.8)) and
-                (iteration < number_of_nodes)
+            ((grid.cost() >= compare_cost) or (counter < stop_counter))
+            and (number_of_poles < int(number_of_nodes * 0.8))
+            and (iteration < number_of_nodes)
         ):
             iteration += 1
 
@@ -746,37 +744,41 @@ class GridOptimizer(Optimizer):
                 grid.flip_random_node()
 
             if grid.is_pole_capacity_constraint_too_strong():
-                for segment in grid.get_nodes()['segment'].unique():
-                    while grid.consumers()[grid.consumers()['segment'] == segment].shape[0] > grid.get_segment_pole_capacity(segment):
+                for segment in grid.get_nodes()["segment"].unique():
+                    while grid.consumers()[
+                        grid.consumers()["segment"] == segment
+                    ].shape[0] > grid.get_segment_pole_capacity(segment):
                         random_number = np.random.rand()
                         num_consumers = grid.consumers()[
-                            grid.consumers()['segment'] == segment
+                            grid.consumers()["segment"] == segment
                         ].shape[0]
                         grid.flip_node(
-                            grid.consumers()[grid.consumers()
-                                             == segment].index[
-                                int(random_number
-                                    * num_consumers)])
+                            grid.consumers()[grid.consumers() == segment].index[
+                                int(random_number * num_consumers)
+                            ]
+                        )
 
     # --------------- NETWORK RELAXATION METHODS --------------- #
 
-    def nr_optimization(self,
-                        grid,
-                        number_of_poles: int,
-                        number_of_relaxation_steps: int,
-                        damping_factor: float = 0.5,
-                        weight_of_attraction: str = 'constant',
-                        first_guess_strategy='random',
-                        number_of_steps_bewteen_random_shifts: int = 0,
-                        number_of_hill_climbers_runs: int = 0,
-                        save_output: bool = False,
-                        output_folder: str = None,
-                        print_progress_bar: bool = True):
+    def nr_optimization(
+        self,
+        grid,
+        number_of_poles: int,
+        number_of_relaxation_steps: int,
+        damping_factor: float = 0.5,
+        weight_of_attraction: str = "constant",
+        first_guess_strategy="random",
+        number_of_steps_bewteen_random_shifts: int = 0,
+        number_of_hill_climbers_runs: int = 0,
+        save_output: bool = False,
+        output_folder: str = None,
+        print_progress_bar: bool = True,
+    ):
         """
-        This iterative process finds an approximate solution for the minimum cost of the grid. 
+        This iterative process finds an approximate solution for the minimum cost of the grid.
         The main idea is to consider the links between poles as pulling strings exercing a force on each pole.
-        To this end, virtual poles are added to the grid, which are free to locate wherever 
-        on the plane. At each iteration step, they are shifted in the direction of 
+        To this end, virtual poles are added to the grid, which are free to locate wherever
+        on the plane. At each iteration step, they are shifted in the direction of
         the resulting "strength" from the nodes they are linked with.
 
         Parameters
@@ -827,7 +829,7 @@ class GridOptimizer(Optimizer):
                 when larger than 0, local cost optimization is performed
                 after the relaxation. The local optimization process
                 computes in which direction each pole should be shifted in
-                order to reduce the grid costs. The process is repeated 
+                order to reduce the grid costs. The process is repeated
                 'number_of_hill_climbers_runs' times
 
             output_folder (str):
@@ -850,7 +852,7 @@ class GridOptimizer(Optimizer):
 
         Notes
         -----
-            The 'virtual_cost' is the cost of the grid containing the poles. 
+            The 'virtual_cost' is the cost of the grid containing the poles.
             Since, during the process, the layout is
             not a feasible solution (the virtual poles are not located at house
             location), the price that is computed cannot be interpreted as the
@@ -862,52 +864,53 @@ class GridOptimizer(Optimizer):
             print(f"|{42 * '_'}| NETWORK RELAXATION |{42 * '_'}|\n")
             print(f"{35 * ' '}number of poles:{8 * ' '} {number_of_poles}\n")
             print(
-                f"{35 * ' '}number of steps:{8 * ' '}"
-                + f"{number_of_relaxation_steps}")
-            print('\n')
+                f"{35 * ' '}number of steps:{8 * ' '}" + f"{number_of_relaxation_steps}"
+            )
+            print("\n")
             print(
-                f"{35 * ' '}first guess strategy:{3 * ' '}"
-                + f"{first_guess_strategy}")
-            print(f"\n{35 * ' '}weight of attraction:{3 * ' '}"
-                  + f"{weight_of_attraction}\n\n")
+                f"{35 * ' '}first guess strategy:{3 * ' '}" + f"{first_guess_strategy}"
+            )
+            print(
+                f"\n{35 * ' '}weight of attraction:{3 * ' '}"
+                + f"{weight_of_attraction}\n\n"
+            )
 
             # save all results in a folder
             if output_folder is None:
-                path_to_folder = f'data/output/{grid.get_id()}'
+                path_to_folder = f"data/output/{grid.get_id()}"
             else:
                 path_to_folder = output_folder
             make_folder(path_to_folder)
 
-            folder_name = (f'{grid.get_id()}_{number_of_poles}_poles_'
-                           + f'{number_of_relaxation_steps}_steps_'
-                           + f'attr-{weight_of_attraction[:4]}')
+            folder_name = (
+                f"{grid.get_id()}_{number_of_poles}_poles_"
+                + f"{number_of_relaxation_steps}_steps_"
+                + f"attr-{weight_of_attraction[:4]}"
+            )
 
-            if os.path.exists(f'{path_to_folder}/{folder_name}'):
+            if os.path.exists(f"{path_to_folder}/{folder_name}"):
                 counter = 1
-                while os.path.exists(
-                        f'{path_to_folder}/{folder_name}_{counter}'):
+                while os.path.exists(f"{path_to_folder}/{folder_name}_{counter}"):
                     counter += 1
-                folder_name_with_path = (
-                    f'{path_to_folder}/{folder_name}_{counter}'
-                )
-                folder_name = f'{folder_name}_{counter}'
+                folder_name_with_path = f"{path_to_folder}/{folder_name}_{counter}"
+                folder_name = f"{folder_name}_{counter}"
                 make_folder(folder_name_with_path)
             else:
-                folder_name_with_path = f'{path_to_folder}/{folder_name}'
+                folder_name_with_path = f"{path_to_folder}/{folder_name}"
                 make_folder(folder_name_with_path)
 
         # find out the range of (x,y) coordinate for all nodes of the grid
-        x_range = [grid.nodes.x.min(),
-                   grid.nodes.x.max()]
-        y_range = [grid.nodes.y.min(),
-                   grid.nodes.y.max()]
+        x_range = [grid.nodes.x.min(), grid.nodes.x.max()]
+        y_range = [grid.nodes.y.min(), grid.nodes.y.max()]
 
         # create log dataframe that will store info about run
         info_log = pd.DataFrame(
             {
-                'time': pd.Series([0] * number_of_relaxation_steps, dtype=float),
-                'cost': pd.Series([0] * number_of_relaxation_steps, dtype=float),
-                'norm_longest_shift': pd.Series([0] * number_of_relaxation_steps, dtype=float)
+                "time": pd.Series([0] * number_of_relaxation_steps, dtype=float),
+                "cost": pd.Series([0] * number_of_relaxation_steps, dtype=float),
+                "norm_longest_shift": pd.Series(
+                    [0] * number_of_relaxation_steps, dtype=float
+                ),
             }
         )
 
@@ -998,24 +1001,30 @@ class GridOptimizer(Optimizer):
         # At each step, the scalar product between the 'weighted_vector'
         # form the previous and current step will be computed and used
         # to adapt the 'damping_factor' value
-        weighted_vectors_previous_step = relaxation_df['weighted_vector']
-        #cost_connection = grid.get_price_consumer()
+        weighted_vectors_previous_step = relaxation_df["weighted_vector"]
+        # cost_connection = grid.get_price_consumer()
 
         # Compute the 'damping_factor' such that the norm of the 'weighted_vector'
         # at step 0 is equal to n% of the smallest link in the grid.
         # 'n' is specified when calling nr_optimization.
         # The the 'damping_factor' is applied to the 'weighted_vector' for each pole
         for pole in relaxation_df.index:
-            multiplier = damping_factor * self.nr_smallest_link(grid) / \
-                self.nr_max_length_weighted_vector(relaxation_df)
+            multiplier = (
+                damping_factor
+                * self.nr_smallest_link(grid)
+                / self.nr_max_length_weighted_vector(relaxation_df)
+            )
             relaxation_df.weighted_vector.loc[pole] = np.multiply(
-                relaxation_df.weighted_vector.loc[pole], multiplier)
+                relaxation_df.weighted_vector.loc[pole], multiplier
+            )
 
         # Shift poles in the direction of the 'weighted_vector'
         for pole in grid.poles().index:
-            grid.shift_node(node=pole,
-                            delta_x=relaxation_df.weighted_vector[pole][0],
-                            delta_y=relaxation_df.weighted_vector[pole][1])
+            grid.shift_node(
+                node=pole,
+                delta_x=relaxation_df.weighted_vector[pole][0],
+                delta_y=relaxation_df.weighted_vector[pole][1],
+            )
 
         # update the (lon,lat) coordinates based on the new (x,y) coordinates for poles
         grid.convert_lonlat_xy(inverse=True)
@@ -1024,13 +1033,15 @@ class GridOptimizer(Optimizer):
         self.connect_grid_elements(grid)
 
         # update the log file
-        info_log['time'][0] = time.time() - start_time
-        info_log['cost'][0] = grid.cost()
-        info_log['norm_longest_shift'][0] = (
-            self.nr_max_length_weighted_vector(relaxation_df) / self.nr_smallest_link(grid))
+        info_log["time"][0] = time.time() - start_time
+        info_log["cost"][0] = grid.cost()
+        info_log["norm_longest_shift"][0] = self.nr_max_length_weighted_vector(
+            relaxation_df
+        ) / self.nr_smallest_link(grid)
         if print_progress_bar:
             self.print_progress_bar(
-                iteration=1, total=number_of_relaxation_steps + 1, cost=grid.cost())
+                iteration=1, total=number_of_relaxation_steps + 1, cost=grid.cost()
+            )
 
         # ------------ STEP n + 1 - ITERATIVE STEP ------------- #
         for n in range(1, number_of_relaxation_steps + 1):
@@ -1038,14 +1049,17 @@ class GridOptimizer(Optimizer):
             relaxation_df = self.nr_compute_relaxation_df(grid)
 
             # Update the current 'weighted_vector'
-            weighted_vectors_current_step = relaxation_df['weighted_vector']
+            weighted_vectors_current_step = relaxation_df["weighted_vector"]
 
             # For each pole, compute the scalar product of the 'weighted_vector'
             # from the previous and the current step.
             # The values will be used to adapt the damping value
-            scalar_product_weighted_vectors = [x1[0] * x2[0] + x1[1] * x2[1] for x1, x2 in zip(
-                weighted_vectors_current_step,
-                weighted_vectors_previous_step)]
+            scalar_product_weighted_vectors = [
+                x1[0] * x2[0] + x1[1] * x2[1]
+                for x1, x2 in zip(
+                    weighted_vectors_current_step, weighted_vectors_previous_step
+                )
+            ]
             if min(scalar_product_weighted_vectors) >= 0:
                 damping_factor = damping_factor * 2.5
             else:
@@ -1053,16 +1067,22 @@ class GridOptimizer(Optimizer):
 
             # Apply the 'damping_factor' to the 'weighted_vector' for each pole.
             for pole in relaxation_df.index:
-                multiplier = damping_factor * self.nr_smallest_link(grid) / \
-                    self.nr_max_length_weighted_vector(relaxation_df)
+                multiplier = (
+                    damping_factor
+                    * self.nr_smallest_link(grid)
+                    / self.nr_max_length_weighted_vector(relaxation_df)
+                )
                 relaxation_df.weighted_vector.loc[pole] = np.multiply(
-                    relaxation_df.weighted_vector.loc[pole], multiplier)
+                    relaxation_df.weighted_vector.loc[pole], multiplier
+                )
 
             # Shift poles in the direction of the 'weighted_vector'.
             for pole in grid.poles().index:
-                grid.shift_node(node=pole,
-                                delta_x=relaxation_df.weighted_vector[pole][0],
-                                delta_y=relaxation_df.weighted_vector[pole][1])
+                grid.shift_node(
+                    node=pole,
+                    delta_x=relaxation_df.weighted_vector[pole][0],
+                    delta_y=relaxation_df.weighted_vector[pole][1],
+                )
 
             # Update the (lon,lat) coordinates based on the new (x,y) coordinates for poles.
             grid.convert_lonlat_xy(inverse=True)
@@ -1071,29 +1091,31 @@ class GridOptimizer(Optimizer):
             self.connect_grid_elements(grid)
 
             # Update the log file.
-            info_log['time'][n] = time.time() - start_time
-            info_log['cost'][n] = grid.cost()
-            info_log['norm_longest_shift'][n] = (
-                self.nr_max_length_weighted_vector(relaxation_df) / self.nr_smallest_link(grid))
+            info_log["time"][n] = time.time() - start_time
+            info_log["cost"][n] = grid.cost()
+            info_log["norm_longest_shift"][n] = self.nr_max_length_weighted_vector(
+                relaxation_df
+            ) / self.nr_smallest_link(grid)
 
             # Update the progress bar.
             if print_progress_bar:
                 self.print_progress_bar(
-                    iteration=n+1, total=number_of_relaxation_steps + 1, cost=grid.cost())
+                    iteration=n + 1,
+                    total=number_of_relaxation_steps + 1,
+                    cost=grid.cost(),
+                )
 
             weighted_vectors_previous_step = weighted_vectors_current_step
 
         # if number_of_hill_climbers_runs is non-zero, perform hill climber
         # runs
         if number_of_hill_climbers_runs > 0 and print_progress_bar:
-            print('\n\nHill climber runs...\n')
+            print("\n\nHill climber runs...\n")
         for i in range(number_of_hill_climbers_runs):
             if print_progress_bar:
                 current_price = grid.price()
                 self.print_progress_bar(
-                    iteration=i,
-                    total=number_of_hill_climbers_runs,
-                    cost=current_price
+                    iteration=i, total=number_of_hill_climbers_runs, cost=current_price
                 )
 
             counter = 0
@@ -1101,60 +1123,62 @@ class GridOptimizer(Optimizer):
                 counter += 1
                 gradient = self.nr_compute_local_price_gradient(grid, pole)
                 self.nr_shift_pole_toward_minus_gradient(
-                    grid=grid_copy,
-                    pole=pole,
-                    gradient=gradient)
+                    grid=grid_copy, pole=pole, gradient=gradient
+                )
                 self.connect_grid_elements(grid_copy)
                 if save_output:
-                    info_log.loc[f'{info_log.shape[0]}'] = [
+                    info_log.loc[f"{info_log.shape[0]}"] = [
                         time.time() - start_time,
-                        grid_copy.price() - (number_of_virtual_poles
-                                             * cost_connection),
-                        0]
+                        grid_copy.price() - (number_of_virtual_poles * cost_connection),
+                        0,
+                    ]
                 if print_progress_bar:
-                    current_price = (grid_copy.price() - (number_of_virtual_poles
-                                                          * cost_connection))
+                    current_price = grid_copy.price() - (
+                        number_of_virtual_poles * cost_connection
+                    )
                     self.print_progress_bar(
-                        iteration=i + ((counter + 1) /
-                                       grid_copy.get_poles().shape[0]),
+                        iteration=i + ((counter + 1) / grid_copy.get_poles().shape[0]),
                         total=number_of_hill_climbers_runs,
-                        cost=current_price)
+                        cost=current_price,
+                    )
 
         n_final = number_of_relaxation_steps + 1
-        info_log['time'][n_final] = time.time() - start_time
-        info_log['cost'][n_final] = grid.cost()
-        info_log['norm_longest_shift'][n_final] = (self.nr_max_length_weighted_vector(
-            relaxation_df) / self.nr_smallest_link(grid))
+        info_log["time"][n_final] = time.time() - start_time
+        info_log["cost"][n_final] = grid.cost()
+        info_log["norm_longest_shift"][n_final] = self.nr_max_length_weighted_vector(
+            relaxation_df
+        ) / self.nr_smallest_link(grid)
 
         if save_output:
             print(f"\n\nFinal price: {grid_copy.price()} $\n")
 
-            info_log.to_csv(path_to_folder + '/' +
-                            folder_name + '/log.csv')
-            grid_copy.export(backup_name=folder_name,
-                             folder=path_to_folder,
-                             allow_saving_in_existing_backup_folder=True)
+            info_log.to_csv(path_to_folder + "/" + folder_name + "/log.csv")
+            grid_copy.export(
+                backup_name=folder_name,
+                folder=path_to_folder,
+                allow_saving_in_existing_backup_folder=True,
+            )
 
             # create json file containing about dictionary
             about_dict = {
-                'grid id': grid_copy.get_id(),
-                'number_of_poles': number_of_poles,
-                'number_of_relaxation_steps': number_of_relaxation_steps,
-                'damping_factor': damping_factor,
-                'weight_of_attraction': weight_of_attraction,
-                'first_guess_strategy': first_guess_strategy,
-                'number_of_steps_bewteen_random_shifts':
-                    number_of_steps_bewteen_random_shifts,
-                'number_of_hill_climbers_runs': number_of_hill_climbers_runs,
-                'save_output': save_output,
-                'output_folder': output_folder,
-                'print_progress_bar': print_progress_bar
+                "grid id": grid_copy.get_id(),
+                "number_of_poles": number_of_poles,
+                "number_of_relaxation_steps": number_of_relaxation_steps,
+                "damping_factor": damping_factor,
+                "weight_of_attraction": weight_of_attraction,
+                "first_guess_strategy": first_guess_strategy,
+                "number_of_steps_bewteen_random_shifts": number_of_steps_bewteen_random_shifts,
+                "number_of_hill_climbers_runs": number_of_hill_climbers_runs,
+                "save_output": save_output,
+                "output_folder": output_folder,
+                "print_progress_bar": print_progress_bar,
             }
 
             json.dumps(about_dict)
 
-            with open(path_to_folder + '/' + folder_name + '/about_run.json',
-                      'w') as about:
+            with open(
+                path_to_folder + "/" + folder_name + "/about_run.json", "w"
+            ) as about:
                 about.write(json.dumps(about_dict))
 
     def nr_smallest_link(self, grid: Grid):
@@ -1197,7 +1221,9 @@ class GridOptimizer(Optimizer):
         for pole in relaxation_df.index:
             x_weighted_vector = relaxation_df.weighted_vector.loc[pole][0]
             y_weighted_vector = relaxation_df.weighted_vector.loc[pole][1]
-            norm_weighted_vector = np.sqrt(x_weighted_vector**2 + y_weighted_vector**2)
+            norm_weighted_vector = np.sqrt(
+                x_weighted_vector**2 + y_weighted_vector**2
+            )
             if norm_weighted_vector > max_length:
                 max_length = norm_weighted_vector
 
@@ -1221,18 +1247,20 @@ class GridOptimizer(Optimizer):
         """
 
         smaller_distance = grid.distance_between_nodes(
-            grid.get_nodes().index[0],
-            grid.get_nodes().index[1])
+            grid.get_nodes().index[0], grid.get_nodes().index[1]
+        )
 
         node_indices = grid.consumers().index
         for i in range(len(node_indices)):
             for j in range(len(node_indices)):
                 if i > j:
-                    if grid.distance_between_nodes(
-                            node_indices[i],
-                            node_indices[j]) < smaller_distance:
-                        smaller_distance = grid.distance_between_nodes(node_indices[i],
-                                                                       node_indices[j])
+                    if (
+                        grid.distance_between_nodes(node_indices[i], node_indices[j])
+                        < smaller_distance
+                    ):
+                        smaller_distance = grid.distance_between_nodes(
+                            node_indices[i], node_indices[j]
+                        )
         return smaller_distance
 
     def nr_compute_relaxation_df(self, grid: Grid):
@@ -1261,70 +1289,66 @@ class GridOptimizer(Optimizer):
         epc_lv_cable = grid.epc_lv_cable
 
         # A dataframe including all data required for relaxation.
-        relaxation_df = pd.DataFrame({
-            'pole': pd.Series([], dtype=str),
-            'connected_consumers': pd.Series([]),
-            'xy_each_consumer': pd.Series([]),
-            'xy_equivalent_consumers': pd.Series([]),
-            'connected_poles': pd.Series([]),
-            'xy_each_pole': pd.Series([]),
-            'xy_equivalent_poles': pd.Series([]),
-            'weighted_vector': pd.Series([]),
-        }).set_index('pole')
+        relaxation_df = pd.DataFrame(
+            {
+                "pole": pd.Series([], dtype=str),
+                "connected_consumers": pd.Series([]),
+                "xy_each_consumer": pd.Series([]),
+                "xy_equivalent_consumers": pd.Series([]),
+                "connected_poles": pd.Series([]),
+                "xy_each_pole": pd.Series([]),
+                "xy_equivalent_poles": pd.Series([]),
+                "weighted_vector": pd.Series([]),
+            }
+        ).set_index("pole")
 
         # Update the 'relaxation_df' for all poles in the grid object.
         for pole in grid.poles().index:
-            relaxation_df.loc[pole] = [
-                [],
-                [],
-                [0, 0],
-                [],
-                [],
-                [0, 0],
-                [0, 0]
-            ]
+            relaxation_df.loc[pole] = [[], [], [0, 0], [], [], [0, 0], [0, 0]]
 
             # Find the connected poles and consumers to each pole
             for link in grid.links.index:
 
                 # Links labels are strings in '(from, to)' format. So, first both
                 # parentheses and the comma must be removed to get 'from' and 'to' separately.
-                link_from = (link.replace('(', '')).replace(')', '').split(', ')[0]
-                link_to = (link.replace('(', '')).replace(')', '').split(', ')[1]
+                link_from = (link.replace("(", "")).replace(")", "").split(", ")[0]
+                link_to = (link.replace("(", "")).replace(")", "").split(", ")[1]
 
                 if link_from == pole:
                     if link_to in grid.poles().index:
-                        relaxation_df['connected_poles'][pole].append(link_to)
+                        relaxation_df["connected_poles"][pole].append(link_to)
                     elif link_to in grid.consumers().index:
-                        relaxation_df['connected_consumers'][pole].append(link_to)
+                        relaxation_df["connected_consumers"][pole].append(link_to)
 
                 elif link_to == pole:
                     if link_from in grid.poles().index:
-                        relaxation_df['connected_poles'][pole].append(link_from)
+                        relaxation_df["connected_poles"][pole].append(link_from)
                     elif link_from in grid.consumers().index:
-                        relaxation_df['connected_consumers'][pole].append(link_from)
+                        relaxation_df["connected_consumers"][pole].append(link_from)
 
             # Calculate the relative (x,y) positions of poles and consumers connected to
             # the pole being investigated.
-            for consumer in relaxation_df['connected_consumers'][pole]:
+            for consumer in relaxation_df["connected_consumers"][pole]:
                 delta_x = grid.nodes.x[consumer] - grid.nodes.x[pole]
                 delta_y = grid.nodes.y[consumer] - grid.nodes.y[pole]
-                relaxation_df['xy_each_consumer'][pole].append([delta_x, delta_y])
-                relaxation_df['xy_equivalent_consumers'][pole][0] += delta_x
-                relaxation_df['xy_equivalent_consumers'][pole][1] += delta_y
-                relaxation_df['weighted_vector'][pole][0] += (
-                    delta_x * epc_lv_cable / epc_hv_cable)
-                relaxation_df['weighted_vector'][pole][1] += (
-                    delta_y * epc_lv_cable / epc_hv_cable)
+                relaxation_df["xy_each_consumer"][pole].append([delta_x, delta_y])
+                relaxation_df["xy_equivalent_consumers"][pole][0] += delta_x
+                relaxation_df["xy_equivalent_consumers"][pole][1] += delta_y
+                relaxation_df["weighted_vector"][pole][0] += (
+                    delta_x * epc_lv_cable / epc_hv_cable
+                )
+                relaxation_df["weighted_vector"][pole][1] += (
+                    delta_y * epc_lv_cable / epc_hv_cable
+                )
 
-            for pole_2 in relaxation_df['connected_poles'][pole]:
+            for pole_2 in relaxation_df["connected_poles"][pole]:
                 delta_x = grid.nodes.x[pole_2] - grid.nodes.x[pole]
                 delta_y = grid.nodes.y[pole_2] - grid.nodes.y[pole]
-                relaxation_df['xy_each_pole'][pole].append([delta_x, delta_y])
-                relaxation_df['xy_equivalent_poles'][pole][0] += delta_x
-                relaxation_df['xy_equivalent_poles'][pole][1] += delta_y
-                relaxation_df['weighted_vector'][pole][0] += delta_x
-                relaxation_df['weighted_vector'][pole][1] += delta_y
+                relaxation_df["xy_each_pole"][pole].append([delta_x, delta_y])
+                relaxation_df["xy_equivalent_poles"][pole][0] += delta_x
+                relaxation_df["xy_equivalent_poles"][pole][1] += delta_y
+                relaxation_df["weighted_vector"][pole][0] += delta_x
+                relaxation_df["weighted_vector"][pole][1] += delta_y
 
         return relaxation_df
 
@@ -1354,41 +1378,33 @@ class GridOptimizer(Optimizer):
         """
 
         # compute price of configuration with pole shifted from (delta, 0)
-        grid.shift_node(node=pole,
-                        delta_x=delta,
-                        delta_y=0)
+        grid.shift_node(node=pole, delta_x=delta, delta_y=0)
         self.connect_grid_elements(grid)
         price_pos_x = grid.cost()
 
         # compute price of configuration with pole shifted from (- delta, 0)
-        grid.shift_node(node=pole,
-                        delta_x=- 2 * delta,
-                        delta_y=0)
+        grid.shift_node(node=pole, delta_x=-2 * delta, delta_y=0)
         self.connect_grid_elements(grid)
         price_neg_x = grid.cost()
 
         # compute price of configuration with pole shifted from (0, delta)
-        grid.shift_node(node=pole,
-                        delta_x=delta,
-                        delta_y=delta)
+        grid.shift_node(node=pole, delta_x=delta, delta_y=delta)
         self.connect_grid_elements(grid)
         price_pos_y = grid.cost()
 
         # compute price of configuration with pole shifted from (0, - delta)
-        grid.shift_node(node=pole,
-                        delta_x=0,
-                        delta_y=- 2 * delta)
+        grid.shift_node(node=pole, delta_x=0, delta_y=-2 * delta)
         self.connect_grid_elements(grid)
         price_neg_y = grid.cost()
 
         # Shift pole back to initial position
-        grid.shift_node(node=pole,
-                        delta_x=0,
-                        delta_y=delta)
+        grid.shift_node(node=pole, delta_x=0, delta_y=delta)
         self.connect_grid_elements(grid)
 
-        gradient = ((price_pos_x - price_neg_x) / delta,
-                    (price_pos_y - price_neg_y) / delta)
+        gradient = (
+            (price_pos_x - price_neg_x) / delta,
+            (price_pos_y - price_neg_y) / delta,
+        )
 
         return gradient
 
@@ -1423,9 +1439,7 @@ class GridOptimizer(Optimizer):
             nodes = grid.get_nodes()
             links = grid.links()
             price_before_shift = grid.cost()
-            grid.shift_node(pole,
-                            - amplitude * gradient[0],
-                            - amplitude * gradient[1])
+            grid.shift_node(pole, -amplitude * gradient[0], -amplitude * gradient[1])
             self.connect_grid_elements(grid)
             amplitude *= 3
             counter += 1
@@ -1435,17 +1449,18 @@ class GridOptimizer(Optimizer):
         grid.set_links(links)
         self.connect_grid_elements(grid)
 
-    def print_progress_bar(self,
-                           iteration: int,
-                           total: int,
-                           prefix: str = '',
-                           suffix: str = '',
-                           decimals: int = 1,
-                           length: int = 50,
-                           fill: str = '█',
-                           print_end: str = '\r',
-                           cost: float = None
-                           ):
+    def print_progress_bar(
+        self,
+        iteration: int,
+        total: int,
+        prefix: str = "",
+        suffix: str = "",
+        decimals: int = 1,
+        length: int = 50,
+        fill: str = "█",
+        print_end: str = "\r",
+        cost: float = None,
+    ):
         """
         +++ ok +++
 
@@ -1468,26 +1483,27 @@ class GridOptimizer(Optimizer):
                 Funtion inspired from https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console/30740258 # noqa: E501
         """
         # the precentage which is shown next to the progress bar
-        precision = '{:.' + str(decimals) + 'f}'
+        precision = "{:." + str(decimals) + "f}"
         percent = precision.format(100 * iteration / total)
 
         # fill some part of the progress bar depending on the iteration number
         filled_length = int(length * iteration // total)
-        bar = fill * filled_length + '-' * (length - filled_length)
+        bar = fill * filled_length + "-" * (length - filled_length)
 
         # update the progress bar based on the iteration number and cost
         if cost is None:
-            print(f'\r{prefix} |{bar}| {percent}% {suffix}',
-                  end=print_end)
+            print(f"\r{prefix} |{bar}| {percent}% {suffix}", end=print_end)
         else:
-            print(f'\r{prefix} |{bar}| {percent}% {suffix}, Cost: {cost:.2f} USD',
-                  end=print_end)
+            print(
+                f"\r{prefix} |{bar}| {percent}% {suffix}, Cost: {cost:.2f} USD",
+                end=print_end,
+            )
 
         # print a new empty line after all iterations
         if iteration == total:
             print()
 
-    def display_progress_bar(self, current, final, message=''):
+    def display_progress_bar(self, current, final, message=""):
         """
         This method displays a progress bar on the console. The progress is
         displayed in percent and corresponds to current/final. The message
@@ -1511,9 +1527,8 @@ class GridOptimizer(Optimizer):
         current_in_percent = int(current / final * 50)
         remaining = 50 - current_in_percent
 
-        bar = '█' * current_in_percent + '-' * remaining
-        print(f"\r|{bar}|  {int(current / final * 100)}%   {message}",
-              end='')
+        bar = "█" * current_in_percent + "-" * remaining
+        print(f"\r|{bar}|  {int(current / final * 100)}%   {message}", end="")
 
 
 class EnergySystemOptimizer(Optimizer):
@@ -1527,86 +1542,81 @@ class EnergySystemOptimizer(Optimizer):
     ???
     """
 
-    def __init__(self,
-                 start_date,
-                 n_days,
-                 project_lifetime,
-                 wacc,
-                 tax,
-                 path_data='',
-                 solver='cbc',
-                 pv={
-                     'settings': {
-                        'is_selected': True,
-                        'design': True
-                     },
-                     'parameters': {
-                         'nominal_capacity': None,
-                         'capex': 1000,
-                         'opex': 20,
-                         'lifetime': 20
-                     }
-                 },
-                 diesel_genset={
-                     'settings': {
-                         'is_selected': True,
-                         'design': True
-                     },
-                     'parameters': {
-                         'nominal_capacity': None,
-                         'capex': 1000,
-                         'opex': 20,
-                         'variable_cost': 0.045,
-                         'lifetime': 8,
-                         'fuel_cost': 1.214,
-                         'fuel_lhv': 11.83,
-                         'min_load': 0.3,
-                         'max_efficiency': 0.3
-                     }
-                 },
-                 battery={
-                     'settings': {
-                         'is_selected': True,
-                         'design': True
-                     },
-                     'parameters': {
-                         'nominal_capacity': None,
-                         'capex': 350,
-                         'opex': 7,
-                         'lifetime': 6,
-                         'soc_min': 0.3,
-                         'soc_max': 1,
-                         'c_rate_in': 1,
-                         'c_rate_out': 0.5,
-                         'efficiency': 0.8
-                     }
-                 },
-                 inverter={
-                     'settings': {
-                         'is_selected': True,
-                         'design': True
-                     },
-                     'parameters': {
-                         'nominal_capacity': None,
-                         'capex': 400,
-                         'opex': 8,
-                         'lifetime': 10,
-                         'efficiency': 0.98
-                     }
-                 },
-                 rectifier={
-                     'settings': {
-                         'is_selected': True,
-                         'design': True
-                     },
-                     'parameters': {
-                         'nominal_capacity': None,
-                         'capex': 400,
-                         'opex': 8,
-                         'lifetime': 10,
-                         'efficiency': 0.98
-                     }
-                 }):
+    def __init__(
+        self,
+        start_date,
+        n_days,
+        project_lifetime,
+        wacc,
+        tax,
+        path_data="",
+        solver="cbc",
+        pv={
+            "settings": {"is_selected": True, "design": True},
+            "parameters": {
+                "nominal_capacity": None,
+                "capex": 1000,
+                "opex": 20,
+                "lifetime": 20,
+            },
+        },
+        diesel_genset={
+            "settings": {"is_selected": True, "design": True},
+            "parameters": {
+                "nominal_capacity": None,
+                "capex": 1000,
+                "opex": 20,
+                "variable_cost": 0.045,
+                "lifetime": 8,
+                "fuel_cost": 1.214,
+                "fuel_lhv": 11.83,
+                "min_load": 0.3,
+                "max_efficiency": 0.3,
+            },
+        },
+        battery={
+            "settings": {"is_selected": True, "design": True},
+            "parameters": {
+                "nominal_capacity": None,
+                "capex": 350,
+                "opex": 7,
+                "lifetime": 6,
+                "soc_min": 0.3,
+                "soc_max": 1,
+                "c_rate_in": 1,
+                "c_rate_out": 0.5,
+                "efficiency": 0.8,
+            },
+        },
+        inverter={
+            "settings": {"is_selected": True, "design": True},
+            "parameters": {
+                "nominal_capacity": None,
+                "capex": 400,
+                "opex": 8,
+                "lifetime": 10,
+                "efficiency": 0.98,
+            },
+        },
+        rectifier={
+            "settings": {"is_selected": True, "design": True},
+            "parameters": {
+                "nominal_capacity": None,
+                "capex": 400,
+                "opex": 8,
+                "lifetime": 10,
+                "efficiency": 0.98,
+            },
+        },
+        shortage={
+            "settings": {"is_selected": True},
+            "parameters": {
+                "max_total": 10,
+                "max_timestep": 50,
+                "penalty_cost": 0.3,
+            },
+        },
+    ):
         """
         Initialize the grid optimizer object
         """
@@ -1618,24 +1628,31 @@ class EnergySystemOptimizer(Optimizer):
         self.battery = battery
         self.inverter = inverter
         self.rectifier = rectifier
+        self.shortage = shortage
 
     def create_datetime_objects(self):
         """
         explanation
         """
-        start_date_obj = datetime.strptime(self.start_date, '%Y-%m-%d')
+        start_date_obj = datetime.strptime(self.start_date, "%Y-%m-%d")
         self.start_date = start_date_obj.date()
         self.start_time = start_date_obj.time()
-        self.start_datetime = datetime.combine(start_date_obj.date(), start_date_obj.time())
+        self.start_datetime = datetime.combine(
+            start_date_obj.date(), start_date_obj.time()
+        )
         # conversion to in() is needed becasue self.n_days is a <class 'numpy.int64'> and it causes troubles
         self.end_datetime = self.start_datetime + timedelta(days=int(self.n_days))
 
     def import_data(self):
         data = pd.read_csv(filepath_or_buffer=self.path_data)
-        data.index = pd.date_range(start=self.start_datetime, periods=len(data), freq='H')
+        data.index = pd.date_range(
+            start=self.start_datetime, periods=len(data), freq="H"
+        )
 
-        self.solar_potential = data.SolarGen.loc[self.start_datetime:self.end_datetime]
-        self.demand = data.Demand.loc[self.start_datetime:self.end_datetime]
+        self.solar_potential = data.SolarGen.loc[
+            self.start_datetime: self.end_datetime
+        ]
+        self.demand = data.Demand.loc[self.start_datetime: self.end_datetime]
         self.solar_potential_peak = self.solar_potential.max()
         self.demand_peak = self.demand.max()
 
@@ -1645,7 +1662,9 @@ class EnergySystemOptimizer(Optimizer):
 
         # define an empty dictionary for all epc values
         self.epc = {}
-        date_time_index = pd.date_range(start=self.start_date, periods=self.n_days * 24, freq="H")
+        date_time_index = pd.date_range(
+            start=self.start_date, periods=self.n_days * 24, freq="H"
+        )
         energy_system = solph.EnergySystem(timeindex=date_time_index)
 
         # -------------------- BUSES --------------------
@@ -1656,20 +1675,25 @@ class EnergySystemOptimizer(Optimizer):
 
         # -------------------- SOURCES --------------------
         # fuel density is assumed 0.846 kg/l
-        fuel_cost = self.diesel_genset['parameters']['fuel_cost'] / \
-            0.846 / self.diesel_genset['parameters']['fuel_lhv']
+        fuel_cost = (
+            self.diesel_genset["parameters"]["fuel_cost"]
+            / 0.846
+            / self.diesel_genset["parameters"]["fuel_lhv"]
+        )
         fuel_source = solph.Source(
-            label="fuel_source",
-            outputs={
-                b_fuel: solph.Flow(variable_costs=fuel_cost)
-            }
+            label="fuel_source", outputs={b_fuel: solph.Flow(variable_costs=fuel_cost)}
         )
 
-        self.epc['pv'] = self.crf * \
-            self.capex_multi_investment(
-                capex_0=self.pv['parameters']['capex'], component_lifetime=self.pv['parameters']['lifetime']) + self.pv['parameters']['opex']
+        self.epc["pv"] = (
+            self.crf
+            * self.capex_multi_investment(
+                capex_0=self.pv["parameters"]["capex"],
+                component_lifetime=self.pv["parameters"]["lifetime"],
+            )
+            + self.pv["parameters"]["opex"]
+        )
         # Make decision about optimization strategy of the PV
-        if self.pv['settings']['design'] == True:
+        if self.pv["settings"]["design"] == True:
             # DESIGN
             pv = solph.Source(
                 label="pv",
@@ -1678,7 +1702,8 @@ class EnergySystemOptimizer(Optimizer):
                         fix=self.solar_potential / self.solar_potential_peak,
                         nominal_value=None,
                         investment=solph.Investment(
-                            ep_costs=self.epc['pv'] * self.n_days / 365),
+                            ep_costs=self.epc["pv"] * self.n_days / 365
+                        ),
                         variable_costs=0,
                     )
                 },
@@ -1690,7 +1715,7 @@ class EnergySystemOptimizer(Optimizer):
                 outputs={
                     b_el_dc: solph.Flow(
                         fix=self.solar_potential / self.solar_potential_peak,
-                        nominal_value=self.pv['parameters']['nominal_capacity'],
+                        nominal_value=self.pv["parameters"]["nominal_capacity"],
                         variable_costs=0,
                     )
                 },
@@ -1698,11 +1723,16 @@ class EnergySystemOptimizer(Optimizer):
 
         # -------------------- TRANSFORMERS --------------------
         # optimize capacity of the fuel generator
-        self.epc['diesel_genset'] = self.crf * \
-            self.capex_multi_investment(
-                capex_0=self.diesel_genset['parameters']['capex'], component_lifetime=self.diesel_genset['parameters']['lifetime']) + self.diesel_genset['parameters']['opex']
+        self.epc["diesel_genset"] = (
+            self.crf
+            * self.capex_multi_investment(
+                capex_0=self.diesel_genset["parameters"]["capex"],
+                component_lifetime=self.diesel_genset["parameters"]["lifetime"],
+            )
+            + self.diesel_genset["parameters"]["opex"]
+        )
 
-        if self.diesel_genset['settings']['design'] == True:
+        if self.diesel_genset["settings"]["design"] == True:
             # DESIGN
             diesel_genset = solph.Transformer(
                 label="diesel_genset",
@@ -1710,12 +1740,17 @@ class EnergySystemOptimizer(Optimizer):
                 outputs={
                     b_el_ac: solph.Flow(
                         nominal_value=None,
-                        variable_costs=self.diesel_genset['parameters']['variable_cost'],
+                        variable_costs=self.diesel_genset["parameters"][
+                            "variable_cost"
+                        ],
                         investment=solph.Investment(
-                            ep_costs=self.epc['diesel_genset'] * self.n_days / 365),
+                            ep_costs=self.epc["diesel_genset"] * self.n_days / 365
+                        ),
                     )
                 },
-                conversion_factors={b_el_ac: self.diesel_genset['parameters']['max_efficiency']},
+                conversion_factors={
+                    b_el_ac: self.diesel_genset["parameters"]["max_efficiency"]
+                },
             )
         else:
             # DISPATCH
@@ -1724,17 +1759,28 @@ class EnergySystemOptimizer(Optimizer):
                 inputs={b_fuel: solph.Flow()},
                 outputs={
                     b_el_ac: solph.Flow(
-                        nominal_value=self.diesel_genset['parameters']['nominal_capacity'],
-                        variable_costs=self.diesel_genset['parameters']['variable_cost'],
+                        nominal_value=self.diesel_genset["parameters"][
+                            "nominal_capacity"
+                        ],
+                        variable_costs=self.diesel_genset["parameters"][
+                            "variable_cost"
+                        ],
                     )
                 },
-                conversion_factors={b_el_ac: self.diesel_genset['parameters']['max_efficiency']},
+                conversion_factors={
+                    b_el_ac: self.diesel_genset["parameters"]["max_efficiency"]
+                },
             )
 
-        self.epc['rectifier'] = self.crf * \
-            self.capex_multi_investment(
-                capex_0=self.rectifier['parameters']['capex'], component_lifetime=self.rectifier['parameters']['lifetime']) + self.rectifier['parameters']['opex']
-        if self.rectifier['settings']['design'] == True:
+        self.epc["rectifier"] = (
+            self.crf
+            * self.capex_multi_investment(
+                capex_0=self.rectifier["parameters"]["capex"],
+                component_lifetime=self.rectifier["parameters"]["lifetime"],
+            )
+            + self.rectifier["parameters"]["opex"]
+        )
+        if self.rectifier["settings"]["design"] == True:
             # DESIGN
             rectifier = solph.Transformer(
                 label="rectifier",
@@ -1742,13 +1788,14 @@ class EnergySystemOptimizer(Optimizer):
                     b_el_ac: solph.Flow(
                         nominal_value=None,
                         investment=solph.Investment(
-                            ep_costs=self.epc['rectifier'] * self.n_days / 365),
+                            ep_costs=self.epc["rectifier"] * self.n_days / 365
+                        ),
                         variable_costs=0,
                     )
                 },
                 outputs={b_el_dc: solph.Flow()},
                 conversion_factor={
-                    b_el_dc: self.rectifier['parameters']['efficiency'],
+                    b_el_dc: self.rectifier["parameters"]["efficiency"],
                 },
             )
         else:
@@ -1757,20 +1804,25 @@ class EnergySystemOptimizer(Optimizer):
                 label="rectifier",
                 inputs={
                     b_el_ac: solph.Flow(
-                        nominal_value=self.rectifier['parameters']['nominal_capacity'],
+                        nominal_value=self.rectifier["parameters"]["nominal_capacity"],
                         variable_costs=0,
                     )
                 },
                 outputs={b_el_dc: solph.Flow()},
                 conversion_factor={
-                    b_el_dc: self.rectifier['parameters']['efficiency'],
+                    b_el_dc: self.rectifier["parameters"]["efficiency"],
                 },
             )
 
-        self.epc['inverter'] = self.crf * \
-            self.capex_multi_investment(
-                capex_0=self.inverter['parameters']['capex'], component_lifetime=self.inverter['parameters']['lifetime']) + self.inverter['parameters']['opex']
-        if self.inverter['settings']['design'] == True:
+        self.epc["inverter"] = (
+            self.crf
+            * self.capex_multi_investment(
+                capex_0=self.inverter["parameters"]["capex"],
+                component_lifetime=self.inverter["parameters"]["lifetime"],
+            )
+            + self.inverter["parameters"]["opex"]
+        )
+        if self.inverter["settings"]["design"] == True:
             # DESIGN
             inverter = solph.Transformer(
                 label="inverter",
@@ -1778,13 +1830,14 @@ class EnergySystemOptimizer(Optimizer):
                     b_el_dc: solph.Flow(
                         nominal_value=None,
                         investment=solph.Investment(
-                            ep_costs=self.epc['inverter'] * self.n_days / 365),
+                            ep_costs=self.epc["inverter"] * self.n_days / 365
+                        ),
                         variable_costs=0,
                     )
                 },
                 outputs={b_el_ac: solph.Flow()},
                 conversion_factor={
-                    b_el_ac: self.inverter['parameters']['efficiency'],
+                    b_el_ac: self.inverter["parameters"]["efficiency"],
                 },
             )
         else:
@@ -1793,52 +1846,62 @@ class EnergySystemOptimizer(Optimizer):
                 label="inverter",
                 inputs={
                     b_el_dc: solph.Flow(
-                        nominal_value=self.inverter['parameters']['nominal_capacity'],
+                        nominal_value=self.inverter["parameters"]["nominal_capacity"],
                         variable_costs=0,
                     )
                 },
                 outputs={b_el_ac: solph.Flow()},
                 conversion_factor={
-                    b_el_ac: self.inverter['parameters']['efficiency'],
+                    b_el_ac: self.inverter["parameters"]["efficiency"],
                 },
             )
         # -------------------- battery --------------------
-        self.epc['battery'] = self.crf * \
-            self.capex_multi_investment(
-                capex_0=self.battery['parameters']['capex'], component_lifetime=self.battery['parameters']['lifetime']) + self.battery['parameters']['opex']
-        if self.battery['settings']['design'] == True:
+        self.epc["battery"] = (
+            self.crf
+            * self.capex_multi_investment(
+                capex_0=self.battery["parameters"]["capex"],
+                component_lifetime=self.battery["parameters"]["lifetime"],
+            )
+            + self.battery["parameters"]["opex"]
+        )
+        if self.battery["settings"]["design"] == True:
             # DESIGN
             battery = solph.GenericStorage(
                 label="battery",
                 nominal_storage_capacity=None,
-                investment=solph.Investment(ep_costs=self.epc['battery'] * self.n_days / 365),
+                investment=solph.Investment(
+                    ep_costs=self.epc["battery"] * self.n_days / 365
+                ),
                 inputs={b_el_dc: solph.Flow(variable_costs=0)},
-                outputs={b_el_dc: solph.Flow(
-                    investment=solph.Investment(ep_costs=0))},
+                outputs={b_el_dc: solph.Flow(investment=solph.Investment(ep_costs=0))},
                 initial_storage_capacity=0.0,
-                min_storage_level=self.battery['parameters']['soc_min'],
-                max_storage_level=self.battery['parameters']['soc_max'],
+                min_storage_level=self.battery["parameters"]["soc_min"],
+                max_storage_level=self.battery["parameters"]["soc_max"],
                 balanced=True,
-                inflow_conversion_factor=self.battery['parameters']['efficiency'],
-                outflow_conversion_factor=self.battery['parameters']['efficiency'],
-                invest_relation_input_capacity=self.battery['parameters']['c_rate_in'],
-                invest_relation_output_capacity=self.battery['parameters']['c_rate_out'],
+                inflow_conversion_factor=self.battery["parameters"]["efficiency"],
+                outflow_conversion_factor=self.battery["parameters"]["efficiency"],
+                invest_relation_input_capacity=self.battery["parameters"]["c_rate_in"],
+                invest_relation_output_capacity=self.battery["parameters"][
+                    "c_rate_out"
+                ],
             )
         else:
             # DISPATCH
             battery = solph.GenericStorage(
                 label="battery",
-                nominal_storage_capacity=self.battery['parameters']['nominal_capacity'],
+                nominal_storage_capacity=self.battery["parameters"]["nominal_capacity"],
                 inputs={b_el_dc: solph.Flow(variable_costs=0)},
                 outputs={b_el_dc: solph.Flow()},
                 initial_storage_capacity=0.0,
-                min_storage_level=self.battery['parameters']['soc_min'],
-                max_storage_level=self.battery['parameters']['soc_max'],
+                min_storage_level=self.battery["parameters"]["soc_min"],
+                max_storage_level=self.battery["parameters"]["soc_max"],
                 balanced=True,
-                inflow_conversion_factor=self.battery['parameters']['efficiency'],
-                outflow_conversion_factor=self.battery['parameters']['efficiency'],
-                invest_relation_input_capacity=self.battery['parameters']['c_rate_in'],
-                invest_relation_output_capacity=self.battery['parameters']['c_rate_out'],
+                inflow_conversion_factor=self.battery["parameters"]["efficiency"],
+                outflow_conversion_factor=self.battery["parameters"]["efficiency"],
+                invest_relation_input_capacity=self.battery["parameters"]["c_rate_in"],
+                invest_relation_output_capacity=self.battery["parameters"][
+                    "c_rate_out"
+                ],
             )
 
         # -------------------- SINKS --------------------
@@ -1846,6 +1909,7 @@ class EnergySystemOptimizer(Optimizer):
             label="electricity_demand",
             inputs={
                 b_el_ac: solph.Flow(
+                    # min=1-max_shortage_timestep,
                     fix=self.demand / self.demand_peak,
                     nominal_value=self.demand_peak
                 )
@@ -1854,7 +1918,7 @@ class EnergySystemOptimizer(Optimizer):
 
         excess_sink = solph.Sink(
             label="excess_sink",
-            inputs={b_el_dc: solph.Flow()},
+            inputs={b_el_ac: solph.Flow()},
         )
 
         # add all objects to the energy system
@@ -1872,134 +1936,254 @@ class EnergySystemOptimizer(Optimizer):
             excess_sink,
         )
 
+        # -------------------- SHORTAGE --------------------
+        # maximal unserved demand and the variable costs of unserved demand.
+        if self.shortage["settings"]["is_selected"]:
+            shortage = solph.Source(
+                label="shortage",
+                outputs={
+                    b_el_ac: solph.Flow(
+                        variable_costs=self.shortage["parameters"]["shortage_penalty_cost"],
+                        nominal_value=self.shortage["parameters"]["max_shortage_total"] *
+                        sum(self.demand),
+                        summed_max=1,
+                    ),
+                },
+            )
+        else:
+            shortage = solph.Source(
+                label="shortage",
+                outputs={
+                    b_el_ac: solph.Flow(
+                        nominal_value=0,
+                    ),
+                },
+            )
+        energy_system.add(shortage)
+
         model = solph.Model(energy_system)
+
+        def shortage_per_timestep_rule(model, t):
+            expr = 0
+            ## ------- Get demand at t ------- #
+            demand = model.flow[b_el_ac, demand_el, t]
+            expr += self.shortage["parameters"]["max_shortage_timestep"] * demand
+            ## ------- Get shortage at t------- #
+            expr += -model.flow[shortage, b_el_ac, t]
+
+            return expr >= 0
+
+        if self.shortage["settings"]["is_selected"]:
+            model.shortage_timestep = po.Constraint(
+                model.TIMESTEPS, rule=shortage_per_timestep_rule
+            )
+
+        def max_excess_electricity_total_rule(model):
+            max_excess_electricity = 0.05  # fraction
+            expr = 0
+            ## ------- Get generated at t ------- #
+            generated_diesel_genset = sum(model.flow[diesel_genset, b_el_ac, :])
+            generated_pv = sum(model.flow[inverter, b_el_ac, :])
+            ac_to_dc = sum(model.flow[b_el_ac, rectifier, :])
+            generated = generated_diesel_genset + generated_pv - ac_to_dc
+            expr += (generated * max_excess_electricity)
+            ## ------- Get excess at t------- #
+            excess = sum(model.flow[b_el_ac, excess_sink, :])
+            expr += -excess
+
+            return expr >= 0
+
+        model.max_excess_electricity_total = po.Constraint(
+            rule=max_excess_electricity_total_rule
+        )
 
         # optimize the energy system
         # gurobi --> 'MipGap': '0.01'
         # cbc --> 'ratioGap': '0.01'
         solver_option = {"gurobi": {"MipGap": "0.03"}, "cbc": {"ratioGap": "0.03"}}
 
-        model.solve(solver=self.solver, solve_kwargs={
-            "tee": True}, cmdline_options=solver_option[self.solver])
+        model.solve(
+            solver=self.solver,
+            solve_kwargs={"tee": True},
+            cmdline_options=solver_option[self.solver],
+        )
         energy_system.results["meta"] = solph.processing.meta_results(model)
         self.results_main = solph.processing.results(model)
 
         self.process_results()
 
     def process_results(self):
-        results_pv = solph.views.node(results=self.results_main, node='pv')
+        results_pv = solph.views.node(results=self.results_main, node="pv")
         results_fuel_source = solph.views.node(
-            results=self.results_main, node='fuel_source')
+            results=self.results_main, node="fuel_source"
+        )
         results_diesel_genset = solph.views.node(
-            results=self.results_main, node='diesel_genset')
-        results_inverter = solph.views.node(results=self.results_main, node='inverter')
-        results_rectifier = solph.views.node(results=self.results_main, node='rectifier')
-        results_battery = solph.views.node(results=self.results_main, node='battery')
+            results=self.results_main, node="diesel_genset"
+        )
+        results_inverter = solph.views.node(results=self.results_main, node="inverter")
+        results_rectifier = solph.views.node(
+            results=self.results_main, node="rectifier"
+        )
+        results_battery = solph.views.node(results=self.results_main, node="battery")
         results_demand_el = solph.views.node(
-            results=self.results_main, node='electricity_demand')
+            results=self.results_main, node="electricity_demand"
+        )
         results_excess_sink = solph.views.node(
-            results=self.results_main, node='excess_sink')
+            results=self.results_main, node="excess_sink"
+        )
+        results_shortage = solph.views.node(
+            results=self.results_main, node="shortage"
+        )
 
         # -------------------- SEQUENCES (DYNAMIC) --------------------
         # hourly demand profile
-        self.sequences_demand = results_demand_el['sequences'][(
-            ('electricity_ac', 'electricity_demand'), 'flow')]
+        self.sequences_demand = results_demand_el["sequences"][
+            (("electricity_ac", "electricity_demand"), "flow")
+        ]
 
         # hourly profiles for solar potential and pv production
-        self.sequences_pv = results_pv['sequences'][(('pv', 'electricity_dc'), 'flow')]
+        self.sequences_pv = results_pv["sequences"][(("pv", "electricity_dc"), "flow")]
 
         # hourly profiles for fuel consumption and electricity production in the fuel genset
         # the 'flow' from oemof is in kWh and must be converted to liter
-        self.sequences_fuel_consumption = results_fuel_source['sequences'][
-            (('fuel_source', 'fuel'), 'flow')] / self.diesel_genset['parameters']['fuel_lhv'] / 0.846  # conversion: kWh -> kg -> l
+        self.sequences_fuel_consumption = (
+            results_fuel_source["sequences"][(("fuel_source", "fuel"), "flow")]
+            / self.diesel_genset["parameters"]["fuel_lhv"]
+            / 0.846
+        )  # conversion: kWh -> kg -> l
 
-        self.sequences_genset = results_diesel_genset['sequences'][
-            (('diesel_genset', 'electricity_ac'), 'flow')]
+        self.sequences_genset = results_diesel_genset["sequences"][
+            (("diesel_genset", "electricity_ac"), "flow")
+        ]
 
         # hourly profiles for charge, discharge, and content of the battery
-        self.sequences_battery_charge = results_battery['sequences'][
-            (('electricity_dc', 'battery'), 'flow')]
+        self.sequences_battery_charge = results_battery["sequences"][
+            (("electricity_dc", "battery"), "flow")
+        ]
 
-        self.sequences_battery_discharge = results_battery['sequences'][
-            (('battery', 'electricity_dc'), 'flow')]
+        self.sequences_battery_discharge = results_battery["sequences"][
+            (("battery", "electricity_dc"), "flow")
+        ]
 
-        self.sequences_battery_content = results_battery['sequences'][
-            (('battery', 'None'), 'storage_content')]
+        self.sequences_battery_content = results_battery["sequences"][
+            (("battery", "None"), "storage_content")
+        ]
 
         # hourly profiles for inverted electricity from dc to ac
-        self.sequences_inverter = results_inverter['sequences'][(
-            ('inverter', 'electricity_ac'), 'flow')]
+        self.sequences_inverter = results_inverter["sequences"][
+            (("inverter", "electricity_ac"), "flow")
+        ]
 
         # hourly profiles for inverted electricity from ac to dc
-        self.sequences_rectifier = results_rectifier['sequences'][(
-            ('rectifier', 'electricity_dc'), 'flow')]
+        self.sequences_rectifier = results_rectifier["sequences"][
+            (("rectifier", "electricity_dc"), "flow")
+        ]
 
         # hourly profiles for excess ac and dc electricity production
-        self.sequences_excess = results_excess_sink['sequences'][
-            (('electricity_dc', 'excess_sink'), 'flow')]
+        self.sequences_excess = results_excess_sink["sequences"][
+            (("electricity_ac", "excess_sink"), "flow")
+        ]
+
+        # hourly profiles for shortages in the demand coverage
+        self.sequences_shortage = results_shortage["sequences"][
+            (("shortage", "electricity_ac"), "flow")
+        ]
 
         # -------------------- SCALARS (STATIC) --------------------
-        if self.diesel_genset['settings']['design'] == True:
-            self.capacity_genset = results_diesel_genset['scalars'][
-                (('diesel_genset', 'electricity_ac'), 'invest')]
+        if self.diesel_genset["settings"]["design"] == True:
+            self.capacity_genset = results_diesel_genset["scalars"][
+                (("diesel_genset", "electricity_ac"), "invest")
+            ]
         else:
-            self.capacity_genset = self.diesel_genset['parameters']['nominal_capacity']
+            self.capacity_genset = self.diesel_genset["parameters"]["nominal_capacity"]
 
-        if self.pv['settings']['design'] == True:
-            self.capacity_pv = results_pv['scalars'][(('pv', 'electricity_dc'), 'invest')]
+        if self.pv["settings"]["design"] == True:
+            self.capacity_pv = results_pv["scalars"][
+                (("pv", "electricity_dc"), "invest")
+            ]
         else:
-            self.capacity_pv = self.pv['parameters']['nominal_capacity']
+            self.capacity_pv = self.pv["parameters"]["nominal_capacity"]
 
-        if self.inverter['settings']['design'] == True:
-            self.capacity_inverter = results_inverter['scalars'][(
-                ('electricity_dc', 'inverter'), 'invest')]
+        if self.inverter["settings"]["design"] == True:
+            self.capacity_inverter = results_inverter["scalars"][
+                (("electricity_dc", "inverter"), "invest")
+            ]
         else:
-            self.capacity_inverter = self.inverter['parameters']['nominal_capacity']
+            self.capacity_inverter = self.inverter["parameters"]["nominal_capacity"]
 
-        if self.rectifier['settings']['design'] == True:
-            self.capacity_rectifier = results_rectifier['scalars'][(
-                ('electricity_ac', 'rectifier'), 'invest')]
+        if self.rectifier["settings"]["design"] == True:
+            self.capacity_rectifier = results_rectifier["scalars"][
+                (("electricity_ac", "rectifier"), "invest")
+            ]
         else:
-            self.capacity_rectifier = self.rectifier['parameters']['nominal_capacity']
+            self.capacity_rectifier = self.rectifier["parameters"]["nominal_capacity"]
 
-        if self.battery['settings']['design'] == True:
-            self.capacity_battery = results_battery['scalars'][(
-                ('electricity_dc', 'battery'), 'invest')]
+        if self.battery["settings"]["design"] == True:
+            self.capacity_battery = results_battery["scalars"][
+                (("electricity_dc", "battery"), "invest")
+            ]
         else:
-            self.capacity_battery = self.battery['parameters']['nominal_capacity']
+            self.capacity_battery = self.battery["parameters"]["nominal_capacity"]
 
-        self.total_renewable = (self.epc['pv'] * self.capacity_pv + self.epc['inverter'] *
-                                self.capacity_inverter + self.epc['battery'] * self.capacity_battery) * self.n_days / 365
-        self.total_non_renewable = (self.epc['diesel_genset'] * self.capacity_genset +
-                                    self.epc['rectifier'] * self.capacity_rectifier) * self.n_days / 365 + self.diesel_genset['parameters']['variable_cost'] * self.sequences_genset.sum(axis=0)
+        self.total_renewable = (
+            (
+                self.epc["pv"] * self.capacity_pv
+                + self.epc["inverter"] * self.capacity_inverter
+                + self.epc["battery"] * self.capacity_battery
+            )
+            * self.n_days
+            / 365
+        )
+        self.total_non_renewable = (
+            self.epc["diesel_genset"] * self.capacity_genset
+            + self.epc["rectifier"] * self.capacity_rectifier
+        ) * self.n_days / 365 + self.diesel_genset["parameters"][
+            "variable_cost"
+        ] * self.sequences_genset.sum(
+            axis=0
+        )
         self.total_component = self.total_renewable + self.total_non_renewable
-        self.total_fuel = self.diesel_genset['parameters']['fuel_cost'] * \
-            self.sequences_fuel_consumption.sum(axis=0)
+        self.total_fuel = self.diesel_genset["parameters"][
+            "fuel_cost"
+        ] * self.sequences_fuel_consumption.sum(axis=0)
         self.total_revenue = self.total_component + self.total_fuel
         self.total_demand = self.sequences_demand.sum(axis=0)
         self.lcoe = 100 * self.total_revenue / self.total_demand
 
-        self.res = 100 * self.sequences_pv.sum(axis=0) / \
-            (self.sequences_genset.sum(axis=0) + self.sequences_pv.sum(axis=0))
+        self.res = (
+            100
+            * self.sequences_pv.sum(axis=0)
+            / (self.sequences_genset.sum(axis=0) + self.sequences_pv.sum(axis=0))
+        )
 
-        self.excess_rate = 100 * \
-            self.sequences_excess.sum(
-                axis=0) / (self.sequences_genset.sum(axis=0) + self.sequences_pv.sum(axis=0))
-        self.genset_to_dc = 100 * \
-            self.sequences_rectifier.sum(axis=0) / self.sequences_genset.sum(axis=0)
+        self.excess_rate = (
+            100
+            * self.sequences_excess.sum(axis=0)
+            / (self.sequences_genset.sum(axis=0) - self.sequences_rectifier.sum(axis=0) + self.sequences_inverter.sum(axis=0))
+        )
+        self.genset_to_dc = (
+            100
+            * self.sequences_rectifier.sum(axis=0)
+            / self.sequences_genset.sum(axis=0)
+        )
+        self.shortage = (
+            100
+            * self.sequences_shortage.sum(axis=0) / self.sequences_demand.sum(axis=0)
+        )
 
-        print('')
-        print(40 * '*')
-        print(f'LCOE:\t {self.lcoe:.2f} cent/kWh')
-        print(f'RES:\t {self.res:.0f}%')
-        print(f'Excess:\t {self.excess_rate:.1f}% of the total production')
-        print(f'AC--DC:\t {self.genset_to_dc:.1f}% of the genset production')
-        print(40 * '*')
-        print(f'genset:\t {self.capacity_genset:.0f} kW')
-        print(f'pv:\t {self.capacity_pv:.0f} kW')
-        print(f'st:\t {self.capacity_battery:.0f} kW')
-        print(f'inv:\t {self.capacity_inverter:.0f} kW')
-        print(f'rect:\t {self.capacity_rectifier:.0f} kW')
-        print(f'peak:\t {self.sequences_demand.max():.0f} kW')
-        print(f'excess:\t {self.sequences_excess.max():.0f} kW')
-        print(40 * '*')
+        print("")
+        print(40 * "*")
+        print(f"LCOE:\t {self.lcoe:.2f} cent/kWh")
+        print(f"RES:\t {self.res:.0f}%")
+        print(f"Excess:\t {self.excess_rate:.1f}% of the total production")
+        print(f"Shortage: {self.shortage:.1f}% of the total demand")
+        print(f"AC--DC:\t {self.genset_to_dc:.1f}% of the genset production")
+        print(40 * "*")
+        print(f"genset:\t {self.capacity_genset:.0f} kW")
+        print(f"pv:\t {self.capacity_pv:.0f} kW")
+        print(f"st:\t {self.capacity_battery:.0f} kW")
+        print(f"inv:\t {self.capacity_inverter:.0f} kW")
+        print(f"rect:\t {self.capacity_rectifier:.0f} kW")
+        print(f"peak:\t {self.sequences_demand.max():.0f} kW")
+        print(f"excess:\t {self.sequences_excess.max():.0f} kW")
+        print(40 * "*")

@@ -896,6 +896,7 @@ async def optimize_energy_system(optimize_energy_system_request: models.Optimize
         battery=optimize_energy_system_request.battery,
         inverter=optimize_energy_system_request.inverter,
         rectifier=optimize_energy_system_request.rectifier,
+        shortage=optimize_energy_system_request.shortage,
     )
     ensys_opt.optimize_energy_system()
 
