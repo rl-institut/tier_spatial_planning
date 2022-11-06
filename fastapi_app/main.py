@@ -1,6 +1,7 @@
 from statistics import mode
 from sqlalchemy.sql.expression import column, false, true
 from sqlalchemy.sql.sqltypes import Boolean
+from fastapi_app.tools import grids
 import fastapi_app.tools.boundary_identification as bi
 import fastapi_app.tools.coordinates_conversion as conv
 import fastapi_app.tools.shs_identification as shs_ident
@@ -242,13 +243,15 @@ async def database_initialization(nodes, links):
     ]
     header_stored_results = [
         "n_consumers",
+        "n_shs_consumers",
         "n_poles",
         "length_hv_cable",
         "length_lv_cable",
         "cost_grid",
+        "cost_shs",
         "lcoe",
         "res",
-        "co2_savings",
+        "shortage_total",
         "surplus_rate",
         "cost_renewable_assets",
         "cost_non_renewable_assets",
@@ -432,7 +435,7 @@ async def load_results():
     results['cost_grid'] = str(df.loc[0, 'cost_grid']) + ' USD/a'
     results['lcoe'] = str(df.loc[0, 'lcoe']) + ' c/kWh'
     results['res'] = str(df.loc[0, 'res']) + ' %'
-    results['co2_savings'] = str(df.loc[0, 'co2_savings']) + ' t/a'
+    results['shortage_total'] = str(df.loc[0, 'shortage_total']) + ' %'
     results['surplus_rate'] = str(df.loc[0, 'surplus_rate']) + ' %'
     results['solver'] = str(df.loc[0, 'solver']).title()
     results['grid_optimization'] = str(df.loc[0, 'grid_optimization'])
@@ -628,13 +631,40 @@ async def database_add_remove_automatic(
             nodes["node_type"].append("consumer")
             nodes["consumer_type"].append("household")
             nodes["consumer_detail"].append("default")
-
             # surface area is taken from the open street map
             nodes["surface_area"].append(building_area[label])
 
-        # after collecting all surface areas, based on a simple assumption, the peak demand will be obtained
-        max_surface_area = max(nodes['surface_area'])
+        # Add the peak demand and average annual consumption for each node
+        demand_estimation(nodes=nodes, update_total_demand=False)
 
+        # storing the nodes in the database
+        database_add(add_nodes=True, add_links=False, inlet=nodes)
+
+    else:
+        # reading the existing CSV file of nodes, and then removing the corresponding row
+        df = pd.read_csv(full_path_nodes)
+        number_of_nodes = df.shape[0]
+        for index in range(number_of_nodes):
+            if bi.is_point_in_boundaries(point_coordinates=(df.to_dict()['latitude'][index], df.to_dict()['longitude'][index]), boundaries=boundary_coordinates):
+                df.drop(labels=index, axis=0, inplace=True)
+
+        # removing all nodes and links
+        await database_initialization(nodes=True, links=True)
+
+        # storing the nodes in the database (updating the existing CSV file)
+        df = df.reset_index(drop=True)
+        database_add(add_nodes=True, add_links=False, inlet=df.to_dict())
+
+
+def demand_estimation(nodes, update_total_demand):
+
+    # after collecting all surface areas, based on a simple assumption, the peak demand will be obtained
+    max_surface_area = max(nodes['surface_area'])
+
+    # normalized demands is a CSV file with 5 columns representing the very low to very high demand profiles
+    normalized_demands = pd.read_csv(full_path_demands, delimiter=';', header=None)
+
+    if update_total_demand:
         # calculate the total peak demand for each of the five demand profiles to make the final demand profile
         peak_very_low_demand = 0
         peak_low_demand = 0
@@ -642,25 +672,41 @@ async def database_add_remove_automatic(
         peak_high_demand = 0
         peak_very_high_demand = 0
 
+        for area in nodes[nodes["is_connected"] == True]['surface_area']:
+            if area <= 0.2 * max_surface_area:
+                peak_very_low_demand += (0.01 * area)
+            elif area < 0.4 * max_surface_area:
+                peak_low_demand += (0.02 * area)
+            elif area < 0.6 * max_surface_area:
+                peak_medium_demand += (0.03 * area)
+            elif area < 0.8 * max_surface_area:
+                peak_high_demand += (0.04 * area)
+            else:
+                peak_very_high_demand += (0.05 * area)
+
+        # create the total demand profile of the selected buildings
+        total_demand = normalized_demands.iloc[:, 0] * peak_very_low_demand + normalized_demands.iloc[:, 1] * peak_low_demand + \
+            normalized_demands.iloc[:, 2] * peak_medium_demand + normalized_demands.iloc[:, 3] * peak_high_demand + \
+            normalized_demands.iloc[:, 4] * peak_very_high_demand
+
+       # load timeseries data
+        timeseries = pd.read_csv(full_path_timeseries)
+        # replace the demand column in the timeseries file with the total demand calculated here
+        timeseries['Demand'] = total_demand
+        # update the CSV file
+        timeseries.to_csv(full_path_timeseries, index=False)
+    else:
         for area in nodes['surface_area']:
             if area <= 0.2 * max_surface_area:
                 nodes['peak_demand'].append(0.01 * area)
-                peak_very_low_demand += (0.01 * area)
             elif area < 0.4 * max_surface_area:
                 nodes['peak_demand'].append(0.02 * area)
-                peak_low_demand += (0.02 * area)
             elif area < 0.6 * max_surface_area:
                 nodes['peak_demand'].append(0.03 * area)
-                peak_medium_demand += (0.03 * area)
             elif area < 0.8 * max_surface_area:
                 nodes['peak_demand'].append(0.04 * area)
-                peak_high_demand += (0.04 * area)
             else:
                 nodes['peak_demand'].append(0.05 * area)
-                peak_very_high_demand += (0.05 * area)
-
-        # normalized demands is a CSV file with 5 columns representing the very low to very high demand profiles
-        normalized_demands = pd.read_csv(full_path_demands, delimiter=';', header=None)
 
         max_peak_demand = max(nodes['peak_demand'])
         counter = 0
@@ -691,37 +737,7 @@ async def database_add_remove_automatic(
             # the node is selected automatically after drawing boundaries
             nodes["how_added"].append("automatic")
 
-        # storing the nodes in the database
-        database_add(add_nodes=True, add_links=False, inlet=nodes)
-
-        # create the total demand profile of the selected buildings
-        total_demand = normalized_demands.iloc[:, 0] * peak_very_low_demand + normalized_demands.iloc[:, 1] * peak_low_demand + \
-            normalized_demands.iloc[:, 2] * peak_medium_demand + normalized_demands.iloc[:, 3] * peak_high_demand + \
-            normalized_demands.iloc[:, 4] * peak_very_high_demand
-
-        # load timeseries data
-        timeseries = pd.read_csv(full_path_timeseries)
-
-        # replace the demand column in the timeseries file with the total demand calculated here
-        timeseries['Demand'] = total_demand
-
-        # update the CSV file
-        timeseries.to_csv(full_path_timeseries, index=False)
-
-    else:
-        # reading the existing CSV file of nodes, and then removing the corresponding row
-        df = pd.read_csv(full_path_nodes)
-        number_of_nodes = df.shape[0]
-        for index in range(number_of_nodes):
-            if bi.is_point_in_boundaries(point_coordinates=(df.to_dict()['latitude'][index], df.to_dict()['longitude'][index]), boundaries=boundary_coordinates):
-                df.drop(labels=index, axis=0, inplace=True)
-
-        # removing all nodes and links
-        await database_initialization(nodes=True, links=True)
-
-        # storing the nodes in the database (updating the existing CSV file)
-        df = df.reset_index(drop=True)
-        database_add(add_nodes=True, add_links=False, inlet=df.to_dict())
+        return nodes
 
 
 @ app.post("/optimize_grid/")
@@ -782,6 +798,12 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
         component_lifetime=grid_input_data['pole_lifetime'],
     )) * opt.n_days / 365
 
+    epc_shs = (opt.crf * Optimizer.capex_multi_investment(
+        opt,
+        capex_0=grid_input_data['shs_capex'],
+        component_lifetime=10,  # TODO: must be implemented in the frontend
+    )) * opt.n_days / 365
+
     grid = Grid(
         epc_hv_cable=epc_hv_cable,
         epc_lv_cable=epc_lv_cable,
@@ -792,7 +814,7 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
 
     # make sure that the new grid object is empty before adding nodes to it
     grid.clear_nodes()
-    grid.clear_links()
+    grid.clear_all_links()
 
     # exclude solar-home-systems and poles from the grid optimization
     for node_index in nodes.index:
@@ -804,7 +826,9 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
                 longitude=nodes.longitude[node_index],
                 latitude=nodes.latitude[node_index],
                 node_type=nodes.node_type[node_index],
-                is_connected=nodes.is_connected[node_index]
+                is_connected=nodes.is_connected[node_index],
+                peak_demand=nodes.peak_demand[node_index],
+                surface_area=nodes.surface_area[node_index],
             )
 
     # convert all (long,lat) coordinates to (x,y) coordinates and update
@@ -816,30 +840,175 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     # new locations for poles considering the newly added nodes
     grid.clear_poles()
 
+    # Find the location of the power house which corresponds to the centroid
+    # load of the village
+    grid.get_load_centroid()
+
+    # Calculate all distanced from the load centroid
+    grid.get_nodes_distances_from_load_centroid()
+
+    # Find the number of SHS consumers (temporarily)
+    shs_share = 0
+    n_total_consumers = grid.nodes.shape[0]
+    n_shs_consumers = int(np.ceil(shs_share * n_total_consumers))
+    n_mg_consumers = n_total_consumers - n_shs_consumers
+
+    # Sort nodes based on their distance to the load center.
+    grid.nodes.sort_values("distance_to_load_center", ascending=False, inplace=True)
+
+    # Convert the first `n_shs_consumer` nodes into candidates for SHS.
+    grid.nodes.at[grid.nodes.index[0:n_shs_consumers], "is_connected"] = False
+
+    # Sort nodes again based on their index label. Here, since the index is
+    # string, sorting the nodes without changing the type of index would result
+    # in a case, that '10' comes before '2'.
+    grid.nodes.sort_index(key=lambda x: x.astype('int64'), inplace=True)
+
+    # Create the demand profile for the energy system optimization based on the
+    # number of mini-grid consumers.
+    demand_estimation(nodes=grid.nodes, update_total_demand=True)
+
     # calculate the minimum number of poles based on the
     # maximum number of connectins at each pole
     if grid.pole_max_connection == 0:
         min_number_of_poles = 1
     else:
         min_number_of_poles = (
-            int(np.ceil(grid.nodes.shape[0]/(grid.pole_max_connection)))
+            int(np.ceil(n_mg_consumers/(grid.pole_max_connection)))
         )
 
-    # obtain the optimal number of poles by increasing the minimum number of poles
-    # and each time applying the kmeans clustering algorithm and minimum spanning tree
-    number_of_poles = opt.find_opt_number_of_poles(
-        grid=grid,
-        min_n_clusters=min_number_of_poles
-    )
+    if n_mg_consumers <= 2:
+        # For low number of consumers, the more accurate algorithm, which is
+        # based on the linear programming, can be used.
+        optimization_success = False
+        label_long_link = ""
+        while optimization_success == False and min_number_of_poles < n_mg_consumers:
+            # obtain the optimal number of poles by increasing the minimum number of poles
+            # and each time applying the kmeans clustering algorithm and minimum spanning tree
+            number_of_poles = opt.find_opt_number_of_poles(
+                grid=grid,
+                min_n_clusters=min_number_of_poles
+            )
 
-    number_of_relaxation_steps_nr = optimize_grid_request.optimization['n_relaxation_steps']
+            # Check if there is a very long connection in the grid.
+            label_long_link = grid.find_index_longest_pole(
+                max_distance_dist_links=35
+            )
 
-    opt.nr_optimization(grid=grid,
-                        number_of_poles=number_of_poles,
-                        number_of_relaxation_steps=number_of_relaxation_steps_nr,
-                        first_guess_strategy='random',
-                        save_output=False,
-                        number_of_hill_climbers_runs=0)
+            opt_results = opt.linprog_optimization(
+                grid=grid,
+                label_long_link=label_long_link,
+                max_distance_trans_links=35/np.sqrt(2),
+                max_distance_dist_links=25/np.sqrt(2)
+            )
+
+            optimization_success = opt_results.success
+
+            # If the optimization problem did not converge, one more pole will be
+            # added.
+            min_number_of_poles += 1
+
+        # If the optimization converges, results will be saved into the grid
+        if optimization_success == True:
+            for pole in grid.poles().index:
+                index_x_pole = int(pole[2:])
+                index_y_pole = int(pole[2:]) + number_of_poles
+                grid.nodes.x[pole] = opt_results.x[index_x_pole]
+                grid.nodes.y[pole] = opt_results.x[index_y_pole]
+                grid.nodes.how_added[pole] = "linear-programming"
+
+            list_index_longest_links = []
+            label_long_link = grid.find_index_longest_pole(
+                max_distance_dist_links=35,
+            )
+            while label_long_link != "":
+
+                # Check if there is a very long connection in the grid.
+                grid.add_fixed_poles_on_long_links(
+                    max_allowed_distance=35,
+                    label_long_link=label_long_link,
+                )
+
+                # update the (lon,lat) coordinates based on the new (x,y)
+                # coordinates for poles
+                grid.convert_lonlat_xy(inverse=True)
+
+                # create a new network based on the new coordinates of the poles
+                # in the grid
+                list_index_longest_links.append(label_long_link)
+                opt.connect_grid_poles(grid, index_long_links=list_index_longest_links)
+
+                # Again obtain the longest link in the grid and if its length is
+                # more than the critical range, the procedure must be repeated.
+                label_long_link = grid.find_index_longest_pole(
+                    max_distance_dist_links=35,
+                )
+    else:
+        # In case the number of consumers are more than a certain number, a
+        # rough estimation is used for the grid layout.
+
+        # First, the appropriate number of poles should be selected, to meet
+        # the constraint on the maximum distance between consumers and poles.
+        while True:
+            # Initial number of poles.
+            number_of_poles = opt.find_opt_number_of_poles(
+                grid=grid,
+                min_n_clusters=min_number_of_poles
+            )
+
+            # Find those connections with constraint violation.
+            constraints_violation = grid.links[grid.links["link_type"] == "distribution"]
+            constraints_violation = constraints_violation[constraints_violation["length"] > 30]
+
+            # Increase the number of poles if necessary.
+            if constraints_violation.shape[0] > 0:
+                min_number_of_poles += 1
+            else:
+                break
+
+        list_index_longest_links = []
+        label_long_link = grid.find_index_longest_pole(
+            max_distance_dist_links=35,
+        )
+        while label_long_link != "":
+
+            # Check if there is a very long connection in the grid.
+            grid.add_fixed_poles_on_long_links(
+                max_allowed_distance=35,
+                label_long_link=label_long_link,
+            )
+
+            # update the (lon,lat) coordinates based on the new (x,y)
+            # coordinates for poles
+            grid.convert_lonlat_xy(inverse=True)
+
+            # # Connect all consumers to the nearest pole.
+            # opt.connect_grid_consumers(grid=grid)
+
+            # create a new network based on the new coordinates of the poles
+            # in the grid
+            list_index_longest_links.append(label_long_link)
+            opt.connect_grid_poles(grid, index_long_links=list_index_longest_links)
+
+            # Again obtain the longest link in the grid and if its length is
+            # more than the critical range, the procedure must be repeated.
+            label_long_link = grid.find_index_longest_pole(
+                max_distance_dist_links=35,
+            )
+
+        # number_of_relaxation_steps_nr = optimize_grid_request.optimization['n_relaxation_steps']
+
+        # opt.nr_optimization(grid=grid,
+        #                     number_of_poles=number_of_poles,
+        #                     number_of_relaxation_steps=number_of_relaxation_steps_nr,
+        #                     first_guess_strategy='random',
+        #                     save_output=False,
+        #                     number_of_hill_climbers_runs=0)
+
+    # Calculate the cost of SHS.
+    peak_demand_shs_consumers = grid.nodes[grid.nodes["is_connected"]
+                                           == False].loc[:, "peak_demand"]
+    cost_shs = epc_shs * peak_demand_shs_consumers.sum()
 
     # get all poles obtained by the network relaxation method
     poles = grid.poles().reset_index(drop=True)
@@ -865,12 +1034,14 @@ async def optimize_grid(optimize_grid_request: models.OptimizeGridRequest,
     # store data for showing in the final results
     df = pd.read_csv(full_path_stored_results)
     df.loc[0, 'n_consumers'] = len(grid.consumers())
+    df.loc[0, 'n_shs_consumers'] = n_shs_consumers
     df.loc[0, 'n_poles'] = len(grid.poles())
     df.loc[0, 'length_hv_cable'] = int(
         grid.links[grid.links.link_type == 'interpole']['length'].sum())
     df.loc[0, 'length_lv_cable'] = int(
         grid.links[grid.links.link_type == 'distribution']['length'].sum())
     df.loc[0, 'cost_grid'] = int(grid.cost())
+    df.loc[0, 'cost_shs'] = int(cost_shs)
     df.loc[0, 'grid_optimization'] = 'NR'
     df.to_csv(full_path_stored_results, mode='a', header=False, index=False, float_format='%.0f')
 
@@ -926,9 +1097,10 @@ async def optimize_energy_system(optimize_energy_system_request: models.Optimize
     df.loc[0, 'cost_non_renewable_assets'] = ensys_opt.total_non_renewable
     df.loc[0, 'cost_fuel'] = ensys_opt.total_fuel
     df.loc[0, 'lcoe'] = 100 * (ensys_opt.total_revenue +
-                               df.loc[0, 'cost_grid']) / ensys_opt.total_demand
+                               df.loc[0, 'cost_grid'] +
+                               df.loc[0, 'cost_shs']) / ensys_opt.total_demand
     df.loc[0, 'res'] = ensys_opt.res
-    df.loc[0, 'co2_savings'] = co2_savings
+    df.loc[0, 'shortage_total'] = ensys_opt.shortage
     df.loc[0, 'surplus_rate'] = ensys_opt.surplus_rate
     df.loc[0, 'pv_capacity'] = ensys_opt.capacity_pv
     df.loc[0, 'battery_capacity'] = ensys_opt.capacity_battery
@@ -989,8 +1161,8 @@ async def optimize_energy_system(optimize_energy_system_request: models.Optimize
         np.sort(ensys_opt.sequences_pv)[::-1] / ensys_opt.sequences_pv.max()
     df.loc[:, 'rectifier_percentage'] = 100 * \
         np.arange(1, len(ensys_opt.sequences_rectifier) + 1) / len(ensys_opt.sequences_rectifier)
-    df.loc[:, 'rectifier_duration'] = 100 * np.sort(ensys_opt.sequences_rectifier)[
-        ::-1] / ensys_opt.sequences_rectifier.max()
+    df.loc[:, 'rectifier_duration'] = 100 * np.nan_to_num(np.sort(ensys_opt.sequences_rectifier)[
+        ::-1] / ensys_opt.sequences_rectifier.max())
     df.loc[:, 'inverter_percentage'] = 100 * \
         np.arange(1, len(ensys_opt.sequences_inverter) + 1) / len(ensys_opt.sequences_inverter)
     df.loc[:, 'inverter_duration'] = 100 * np.sort(ensys_opt.sequences_inverter)[

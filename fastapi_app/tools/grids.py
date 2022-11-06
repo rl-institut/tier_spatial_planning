@@ -1,4 +1,5 @@
 from operator import inv, length_hint
+from turtle import distance
 import numpy as np
 import pandas as pd
 from fastapi_app.tools.io import make_folder
@@ -84,42 +85,42 @@ class Grid:
         grid_id="unnamed_grid",
         nodes=pd.DataFrame(
             {
-                'label': pd.Series([], dtype=str),
-                'latitude': pd.Series([], dtype=np.dtype(float)),
-                'longitude': pd.Series([], dtype=np.dtype(float)),
-                'x': pd.Series([], dtype=np.dtype(float)),
-                'y': pd.Series([], dtype=np.dtype(float)),
-                'node_type': pd.Series([], dtype=str),
-                'consumer_type': pd.Series([], dtype=str),
-                'consumer_detail': pd.Series([], dtype=str),
-                'surface_area': pd.Series([], dtype=np.dtype(float)),
-                'peak_demand': pd.Series([], dtype=np.dtype(float)),
-                'average_consumption': pd.Series([], dtype=np.dtype(float)),
-                'is_connected': pd.Series([], dtype=bool),
-                'how_added': pd.Series([], dtype=str),
-                'type_fixed': pd.Series([], dtype=bool),
-                'cluster_label': pd.Series([], dtype=np.dtype(int)),
-                'segment': pd.Series([], dtype=np.dtype(str)),
-                'allocation_capacity': pd.Series([],
-                                                 dtype=np.dtype(int))
+                "label": pd.Series([], dtype=str),
+                "latitude": pd.Series([], dtype=np.dtype(float)),
+                "longitude": pd.Series([], dtype=np.dtype(float)),
+                "x": pd.Series([], dtype=np.dtype(float)),
+                "y": pd.Series([], dtype=np.dtype(float)),
+                "node_type": pd.Series([], dtype=str),
+                "consumer_type": pd.Series([], dtype=str),
+                "consumer_detail": pd.Series([], dtype=str),
+                "surface_area": pd.Series([], dtype=np.dtype(float)),
+                "peak_demand": pd.Series([], dtype=np.dtype(float)),
+                "average_consumption": pd.Series([], dtype=np.dtype(float)),
+                "distance_to_load_center": pd.Series([], dtype=np.dtype(float)),
+                "is_connected": pd.Series([], dtype=bool),
+                "how_added": pd.Series([], dtype=str),
+                "type_fixed": pd.Series([], dtype=bool),
+                "cluster_label": pd.Series([], dtype=np.dtype(int)),
+                "segment": pd.Series([], dtype=np.dtype(str)),
+                "allocation_capacity": pd.Series([], dtype=np.dtype(int)),
             }
-        ).set_index('label'),
+        ).set_index("label"),
         ref_node=np.zeros(2),
         links=pd.DataFrame(
             {
-                'label': pd.Series([], dtype=str),
-                'lat_from': pd.Series([], dtype=np.dtype(float)),
-                'lon_from': pd.Series([], dtype=np.dtype(float)),
-                'lat_to': pd.Series([], dtype=np.dtype(float)),
-                'lon_to': pd.Series([], dtype=np.dtype(float)),
-                'x_from': pd.Series([], dtype=np.dtype(float)),
-                'y_from': pd.Series([], dtype=np.dtype(float)),
-                'x_to': pd.Series([], dtype=np.dtype(float)),
-                'y_to': pd.Series([], dtype=np.dtype(float)),
-                'link_type': pd.Series([], dtype=str),
-                'length': pd.Series([], dtype=int)
+                "label": pd.Series([], dtype=str),
+                "lat_from": pd.Series([], dtype=np.dtype(float)),
+                "lon_from": pd.Series([], dtype=np.dtype(float)),
+                "lat_to": pd.Series([], dtype=np.dtype(float)),
+                "lon_to": pd.Series([], dtype=np.dtype(float)),
+                "x_from": pd.Series([], dtype=np.dtype(float)),
+                "y_from": pd.Series([], dtype=np.dtype(float)),
+                "x_to": pd.Series([], dtype=np.dtype(float)),
+                "y_to": pd.Series([], dtype=np.dtype(float)),
+                "link_type": pd.Series([], dtype=str),
+                "length": pd.Series([], dtype=int),
             }
-        ).set_index('label'),
+        ).set_index("label"),
         epc_hv_cable=2,  # per meter
         epc_lv_cable=0.5,  # per meter
         epc_connection=12,
@@ -130,11 +131,13 @@ class Grid:
         grid_mst=pd.DataFrame({}, dtype=np.dtype(float)),
         cables=pd.DataFrame(
             {
-                'cable_type': pd.Series(['interpole', 'distribution'], dtype=str),
-                'section_area': pd.Series([4, 2.5], dtype=np.dtype(float)),  # [mm²]
-                'resistivity': pd.Series([0.0171, 0.0171], dtype=np.dtype(float))  # [Ohm*mm²/m]
+                "cable_type": pd.Series(["interpole", "distribution"], dtype=str),
+                "section_area": pd.Series([4, 2.5], dtype=np.dtype(float)),  # [mm²]
+                "resistivity": pd.Series(
+                    [0.0171, 0.0171], dtype=np.dtype(float)
+                ),  # [Ohm*mm²/m]
             }
-        )
+        ),
     ):
         self.id = grid_id
         self.nodes = nodes
@@ -151,22 +154,117 @@ class Grid:
         self.epc_pole = epc_pole
 
     # -------------------- NODES -------------------- #
+    def get_load_centroid(self):
+        """
+        This function obtains the ideal location for the power house, which is
+        at the load centroid of the village.
+        """
+        x_centroid = np.average(self.nodes["x"], weights=self.nodes["peak_demand"])
+        y_centroid = np.average(self.nodes["y"], weights=self.nodes["peak_demand"])
+        self.load_centroid = [x_centroid, y_centroid]
+
+    def get_nodes_distances_from_load_centroid(self):
+        """
+        This function calculates all distances between the nodes and the load
+        centroid of the village.
+        """
+        for node_index in self.nodes.index:
+            x_node = self.nodes.x.loc[node_index]
+            y_node = self.nodes.y.loc[node_index]
+
+            distance = np.sqrt(
+                (x_node - self.load_centroid[0]) ** 2
+                + (y_node - self.load_centroid[1]) ** 2
+            )
+
+            self.nodes.distance_to_load_center.loc[node_index] = distance
 
     def clear_nodes(self):
         """
         Removes all nodes from the grid.
         """
-        self.nodes = self.nodes.drop(
-            [label for label in self.nodes.index],
-            axis=0)
+        self.nodes = self.nodes.drop([label for label in self.nodes.index], axis=0)
 
     def clear_poles(self):
         """
         Removes all poles from the grid.
         """
         self.nodes = self.nodes.drop(
-            [label for label in self.nodes.index if self.nodes.node_type.loc[label] == 'pole'],
-            axis=0)
+            [
+                label
+                for label in self.nodes.index
+                if self.nodes.node_type.loc[label] == "pole"
+            ],
+            axis=0,
+        )
+
+    def find_index_longest_pole(self, max_distance_dist_links):
+        # First select the interpole links from the entire links.
+        interpole_links = self.links[self.links["link_type"] == "interpole"]
+
+        # Find the links longer than two times of the allowed distance
+        critical_link = interpole_links[
+            interpole_links["length"] == interpole_links["length"].max()
+        ]
+        if critical_link.length[0] > 2 * max_distance_dist_links:
+            return critical_link.index[0]
+        else:
+            return ""
+
+        # for index in interpole_links.index:
+        #     if interpole_links.at[index, "length"] > 2 * max_distance_dist_links:
+        #         n_long_links += 1
+        #         index_long_link = index
+
+        # # Only when there is ONE very long connection in the gtid, the link
+        # # label will be given to the optimizer to be ignored. Otherwise, an
+        # # additional pole will be added to the grid.
+        # if n_long_links == 1:
+        #     return index_long_link
+        # elif n_long_links > 1:
+        #     return "many_long_links"
+        # else:
+        #     return ""
+
+    def add_fixed_poles_on_long_links(
+        self,
+        label_long_link,
+        max_allowed_distance,
+    ):
+        x_from = self.links.x_from[label_long_link]
+        x_to = self.links.x_to[label_long_link]
+        y_from = self.links.y_from[label_long_link]
+        y_to = self.links.y_to[label_long_link]
+        n_required_poles = int(
+            np.ceil(self.links.length[label_long_link] / max_allowed_distance) - 1
+        )
+        index_last_pole = int(self.poles().index[-1].split("-")[1])
+        slope = (y_to - y_from) / (x_to - x_from)
+        length_of_each_new_link = self.links.length[label_long_link] / (
+            n_required_poles + 1
+        )
+
+        for i in range(1, n_required_poles + 1):
+            x = x_from + np.sign(x_to - x_from) * i * length_of_each_new_link * np.sqrt(
+                1 / (1 + slope**2)
+            )
+            y = y_from + np.sign(y_to - y_from) * i * length_of_each_new_link * abs(
+                slope
+            ) * np.sqrt(1 / (1 + slope**2))
+
+            pole_label = f"p-{i+index_last_pole}"
+            self.add_node(
+                label=pole_label,
+                x=x,
+                y=y,
+                node_type="pole",
+                consumer_type="n.a.",
+                consumer_detail="n.a.",
+                is_connected=True,
+                how_added="long-distance-init",
+                type_fixed=True,
+                cluster_label=1000,
+            )
 
     def add_node(
         self,
@@ -175,18 +273,19 @@ class Grid:
         longitude=0,
         x=0,
         y=0,
-        node_type='consumer',
-        consumer_type='household',
-        consumer_detail='default',
+        node_type="consumer",
+        consumer_type="household",
+        consumer_detail="default",
         surface_area=0,
         peak_demand=0,  # FIXME: must be read automatically
         average_consumption=0,  # FIXME: must be read automatically
+        distance_to_load_center=0,
         is_connected=True,
-        how_added='automatic',
+        how_added="automatic",
         type_fixed=False,
-        segment='0',
+        segment="0",
         cluster_label=0,
-        allocation_capacity=0
+        allocation_capacity=0,
     ):
         """
         adds a node to the grid's node dataframe.
@@ -196,21 +295,45 @@ class Grid:
         already defined in the 'Grid' object definition
         """
 
-        self.nodes.at[label, 'longitude'] = longitude
-        self.nodes.at[label, 'latitude'] = latitude
-        self.nodes.at[label, 'x'] = x
-        self.nodes.at[label, 'y'] = y
-        self.nodes.at[label, 'node_type'] = node_type
-        self.nodes.at[label, 'consumer_type'] = consumer_type
-        self.nodes.at[label, 'consumer_detail'] = consumer_detail
-        self.nodes.at[label, 'surface_area'] = surface_area
-        self.nodes.at[label, 'peak_demand'] = peak_demand
-        self.nodes.at[label, 'average_consumption'] = average_consumption
-        self.nodes.at[label, 'is_connected'] = is_connected
-        self.nodes.at[label, 'how_added'] = how_added
-        self.nodes.at[label, 'type_fixed'] = type_fixed
-        self.nodes.at[label, 'segment'] = segment
-        self.nodes.at[label, 'cluster_label'] = cluster_label
+        self.nodes.at[label, "longitude"] = longitude
+        self.nodes.at[label, "latitude"] = latitude
+        self.nodes.at[label, "x"] = x
+        self.nodes.at[label, "y"] = y
+        self.nodes.at[label, "node_type"] = node_type
+        self.nodes.at[label, "consumer_type"] = consumer_type
+        self.nodes.at[label, "consumer_detail"] = consumer_detail
+        self.nodes.at[label, "surface_area"] = surface_area
+        self.nodes.at[label, "peak_demand"] = peak_demand
+        self.nodes.at[label, "average_consumption"] = average_consumption
+        self.nodes.at[label, "distance_to_load_center"] = distance_to_load_center
+        self.nodes.at[label, "is_connected"] = is_connected
+        self.nodes.at[label, "how_added"] = how_added
+        self.nodes.at[label, "type_fixed"] = type_fixed
+        self.nodes.at[label, "segment"] = segment
+        self.nodes.at[label, "cluster_label"] = cluster_label
+
+    def remove_node(self, node_label):
+        """
+        This function removes the node with a given `node_label`.
+
+        Parameter
+        ---------
+        node_label: str
+            Node to be removed from the grid
+
+        Notes
+        -----
+        If the `node_label` doesn't correspond to any node in the grid, the
+        function raises a warning.
+        """
+        node_label = str(node_label)
+        if node_label in self.nodes.index:
+            self.nodes.at[node_label, "is_connected"] = False
+        else:
+            raise Warning(
+                f"The node label given as input ('{node_label}') "
+                + "doesn't exist in the grid"
+            )
 
     def consumers(self):
         """
@@ -221,7 +344,7 @@ class Grid:
         class:`pandas.core.frame.DataFrame`
             filtered pandas dataframe containing all 'consumer' nodes
         """
-        return self.nodes[self.nodes['node_type'] == 'consumer']
+        return self.nodes[self.nodes["node_type"] == "consumer"]
 
     def poles(self):
         """
@@ -232,7 +355,7 @@ class Grid:
         class:`pandas.core.frame.DataFrame`
             filtered pandas dataframe containing all 'pole' nodes
         """
-        return self.nodes[self.nodes['node_type'] == 'pole']
+        return self.nodes[self.nodes["node_type"] == "pole"]
 
     def distance_between_nodes(self, label_node_1: str, label_node_2: str):
         """
@@ -260,6 +383,7 @@ class Grid:
             return np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
         else:
             return np.infty
+
     # -------------------- LINKS -------------------- #
 
     def get_links(self):
@@ -273,13 +397,33 @@ class Grid:
         """
         return self.links
 
-    def clear_links(self):
+    def clear_all_links(self):
         """
         Removes all links from the grid.
         """
         self.links = self.get_links().drop(
             [label for label in self.get_links().index], axis=0
         )
+
+    def clear_links(self, link_type):
+        """
+        Removes all link types given by the user from the grid.
+        """
+        self.links = self.get_links().drop(
+            [
+                label
+                for label in self.get_links()[
+                    self.get_links()["link_type"] == link_type
+                ].index
+            ],
+            axis=0,
+        )
+
+    def remove_link(self, index):
+        """
+        Removes one link from the grid.
+        """
+        self.links = self.get_links().drop(index, axis=0)
 
     def add_links(self, label_node_from: str, label_node_to: str):
         """
@@ -302,12 +446,15 @@ class Grid:
         """
 
         # specify the type of the link which is obtained based on the start/end nodes of the link
-        if (self.nodes.node_type.loc[label_node_from] and self.nodes.node_type.loc[label_node_to]) == 'pole':
+        if (
+            self.nodes.node_type.loc[label_node_from]
+            and self.nodes.node_type.loc[label_node_to]
+        ) == "pole":
             # convention: if two poles are getting connected, the begining will be the one with lower number
             (label_node_from, label_node_to) = sorted([label_node_from, label_node_to])
-            link_type = 'interpole'
+            link_type = "interpole"
         else:
-            link_type = 'distribution'
+            link_type = "distribution"
 
         # calculate the length of the link
         length = self.distance_between_nodes(
@@ -315,17 +462,17 @@ class Grid:
         )
 
         # define a label for the link and add all other charateristics to the grid object
-        label = f'({label_node_from}, {label_node_to})'
-        self.links.at[label, 'lat_from'] = self.nodes.latitude.loc[label_node_from]
-        self.links.at[label, 'lon_from'] = self.nodes.longitude.loc[label_node_from]
-        self.links.at[label, 'lat_to'] = self.nodes.latitude.loc[label_node_to]
-        self.links.at[label, 'lon_to'] = self.nodes.longitude.loc[label_node_to]
-        self.links.at[label, 'x_from'] = self.nodes.x.loc[label_node_from]
-        self.links.at[label, 'y_from'] = self.nodes.y.loc[label_node_from]
-        self.links.at[label, 'x_to'] = self.nodes.x.loc[label_node_to]
-        self.links.at[label, 'y_to'] = self.nodes.y.loc[label_node_to]
-        self.links.at[label, 'link_type'] = link_type
-        self.links.at[label, 'length'] = length
+        label = f"({label_node_from}, {label_node_to})"
+        self.links.at[label, "lat_from"] = self.nodes.latitude.loc[label_node_from]
+        self.links.at[label, "lon_from"] = self.nodes.longitude.loc[label_node_from]
+        self.links.at[label, "lat_to"] = self.nodes.latitude.loc[label_node_to]
+        self.links.at[label, "lon_to"] = self.nodes.longitude.loc[label_node_to]
+        self.links.at[label, "x_from"] = self.nodes.x.loc[label_node_from]
+        self.links.at[label, "y_from"] = self.nodes.y.loc[label_node_from]
+        self.links.at[label, "x_to"] = self.nodes.x.loc[label_node_to]
+        self.links.at[label, "y_to"] = self.nodes.y.loc[label_node_to]
+        self.links.at[label, "link_type"] = link_type
+        self.links.at[label, "length"] = length
 
     def total_length_interpole_cable(self):
         """
@@ -336,7 +483,7 @@ class Grid:
         type: float
             the total length of the interpole cable in the grid
         """
-        return self.links.length[self.links.link_type == 'interpole'].sum()
+        return self.links.length[self.links.link_type == "interpole"].sum()
 
     def total_length_distribution_cable(self):
         """
@@ -347,7 +494,7 @@ class Grid:
         type: float
             total length of the distribution cable in the grid.
         """
-        return self.links.length[self.links.link_type == 'distribution'].sum()
+        return self.links.length[self.links.link_type == "distribution"].sum()
 
     # -------------------- OPERATIONS -------------------- #
 
@@ -366,7 +513,7 @@ class Grid:
             + true: x,y --> lon/lat
         """
 
-        p = Proj(proj='utm', zone=32, ellps='WGS84', preserve_units=False)
+        p = Proj(proj="utm", zone=32, ellps="WGS84", preserve_units=False)
 
         # if inverse=true, this is the case when the (x,y) coordinates of the obtained
         # poles (from the optimization) are converted into (lon,lat)
@@ -375,20 +522,20 @@ class Grid:
                 lon, lat = p(
                     self.nodes.x.loc[node_index] + self.ref_node[0],
                     self.nodes.y.loc[node_index] + self.ref_node[1],
-                    inverse=inverse
+                    inverse=inverse,
                 )
-                self.nodes.at[node_index, 'longitude'] = lon
-                self.nodes.at[node_index, 'latitude'] = lat
+                self.nodes.at[node_index, "longitude"] = lon
+                self.nodes.at[node_index, "latitude"] = lat
 
         else:
             for node_index in self.consumers().index:
                 x, y = p(
                     self.nodes.longitude.loc[node_index],
                     self.nodes.latitude.loc[node_index],
-                    inverse=inverse
+                    inverse=inverse,
                 )
-                self.nodes.at[node_index, 'x'] = x
-                self.nodes.at[node_index, 'y'] = y
+                self.nodes.at[node_index, "x"] = x
+                self.nodes.at[node_index, "y"] = y
 
             # store reference values for (x,y) to use later when converting (x,y) to (lon,lat)
             self.ref_node[0] = min(self.nodes.x)
@@ -412,13 +559,15 @@ class Grid:
         """
 
         # get the number of poles, consumers and links fron the grid
-        number_of_poles = self.poles().shape[0]
-        number_of_consumers = self.consumers().shape[0]
-        number_of_links = self.get_links().shape[0]
+        n_poles = self.poles().shape[0]
+        n_mg_consumers = self.consumers()[
+            self.consumers()["is_connected"] == True
+        ].shape[0]
+        n_links = self.get_links().shape[0]
 
         # if there is no poles in the grid, or there is no link,
         # the function returns an infinite value
-        if (number_of_poles == 0) or (number_of_links == 0):
+        if (n_poles == 0) or (n_links == 0):
             return np.infty
 
         # calculate the total length of the cable used between poles [m]
@@ -427,9 +576,12 @@ class Grid:
         # calculate the total length of the distribution cable between poles and consumers
         total_length_distribution_cable = self.total_length_distribution_cable()
 
-        grid_cost = number_of_poles * self.epc_pole + number_of_consumers * self.epc_connection + \
-            total_length_distribution_cable * self.epc_lv_cable + \
-            total_length_interpole_cable * self.epc_hv_cable
+        grid_cost = (
+            n_poles * self.epc_pole
+            + n_mg_consumers * self.epc_connection
+            + total_length_distribution_cable * self.epc_lv_cable
+            + total_length_interpole_cable * self.epc_hv_cable
+        )
 
         return np.around(grid_cost, decimals=2)
 
@@ -446,8 +598,7 @@ class Grid:
             Filtered DataFrame containing all nodes with 'type_fixed' == True
 
         """
-        return self.nodes[
-            self.nodes['type_fixed'] == False].copy()  # noqa: E712
+        return self.nodes[self.nodes["type_fixed"] == False].copy()  # noqa: E712
 
     def get_meter_per_default_unit(self):
         """
@@ -469,16 +620,16 @@ class Grid:
             Label of the segment
         """
 
-        return self.get_poles()[
-            self.get_poles()['segment']
-            == segment]['allocation_capacity'].sum()
+        return self.get_poles()[self.get_poles()["segment"] == segment][
+            "allocation_capacity"
+        ].sum()
 
     def get_total_pole_capacity(self):
         """
         Returns the total capacity of all the poles in the grid.
 
         """
-        return self.get_poles()['allocation_capacity'].sum()
+        return self.get_poles()["allocation_capacity"].sum()
 
     def get_id(self):
         """
@@ -555,13 +706,21 @@ class Grid:
         returned, otherwise False is returned
         """
 
-        if self.get_links()[
-                (self.get_links()['from'] == label_node1) &
-                (self.get_links()['to'] == label_node2)].shape[0] > 0:
+        if (
+            self.get_links()[
+                (self.get_links()["from"] == label_node1)
+                & (self.get_links()["to"] == label_node2)
+            ].shape[0]
+            > 0
+        ):
             return True
-        elif self.get_links()[
-                (self.get_links()['from'] == label_node2) &
-                (self.get_links()['to'] == label_node1)].shape[0] > 0:
+        elif (
+            self.get_links()[
+                (self.get_links()["from"] == label_node2)
+                & (self.get_links()["to"] == label_node1)
+            ].shape[0]
+            > 0
+        ):
             return True
         else:
             return False
@@ -584,22 +743,23 @@ class Grid:
         """
         # If the sum of the allocation_capacity of the poles is 0, capacity is
         # by default unrestricted
-        if self.get_poles()['allocation_capacity'].sum() == 0:
+        if self.get_poles()["allocation_capacity"].sum() == 0:
             return False
 
         is_capacity_constraint_too_strong = False
-        for segment in self.get_nodes()['segment'].unique():
-            if self.consumers()[
-                self.consumers()['segment'] == segment].shape[0] >\
-                    self.get_poles()[
-                    self.get_poles()['segment']
-                    == segment]['allocation_capacity'].sum():
+        for segment in self.get_nodes()["segment"].unique():
+            if (
+                self.consumers()[self.consumers()["segment"] == segment].shape[0]
+                > self.get_poles()[self.get_poles()["segment"] == segment][
+                    "allocation_capacity"
+                ].sum()
+            ):
                 is_capacity_constraint_too_strong = True
 
         return is_capacity_constraint_too_strong
 
     def number_of_poles_required_to_meet_allocation_capacity_constraint(self):
-        """ This function computes the number of poles with defauld capacity
+        """This function computes the number of poles with defauld capacity
         required to meet allocation capacity constraint.
 
         Output
@@ -612,7 +772,9 @@ class Grid:
         if self.get_default_pole_capacity() == 0:
             return 1
 
-        return int(np.ceil(self.get_nodes().shape[0]/(1 * self.get_default_pole_capacity())))
+        return int(
+            np.ceil(self.get_nodes().shape[0] / (1 * self.get_default_pole_capacity()))
+        )
 
     def is_segment_spanning_tree(self, segment):
         """
@@ -629,38 +791,38 @@ class Grid:
                 Otherwise False is returned
         """
 
-        node_0 = self.get_nodes()[
-            self.get_nodes()['segment'] == segment].index[0]
+        node_0 = self.get_nodes()[self.get_nodes()["segment"] == segment].index[0]
 
         nodes_in_spanning_tree = [node_0]
         loop_in_graph = False
 
         # find all neighbors of node_0
         neighbors_of_node_0 = []
-        for index_neighbour in self.get_links()[(self.get_links()['from']
-                                                 == node_0)]['to']:
+        for index_neighbour in self.get_links()[(self.get_links()["from"] == node_0)][
+            "to"
+        ]:
             neighbors_of_node_0.append(index_neighbour)
-        for index_neighbour in self.get_links()[(self.get_links()['to']
-                                                 == node_0)]['from']:
+        for index_neighbour in self.get_links()[(self.get_links()["to"] == node_0)][
+            "from"
+        ]:
             neighbors_of_node_0.append(index_neighbour)
 
         for neighbor in neighbors_of_node_0:
             if not loop_in_graph:
-                self.loop_detection_iteration(segment,
-                                              nodes_in_spanning_tree,
-                                              loop_in_graph,
-                                              node_0,
-                                              neighbor)
-        segment_size = self.get_nodes()[
-            self.get_nodes()['segment'] == segment].shape[0]
+                self.loop_detection_iteration(
+                    segment, nodes_in_spanning_tree, loop_in_graph, node_0, neighbor
+                )
+        segment_size = self.get_nodes()[self.get_nodes()["segment"] == segment].shape[0]
         return len(nodes_in_spanning_tree) == segment_size
 
-    def loop_detection_iteration(self,
-                                 segment,
-                                 nodes_in_spanning_tree,
-                                 loop_in_graph,
-                                 previous_node,
-                                 current_node):
+    def loop_detection_iteration(
+        self,
+        segment,
+        nodes_in_spanning_tree,
+        loop_in_graph,
+        previous_node,
+        current_node,
+    ):
         """
         This method is a helping method used in the function
         is_segment_spanning_tree to explore graph and discover wheter or not
@@ -691,21 +853,25 @@ class Grid:
         else:
             nodes_in_spanning_tree.append(current_node)
             neighbors_of_current_nodes = []
-            for index_neighbour in self.get_links()[(self.get_links()['from']
-                                                     == current_node)]['to']:
+            for index_neighbour in self.get_links()[
+                (self.get_links()["from"] == current_node)
+            ]["to"]:
                 if index_neighbour != previous_node:
                     neighbors_of_current_nodes.append(index_neighbour)
-            for index_neighbour in self.get_links()[(self.get_links()['to']
-                                                     == current_node)]['from']:
+            for index_neighbour in self.get_links()[
+                (self.get_links()["to"] == current_node)
+            ]["from"]:
                 if index_neighbour != previous_node:
                     neighbors_of_current_nodes.append(index_neighbour)
 
             for next_node in neighbors_of_current_nodes:
-                self.loop_detection_iteration(segment,
-                                              nodes_in_spanning_tree,
-                                              loop_in_graph,
-                                              current_node,
-                                              next_node)
+                self.loop_detection_iteration(
+                    segment,
+                    nodes_in_spanning_tree,
+                    loop_in_graph,
+                    current_node,
+                    next_node,
+                )
 
     # ------------------- SET METHODS --------------------- #
 
@@ -732,29 +898,6 @@ class Grid:
         self.links = links.copy()
 
     # -------------- MANIPULATE NODES --------------- #
-
-    def remove_node(self, node_label):
-        """
-        This method removes the node corresponding to the node_label
-        parameter from the grid's _nodes.
-
-        Parameter
-        ---------
-        node_label: str
-            node to be removed from the grid
-
-        Notes
-        -----
-        If the node_label parameter doesn't correspond to any node of the
-        grid, the method raises a Warning.
-        """
-        node_label = str(node_label)
-        if node_label in self.get_nodes().index:
-            self.nodes = self.nodes.drop(node_label, axis=0)
-        else:
-            raise Warning(f"The node label given as input ('{node_label}') "
-                          + "doesn't correspond to any node in the grid")
-
     def flip_node(self, node_label):
         """
         Switch the node_type of a node i.e. if node_type is 'pole',
@@ -767,16 +910,13 @@ class Grid:
             label of the node.
         """
 
-        if not self.nodes['type_fixed'][node_label]:
-            if self.nodes['node_type'][node_label] == 'pole':
-                self.set_node_type(node_label=node_label,
-                                   node_type='consumer')
+        if not self.nodes["type_fixed"][node_label]:
+            if self.nodes["node_type"][node_label] == "pole":
+                self.set_node_type(node_label=node_label, node_type="consumer")
                 self.set_pole_capacity(str(node_label), 0)
-            elif self.nodes['node_type'][node_label] == 'consumer':
-                self.set_node_type(node_label=node_label,
-                                   node_type='pole')
-                self.set_pole_capacity(str(node_label),
-                                       self.pole_max_connection)
+            elif self.nodes["node_type"][node_label] == "consumer":
+                self.set_node_type(node_label=node_label, node_type="pole")
+                self.set_pole_capacity(str(node_label), self.pole_max_connection)
 
     def flip_random_node(self):
         """
@@ -786,13 +926,16 @@ class Grid:
         """
         # First be sure that the node dataframe is not empty
         if self.get_non_fixed_nodes().shape[0] > 0:  # noqa: E712
-            randomly_selected_node_label = self.get_non_fixed_nodes()[
-                self.get_non_fixed_nodes()['node_type']
-                != 'powerhub'].sample(n=1).index[0]
+            randomly_selected_node_label = (
+                self.get_non_fixed_nodes()[
+                    self.get_non_fixed_nodes()["node_type"] != "powerhub"
+                ]
+                .sample(n=1)
+                .index[0]
+            )
             self.flip_node(randomly_selected_node_label)
 
-    def swap_random(self,
-                    swap_option='random'):
+    def swap_random(self, swap_option="random"):
         """
         This method picks a pole uniformly at random and, swap it
         house state with a consumer selected according to the
@@ -810,72 +953,86 @@ class Grid:
         """
 
         # Make sure that the grid contains at least one pole and consumer
-        if self.get_non_fixed_nodes()[self.get_non_fixed_nodes()['node_type']
-                                      == 'pole'].shape[0] > 0\
-                and self.get_non_fixed_nodes()[
-                    self.get_non_fixed_nodes()['node_type']
-                    == 'consumer'].shape[0] > 0:
+        if (
+            self.get_non_fixed_nodes()[
+                self.get_non_fixed_nodes()["node_type"] == "pole"
+            ].shape[0]
+            > 0
+            and self.get_non_fixed_nodes()[
+                self.get_non_fixed_nodes()["node_type"] == "consumer"
+            ].shape[0]
+            > 0
+        ):
 
             # Pick a pole uniformly at random among the ones not fixed
-            randomly_selected_pole_label = self.get_non_fixed_nodes()[
-                self.get_non_fixed_nodes()['node_type']
-                == 'pole'].sample(n=1).index[0]
+            randomly_selected_pole_label = (
+                self.get_non_fixed_nodes()[
+                    self.get_non_fixed_nodes()["node_type"] == "pole"
+                ]
+                .sample(n=1)
+                .index[0]
+            )
 
             # If swap_option is 'nearest_neighbour', find nearest consumer
             # and flip its node_type
-            if swap_option == 'nearest_neighbour':
+            if swap_option == "nearest_neighbour":
                 # Define first consumer of the nodes Dataframe before looping
                 # to finde the nearest to the picked pole and save
                 # distance
-                selected_consumer_label\
-                    = self.get_non_fixed_nodes()[
-                        self.get_non_fixed_nodes()['node_type']
-                        == 'consumer'].index[0]
+                selected_consumer_label = self.get_non_fixed_nodes()[
+                    self.get_non_fixed_nodes()["node_type"] == "consumer"
+                ].index[0]
 
                 dist_to_selected_consumer = self.distance_between_nodes(
-                    randomly_selected_pole_label,
-                    selected_consumer_label)
+                    randomly_selected_pole_label, selected_consumer_label
+                )
                 # Loop over all consumers to find the one that is the nearest
                 # to the pole
-                for consumer_label in \
-                        self.get_non_fixed_nodes()[
-                            self.get_non_fixed_nodes()['node_type']
-                            == 'consumer'].index:
-                    if self.distance_between_nodes(
-                            randomly_selected_pole_label, consumer_label)\
-                            < dist_to_selected_consumer:
+                for consumer_label in self.get_non_fixed_nodes()[
+                    self.get_non_fixed_nodes()["node_type"] == "consumer"
+                ].index:
+                    if (
+                        self.distance_between_nodes(
+                            randomly_selected_pole_label, consumer_label
+                        )
+                        < dist_to_selected_consumer
+                    ):
                         selected_consumer_label = consumer_label
                         dist_to_selected_consumer = self.distance_between_nodes(
-                            randomly_selected_pole_label,
-                            selected_consumer_label)
+                            randomly_selected_pole_label, selected_consumer_label
+                        )
             else:
-                selected_consumer_label = self.get_non_fixed_nodes()[
-                    self.get_non_fixed_nodes()['node_type']
-                    == 'consumer'].sample(n=1).index[0]
+                selected_consumer_label = (
+                    self.get_non_fixed_nodes()[
+                        self.get_non_fixed_nodes()["node_type"] == "consumer"
+                    ]
+                    .sample(n=1)
+                    .index[0]
+                )
 
             self.flip_node(randomly_selected_pole_label)
             self.flip_node(selected_consumer_label)
 
     def set_all_node_type_to_consumers(self):
-        """"
+        """ "
         This method sets the node_type to 'consumer' for all nodes with
         type_fixed == False.
         """
 
-        for label in self.get_non_fixed_nodes()[(self.nodes['node_type']
-                                                 != 'powerhub')].index:
-            self.set_node_type(label, 'consumer')
+        for label in self.get_non_fixed_nodes()[
+            (self.nodes["node_type"] != "powerhub")
+        ].index:
+            self.set_node_type(label, "consumer")
 
     def set_all_node_type_to_poles(self):
-        """"
+        """ "
         This method sets the node_type to 'pole' for all nodes with
         type_fixed == False.
         """
 
-        for label in self.nodes[self.nodes['node_type']
-                                != 'powerhub'].index:
-            if not self.get_nodes()['type_fixed'][label]:
-                self.set_node_type(label, 'pole')
+        for label in self.nodes[self.nodes["node_type"] != "powerhub"].index:
+            if not self.get_nodes()["type_fixed"][label]:
+                self.set_node_type(label, "pole")
 
     def set_node_type(self, node_label, node_type):
         """
@@ -889,15 +1046,17 @@ class Grid:
             node_type: str
                 value the 'node_type' of the given node is set to.
         """
-        if not self.get_nodes()['type_fixed'][node_label]:
-            self.nodes.at[node_label, 'node_type'] = node_type
-            if node_type == 'pole' or node_type == 'powerhub':
-                self.nodes.at[node_label, 'allocation_capacity'] = self.pole_max_connection
-            elif node_type == 'consumer':
-                self.nodes.at[node_label, 'allocation_capacity'] = 0
+        if not self.get_nodes()["type_fixed"][node_label]:
+            self.nodes.at[node_label, "node_type"] = node_type
+            if node_type == "pole" or node_type == "powerhub":
+                self.nodes.at[
+                    node_label, "allocation_capacity"
+                ] = self.pole_max_connection
+            elif node_type == "consumer":
+                self.nodes.at[node_label, "allocation_capacity"] = 0
 
     def set_node_type_randomly(self, probability_for_pole):
-        """"
+        """ "
         This method sets the node_type of each node to pole with a
         probability probability_for_pole, the rest are being set to
         consumers.
@@ -910,12 +1069,12 @@ class Grid:
 
         for label in self.nodes.index:
             if np.random.rand() < probability_for_pole:
-                self.set_node_type(node_label=label, node_type='pole')
+                self.set_node_type(node_label=label, node_type="pole")
             else:
-                self.set_node_type(node_label=label, node_type='consumer')
+                self.set_node_type(node_label=label, node_type="consumer")
 
     def set_segment(self, node_label, segment):
-        """ This method assigns the segment attribute of the node corresponding
+        """This method assigns the segment attribute of the node corresponding
         to node_label to the value of segment.
 
         Parameters
@@ -931,7 +1090,7 @@ class Grid:
         """
         if node_label in self.nodes.index:
             segment = str(segment)
-            self.nodes.at[str(node_label), 'segment'] = segment
+            self.nodes.at[str(node_label), "segment"] = segment
 
     def set_type_fixed(self, node_label, type_to_set):
         """
@@ -949,7 +1108,7 @@ class Grid:
         changed.
         """
         if self.nodes.shape[0] > 0:
-            self.nodes.at[str(node_label), 'type_fixed'] = type_to_set
+            self.nodes.at[str(node_label), "type_fixed"] = type_to_set
 
     def set_pole_capacity(self, pole_label, allocation_capacity):
         """
@@ -965,7 +1124,7 @@ class Grid:
             Value the allocation_capacity of the pole is assigned to.
         """
         if pole_label in self.get_poles().index and type(allocation_capacity) == int:
-            self.nodes.at[str(pole_label), 'allocation_capacity'] = allocation_capacity
+            self.nodes.at[str(pole_label), "allocation_capacity"] = allocation_capacity
 
     def set_default_pole_capacity(self, default_pole_capacity):
         """
@@ -978,10 +1137,7 @@ class Grid:
         """
         self.pole_max_connection = default_pole_capacity
 
-    def shift_node(self,
-                   node,
-                   delta_x: float,
-                   delta_y: float):
+    def shift_node(self, node, delta_x: float, delta_y: float):
         """
         +++ ok +++
 
@@ -1003,7 +1159,7 @@ class Grid:
 
     # ----------------------- MANIPULATE LINKS ------------------------ #
 
-    def remove_link(self, node1, node2):
+    def remove_link_2(self, node1, node2):
         """
         This method removes, if it exists, the link between the two nodes
         given as parameter.
@@ -1015,24 +1171,23 @@ class Grid:
         node2: str
             Label of the other node connected by the link.
         """
-        (label_node_from, label_node_to) = sorted([node1,
-                                                   node2])
-        link_label = f'({label_node_from}, {label_node_to})'
+        (label_node_from, label_node_to) = sorted([node1, node2])
+        link_label = f"({label_node_from}, {label_node_to})"
         if link_label in self.get_links().index:
             self.links = self.links.drop(link_label, axis=0)
         else:
-            raise Warning(f"The link between {node1} and {node2} cannot be  "
-                          + "removed since the two nodes are not connected")
+            raise Warning(
+                f"The link between {node1} and {node2} cannot be  "
+                + "removed since the two nodes are not connected"
+            )
 
     def clear_interpole_links(self):
-        """Removes all the interpole links from the grid$.
-        """
-        self.links = self.links[self.links['type'] != 'interpole']
+        """Removes all the interpole links from the grid$."""
+        self.links = self.links[self.links["type"] != "interpole"]
 
     def clear_distribution_links(self):
-        """Removes all the interpole links from the grid.
-        """
-        self.links = self.links[self.links['type'] != 'distribution']
+        """Removes all the interpole links from the grid."""
+        self.links = self.links[self.links["type"] != "distribution"]
 
     # ----------------- COMPUTE DISTANCE BETWEEN NODES -----------------#
 
@@ -1050,17 +1205,22 @@ class Grid:
             This method returns a pandas DataFrame containing all the
             nodes in the grid and the total length of interpole and
             distribution cable separating it from its respective powerhub.
-         """
+        """
 
         # Create dataframe with interpole and distribution cable length
-        distance_df = pd.DataFrame({'label': [],
-                                    'interpole cable [m]': [],
-                                    'distribution cable [m]': [],
-                                    'powerhub label': []})
-        distance_df = distance_df.set_index('label')
+        distance_df = pd.DataFrame(
+            {
+                "label": [],
+                "interpole cable [m]": [],
+                "distribution cable [m]": [],
+                "powerhub label": [],
+            }
+        )
+        distance_df = distance_df.set_index("label")
         # For every powerhub, compute cable length to nodes from the segment
         for index_powerhub in self.get_nodes()[
-                self.get_nodes()['node_type'] == 'powerhub'].index:
+            self.get_nodes()["node_type"] == "powerhub"
+        ].index:
 
             distance_df.loc[index_powerhub] = [0, 0, index_powerhub]
 
@@ -1069,28 +1229,31 @@ class Grid:
             node_next_neighbours = []
             # add all nodes connected to the pole to the list
             for next_node in self.get_links()[
-                    (self.get_links()['from'] == index_powerhub)]['to']:
-                if next_node not in node_next_neighbours\
-                        and next_node not in distance_df.index:
+                (self.get_links()["from"] == index_powerhub)
+            ]["to"]:
+                if (
+                    next_node not in node_next_neighbours
+                    and next_node not in distance_df.index
+                ):
                     node_next_neighbours.append(next_node)
             for next_node in self.get_links()[
-                    (self.get_links()['to'] == index_powerhub)]['from']:
-                if next_node not in node_next_neighbours\
-                        and next_node not in distance_df.index:
+                (self.get_links()["to"] == index_powerhub)
+            ]["from"]:
+                if (
+                    next_node not in node_next_neighbours
+                    and next_node not in distance_df.index
+                ):
                     node_next_neighbours.append(next_node)
             # Call measure_distance_for_next_node for all branches
             for node in node_next_neighbours:
-                self.measure_distance_for_next_node(index_powerhub,
-                                                    node,
-                                                    distance_df,
-                                                    index_powerhub)
+                self.measure_distance_for_next_node(
+                    index_powerhub, node, distance_df, index_powerhub
+                )
         return distance_df
 
-    def measure_distance_for_next_node(self,
-                                       node_n_minus_1,
-                                       node_n,
-                                       distance_df,
-                                       index_powerhub):
+    def measure_distance_for_next_node(
+        self, node_n_minus_1, node_n, distance_df, index_powerhub
+    ):
         """
         This method is used to measure the cable distance between each nodes
         and the powerhub. It is designed to be recursively called to explore
@@ -1111,57 +1274,73 @@ class Grid:
         distance_df: :class:`pandas.core.frame.DataFrame`
             dictionnary containing the distance to the powerhub of all nodes
             that where already computed using the function.
-         """
+        """
 
         # find out what the link index of the link between nodes node_n_minus_1
         # and node_n is. Since nodes are undirected, we need to look for the
         # link from node_n_minus_1 to node_n and from node_n and node_n_minus_1
-        if self.get_links()[
-                (self.get_links()['from'] == node_n_minus_1)
-                & (self.get_links()['to'] == str(node_n))].shape[0] == 1:
+        if (
+            self.get_links()[
+                (self.get_links()["from"] == node_n_minus_1)
+                & (self.get_links()["to"] == str(node_n))
+            ].shape[0]
+            == 1
+        ):
             index_link_between_nodes = self.get_links()[
-                (self.get_links()['from'] == node_n_minus_1)
-                & (self.get_links()['to'] == str(node_n))].index[0]
+                (self.get_links()["from"] == node_n_minus_1)
+                & (self.get_links()["to"] == str(node_n))
+            ].index[0]
 
-        elif self.get_links()[
-                (self.get_links()['from'] == node_n)
-                & (self.get_links()['to'] == node_n_minus_1)].shape[0] == 1:
+        elif (
+            self.get_links()[
+                (self.get_links()["from"] == node_n)
+                & (self.get_links()["to"] == node_n_minus_1)
+            ].shape[0]
+            == 1
+        ):
             index_link_between_nodes = self.get_links()[
-                (self.get_links()['from'] == node_n)
-                & (self.get_links()['to'] == node_n_minus_1)].index[0]
+                (self.get_links()["from"] == node_n)
+                & (self.get_links()["to"] == node_n_minus_1)
+            ].index[0]
 
         # check what type the link is to know distiguish of the cable types
         # in the datafram
-        if self.get_links()['type'][index_link_between_nodes] == 'interpole':
+        if self.get_links()["type"][index_link_between_nodes] == "interpole":
             distance_df.loc[node_n] = [
-                distance_df['interpole cable [m]'][node_n_minus_1]
+                distance_df["interpole cable [m]"][node_n_minus_1]
                 + self.distance_between_nodes(node_n_minus_1, node_n),
                 0,
-                index_powerhub]
-        elif self.get_links()['type'][
-                index_link_between_nodes] == 'distribution':
+                index_powerhub,
+            ]
+        elif self.get_links()["type"][index_link_between_nodes] == "distribution":
             distance_df.loc[node_n] = [
-                distance_df['interpole cable [m]'][node_n_minus_1],
+                distance_df["interpole cable [m]"][node_n_minus_1],
                 self.distance_between_nodes(node_n_minus_1, node_n),
-                index_powerhub]
+                index_powerhub,
+            ]
 
         # Call function for all the nodes that were not measured yet
         node_next_neighbours = []
-        for node_next_neighbour in self.get_links()[(self.get_links()['from']
-                                                     == node_n)]['to']:
-            if node_next_neighbour not in node_next_neighbours\
-                    and node_next_neighbour not in distance_df.index:
-                node_next_neighbours.append(node_next_neighbour)
         for node_next_neighbour in self.get_links()[
-                (self.get_links()['to'] == node_n)]['from']:
-            if node_next_neighbour not in node_next_neighbours\
-                    and node_next_neighbour not in distance_df.index:
+            (self.get_links()["from"] == node_n)
+        ]["to"]:
+            if (
+                node_next_neighbour not in node_next_neighbours
+                and node_next_neighbour not in distance_df.index
+            ):
+                node_next_neighbours.append(node_next_neighbour)
+        for node_next_neighbour in self.get_links()[(self.get_links()["to"] == node_n)][
+            "from"
+        ]:
+            if (
+                node_next_neighbour not in node_next_neighbours
+                and node_next_neighbour not in distance_df.index
+            ):
                 node_next_neighbours.append(node_next_neighbour)
         for next_neighbour in node_next_neighbours:
-            self.measure_distance_for_next_node(node_n,
-                                                next_neighbour,
-                                                distance_df,
-                                                index_powerhub)
+            self.measure_distance_for_next_node(
+                node_n, next_neighbour, distance_df, index_powerhub
+            )
 
     # -------------------- GRID PERFORMANCE ---------------------- #
 
@@ -1191,36 +1370,37 @@ class Grid:
         """
         voltage_drop_df = self.get_cable_distance_from_consumers_to_powerhub()
 
-        voltage_drop_df['interpole cable resistance [Ω]'] = (
+        voltage_drop_df["interpole cable resistance [Ω]"] = (
             self.interpole_cable_resistivity
-            * 2 * voltage_drop_df['interpole cable [m]']
+            * 2
+            * voltage_drop_df["interpole cable [m]"]
             / self.interpole_cable_section
         )
 
-        voltage_drop_df['distribution cable resistance [Ω]'] = (
-            self.distribution_cable_resistivity * 2 *
-            voltage_drop_df['distribution cable [m]']
+        voltage_drop_df["distribution cable resistance [Ω]"] = (
+            self.distribution_cable_resistivity
+            * 2
+            * voltage_drop_df["distribution cable [m]"]
             / self.distribution_cable_section
         )
 
-        voltage_drop_df['voltage drop [V]'] = (
-            (voltage_drop_df['interpole cable resistance [Ω]']
-             * self.max_current)
-            + (voltage_drop_df['distribution cable resistance [Ω]'] *
-               self.max_current)
-        )
+        voltage_drop_df["voltage drop [V]"] = (
+            voltage_drop_df["interpole cable resistance [Ω]"] * self.max_current
+        ) + (voltage_drop_df["distribution cable resistance [Ω]"] * self.max_current)
 
-        voltage_drop_df['voltage drop fraction [%]'] = (
-            100 * voltage_drop_df['voltage drop [V]'] / self.voltage
+        voltage_drop_df["voltage drop fraction [%]"] = (
+            100 * voltage_drop_df["voltage drop [V]"] / self.voltage
         )
 
         return voltage_drop_df
 
-    def export(self,
-               backup_name=None,
-               folder=None,
-               allow_saving_in_existing_backup_folder=False,
-               save_image=True):
+    def export(
+        self,
+        backup_name=None,
+        folder=None,
+        allow_saving_in_existing_backup_folder=False,
+        save_image=True,
+    ):
         """
         Method calling the export_grid function to save a backup of the grid.
 
@@ -1261,19 +1441,22 @@ class Grid:
 
 
         """
-        export_grid(self,
-                    backup_name=backup_name,
-                    folder=folder,
-                    allow_saving_in_existing_backup_folder=(
-                        allow_saving_in_existing_backup_folder),
-                    )
+        export_grid(
+            self,
+            backup_name=backup_name,
+            folder=folder,
+            allow_saving_in_existing_backup_folder=(
+                allow_saving_in_existing_backup_folder
+            ),
+        )
+
+
 # - FUNCTIONS RELATED TO EXPORTING AND IMPORTING GRIDS FROM EXTERNAL FILE --#
 
 
-def export_grid(grid,
-                backup_name=None,
-                folder=None,
-                allow_saving_in_existing_backup_folder=False):
+def export_grid(
+    grid, backup_name=None, folder=None, allow_saving_in_existing_backup_folder=False
+):
     """
     Export grid in folder as separated files:
         - nodes.csv
@@ -1311,52 +1494,51 @@ def export_grid(grid,
     """
 
     if folder is None:
-        folder = 'data/backup/' + grid.get_id()
-        make_folder('data')
-        make_folder('data/backup')
+        folder = "data/backup/" + grid.get_id()
+        make_folder("data")
+        make_folder("data/backup")
         make_folder(folder)
     else:
         if not os.path.exists(folder):
-            parent_folders = folder.split('/')
+            parent_folders = folder.split("/")
             for i in range(1, len(parent_folders) + 1):
-                path = ''
+                path = ""
                 for x in parent_folders[0:i]:
-                    path += x + '/'
+                    path += x + "/"
                 make_folder(path[0:-1])
 
     if backup_name is None:
-        backup_name = f'backup_{grid.get_id()}'
+        backup_name = f"backup_{grid.get_id()}"
 
     if not allow_saving_in_existing_backup_folder:
-        if os.path.exists(f'{folder}/{backup_name}'):
+        if os.path.exists(f"{folder}/{backup_name}"):
             counter = 1
-            while os.path.exists(
-                    f'{folder}/{backup_name}_{counter}'):
+            while os.path.exists(f"{folder}/{backup_name}_{counter}"):
                 counter += 1
-            backup_name = f'{backup_name}_{counter}'
-    full_path = f'{folder}/{backup_name}'
+            backup_name = f"{backup_name}_{counter}"
+    full_path = f"{folder}/{backup_name}"
 
     make_folder(full_path)
 
     # Export nodes dataframe into csv file
-    grid.get_nodes().to_csv(full_path + '/nodes.csv')
+    grid.get_nodes().to_csv(full_path + "/nodes.csv")
 
     # Export links dataframe into csv file
-    grid.get_links().to_csv(full_path + '/links.csv')
+    grid.get_links().to_csv(full_path + "/links.csv")
 
     # Create config files containing Grid's attributes
     config = ConfigParser()
 
     config["attributes"] = {
-        key: (value, type(value)) for key, value in
-        grid.__dict__.items() if key not in [
-            "_Grid__nodes",
-            "_Grid__links"]}
+        key: (value, type(value))
+        for key, value in grid.__dict__.items()
+        if key not in ["_Grid__nodes", "_Grid__links"]
+    }
 
-    with open(f"{full_path}/grid_attributes.cfg", 'w') as f:
+    with open(f"{full_path}/grid_attributes.cfg", "w") as f:
         config.write(f)
 
-    print(f'Grid saved in \n{full_path}\n\n')
+    print(f"Grid saved in \n{full_path}\n\n")
 
 
 def import_grid(folder):
@@ -1378,15 +1560,21 @@ def import_grid(folder):
     # Import grid id from grid_attributes.cfg file
     config_attributes = ConfigParser()
 
-    config_attributes.read(folder + '/grid_attributes.cfg')
+    config_attributes.read(folder + "/grid_attributes.cfg")
     attributes = {}
 
     # Load all attributes names, values and type and fill attributes dict
     for section in config_attributes.sections():
         for (key, val) in config_attributes.items(section):
-            value, str_type = config_attributes.get(section, key).replace(
-                "'", "").replace("(", "").replace(">)", "").replace(
-                    " ", "").replace("<class", "").split(",")
+            value, str_type = (
+                config_attributes.get(section, key)
+                .replace("'", "")
+                .replace("(", "")
+                .replace(">)", "")
+                .replace(" ", "")
+                .replace("<class", "")
+                .split(",")
+            )
             if str_type == "int":
                 value = int(value)
             if str_type == "float":
@@ -1398,28 +1586,32 @@ def import_grid(folder):
             attributes[key_formated] = value
 
     # Import data from csv files to nodes and links DataFrames
-    nodes = pd.read_csv(folder + '/nodes.csv',
-                        converters={
-                            'label': str,
-                            'x_coordinate': float,
-                            'y_coordinate': float,
-                            'node_type': str,
-                            'type_fixed':
-                                lambda x: True if x == 'True' else False,
-                            'segment': str,
-                            'allocation_capacity': int})
-    nodes = nodes.set_index('label')
+    nodes = pd.read_csv(
+        folder + "/nodes.csv",
+        converters={
+            "label": str,
+            "x_coordinate": float,
+            "y_coordinate": float,
+            "node_type": str,
+            "type_fixed": lambda x: True if x == "True" else False,
+            "segment": str,
+            "allocation_capacity": int,
+        },
+    )
+    nodes = nodes.set_index("label")
 
-    links = pd.read_csv(folder + '/links.csv',
-                        converters={'from': str,
-                                    'to': str,
-                                    'type': str,
-                                    'distance': float,
-                                    },
-                        index_col=[0])
+    links = pd.read_csv(
+        folder + "/links.csv",
+        converters={
+            "from": str,
+            "to": str,
+            "type": str,
+            "distance": float,
+        },
+        index_col=[0],
+    )
     # Create new Grid containing nodes and links
-    grid = Grid(nodes=nodes,
-                links=links)
+    grid = Grid(nodes=nodes, links=links)
     # Set grid attributes using dict created from grid_config.cfg
     for key, value in attributes.items():
         setattr(grid, key, value)

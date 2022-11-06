@@ -296,6 +296,11 @@ function boundary_select(mode) {
 /************************************************************/
 /*                       OPTIMIZATION                       */
 /************************************************************/
+function optimization() {
+    optimize_grid();
+    optimize_energy_system();
+}
+
 function optimize_energy_system() {
     // $("#loading").show();
     $.ajax({
@@ -422,7 +427,7 @@ function load_results(){
             document.getElementById("costGrid").innerText = results['cost_grid'];
             document.getElementById("lcoe").innerText = results['lcoe'];
             document.getElementById("res").innerText = results['res'];
-            document.getElementById("co2Savings").innerText = results['co2_savings'];
+            document.getElementById("shortageTotal").innerText = results['shortage_total'];
             document.getElementById("surplusRate").innerText = results['surplus_rate'];
             document.getElementById("solver").innerText = results['solver'];
             document.getElementById("gridOptimization").innerText = results['grid_optimization'];

@@ -1,3 +1,6 @@
+from __future__ import division
+from copyreg import remove_extension
+import ssl
 import numpy as np
 import pandas as pd
 import os
@@ -7,6 +10,8 @@ from k_means_constrained import KMeansConstrained
 from munkres import Munkres
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import minimum_spanning_tree
+from scipy.optimize import linprog
+
 from sklearn.datasets import make_blobs
 from sklearn.metrics import precision_recall_curve
 
@@ -16,6 +21,7 @@ from fastapi_app.tools.grids import Grid
 import oemof.solph as solph
 from datetime import datetime, timedelta
 import pyomo.environ as po
+from pyomo.util.infeasible import log_infeasible_constraints
 
 
 class Optimizer:
@@ -101,14 +107,13 @@ class GridOptimizer(Optimizer):
         self.mst_algorithm = mst_algorithm
 
     # ------------ CONNECT NODES USING TREE-STAR SHAPE ------------#
-
-    def connect_grid_elements(self, grid: Grid):
+    def connect_grid_consumers(self, grid: Grid):
         """
         +++ ok +++
 
-        This method create links between:
-            - each consumer and the nearest pole
-            - all poles together based on the specified algorithm for minimum spanning tree
+        This method create the connections between each consumer and the
+        nearest pole
+
 
         Parameters
         ----------
@@ -116,13 +121,11 @@ class GridOptimizer(Optimizer):
             grid object
         """
 
-        # ===== FIRST PART: CONNECT CONSUMERS TO POLES =====
-
-        # first, all links of the grid must be deleted
-        grid.clear_links()
+        # Remove all existing connections between poles and consumers
+        grid.clear_links(link_type="distribution")
 
         # calculate the number of clusters and their labels obtained from kmeans clustering
-        n_clusters = grid.poles().shape[0]
+        n_clusters = grid.poles()[grid.poles()["type_fixed"] == False].shape[0]
         cluster_labels = grid.poles()["cluster_label"]
 
         # create links between each node and the corresponding centroid
@@ -140,18 +143,177 @@ class GridOptimizer(Optimizer):
                 if node_label != pole_label:
                     grid.add_links(label_node_from=pole_label, label_node_to=node_label)
 
-        # ===== SECOND PART: CONNECT POLES TO EACH OTHER =====
+    def connect_grid_poles(self, grid: Grid, index_long_links=[]):
+        """
+        +++ ok +++
 
-        # get all links from the sparse matrix obtained using the minimum spanning tree
-        links = np.argwhere(grid.grid_mst != 0)
+        This method create links between all poles together based on the
+        specified algorithm for minimum spanning tree.
 
-        # connect the poles considering the followings:
-        #   + the number of rows of the 'links' reveals the number of connections
-        #   + (x,y) of each nonzero element of the 'links' correspond to the (pole_from, pole_to) labels
-        for link in range(links.shape[0]):
-            label_pole_from = grid.poles().index[links[link, 0]]
-            label_pole_to = grid.poles().index[links[link, 1]]
-            grid.add_links(label_node_from=label_pole_from, label_node_to=label_pole_to)
+        Parameters
+        ----------
+        grid (~grids.Grid):
+            grid object
+        """
+
+        # Find the total number of long links to avoid connecting them.
+        n_long_links = len(index_long_links)
+
+        # An array incuding indices of `from` and `to` points in each link.
+        long_links = np.empty((n_long_links, 2), dtype=object)
+
+        if n_long_links > 0:
+            # If there are some long links in the grid, only the newly appended
+            # one must be removed, because the previous ones are already
+            # deletec from the grid.
+            grid.remove_link(index_long_links[-1])
+
+            for i in range(n_long_links):
+                long_links[i, 0] = index_long_links[i].split(", ")[0][1:]
+                long_links[i, 1] = index_long_links[i].split(", ")[1][:-1]
+
+        else:
+            # If there is no long link in the grid, all `distribution` links
+            # connecting poles to each other must be removed.
+            grid.clear_links(link_type="interpole")
+
+        # Get all links from the sparse matrix obtained using the minimum
+        # spanning tree.
+        links_mst = np.argwhere(grid.grid_mst != 0)
+
+        # Connect the poles considering the followings:
+        #   + The number of rows of the 'links' reveals the number of
+        #     connections.
+        #   + (x,y) of each nonzero element of the 'links' correspond to the
+        #     (pole_from, pole_to) labels.
+        for link_mst in range(links_mst.shape[0]):
+            label_pole_from = grid.poles().index[links_mst[link_mst, 0]]
+            label_pole_to = grid.poles().index[links_mst[link_mst, 1]]
+
+            # The `added_poles` must be put ONLY on the latest long link in the
+            # grid, becasue the previous long links were already split into
+            # smaller sectors.
+
+            if n_long_links > 0:
+
+                # Get the added poles to the grid becuase of existing
+                # long links.
+                added_poles = grid.poles()[
+                    (grid.poles()["type_fixed"] == True)
+                    & (grid.poles()["how_added"] == "long-distance-init")
+                ]
+                n_added_poles = added_poles.shape[0]
+
+                # Find the index of the array, where the link from the MST and
+                # the longest link are the same
+                # idx_from = np.where(long_links == label_pole_from)
+                # idx_to = np.where(long_links == label_pole_to)
+                # idx_from_0 = np.where(long_links[:, 0] == label_pole_from)
+                # idx_to_0 = np.where(long_links[idx_from_0, 1] == label_pole_to)
+
+                # idx_from_1 = np.where(long_links[:, 1] == label_pole_from)
+                # idx_to_1 = np.where(long_links[idx_from_1, 0] == label_pole_to)
+
+                # if (np.size(idx_from_0) != 0) and (np.size(idx_to_0) != 0):
+                #     i_longest = idx_from_0
+                # elif (np.size(idx_from_1) != 0) and (np.size(idx_to_1) != 0):
+                #     i_longest = idx_from_1
+                # else:
+                #     i_longest = np.array([], dtype=object)
+
+                # If the link obtained from the minimum spanning tree is the
+                # long link which should be removed, following codes will
+                # be executed.
+                if (label_pole_from in index_long_links[-1]) and (
+                    label_pole_to in index_long_links[-1]
+                ):
+
+                    to_from_link = "(" + label_pole_to + ", " + label_pole_from + ")"
+
+                    # By default, it is assumed that the order of poles in both
+                    # MST and added poles are the same, otherwise, it will be
+                    # corrected.
+                    # first_pole = label_pole_from
+                    # last_pole = label_pole_to
+                    to_from = False
+                    if to_from_link == index_long_links[-1]:
+                        # first_pole = label_pole_to
+                        # last_pole = label_pole_from
+                        to_from = True
+
+                    # if (
+                    #     label_pole_from == long_links[-1, 0]
+                    #     and label_pole_to == long_links[-1, 1]
+                    # ):
+
+                    # In this part, the long link is broken into smalle links.
+                    # `counter` represents the number of the added poles.
+                    counter = 0
+                    for index_added_pole in added_poles.index:
+
+                        if counter == 0:
+                            # The first `added poles` should be connected to
+                            # the beginning of the long link.
+                            if to_from:
+                                grid.add_links(
+                                    label_node_from=index_added_pole,
+                                    label_node_to=label_pole_to,
+                                )
+                            else:
+                                grid.add_links(
+                                    label_node_from=label_pole_from,
+                                    label_node_to=index_added_pole,
+                                )
+                        else:
+                            # The intermediate `added poles` should connect to
+                            # the other `added_poles` before and after them.
+                            grid.add_links(
+                                label_node_from=added_poles.index[counter - 1],
+                                label_node_to=added_poles.index[counter],
+                            )
+                            if counter == n_added_poles - 1:
+                                # The last `added poles` should be connected to
+                                # the end of the long link.
+                                if to_from:
+                                    grid.add_links(
+                                        label_node_from=label_pole_from,
+                                        label_node_to=index_added_pole,
+                                    )
+                                else:
+                                    grid.add_links(
+                                        label_node_from=index_added_pole,
+                                        label_node_to=label_pole_to,
+                                    )
+                        counter += 1
+
+                        # Change the `how_added` tag for the new poles, so that
+                        # next time they won't be selected.
+                        grid.nodes.at[index_added_pole, "how_added"] = "long-distance"
+
+                elif [label_pole_from in item for item in index_long_links][0] and [
+                    label_pole_to in item for item in index_long_links
+                ][0]:
+                    from_to_link = "(" + label_pole_from + ", " + label_pole_to + ")"
+                    to_from_link = "(" + label_pole_to + ", " + label_pole_from + ")"
+
+                    if [from_to_link in item for item in index_long_links][0] or [
+                        to_from_link in item for item in index_long_links
+                    ][0]:
+                        # If the selected link from the minimum spanning tree
+                        # already exists in the previous list of long links, it
+                        # should not ne drawn again.
+                        continue
+
+                else:
+                    grid.add_links(
+                        label_node_from=grid.poles().index[links_mst[link_mst, 0]],
+                        label_node_to=grid.poles().index[links_mst[link_mst, 1]],
+                    )
+            else:
+                grid.add_links(
+                    label_node_from=grid.poles().index[links_mst[link_mst, 0]],
+                    label_node_to=grid.poles().index[links_mst[link_mst, 1]],
+                )
 
     # ------------ MINIMUM SPANNING TREE ALGORITHM ------------ #
 
@@ -461,7 +623,7 @@ class GridOptimizer(Optimizer):
         # changes all nodes into poles
         grid.set_all_node_type_to_poles()
         # Connect the nodes using MST
-        grid.clear_links()
+        grid.clear_all_links()
 
         self.create_minimum_spanning_tree(grid)
 
@@ -538,6 +700,7 @@ class GridOptimizer(Optimizer):
             [
                 [grid.nodes.x.loc[index], grid.nodes.y.loc[index]]
                 for index in grid.nodes.index
+                if grid.nodes.is_connected.loc[index] == True
             ]
         )
 
@@ -579,7 +742,7 @@ class GridOptimizer(Optimizer):
                 consumer_type="n.a.",
                 consumer_detail="n.a.",
                 is_connected=True,
-                how_added="nr-optimization",
+                how_added="k-means",
                 cluster_label=counter,
             )
             counter += 1
@@ -593,10 +756,13 @@ class GridOptimizer(Optimizer):
 
         # this parameter shows the label of the associated cluster to each node
         nodes_cluster_labels = kmeans.predict(nodes_coord)
+        counter = 0
         for node_label in grid.consumers().index:
-            grid.nodes.cluster_label.loc[node_label] = nodes_cluster_labels[
-                int(node_label)
-            ]
+            if grid.nodes.is_connected.loc[node_label] == True:
+                grid.nodes.cluster_label.loc[node_label] = nodes_cluster_labels[counter]
+                counter += 1
+            else:
+                grid.nodes.cluster_label.loc[node_label] = "n.a."
 
     def find_opt_number_of_poles(self, grid: Grid, min_n_clusters: int):
         """
@@ -640,9 +806,9 @@ class GridOptimizer(Optimizer):
         # a pandas dataframe representing the grid costs for different configurations
         grid_costs = pd.DataFrame()
 
-        # start computing the grid costs for each case
-        #   + starting number of poles: minimum number of required poles
-        number_of_nodes = grid.nodes.shape[0]
+        # Number of nodes in the grid corresponds only to the connected nodes,
+        # not the nodes considered for SHS.
+        number_of_nodes = grid.nodes[grid.nodes["is_connected"] == True].shape[0]
 
         # obtain the location of poles using kmeans clustering method
         self.kmeans_clustering(grid=grid, n_clusters=min_n_clusters)
@@ -651,63 +817,64 @@ class GridOptimizer(Optimizer):
         self.create_minimum_spanning_tree(grid)
 
         # connect all links in the grid based on the previous calculations
-        self.connect_grid_elements(grid)
+        self.connect_grid_consumers(grid)
+        self.connect_grid_poles(grid)
 
         # after the kmeans clustering algorithm, the  number of poles is obtained
         number_of_poles = grid.poles().shape[0]
 
-        # initialize dataframe to store number of poles and corresponding costs
-        grid_costs = pd.DataFrame({"poles": [], "cost": []}).set_index("poles")
+        # # initialize dataframe to store number of poles and corresponding costs
+        # grid_costs = pd.DataFrame({"poles": [], "cost": []}).set_index("poles")
 
-        # put the first row of this dataframe
-        grid_costs.loc[number_of_poles] = grid.cost()
+        # # put the first row of this dataframe
+        # grid_costs.loc[number_of_poles] = grid.cost()
 
-        # create variable that is used to compare cost of the grid
-        # corresponding to different number of poles
-        compare_cost = grid_costs.cost.min()
+        # # create variable that is used to compare cost of the grid
+        # # corresponding to different number of poles
+        # compare_cost = grid_costs.cost.min()
 
-        # initialize counter and iteration numbers to limit exploration of solution space
-        # and to stop searching when costs are increasing after n steps (n = stop_counter)
-        counter = 0
-        iteration = 0
-        stop_counter = 3
+        # # initialize counter and iteration numbers to limit exploration of solution space
+        # # and to stop searching when costs are increasing after n steps (n = stop_counter)
+        # counter = 0
+        # iteration = 0
+        # stop_counter = 3
 
-        while (
-            ((grid.cost() >= compare_cost) or (counter < stop_counter))
-            and (number_of_poles < int(number_of_nodes * 0.8))
-            and (iteration < number_of_nodes)
-        ):
-            iteration += 1
+        # while (
+        #     ((grid.cost() >= compare_cost) or (counter < stop_counter))
+        #     and (number_of_poles < int(number_of_nodes * 0.8))
+        #     and (iteration < number_of_nodes)
+        # ):
+        #     iteration += 1
 
-            # increase the number of poles and let the kmeans clustering algorithm re-calculate
-            # all new locations for poles, and the minimum spanning tree find the new interpole links
-            number_of_poles += 1
-            self.kmeans_clustering(grid=grid, n_clusters=number_of_poles)
+        #     # increase the number of poles and let the kmeans clustering algorithm re-calculate
+        #     # all new locations for poles, and the minimum spanning tree find the new interpole links
+        #     number_of_poles += 1
+        #     self.kmeans_clustering(grid=grid, n_clusters=number_of_poles)
 
-            # create the minimum spanning tree to obtain the optimal links between poles
-            self.create_minimum_spanning_tree(grid)
+        #     # create the minimum spanning tree to obtain the optimal links between poles
+        #     self.create_minimum_spanning_tree(grid)
 
-            # connect all links in the grid based on the previous calculations
-            self.connect_grid_elements(grid)
+        #     # connect all links in the grid based on the previous calculations
+        #     self.connect_grid_elements(grid)
 
-            # obtain the new cost for the new configuration of the grid
-            grid_costs.loc[number_of_poles] = grid.cost()
+        #     # obtain the new cost for the new configuration of the grid
+        #     grid_costs.loc[number_of_poles] = grid.cost()
 
-            # if grid cost increases, the counter will also increase
-            if grid.cost() >= compare_cost:
-                counter += 1
-            else:
-                counter = 0
+        #     # if grid cost increases, the counter will also increase
+        #     if grid.cost() >= compare_cost:
+        #         counter += 1
+        #     else:
+        #         counter = 0
 
-            compare_cost = grid_costs.cost.min()
+        #     compare_cost = grid_costs.cost.min()
 
-        # update the grid object based on the optimum number of the poles
-        opt_number_of_poles = int(grid_costs.index[np.argmin(grid_costs)])
-        self.kmeans_clustering(grid=grid, n_clusters=opt_number_of_poles)
-        self.create_minimum_spanning_tree(grid)
-        self.connect_grid_elements(grid)
+        # # update the grid object based on the optimum number of the poles
+        # opt_number_of_poles = int(grid_costs.index[np.argmin(grid_costs)])
+        # self.kmeans_clustering(grid=grid, n_clusters=opt_number_of_poles)
+        # self.create_minimum_spanning_tree(grid)
+        # self.connect_grid_elements(grid)
 
-        return opt_number_of_poles
+        return number_of_poles
 
     # -----------------------REMOVE NODE-------------------------#
 
@@ -758,7 +925,287 @@ class GridOptimizer(Optimizer):
                             ]
                         )
 
-    # --------------- NETWORK RELAXATION METHODS --------------- #
+    # ----------- LINEAR PROGRAMMING WITH CONSTRAINTS ---------- #
+    def linprog_optimization(
+        self,
+        grid,
+        label_long_link,
+        max_distance_trans_links=30,
+        max_distance_dist_links=20,
+    ):
+        """
+        In this part, a linear model is created for obtaining the optimal
+        position of poles in the selected village, so that all constraints
+        (e.g., min/max distances) are fulfilled.
+        The optimizer used here is `scipy.optimize.linprog`.
+
+        Parameter
+        ---------
+            grid (~grids.Grid):
+                Grid class.
+
+        Output
+        ---------
+            flag: boolean
+                Indicating if the optimization was succesful or not.
+            pole_new_locations: np.array/boolean
+                An array containing the results of the linear optimization,
+                which means if the flag is `True`, the new coordinates of the
+                poles are returned, otherwise result would be `False`.
+        """
+        links_interpole = grid.links[grid.links["link_type"] == "interpole"]
+        links_distribution = grid.links[grid.links["link_type"] == "distribution"]
+
+        n_interpole_links = links_interpole.shape[0]
+        n_distribution_links = links_distribution.shape[0]
+        n_links = n_interpole_links + n_distribution_links
+        n_poles = grid.poles().shape[0]
+
+        # For each link 4 equations are required for maximum constraints and
+        # 4 equations for the slack variable in the objective function:
+        # - 2 equations for Delta_X and 2 equations for Delta_Y for implementing
+        #   maximum allowed distanced, becuase Delta_X and Delta_Y are absolute
+        #   values.
+        # Moreover, since the unknown parameters are (x,y) coordinates of the
+        # poles and all slack variables defined for each connection, the total
+        # number of unknowns are: 2 * (n_poles + n_links)
+
+        if label_long_link != "":
+            remove_longest_link = -1
+
+            index_x_longest_link_from = int(label_long_link[1:-1].split(", ")[0][2:])
+            index_y_longest_link_from = index_x_longest_link_from + n_poles
+
+            index_x_longest_link_to = int(label_long_link[1:-1].split(", ")[1][2:])
+            index_y_longest_link_to = index_x_longest_link_to + n_poles
+        else:
+            remove_longest_link = 0
+            index_x_longest_link_from = 1000
+            index_y_longest_link_from = 1000
+            index_x_longest_link_to = 1000
+            index_y_longest_link_to = 1000
+
+        A = np.zeros(
+            (
+                8 * (n_links + remove_longest_link),
+                2 * (n_poles + n_links + remove_longest_link),
+            )
+        )
+        b = np.zeros((8 * (n_links + remove_longest_link)))
+        c = np.zeros((2 * (n_poles + n_links + remove_longest_link)))
+
+        # Formulating constraints
+        index_x_slack = 2 * n_poles
+        index_y_slack = 2 * n_poles + n_links + remove_longest_link
+        counter = 0
+        counter_slack = -1
+        for i in range(n_interpole_links):
+            pole_from = links_interpole.index[i][1:-1].split(", ")[0]
+            pole_to = links_interpole.index[i][1:-1].split(", ")[1]
+
+            # Calculate the index of (x,y) values for each pole. For all poles,
+            # x values have the same index as the pole itself (e.g., p-1 means
+            # index 1), and y values are defined as x_index + n_poles
+            index_x_from = int(pole_from[2:])
+            index_y_from = index_x_from + n_poles
+            index_x_to = int(pole_to[2:])
+            index_y_to = index_x_to + n_poles
+
+            # ----- MAXIMUM DISTANCE BETWEEN POLES -----
+            if (
+                index_x_from != index_x_longest_link_from
+                and index_y_from != index_y_longest_link_from
+                and index_x_to != index_x_longest_link_to
+                and index_y_to != index_y_longest_link_to
+            ):
+
+                # 1st equation (for x-value) after linearizing the absolute value
+                A[counter, index_x_from] = 1
+                A[counter, index_x_to] = -1
+                b[counter] = max_distance_trans_links
+
+                # 2nd equation (for x-value) after linearizing the absolute value
+                counter += 1
+                A[counter, index_x_from] = -1
+                A[counter, index_x_to] = 1
+                b[counter] = max_distance_trans_links
+
+                # 3rd equation (for y-value) after linearizing the absolute value
+                counter += 1
+                A[counter, index_y_from] = 1
+                A[counter, index_y_to] = -1
+                b[counter] = max_distance_trans_links
+
+                # 4th equation (for x-value) after linearizing the absolute value
+                counter += 1
+                A[counter, index_y_from] = -1
+                A[counter, index_y_to] = 1
+                b[counter] = max_distance_trans_links
+
+                # ----- SLACK VARIABLE DEFINED IN THE OBJECTIVE FUNCTION -----
+                # 1st equation representing |Delta X| in the objective function
+                counter += 1
+                counter_slack += 1
+                A[counter, index_x_from] = 1
+                A[counter, index_x_to] = -1
+                A[counter, index_x_slack + counter_slack] = -1
+
+                # 2nd equation representing |Delta X| in the objective function
+                counter += 1
+                A[counter, index_x_from] = -1
+                A[counter, index_x_to] = 1
+                A[counter, index_x_slack + counter_slack] = -1
+
+                # 3rd equation representing |Delta Y| in the objective function
+                counter += 1
+                A[counter, index_y_from] = 1
+                A[counter, index_y_to] = -1
+                A[counter, index_y_slack + counter_slack] = -1
+
+                # 4th equation representing |Delta Y| in the objective function
+                counter += 1
+                A[counter, index_y_from] = -1
+                A[counter, index_y_to] = 1
+                A[counter, index_y_slack + counter_slack] = -1
+
+        for i in range(n_distribution_links):
+            pole = links_distribution.index[i][1:-1].split(", ")[0]
+            index_consumer = links_distribution.index[i][1:-1].split(", ")[1]
+
+            # Calculate the index of (x,y) values for each pole and consumer.
+            # The same as before, x values have the same index as the pole
+            # itself (e.g., p-1 means index 1), and y values are defined as
+            # x_index + n_poles
+            index_x_pole = int(pole[2:])
+            index_y_pole = index_x_pole + n_poles
+
+            # ----- MAXIMUM DISTANCE BETWEEN POLES AND CONSUMERS -----
+            # 1st equation (for x-value) after linearizing the absolute value
+            counter += 1
+            A[counter, index_x_pole] = 1
+            b[counter] = max_distance_dist_links + grid.nodes.loc[index_consumer]["x"]
+
+            # 2nd equation (for x-value) after linearizing the absolute value
+            counter += 1
+            A[counter, index_x_pole] = -1
+            b[counter] = max_distance_dist_links - grid.nodes.loc[index_consumer]["x"]
+
+            # 3rd equation (for y-value) after linearizing the absolute value
+            counter += 1
+            A[counter, index_y_pole] = 1
+            b[counter] = max_distance_dist_links + grid.nodes.loc[index_consumer]["y"]
+
+            # 4th equation (for x-value) after linearizing the absolute value
+            counter += 1
+            A[counter, index_y_pole] = -1
+            b[counter] = max_distance_dist_links - grid.nodes.loc[index_consumer]["y"]
+
+            # ----- SLACK VARIABLE DEFINED IN THE OBJECTIVE FUNCTION -----
+            # 1st equation representing |Delta X| in the objective function
+            counter += 1
+            counter_slack += 1
+            A[counter, index_x_pole] = 1
+            A[counter, index_x_slack + counter_slack] = -1
+            b[counter] = grid.nodes.loc[index_consumer]["x"]
+
+            # 2nd equation representing |Delta X| in the objective function
+            counter += 1
+            A[counter, index_x_pole] = -1
+            A[counter, index_x_slack + counter_slack] = -1
+            b[counter] = -grid.nodes.loc[index_consumer]["x"]
+
+            # 3rd equation representing |Delta Y| in the objective function
+            counter += 1
+            A[counter, index_y_pole] = 1
+            A[counter, index_y_slack + counter_slack] = -1
+            b[counter] = grid.nodes.loc[index_consumer]["y"]
+
+            # 4th equation representing |Delta Y| in the objective function
+            counter += 1
+            A[counter, index_y_pole] = -1
+            A[counter, index_y_slack + counter_slack] = -1
+            b[counter] = -grid.nodes.loc[index_consumer]["y"]
+
+        # The function to be minizimed is defined using the slack functions, using a ratio for the transmission links
+        ratio = grid.epc_hv_cable / grid.epc_lv_cable
+
+        c[
+            index_x_slack: index_x_slack + n_interpole_links + remove_longest_link
+        ] = ratio
+        c[
+            index_y_slack: index_y_slack + n_interpole_links + remove_longest_link
+        ] = ratio
+        c[
+            index_x_slack
+            + n_interpole_links
+            + remove_longest_link: index_x_slack
+            + n_interpole_links
+            + remove_longest_link
+            + n_distribution_links
+        ] = 1
+        c[
+            index_y_slack
+            + n_interpole_links
+            + remove_longest_link: index_y_slack
+            + n_interpole_links
+            + remove_longest_link
+            + n_distribution_links
+        ] = 1
+
+        # # set of row indices
+
+        # I = range(len(A))
+
+        # # set of column indices
+        # J = range(len(A.T))
+
+        # # create a model instance
+        # model = po.ConcreteModel()
+
+        # model.I = po.Set()
+        # model.J = po.Set(initialize=x_init)
+
+        # # create x and y variables in the model
+        # model.x = po.Var(model.J, domain=po.NonNegativeReals)
+
+        # # add model constraints
+        # # model.constraints = po.ConstraintList()
+        # for i in I:
+        #     model.phi = po.Constraint(model, A, initialize=phi_rule)
+
+        #     model.constraints = po.Constraint(expr=sum(A[i, j]*model.x[j] for j in J) <= b[i])
+
+        # # add a model objective
+        # model.objective = po.Objective(expr=sum(c[j]*model.x[j] for j in J), sense=po.minimize)
+
+        # # create a solver
+        # solver = po.SolverFactory('cbc')
+
+        # # solve
+        # solver.solve(model)
+
+        # log_infeasible_constraints(model)
+
+        # Lower and upper bounds
+        bounds = []
+        max_x = max(grid.nodes["x"])
+        max_y = max(grid.nodes["y"])
+
+        for i in range(n_poles):
+            bounds.append((0, max_x))
+        for i in range(n_poles):
+            bounds.append((0, max_y))
+        for i in range(2 * (n_links + remove_longest_link)):
+            bounds.append((0, None))
+
+        res = linprog(c=c, A_ub=A, b_ub=b, bounds=bounds, method="highs")
+
+        return res
+
+    # def constraint_rule(model, A, i, b):
+    #     return sum(A[i, j] * model.x[j] for j in range(A.shape[1])) <= b[i]
+
+    # --------- NETWORK RELAXATION WITHOUT CONSTRAINTS --------- #
 
     def nr_optimization(
         self,
@@ -899,9 +1346,16 @@ class GridOptimizer(Optimizer):
                 folder_name_with_path = f"{path_to_folder}/{folder_name}"
                 make_folder(folder_name_with_path)
 
-        # find out the range of (x,y) coordinate for all nodes of the grid
-        x_range = [grid.nodes.x.min(), grid.nodes.x.max()]
-        y_range = [grid.nodes.y.min(), grid.nodes.y.max()]
+        # Find out the range of (x,y) coordinate for all nodes of the grid
+        # except the nodes which are candidates for SHS.
+        x_range = [
+            grid.nodes[grid.nodes["is_connected"] == True].x.min(),
+            grid.nodes[grid.nodes["is_connected"] == True].x.max(),
+        ]
+        y_range = [
+            grid.nodes[grid.nodes["is_connected"] == True].y.min(),
+            grid.nodes[grid.nodes["is_connected"] == True].y.max(),
+        ]
 
         # create log dataframe that will store info about run
         info_log = pd.DataFrame(
@@ -1686,9 +2140,7 @@ class EnergySystemOptimizer(Optimizer):
         if self.pv["settings"]["is_selected"] == False:
             pv = solph.Source(
                 label="pv",
-                outputs={
-                    b_el_dc: solph.Flow(nominal_value=0)
-                },
+                outputs={b_el_dc: solph.Flow(nominal_value=0)},
             )
         elif self.pv["settings"]["design"] == True:
             # DESIGN
@@ -1743,9 +2195,7 @@ class EnergySystemOptimizer(Optimizer):
             diesel_genset = solph.Transformer(
                 label="diesel_genset",
                 inputs={b_fuel: solph.Flow()},
-                outputs={
-                    b_el_ac: solph.Flow(nominal_value=0)
-                },
+                outputs={b_el_ac: solph.Flow(nominal_value=0)},
             )
         elif self.diesel_genset["settings"]["design"] == True:
             # DESIGN
@@ -1800,9 +2250,7 @@ class EnergySystemOptimizer(Optimizer):
         if self.rectifier["settings"]["is_selected"] == False:
             rectifier = solph.Transformer(
                 label="rectifier",
-                inputs={
-                    b_el_ac: solph.Flow(nominal_value=0)
-                },
+                inputs={b_el_ac: solph.Flow(nominal_value=0)},
                 outputs={b_el_dc: solph.Flow()},
             )
         elif self.rectifier["settings"]["design"] == True:
@@ -1852,9 +2300,7 @@ class EnergySystemOptimizer(Optimizer):
         if self.inverter["settings"]["is_selected"] == False:
             inverter = solph.Transformer(
                 label="inverter",
-                inputs={
-                    b_el_dc: solph.Flow(nominal_value=0)
-                },
+                inputs={b_el_dc: solph.Flow(nominal_value=0)},
                 outputs={b_el_ac: solph.Flow()},
             )
         elif self.inverter["settings"]["design"] == True:
@@ -1955,7 +2401,7 @@ class EnergySystemOptimizer(Optimizer):
                 b_el_ac: solph.Flow(
                     # min=1-max_shortage_timestep,
                     fix=self.demand / self.demand_peak,
-                    nominal_value=self.demand_peak
+                    nominal_value=self.demand_peak,
                 )
             },
         )
@@ -1973,9 +2419,11 @@ class EnergySystemOptimizer(Optimizer):
                 label="shortage",
                 outputs={
                     b_el_ac: solph.Flow(
-                        variable_costs=self.shortage["parameters"]["shortage_penalty_cost"],
-                        nominal_value=self.shortage["parameters"]["max_shortage_total"] *
-                        sum(self.demand),
+                        variable_costs=self.shortage["parameters"][
+                            "shortage_penalty_cost"
+                        ],
+                        nominal_value=self.shortage["parameters"]["max_shortage_total"]
+                        * sum(self.demand),
                         summed_max=1,
                     ),
                 },
@@ -2073,12 +2521,8 @@ class EnergySystemOptimizer(Optimizer):
         results_demand_el = solph.views.node(
             results=self.results_main, node="electricity_demand"
         )
-        results_surplus = solph.views.node(
-            results=self.results_main, node="surplus"
-        )
-        results_shortage = solph.views.node(
-            results=self.results_main, node="shortage"
-        )
+        results_surplus = solph.views.node(results=self.results_main, node="surplus")
+        results_shortage = solph.views.node(results=self.results_main, node="shortage")
 
         # -------------------- SEQUENCES (DYNAMIC) --------------------
         # hourly demand profile
@@ -2214,7 +2658,11 @@ class EnergySystemOptimizer(Optimizer):
         self.surplus_rate = (
             100
             * self.sequences_surplus.sum(axis=0)
-            / (self.sequences_genset.sum(axis=0) - self.sequences_rectifier.sum(axis=0) + self.sequences_inverter.sum(axis=0))
+            / (
+                self.sequences_genset.sum(axis=0)
+                - self.sequences_rectifier.sum(axis=0)
+                + self.sequences_inverter.sum(axis=0)
+            )
         )
         self.genset_to_dc = (
             100
@@ -2223,7 +2671,8 @@ class EnergySystemOptimizer(Optimizer):
         )
         self.shortage = (
             100
-            * self.sequences_shortage.sum(axis=0) / self.sequences_demand.sum(axis=0)
+            * self.sequences_shortage.sum(axis=0)
+            / self.sequences_demand.sum(axis=0)
         )
 
         print("")
