@@ -55,10 +55,10 @@
       rel="stylesheet"
       href="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.css"
     />
-    <title>Customer Selection</title>
+    <title>Consumer Selection</title>
   </head>
 
-  <body onload="refresh_map();load_previous_data('customer_selection')">
+  <body onload="refresh_map();load_previous_data('consumer_selection')">
     <!-- don't forget 'navbar--scenario' CSS class -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light navbar--scenario">
       <div class="container-fluid">
@@ -119,8 +119,8 @@
           <ul>
             <li><a href="{{ url_for('home')}}">Project Setup</a></li>
             <li class="active">
-              <a href="{{ url_for('customer_selection') }}"
-                >Customer Selection</a
+              <a href="{{ url_for('consumer_selection') }}"
+                >Consumer Selection</a
               >
             </li>
             <li>Demand Estimation</li>
@@ -146,7 +146,7 @@
             <form>
               <div class="input-item">
                 <label for="nodesSelection" class="form-label"
-                  >Customers' locations</label
+                  >Consumers' locations</label
                 >
                 <div
                   class="btn-group d-flex"
@@ -156,7 +156,7 @@
                   <input
                     type="radio"
                     class="btn-check"
-                    name="customerSelection"
+                    name="consumerSelection"
                     id="selectionFile"
                     autocomplete="off"
                     onclick="activation_check();"
@@ -167,7 +167,7 @@
                   <input
                     type="radio"
                     class="btn-check"
-                    name="customerSelection"
+                    name="consumerSelection"
                     id="selectionBoundaries"
                     autocomplete="off"
                     onclick="activation_check();"
@@ -181,7 +181,7 @@
                   <input
                     type="radio"
                     class="btn-check"
-                    name="customerSelection"
+                    name="consumerSelection"
                     id="selectionMap"
                     autocomplete="off"
                     onclick="activation_check();"
@@ -217,7 +217,7 @@
                       id="lblDrawBoundariesAdd"
                       class="form-label text-left"
                       for="btnDrawBoundariesAdd"
-                      >Add customers by selecting boundaries of the settlement
+                      >Add consumers by selecting boundaries of the settlement
                     </label>
                   </div>
                   <div class="col-3">
@@ -238,7 +238,7 @@
                       id="lblDrawBoundariesRemove"
                       class="form-label text-left"
                       for="btnDrawBoundariesRemove"
-                      >Remove customers by selecting boundaries of the
+                      >Remove consumers by selecting boundaries of the
                       settlement
                     </label>
                   </div>
@@ -260,7 +260,7 @@
                       id="lblDownloadLocations"
                       class="form-label disabled text-left"
                       for="btnDownloadLocations"
-                      >Download locations of selected customers
+                      >Download locations of selected consumers
                     </label>
                   </div>
                   <div class="col-3">
@@ -444,7 +444,7 @@
           <a
             class="btn btn--medium"
             href="{{ url_for('energy_system_design') }}"
-            onclick="save_previous_data('customer_selection');"
+            onclick="save_previous_data('consumer_selection');"
             >Next</a
           >
         </div>

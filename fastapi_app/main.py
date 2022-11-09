@@ -229,9 +229,9 @@ def home(request: Request):
     return templates.TemplateResponse("project-setup.html", {"request": request})
 
 
-@app.get("/customer_selection")
-async def customer_selection(request: Request):
-    return templates.TemplateResponse("customer-selection.html", {"request": request})
+@app.get("/consumer_selection")
+async def consumer_selection(request: Request):
+    return templates.TemplateResponse("consumer-selection.html", {"request": request})
 
 
 @app.get("/energy_system_design")
@@ -515,7 +515,7 @@ async def load_previous_data(page_name):
         previous_data["start_date"] = str(df.loc[0, "start_date"])
         previous_data["temporal_resolution"] = str(df.loc[0, "temporal_resolution"])
         previous_data["n_days"] = str(df.loc[0, "n_days"])
-    elif page_name == "customer_selection":
+    elif page_name == "consumer_selection":
         previous_data["hv_cable_lifetime"] = str(df.loc[0, "hv_cable_lifetime"])
         previous_data["hv_cable_capex"] = str(df.loc[0, "hv_cable_capex"])
         previous_data["lv_cable_lifetime"] = str(df.loc[0, "lv_cable_lifetime"])
@@ -554,29 +554,29 @@ async def save_previous_data(
             "temporal_resolution"
         ]
         df.loc[0, "n_days"] = save_previous_data_request.page_setup["n_days"]
-    elif page_name == "customer_selection":
-        df.loc[0, "hv_cable_lifetime"] = save_previous_data_request.customer_selection[
+    elif page_name == "consumer_selection":
+        df.loc[0, "hv_cable_lifetime"] = save_previous_data_request.consumer_selection[
             "hv_cable_lifetime"
         ]
-        df.loc[0, "hv_cable_capex"] = save_previous_data_request.customer_selection[
+        df.loc[0, "hv_cable_capex"] = save_previous_data_request.consumer_selection[
             "hv_cable_capex"
         ]
-        df.loc[0, "lv_cable_lifetime"] = save_previous_data_request.customer_selection[
+        df.loc[0, "lv_cable_lifetime"] = save_previous_data_request.consumer_selection[
             "lv_cable_lifetime"
         ]
-        df.loc[0, "lv_cable_capex"] = save_previous_data_request.customer_selection[
+        df.loc[0, "lv_cable_capex"] = save_previous_data_request.consumer_selection[
             "lv_cable_capex"
         ]
-        df.loc[0, "pole_lifetime"] = save_previous_data_request.customer_selection[
+        df.loc[0, "pole_lifetime"] = save_previous_data_request.consumer_selection[
             "pole_lifetime"
         ]
-        df.loc[0, "pole_capex"] = save_previous_data_request.customer_selection[
+        df.loc[0, "pole_capex"] = save_previous_data_request.consumer_selection[
             "pole_capex"
         ]
-        df.loc[0, "mg_connection_cost"] = save_previous_data_request.customer_selection[
+        df.loc[0, "mg_connection_cost"] = save_previous_data_request.consumer_selection[
             "mg_connection_cost"
         ]
-        df.loc[0, "shs_capex"] = save_previous_data_request.customer_selection[
+        df.loc[0, "shs_capex"] = save_previous_data_request.consumer_selection[
             "shs_capex"
         ]
 
@@ -875,7 +875,7 @@ async def optimize_grid(
     await database_initialization(nodes=False, links=True)
 
     # get all stored data related to the grid layout
-    grid_input_data = await load_previous_data("customer_selection")
+    grid_input_data = await load_previous_data("consumer_selection")
 
     # create a new "grid" object from the Grid class
     epc_hv_cable = (

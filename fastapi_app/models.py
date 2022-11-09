@@ -68,7 +68,7 @@ class AddNodeRequest(BaseModel):
 
 class SavePreviousDataRequest(BaseModel):
     page_setup: Dict[str, str]
-    customer_selection: Dict[str, str]
+    consumer_selection: Dict[str, str]
 
 
 class OptimizeGridRequest(BaseModel):

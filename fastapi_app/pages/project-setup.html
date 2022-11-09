@@ -84,11 +84,11 @@
               <a href="{{ url_for('home') }}">Project Setup</a>
             </li>
             <li>
-              <!-- <a onclick="customer_selection();">Customer Selection</a> -->
+              <!-- <a onclick="consumer_selection();">Consumer Selection</a> -->
               <a
-                href="{{ url_for('customer_selection') }}"
+                href="{{ url_for('consumer_selection') }}"
                 onclick="save_previous_data('project_setup');"
-                >Customer Selection</a
+                >Consumer Selection</a
               >
             </li>
             <li>Demand Estimation</li>
@@ -292,7 +292,7 @@
           >
           <a
             class="btn btn--medium"
-            href="{{ url_for('customer_selection')}}"
+            href="{{ url_for('consumer_selection')}}"
             onclick="save_previous_data('project_setup');"
             >Next</a
           >

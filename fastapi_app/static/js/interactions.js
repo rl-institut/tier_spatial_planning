@@ -95,7 +95,7 @@ function database_read(nodes_or_links, map_or_export, callback) {
                     markers.length = 0;
                     number_of_nodes = Object.keys(nodes["node_type"]).length;
                     // As soon as there are nodes in the database, the download option will be activated
-                    // otherwise, it will be disables. This only happens in the `customer-selection` page.
+                    // otherwise, it will be disables. This only happens in the `consumer-selection` page.
                     if (document.getElementById('btnDownloadLocations')) {
                         if (number_of_nodes > 0) {
                             document.getElementById('btnDownloadLocations').classList.remove('disabled');
@@ -216,9 +216,9 @@ function database_add_remove_automatic(
 /************************************************************/
 /*                   SWITCHING HTML PAGES                   */
 /************************************************************/
-// function customer_selection() {
+// function consumer_selection() {
 //     $.ajax({
-//         url: "/customer_selection",
+//         url: "/consumer_selection",
 //         type: "POST",
 //         dataType: "json",
 //         contentType: "application/json",
@@ -456,7 +456,7 @@ function save_previous_data(page_name) {
                     'temporal_resolution': temporalResolution.value,
                     'n_days': nDays.value,
                 },
-                customer_selection: {
+                consumer_selection: {
                     'hv_cable_lifetime': 0,
                     'hv_cable_capex': 0,
                     'lv_cable_lifetime': 0,
@@ -468,7 +468,7 @@ function save_previous_data(page_name) {
                 }
             }
         );
-    } else if (page_name === "customer_selection") {
+    } else if (page_name === "consumer_selection") {
         transfer_data = JSON.stringify(
             {
                 page_setup: {
@@ -480,7 +480,7 @@ function save_previous_data(page_name) {
                     'temporal_resolution': '',
                     'n_days': '',
                 },
-                customer_selection: {
+                consumer_selection: {
                     'hv_cable_lifetime': hvCableLifetime.value,
                     'hv_cable_capex': hvCableCapex.value,
                     'lv_cable_lifetime': lvCableLifetime.value,
@@ -523,7 +523,7 @@ function load_previous_data(page_name){
                 document.getElementById("nDays").value = results['n_days'];
             }
         };
-    } else if (page_name === "customer_selection") {
+    } else if (page_name === "consumer_selection") {
         xhr.onreadystatechange = function () {
             if (this.readyState == 4 && this.status == 200) {
                 // push nodes to the map
