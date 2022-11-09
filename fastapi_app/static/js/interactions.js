@@ -255,6 +255,17 @@ function activation_check() {
         document.getElementById('btnDrawBoundariesRemove').classList.add('disabled');
     }
 }
+
+function enable_disable_shs() {
+    if (document.getElementById('enableShs').checked) {
+        document.getElementById('shsCapex').disabled = false;
+        document.getElementById('lblEnableShs').classList.remove('disabled');
+    }
+    else {
+        document.getElementById('shsCapex').disabled = true;
+        document.getElementById('lblEnableShs').classList.add('disabled');
+    }
+}
 /************************************************************/
 /*                    BOUNDARY SELECTION                    */
 /************************************************************/

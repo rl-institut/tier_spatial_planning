@@ -1419,7 +1419,6 @@ form .text-item textarea {
 
 form .input-item .input-group-text,
 form .text-item .input-group-text {
-  background-color: #E3EAEE;
   color: #343434;
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -4130,9 +4129,10 @@ nav.navbar .dropdown-menu li {
 }
 
 .form-switch .form-check-input{
-  width:3.5em;
+  width:3.0em;
   height:1.5em;
   margin-left:-2.5em;
+  margin-top: 0;
   border-radius:1em;
   transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;  
 }

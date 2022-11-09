@@ -283,10 +283,12 @@
                       /> -->
               </div>
               <div class="row input-item">
-                <div class="col-2">
-                  <label class="form-label text-left">HV cable </label>
+                <div class="col-3">
+                  <label class="form-label text-left"
+                    >Distribution Cable
+                  </label>
                 </div>
-                <div class="col-5">
+                <div class="col-4">
                   <div class="input-group">
                     <span class="input-group-text">Lifetime</span>
                     <input
@@ -318,10 +320,43 @@
                 </div>
               </div>
               <div class="row input-item">
-                <div class="col-2">
-                  <label class="form-label text-left">LV cable </label>
+                <div class="col-3">
+                  <label class="form-label text-left">Distribution Pole</label>
+                </div>
+                <div class="col-4">
+                  <div class="input-group">
+                    <span class="input-group-text">Lifetime</span>
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="poleLifetime"
+                      value="250"
+                      required
+                    />
+                    <span id="poleLifetimeUnit" class="input-group-text"
+                      >Year</span
+                    >
+                  </div>
                 </div>
                 <div class="col-5">
+                  <div class="input-group">
+                    <span class="input-group-text">CAPEX</span>
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="poleCapex"
+                      value="800"
+                      required
+                    />
+                    <span id="poleCapexUnit" class="input-group-text">USD</span>
+                  </div>
+                </div>
+              </div>
+              <div class="row input-item">
+                <div class="col-3">
+                  <label class="form-label text-left">Connection Cable </label>
+                </div>
+                <div class="col-4">
                   <div class="input-group">
                     <span class="input-group-text">Lifetime</span>
                     <input
@@ -353,45 +388,14 @@
                 </div>
               </div>
               <div class="row input-item">
-                <div class="col-2">
-                  <label class="form-label text-left">Pole</label>
+                <div class="col-4">
+                  <label class="form-label text-left"
+                    >Minigrid Connection</label
+                  >
                 </div>
-                <div class="col-5">
+                <div class="col-8">
                   <div class="input-group">
-                    <span class="input-group-text">Lifetime</span>
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="poleLifetime"
-                      value="250"
-                      required
-                    />
-                    <span id="poleLifetimeUnit" class="input-group-text"
-                      >Year</span
-                    >
-                  </div>
-                </div>
-                <div class="col-5">
-                  <div class="input-group">
-                    <span class="input-group-text">CAPEX</span>
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="poleCapex"
-                      value="800"
-                      required
-                    />
-                    <span id="poleCapexUnit" class="input-group-text">USD</span>
-                  </div>
-                </div>
-              </div>
-              <div class="row input-item">
-                <div class="col-2">
-                  <label class="form-label text-left">Connections</label>
-                </div>
-                <div class="col-5">
-                  <div class="input-group">
-                    <span class="input-group-text">MG</span>
+                    <span class="input-group-text">Cost</span>
                     <input
                       type="number"
                       class="form-control"
@@ -404,15 +408,33 @@
                     >
                   </div>
                 </div>
-                <div class="col-5">
+              </div>
+              <div class="row input-item">
+                <div class="col-1">
+                  <div class="form-switch">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      id="enableShs"
+                      onclick="enable_disable_shs();"
+                    />
+                  </div>
+                </div>
+                <div class="col-3">
+                  <label id="lblEnableShs" class="form-label text-left disabled"
+                    >Solar-Home-System</label
+                  >
+                </div>
+                <div class="col-8">
                   <div class="input-group">
-                    <span class="input-group-text">SHS</span>
+                    <span class="input-group-text disabled">Cost</span>
                     <input
                       type="number"
                       class="form-control"
                       id="shsCapex"
                       value="6"
                       required
+                      disabled
                     />
                     <span id="shsCapexUnit" class="input-group-text"
                       >USD/kW</span
