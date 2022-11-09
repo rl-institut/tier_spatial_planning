@@ -198,21 +198,14 @@ var dashedBoundaryLine = null;
 
 L.control.scale().addTo(mainMap);
 
-var markerDefault = new L.Icon({
-  iconUrl: "fastapi_app/static/images/markers/markerDefault.png",
-  iconSize: [15, 15],
-  iconAnchor: [7.5, 7.5],
-  popupAnchor: [0, 0],
-});
-
 var markerConsumer = new L.Icon({
-  iconUrl: "fastapi_app/static/images/markers/markerConsumer.png",
-  iconSize: [16, 16],
+  iconUrl: "fastapi_app/static/assets/icons/i_consumer.svg",
+  iconSize: [8, 8],
 });
 
 var markerPole = new L.Icon({
-  iconUrl: "fastapi_app/static/images/markers/markerPole.png",
-  iconSize: [16, 16],
+  iconUrl: "fastapi_app/static/assets/icons/i_pole.svg",
+  iconSize: [12, 12],
 });
 
 var markerShs = new L.Icon({
@@ -223,11 +216,13 @@ var markerShs = new L.Icon({
 var legend = L.control({ position: "bottomright" });
 legend.onAdd = function (map) {
   var div = L.DomUtil.create("div", "info legend"),
-    description = ["Consumer", "Pole", "SHS"],
+    description = ["Consumer", "Pole", "SHS", "Distribution", "Connection"],
     image = [
-      "fastapi_app/static/images/markers/markerConsumer.png",
-      "fastapi_app/static/images/markers/markerPole.png",
-      "fastapi_app/static/images/markers/markerShs.png",
+      "fastapi_app/static/assets/icons/i_consumer.svg",
+      "fastapi_app/static/assets/icons/i_pole.svg",
+      "fastapi_app/static/assets/icons/i_shs.svg",
+      "fastapi_app/static/assets/icons/i_distribution.svg",
+      "fastapi_app/static/assets/icons/i_connection.svg",
     ];
 
   // loop through our density intervals and generate a label with a colored square for each interval
@@ -235,7 +230,7 @@ legend.onAdd = function (map) {
     div.innerHTML +=
       " <img src=" +
       image[i] +
-      " height='20' width='20'>" +
+      " height='12' width='12'>" +
       "&nbsp" +
       description[i] +
       "<br>";
@@ -316,6 +311,7 @@ function markerOnClick(e)
     }
   );
   database_read(nodes_or_links = 'nodes', map_or_export = 'map');
+  database_read(nodes_or_links = 'links', map_or_export = 'map');
 }
 
 function drawLinkOnMap(
@@ -326,7 +322,7 @@ function drawLinkOnMap(
   color,
   map,
   weight,
-  opacity = 0.5
+  opacity,
 ) {
   var pointA = new L.LatLng(latitude_from, longitude_from);
   var pointB = new L.LatLng(latitude_to, longitude_to);
@@ -335,7 +331,7 @@ function drawLinkOnMap(
   var link_polyline = new L.polyline(pointList, {
     color: color,
     weight: weight,
-    opacity: 0.5,
+    opacity: opacity,
     smoothFactor: 1,
   });
   lines.push(

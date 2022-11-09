@@ -134,8 +134,9 @@ function database_read(nodes_or_links, map_or_export, callback) {
                     links = this.response;
                     removeLinksFromMap(mainMap);
                     for (let index = 0; index < Object.keys(links.link_type).length; index++) {
-                        var color = links.link_type[index] === "interpole" ? "red" : "green";
-                        var weight = links.link_type[index] === "interpole" ? 5 : 3;
+                        var color = links.link_type[index] === "interpole" ? "rgb(255, 99, 71)" : "rgb(0, 165, 114)";
+                        var weight = links.link_type[index] === "interpole" ? 4 : 3;
+                        var opacity = links.link_type[index] === "interpole" ? 1 : 1;
                         drawLinkOnMap(
                             links.lat_from[index],
                             links.lon_from[index],
@@ -143,7 +144,8 @@ function database_read(nodes_or_links, map_or_export, callback) {
                             links.lon_to[index],
                             color,
                             mainMap,
-                            weight
+                            weight,
+                            opacity
                         );
                     }
                 }
@@ -194,7 +196,6 @@ function database_add_remove_automatic(
     { add_remove = "add",
         boundariesCoordinates } = {}
 ) {
-    $("#loading").show();
     $.ajax({
         url: "/database_add_remove_automatic/" + add_remove,
         type: "POST",
@@ -206,7 +207,7 @@ function database_add_remove_automatic(
         statusCode: {
             200: function () {
                 database_read(nodes_or_links = 'nodes', map_or_export = 'map');
-                $("#loading").hide();
+                database_read(nodes_or_links = 'links', map_or_export = 'map');
             },
         },
     });

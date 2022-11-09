@@ -1130,15 +1130,15 @@ class GridOptimizer(Optimizer):
         ratio = grid.epc_hv_cable / grid.epc_lv_cable
 
         c[
-            index_x_slack: index_x_slack + n_interpole_links + remove_longest_link
+            index_x_slack : index_x_slack + n_interpole_links + remove_longest_link
         ] = ratio
         c[
-            index_y_slack: index_y_slack + n_interpole_links + remove_longest_link
+            index_y_slack : index_y_slack + n_interpole_links + remove_longest_link
         ] = ratio
         c[
             index_x_slack
             + n_interpole_links
-            + remove_longest_link: index_x_slack
+            + remove_longest_link : index_x_slack
             + n_interpole_links
             + remove_longest_link
             + n_distribution_links
@@ -1146,7 +1146,7 @@ class GridOptimizer(Optimizer):
         c[
             index_y_slack
             + n_interpole_links
-            + remove_longest_link: index_y_slack
+            + remove_longest_link : index_y_slack
             + n_interpole_links
             + remove_longest_link
             + n_distribution_links
@@ -2104,9 +2104,9 @@ class EnergySystemOptimizer(Optimizer):
         )
 
         self.solar_potential = data.SolarGen.loc[
-            self.start_datetime: self.end_datetime
+            self.start_datetime : self.end_datetime
         ]
-        self.demand = data.Demand.loc[self.start_datetime: self.end_datetime]
+        self.demand = data.Demand.loc[self.start_datetime : self.end_datetime]
         self.solar_potential_peak = self.solar_potential.max()
         self.demand_peak = self.demand.max()
 
