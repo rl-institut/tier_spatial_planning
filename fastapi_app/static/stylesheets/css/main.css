@@ -1441,6 +1441,7 @@ form .btn {
 label.form-label.disabled,
 div.disabled {
   color: #ccc;
+  pointer-events:none;
 }
 
 .header {
