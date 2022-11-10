@@ -260,10 +260,14 @@ function enable_disable_shs() {
     if (document.getElementById('enableShs').checked) {
         document.getElementById('shsCapex').disabled = false;
         document.getElementById('lblEnableShs').classList.remove('disabled');
+        document.getElementById('lblShsCost').classList.remove('disabled');
+        document.getElementById('shsCapexUnit').classList.remove('disabled');
     }
     else {
         document.getElementById('shsCapex').disabled = true;
         document.getElementById('lblEnableShs').classList.add('disabled');
+        document.getElementById('lblShsCost').classList.add('disabled');
+        document.getElementById('shsCapexUnit').classList.add('disabled');
     }
 }
 /************************************************************/
@@ -392,8 +396,8 @@ function optimize_energy_system() {
                     'is_selected': selectShortage.checked,
                 },
                 'parameters': {
-                    'max_shortage_total': maxShortageTotal.value/100,
-                    'max_shortage_timestep': maxShortageTimestep.value/100,
+                    'max_shortage_total': shortageMaxTotal.value/100,
+                    'max_shortage_timestep': shortageMaxTimestep.value/100,
                     'shortage_penalty_cost': shortagePenaltyCost.value
                 },
             },

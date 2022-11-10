@@ -25,63 +25,102 @@ function check_optimization_strategy(id) {
 
     if (document.getElementById(id+"Design").checked) {
         document.getElementById(id+"NominalCapacity").disabled = true; 
+        document.getElementById("lbl"+toTitleCase(id)+"NominalCapacity").classList.add('disabled');
+        document.getElementById(id+"NominalCapacityUnit").classList.add('disabled');
     } else {
         document.getElementById(id+"NominalCapacity").disabled = false; 
+        document.getElementById("lbl"+toTitleCase(id)+"NominalCapacity").classList.remove('disabled');
+        document.getElementById(id+"NominalCapacityUnit").classList.remove('disabled');
     }
 }
 
-function check_box_visibility(component) {
+function check_box_visibility(id) {
     // Depending on the selection of each box (i.e., component), the visibility
     // of the box components will be changed
     var component_specifications = {
         'dieselGenset': [
-            'selectDieselGenset', 'selectDieselGensetBox', 'dieselGensetDesign',
-            'dieselGensetDispatch', 'dieselGensetNominalCapacity',
-            'dieselGensetLifetime', 'dieselGensetCapex', 'dieselGensetOpex',
-            'dieselGensetVariableCost', 'fuelCost', 'fuelLhv', 'dieselGensetMinEfficiency',
-            'dieselGensetMaxEfficiency', 'dieselGensetMinLoad', 'dieselGensetMaxLoad'
+            'Design', 'Dispatch', 
+            'NominalCapacity', 'Lifetime', 'Capex', 'Opex',
+            'VariableCost', 'FuelCost', 'FuelLhv', 
+            'MinEfficiency', 'MaxEfficiency', 'MinLoad', 'MaxLoad'
         ],
         'battery': [
-            'selectBattery', 'selectBatteryBox', 'batteryDesign',
-            'batteryDispatch', 'batteryNominalCapacity',
-            'batteryLifetime', 'batteryCapex', 'batteryOpex',
-            'batterySocMin', 'batterySocMax', 'batteryCrateIn', 'batteryCrateOut',
-            'batteryEfficiency'
+            'Design', 'Dispatch', 
+            'NominalCapacity', 'Lifetime', 'Capex', 'Opex',
+            'SocMin', 'SocMax', 'CrateIn', 'CrateOut', 'Efficiency'
         ],
         'pv': [
-            'selectPv', 'selectPvBox', 'pvDesign', 'pvDispatch',
-            'pvNominalCapacity', 'pvLifetime', 'pvCapex', 'pvOpex',
-            'fileImportSolarGen', 'btnImportSolarGen',
+            'Design', 'Dispatch',
+            'NominalCapacity', 'Lifetime', 'Capex', 'Opex', 
+            'FileImportSolarPotential',
         ],
         'inverter': [
-            'selectInverter', 'selectInverterBox', 'inverterDesign', 'inverterDispatch',
-            'inverterNominalCapacity', 'inverterLifetime', 'inverterCapex', 'inverterOpex',
-            'inverterEfficiency',
+            'Design', 'Dispatch',
+            'NominalCapacity', 'Lifetime', 'Capex', 'Opex', 'Efficiency',
         ],
         'rectifier': [
-            'selectRectifier', 'selectRectifierBox', 'rectifierDesign', 'rectifierDispatch',
-            'rectifierNominalCapacity', 'rectifierLifetime', 'rectifierCapex', 'rectifierOpex',
-            'rectifierEfficiency',
+            'Design', 'Dispatch',
+            'NominalCapacity', 'Lifetime', 'Capex', 'Opex', 'Efficiency',
         ],
         'shortage':[
-            'selectShortage', 'selectShortageBox', 'maxShortageTotal', 'maxShortageTimestep', 'shortagePenaltyCost'
+            'MaxTotal', 'MaxTimestep', 'PenaltyCost'
         ]
     };
-    number_of_properties = component_specifications[component].length;
     
-    
-    if (document.getElementById(component_specifications[component][0]).checked) {
-        document.getElementById(component_specifications[component][1]).style.border = '2px solid #198754';
-        for (i = 2; i < number_of_properties; i++) { 
-            document.getElementById(component_specifications[component][i]).disabled = false; 
-        };
-        
+    // ---------- ENABLING ITEMS ---------- //
+    if (document.getElementById("select"+toTitleCase(id)).checked) {
+        // Change the border color.
+        document.getElementById("select"+toTitleCase(id)+"Box").style.border = '2px solid #198754';
+
+        for (index in component_specifications[id]) {
+            // First, get the property listed in the above dictionary.
+            property = component_specifications[id][index]
+            
+            // All fields as well as the `diesgn` and `dispatch` buttons.
+            document.getElementById(id+property).disabled = false;
+            
+            // All labels.
+            if (document.getElementById("lbl"+toTitleCase(id)+property)) {
+                document.getElementById("lbl"+toTitleCase(id)+property).classList.remove('disabled');
+            }
+            
+            // All units and in case of PV, the button for impoting solar potential.
+            if (document.getElementById(id+property+"Unit")) {
+                document.getElementById(id+property+"Unit").classList.remove('disabled');
+            } else if (document.getElementById("btn"+toTitleCase(id)+property)) {
+                document.getElementById("btn"+toTitleCase(id)+property).classList.remove('disabled');
+            }
+
+            // Check the optimization mode for enabling/disabling capacity.
+            if (id != "shortage") {
+                check_optimization_strategy(id);
+            }
+        }
+    // ---------- DISABLING ITEMS ---------- //
     } else {
-        document.getElementById(component_specifications[component][1]).style.border = '2px solid #dc3545';
-        for (i = 2; i < number_of_properties; i++) { 
-            document.getElementById(component_specifications[component][i]).disabled = true; 
-        };
-    }
+        // Change the border color.
+        document.getElementById("select"+toTitleCase(id)+"Box").style.border = '2px solid #dc3545';  
+
+        for (index in component_specifications[id]) {
+            // First, get the property listed in the above dictionary.
+            property = component_specifications[id][index]
+
+            // All fields as well as the `diesgn` and `dispatch` buttons.
+            document.getElementById(id+property).disabled = true;
+
+            // All labels.
+            if (document.getElementById("lbl"+toTitleCase(id)+property)) {
+                document.getElementById("lbl"+toTitleCase(id)+property).classList.add('disabled');
+            }
+            
+            // All units and in case of PV, the button for impoting solar potential.
+            if (document.getElementById(id+property+"Unit")) {
+                document.getElementById(id+property+"Unit").classList.add('disabled');
+            } else if (document.getElementById("btn"+toTitleCase(id)+property)) {
+                document.getElementById("btn"+toTitleCase(id)+property).classList.add('disabled');
+            }
+        }
+   }
 }
 
 
@@ -200,9 +239,9 @@ function styleInformation(id) {
     } else if (id === 'shortage') {
         // } else if (id === 'shortage' || id === 'surplus') {
         const informationSecondLine = document.getElementById("information"+toTitleCase(id)+"SecondLine");
-        const percentageTotal = document.getElementById("max"+toTitleCase(id)+"Total").value;
-        const percentageTimestep = document.getElementById("max"+toTitleCase(id)+"Timestep").value;
-        const unit = document.getElementById("max"+toTitleCase(id)+"TotalUnit").innerText;
+        const percentageTotal = document.getElementById(id+"MaxTotal").value;
+        const percentageTimestep = document.getElementById(id+"MaxTimestep").value;
+        const unit = document.getElementById(id+"MaxTotalUnit").innerText;
         information.textContent="max. each timestep " + percentageTimestep + unit;
         informationSecondLine.textContent="max. total " + percentageTotal + unit;
         information.classList.add('components-information--constraints');

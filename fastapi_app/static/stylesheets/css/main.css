@@ -1309,6 +1309,11 @@ a.dropdown-item:active {
   margin: 0 0.25rem;
 }
 
+.form-control:disabled,
+.form-control:disabled::file-selector-button {
+  color: #ccc;
+}
+
 form .form-control:focus {
   border-color: #1F567D;
   -webkit-box-shadow: 0 0 0 0.25rem rgba(31, 86, 125, 0.1);
@@ -1424,6 +1429,11 @@ form .text-item .input-group-text {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+}
+
+.input-item .input-group .disabled,
+.box .input-group .disabled {
+  color: #ccc;
 }
 
 .input-group-text {

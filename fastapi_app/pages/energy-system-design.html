@@ -133,7 +133,7 @@
                         id="selectDieselGenset"
                         required
                         checked
-                        onclick="check_box_visibility('dieselGenset');refreshBlocksOnDiagram('dieselGenset');check_optimization_strategy('dieselGenset');"
+                        onclick="check_box_visibility('dieselGenset');refreshBlocksOnDiagram('dieselGenset');"
                       />
                       <label class="form-check-label" for="selectDieselGenset"
                         >Diesel Genset</label
@@ -175,7 +175,11 @@
                   </div>
                   <div class="col-7">
                     <div class="input-group">
-                      <span class="input-group-text">Capacity</span>
+                      <span
+                        id="lblDieselGensetNominalCapacity"
+                        class="input-group-text"
+                        >Capacity</span
+                      >
                       <input
                         type="number"
                         class="form-control"
@@ -195,7 +199,9 @@
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">Lifetime</span>
+                    <span id="lblDieselGensetLifetime" class="input-group-text"
+                      >Lifetime</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -203,12 +209,16 @@
                       value="8"
                       required
                     />
-                    <span class="input-group-text">Year</span>
+                    <span id="dieselGensetLifetimeUnit" class="input-group-text"
+                      >Year</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">CAPEX</span>
+                    <span id="lblDieselGensetCapex" class="input-group-text"
+                      >CAPEX</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -216,12 +226,16 @@
                       value="350"
                       required
                     />
-                    <span class="input-group-text">USD/kW</span>
+                    <span id="dieselGensetCapexUnit" class="input-group-text"
+                      >USD/kW</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">OPEX</span>
+                    <span id="lblDieselGensetOpex" class="input-group-text"
+                      >OPEX</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -229,12 +243,18 @@
                       value="25"
                       required
                     />
-                    <span class="input-group-text">USD/kW.a</span>
+                    <span id="dieselGensetOpexUnit" class="input-group-text"
+                      >USD/kW.a</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">Variable Cost</span>
+                    <span
+                      id="lblDieselGensetVariableCost"
+                      class="input-group-text"
+                      >Variable Cost</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -242,40 +262,56 @@
                       value="0.045"
                       required
                     />
-                    <span class="input-group-text">USD/kWh</span>
+                    <span
+                      id="dieselGensetVariableCostUnit"
+                      class="input-group-text"
+                      >USD/kWh</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">Fuel Cost</span>
+                    <span id="lblDieselGensetFuelCost" class="input-group-text"
+                      >Fuel Cost</span
+                    >
                     <input
                       type="number"
                       class="form-control"
-                      id="fuelCost"
+                      id="dieselGensetFuelCost"
                       placeholder="Fuel cost"
                       value="1.214"
                       required
                     />
-                    <span class="input-group-text">USD/L</span>
+                    <span id="dieselGensetFuelCostUnit" class="input-group-text"
+                      >USD/L</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">Fuel LHV</span>
+                    <span id="lblDieselGensetFuelLhv" class="input-group-text"
+                      >Fuel LHV</span
+                    >
                     <input
                       type="number"
                       class="form-control"
-                      id="fuelLhv"
+                      id="dieselGensetFuelLhv"
                       placeholder="LHV"
                       value="11.83"
                       required
                     />
-                    <span class="input-group-text">kWh/kg</span>
+                    <span id="dieselGensetFuelLhvUnit" class="input-group-text"
+                      >kWh/kg</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">Minimum Efficiency</span>
+                    <span
+                      id="lblDieselGensetMinEfficiency"
+                      class="input-group-text"
+                      >Minimum Efficiency</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -283,12 +319,20 @@
                       value="22"
                       required
                     />
-                    <span class="input-group-text">%</span>
+                    <span
+                      id="dieselGensetMinEfficiencyUnit"
+                      class="input-group-text"
+                      >%</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">Maximum Efficiency</span>
+                    <span
+                      id="lblDieselGensetMaxEfficiency"
+                      class="input-group-text"
+                      >Maximum Efficiency</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -296,12 +340,18 @@
                       value="30"
                       required
                     />
-                    <span class="input-group-text">%</span>
+                    <span
+                      id="dieselGensetMaxEfficiencyUnit"
+                      class="input-group-text"
+                      >%</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">Minimum Load</span>
+                    <span id="lblDieselGensetMinLoad" class="input-group-text"
+                      >Minimum Load</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -309,12 +359,16 @@
                       value="20"
                       required
                     />
-                    <span class="input-group-text">%</span>
+                    <span id="dieselGensetMinLoadUnit" class="input-group-text"
+                      >%</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">Maximum Load</span>
+                    <span id="lblDieselGensetMaxLoad" class="input-group-text"
+                      >Maximum Load</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -322,7 +376,9 @@
                       value="100"
                       required
                     />
-                    <span class="input-group-text">%</span>
+                    <span id="dieselGensetMaxLoadUnit" class="input-group-text"
+                      >%</span
+                    >
                   </div>
                 </div>
               </div>
@@ -547,7 +603,7 @@
                         id="selectBattery"
                         required
                         checked
-                        onclick="check_box_visibility('battery');refreshBlocksOnDiagram('battery');check_optimization_strategy('battery');"
+                        onclick="check_box_visibility('battery');refreshBlocksOnDiagram('battery');"
                       />
                       <label class="form-check-label" for="selectBattery"
                         >Battery</label
@@ -589,7 +645,11 @@
                   </div>
                   <div class="col-7">
                     <div class="input-group">
-                      <span class="input-group-text">Capacity</span>
+                      <span
+                        id="lblBatteryNominalCapacity"
+                        class="input-group-text"
+                        >Capacity</span
+                      >
                       <input
                         type="number"
                         class="form-control"
@@ -609,7 +669,9 @@
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">Lifetime</span>
+                    <span id="lblBatteryLifetime" class="input-group-text"
+                      >Lifetime</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -617,12 +679,16 @@
                       value="7"
                       required
                     />
-                    <span class="input-group-text">Year</span>
+                    <span id="batteryLifetimeUnit" class="input-group-text"
+                      >Year</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">CAPEX</span>
+                    <span id="lblBatteryCapex" class="input-group-text"
+                      >CAPEX</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -630,12 +696,16 @@
                       value="598"
                       required
                     />
-                    <span class="input-group-text">USD/kWh</span>
+                    <span id="batteryCapexUnit" class="input-group-text"
+                      >USD/kWh</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">OPEX</span>
+                    <span id="lblBatteryOpex" class="input-group-text"
+                      >OPEX</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -643,12 +713,16 @@
                       value="24"
                       required
                     />
-                    <span class="input-group-text">USD/kW.a</span>
+                    <span id="batteryOpexUnit" class="input-group-text"
+                      >USD/kW.a</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">Minimum SOC</span>
+                    <span id="lblBatterySocMin" class="input-group-text"
+                      >Minimum SOC</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -656,12 +730,16 @@
                       value="30"
                       required
                     />
-                    <span class="input-group-text">%</span>
+                    <span id="batterySocMinUnit" class="input-group-text"
+                      >%</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">Maximum SOC</span>
+                    <span id="lblBatterySocMax" class="input-group-text"
+                      >Maximum SOC</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -669,12 +747,16 @@
                       value="100"
                       required
                     />
-                    <span class="input-group-text">%</span>
+                    <span id="batterySocMaxUnit" class="input-group-text"
+                      >%</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">C-Rate in</span>
+                    <span id="lblBatteryCrateIn" class="input-group-text"
+                      >C-Rate in</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -682,12 +764,16 @@
                       value="1"
                       required
                     />
-                    <span class="input-group-text">-</span>
+                    <span id="batteryCrateInUnit" class="input-group-text"
+                      >-</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">C-Rate out</span>
+                    <span id="lblBatteryCrateOut" class="input-group-text"
+                      >C-Rate out</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -695,12 +781,16 @@
                       value="1"
                       required
                     />
-                    <span class="input-group-text">-</span>
+                    <span id="batteryCrateOutUnit" class="input-group-text"
+                      >-</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">Roundtrip Efficiency</span>
+                    <span id="lblBatteryEfficiency" class="input-group-text"
+                      >Roundtrip Efficiency</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -708,7 +798,9 @@
                       value="96"
                       required
                     />
-                    <span class="input-group-text">%</span>
+                    <span id="batteryEfficiencyUnit" class="input-group-text"
+                      >%</span
+                    >
                   </div>
                 </div>
               </div>
@@ -724,7 +816,7 @@
                         id="selectInverter"
                         required
                         checked
-                        onclick="check_box_visibility('inverter');refreshBlocksOnDiagram('inverter');check_optimization_strategy('inverter');"
+                        onclick="check_box_visibility('inverter');refreshBlocksOnDiagram('inverter');"
                       />
                       <label class="form-check-label" for="selectInverter"
                         >Inverter</label
@@ -766,7 +858,11 @@
                   </div>
                   <div class="col-7">
                     <div class="input-group">
-                      <span class="input-group-text">Capacity</span>
+                      <span
+                        id="lblInverterNominalCapacity"
+                        class="input-group-text"
+                        >Capacity</span
+                      >
                       <input
                         type="number"
                         class="form-control"
@@ -786,7 +882,9 @@
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">Lifetime</span>
+                    <span id="lblInverterLifetime" class="input-group-text"
+                      >Lifetime</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -794,12 +892,16 @@
                       value="15"
                       required
                     />
-                    <span class="input-group-text">Year</span>
+                    <span id="inverterLifetimeUnit" class="input-group-text"
+                      >Year</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">CAPEX</span>
+                    <span id="lblInverterCapex" class="input-group-text"
+                      >CAPEX</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -807,12 +909,16 @@
                       value="450"
                       required
                     />
-                    <span class="input-group-text">USD/kW</span>
+                    <span id="inverterCapexUnit" class="input-group-text"
+                      >USD/kW</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">OPEX</span>
+                    <span id="lblInverterOpex" class="input-group-text"
+                      >OPEX</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -820,12 +926,16 @@
                       value="0"
                       required
                     />
-                    <span class="input-group-text">USD/kW.a</span>
+                    <span id="inverterOpexUnit" class="input-group-text"
+                      >USD/kW.a</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">Efficiency</span>
+                    <span id="lblInverterEfficiency" class="input-group-text"
+                      >Efficiency</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -833,7 +943,9 @@
                       value="95"
                       required
                     />
-                    <span class="input-group-text">%</span>
+                    <span id="inverterEfficiencyUnit" class="input-group-text"
+                      >%</span
+                    >
                   </div>
                 </div>
               </div>
@@ -847,7 +959,7 @@
                         id="selectRectifier"
                         required
                         checked
-                        onclick="check_box_visibility('rectifier');refreshBlocksOnDiagram('rectifier');check_optimization_strategy('rectifier');"
+                        onclick="check_box_visibility('rectifier');refreshBlocksOnDiagram('rectifier');"
                       />
                       <label class="form-check-label" for="selectRectifier"
                         >Rectifier</label
@@ -889,7 +1001,11 @@
                   </div>
                   <div class="col-7">
                     <div class="input-group">
-                      <span class="input-group-text">Capacity</span>
+                      <span
+                        id="lblRectifierNominalCapacity"
+                        class="input-group-text"
+                        >Capacity</span
+                      >
                       <input
                         type="number"
                         class="form-control"
@@ -909,7 +1025,9 @@
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">Lifetime</span>
+                    <span id="lblRectifierLifetime" class="input-group-text"
+                      >Lifetime</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -917,12 +1035,16 @@
                       value="15"
                       required
                     />
-                    <span class="input-group-text">Year</span>
+                    <span id="rectifierLifetimeUnit" class="input-group-text"
+                      >Year</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">CAPEX</span>
+                    <span id="lblRectifierCapex" class="input-group-text"
+                      >CAPEX</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -930,12 +1052,16 @@
                       value="450"
                       required
                     />
-                    <span class="input-group-text">USD/kW</span>
+                    <span id="rectifierCapexUnit" class="input-group-text"
+                      >USD/kW</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">OPEX</span>
+                    <span id="lblRectifierOpex" class="input-group-text"
+                      >OPEX</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -943,12 +1069,16 @@
                       value="0"
                       required
                     />
-                    <span class="input-group-text">USD/kW.a</span>
+                    <span id="rectifierOpexUnit" class="input-group-text"
+                      >USD/kW.a</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">Efficiency</span>
+                    <span id="lblRectifierEfficiency" class="input-group-text"
+                      >Efficiency</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -956,7 +1086,9 @@
                       value="95"
                       required
                     />
-                    <span class="input-group-text">%</span>
+                    <span id="rectifierEfficiencyUnit" class="input-group-text"
+                      >%</span
+                    >
                   </div>
                 </div>
               </div>
@@ -972,7 +1104,7 @@
                         id="selectPv"
                         required
                         checked
-                        onclick="check_box_visibility('pv');refreshBlocksOnDiagram('pv');check_optimization_strategy('pv');"
+                        onclick="check_box_visibility('pv');refreshBlocksOnDiagram('pv');"
                       />
                       <label class="form-check-label" for="selectPv">PV</label>
                     </div>
@@ -1008,7 +1140,9 @@
                   </div>
                   <div class="col-7">
                     <div class="input-group">
-                      <span class="input-group-text">Capacity</span>
+                      <span id="lblPvNominalCapacity" class="input-group-text"
+                        >Capacity</span
+                      >
                       <input
                         type="number"
                         class="form-control"
@@ -1026,7 +1160,9 @@
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">Lifetime</span>
+                    <span id="lblPvLifetime" class="input-group-text"
+                      >Lifetime</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -1034,12 +1170,14 @@
                       value="25"
                       required
                     />
-                    <span class="input-group-text">Year</span>
+                    <span id="pvLifetimeUnit" class="input-group-text"
+                      >Year</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">CAPEX</span>
+                    <span id="lblPvCapex" class="input-group-text">CAPEX</span>
                     <input
                       type="number"
                       class="form-control"
@@ -1047,12 +1185,14 @@
                       value="883"
                       required
                     />
-                    <span class="input-group-text">USD/kW</span>
+                    <span id="pvCapexUnit" class="input-group-text"
+                      >USD/kW</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">OPEX</span>
+                    <span id="lblPvOpex" class="input-group-text">OPEX</span>
                     <input
                       type="number"
                       class="form-control"
@@ -1060,12 +1200,15 @@
                       value="14.4"
                       required
                     />
-                    <span class="input-group-text">USD/kW.a</span>
+                    <span id="pvOpexUnit" class="input-group-text"
+                      >USD/kW.a</span
+                    >
                   </div>
                 </div>
                 <div class="row">
                   <label
-                    for="fileImportSolarGen"
+                    id="lblPvFileImportSolarPotential"
+                    for="fileImportSolarPotential"
                     class="form-label import-file"
                   >
                     PV potential (1-h resolution)
@@ -1080,12 +1223,12 @@
                     <input
                       type="file"
                       class="form-control"
-                      id="fileImportSolarGen"
+                      id="pvFileImportSolarPotential"
                       accept=".xls, .xlsx, .csv"
                       disabled
                     />
                     <button
-                      id="btnImportSolarGen"
+                      id="btnPvFileImportSolarPotential"
                       class="btn"
                       type="button"
                       onclick="import_data();"
@@ -1114,43 +1257,45 @@
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">Maximum Total Shortage</span>
+                    <span id="lblShortageMaxTotal" class="input-group-text"
+                      >Maximum Total Shortage</span
+                    >
                     <input
                       type="number"
                       class="form-control"
-                      id="maxShortageTotal"
+                      id="shortageMaxTotal"
                       value="10"
                       required
                       onChange="styleInformation('shortage');"
                     />
-                    <span id="maxShortageTotalUnit" class="input-group-text"
+                    <span id="shortageMaxTotalUnit" class="input-group-text"
                       >%</span
                     >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text"
+                    <span id="lblShortageMaxTimestep" class="input-group-text"
                       >Maximum Shortage Each Timestep</span
                     >
                     <input
                       type="number"
                       class="form-control"
-                      id="maxShortageTimestep"
+                      id="shortageMaxTimestep"
                       value="20"
                       required
                       onChange="styleInformation('shortage');"
                     />
-                    <span
-                      id="constraintsMaxSurplusUnit"
-                      class="input-group-text"
+                    <span id="shortageMaxTimestepUnit" class="input-group-text"
                       >%</span
                     >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span class="input-group-text">Shortage Penalty Cost</span>
+                    <span id="lblShortagePenaltyCost" class="input-group-text"
+                      >Shortage Penalty Cost</span
+                    >
                     <input
                       type="number"
                       class="form-control"
@@ -1159,9 +1304,7 @@
                       required
                       onChange="styleInformation('shortage');"
                     />
-                    <span
-                      id="constraintsMaxSurplusUnit"
-                      class="input-group-text"
+                    <span id="shortagePenaltyCostUnit" class="input-group-text"
                       >USD/kWh</span
                     >
                   </div>
