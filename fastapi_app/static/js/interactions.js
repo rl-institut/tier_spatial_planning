@@ -347,8 +347,8 @@ function optimize_energy_system() {
                     'capex': dieselGensetCapex.value, 
                     'opex': dieselGensetOpex.value, 
                     'variable_cost': dieselGensetVariableCost.value,
-                    'fuel_cost': fuelCost.value, 
-                    'fuel_lhv': fuelLhv.value, 
+                    'fuel_cost': dieselGensetFuelCost.value, 
+                    'fuel_lhv': dieselGensetFuelLhv.value, 
                     'min_load': dieselGensetMinLoad.value/100, 
                     'max_efficiency': dieselGensetMaxEfficiency.value/100,
                 }
