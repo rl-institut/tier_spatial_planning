@@ -143,172 +143,124 @@ class GridOptimizer(Optimizer):
                 if node_label != pole_label:
                     grid.add_links(label_node_from=pole_label, label_node_to=node_label)
 
-    def connect_grid_poles(self, grid: Grid, index_long_links=[]):
+    def connect_grid_poles(self, grid: Grid, long_links=[]):
         """
         +++ ok +++
 
         This method create links between all poles together based on the
-        specified algorithm for minimum spanning tree.
+        specified algorithm for minimum spanning tree and also considering
+        the added poles because of the constraint on the maximum distance
+        between poles.
 
         Parameters
         ----------
         grid (~grids.Grid):
             grid object
+
+        long_links (list): optional
+            list of all links longer than the maximum allowed distance between
+            links.
         """
 
-        # Find the total number of long links to avoid connecting them.
-        n_long_links = len(index_long_links)
+        # First, all links in the grid should be removed.
+        grid.clear_links(link_type="interpole")
 
-        # An array incuding indices of `from` and `to` points in each link.
-        long_links = np.empty((n_long_links, 2), dtype=object)
-
-        if n_long_links > 0:
-            # If there are some long links in the grid, only the newly appended
-            # one must be removed, because the previous ones are already
-            # deletec from the grid.
-            grid.remove_link(index_long_links[-1])
-
-            for i in range(n_long_links):
-                long_links[i, 0] = index_long_links[i].split(", ")[0][1:]
-                long_links[i, 1] = index_long_links[i].split(", ")[1][:-1]
-
-        else:
-            # If there is no long link in the grid, all `distribution` links
-            # connecting poles to each other must be removed.
-            grid.clear_links(link_type="interpole")
-
-        # Get all links from the sparse matrix obtained using the minimum
-        # spanning tree.
+        # Now, all links from the sparse matrix obtained using the minimum
+        # spanning tree are stored in `links_mst`.
+        # All poles in the `links_mst` should be connected together considering:
+        #   + The number of rows in the 'links_mst' reveals the number of
+        #     connections.
+        #   + (x,y) of each nonzero element of the 'links_mst' correspond to the
+        #     (pole_from, pole_to) labels.
         links_mst = np.argwhere(grid.grid_mst != 0)
 
-        # Connect the poles considering the followings:
-        #   + The number of rows of the 'links' reveals the number of
-        #     connections.
-        #   + (x,y) of each nonzero element of the 'links' correspond to the
-        #     (pole_from, pole_to) labels.
         for link_mst in range(links_mst.shape[0]):
-            label_pole_from = grid.poles().index[links_mst[link_mst, 0]]
-            label_pole_to = grid.poles().index[links_mst[link_mst, 1]]
+            mst_pole_from = grid.poles().index[links_mst[link_mst, 0]]
+            mst_pole_to = grid.poles().index[links_mst[link_mst, 1]]
 
-            # The `added_poles` must be put ONLY on the latest long link in the
-            # grid, becasue the previous long links were already split into
-            # smaller sectors.
+            # Create two different combinations for each link obtained from the
+            # minimum spanning tree: (px, py) and (py, px).
+            # Since the direction of the link is not important here, it is
+            # assumed (px, py) = (py, px).
+            mst_from_to = "(" + mst_pole_from + ", " + mst_pole_to + ")"
+            mst_to_from = "(" + mst_pole_to + ", " + mst_pole_from + ")"
 
-            if n_long_links > 0:
+            # If the link obtained from the minimum spanning tree is one of the
+            # long links that should be removed and replaced with smaller links,
+            # this part will be executed.
+            if (mst_from_to in long_links) or (mst_to_from in long_links):
 
-                # Get the added poles to the grid becuase of existing
-                # long links.
-                added_poles = grid.poles()[
+                # Both `mst_from_to` and `mst_to_from` will be checked to find
+                # the added poles, but only the dataframe which is not empty is
+                # considered as the final `added_poles`
+                added_poles_from_to = grid.poles()[
                     (grid.poles()["type_fixed"] == True)
-                    & (grid.poles()["how_added"] == "long-distance-init")
+                    & (grid.poles()["how_added"] == mst_from_to)
                 ]
-                n_added_poles = added_poles.shape[0]
+                added_poles_to_from = grid.poles()[
+                    (grid.poles()["type_fixed"] == True)
+                    & (grid.poles()["how_added"] == mst_to_from)
+                ]
 
-                # Find the index of the array, where the link from the MST and
-                # the longest link are the same
-                # idx_from = np.where(long_links == label_pole_from)
-                # idx_to = np.where(long_links == label_pole_to)
-                # idx_from_0 = np.where(long_links[:, 0] == label_pole_from)
-                # idx_to_0 = np.where(long_links[idx_from_0, 1] == label_pole_to)
-
-                # idx_from_1 = np.where(long_links[:, 1] == label_pole_from)
-                # idx_to_1 = np.where(long_links[idx_from_1, 0] == label_pole_to)
-
-                # if (np.size(idx_from_0) != 0) and (np.size(idx_to_0) != 0):
-                #     i_longest = idx_from_0
-                # elif (np.size(idx_from_1) != 0) and (np.size(idx_to_1) != 0):
-                #     i_longest = idx_from_1
-                # else:
-                #     i_longest = np.array([], dtype=object)
-
-                # If the link obtained from the minimum spanning tree is the
-                # long link which should be removed, following codes will
-                # be executed.
-                if (label_pole_from in index_long_links[-1]) and (
-                    label_pole_to in index_long_links[-1]
-                ):
-
-                    to_from_link = "(" + label_pole_to + ", " + label_pole_from + ")"
-
-                    # By default, it is assumed that the order of poles in both
-                    # MST and added poles are the same, otherwise, it will be
-                    # corrected.
-                    # first_pole = label_pole_from
-                    # last_pole = label_pole_to
+                # In addition to the `added_poles` a flag is defined here to
+                # deal with the direction of adding additional poles.
+                if not added_poles_from_to.empty:
+                    added_poles = added_poles_from_to
                     to_from = False
-                    if to_from_link == index_long_links[-1]:
-                        # first_pole = label_pole_to
-                        # last_pole = label_pole_from
-                        to_from = True
+                elif not added_poles_to_from.empty:
+                    added_poles = added_poles_to_from
+                    to_from = True
 
-                    # if (
-                    #     label_pole_from == long_links[-1, 0]
-                    #     and label_pole_to == long_links[-1, 1]
-                    # ):
+                # In this part, the long links are broken into smaller links.
+                # `counter` represents the number of the added poles.
+                counter = 0
+                n_added_poles = added_poles.shape[0]
+                for index_added_pole in added_poles.index:
 
-                    # In this part, the long link is broken into smalle links.
-                    # `counter` represents the number of the added poles.
-                    counter = 0
-                    for index_added_pole in added_poles.index:
-
-                        if counter == 0:
-                            # The first `added poles` should be connected to
-                            # the beginning of the long link.
-                            if to_from:
-                                grid.add_links(
-                                    label_node_from=index_added_pole,
-                                    label_node_to=label_pole_to,
-                                )
-                            else:
-                                grid.add_links(
-                                    label_node_from=label_pole_from,
-                                    label_node_to=index_added_pole,
-                                )
-                        else:
-                            # The intermediate `added poles` should connect to
-                            # the other `added_poles` before and after them.
+                    if counter == 0:
+                        # The first `added poles` should be connected to
+                        # the beginning or to the end of the long link,
+                        # depending on the `to_from` flag.
+                        if to_from:
                             grid.add_links(
-                                label_node_from=added_poles.index[counter - 1],
-                                label_node_to=added_poles.index[counter],
+                                label_node_from=index_added_pole,
+                                label_node_to=mst_pole_to,
                             )
-                            if counter == n_added_poles - 1:
-                                # The last `added poles` should be connected to
-                                # the end of the long link.
-                                if to_from:
-                                    grid.add_links(
-                                        label_node_from=label_pole_from,
-                                        label_node_to=index_added_pole,
-                                    )
-                                else:
-                                    grid.add_links(
-                                        label_node_from=index_added_pole,
-                                        label_node_to=label_pole_to,
-                                    )
-                        counter += 1
+                        else:
+                            grid.add_links(
+                                label_node_from=mst_pole_from,
+                                label_node_to=index_added_pole,
+                            )
 
-                        # Change the `how_added` tag for the new poles, so that
-                        # next time they won't be selected.
-                        grid.nodes.at[index_added_pole, "how_added"] = "long-distance"
+                    if counter == n_added_poles - 1:
+                        # The last `added poles` should be connected to
+                        # the end or to the beginning of the long link,
+                        # depending on the `to_from` flag.
+                        if to_from:
+                            grid.add_links(
+                                label_node_from=mst_pole_from,
+                                label_node_to=index_added_pole,
+                            )
+                        else:
+                            grid.add_links(
+                                label_node_from=index_added_pole,
+                                label_node_to=mst_pole_to,
+                            )
 
-                elif [label_pole_from in item for item in index_long_links][0] and [
-                    label_pole_to in item for item in index_long_links
-                ][0]:
-                    from_to_link = "(" + label_pole_from + ", " + label_pole_to + ")"
-                    to_from_link = "(" + label_pole_to + ", " + label_pole_from + ")"
+                    if counter > 0:
+                        # The intermediate `added poles` should connect to
+                        # the other `added_poles` before and after them.
+                        grid.add_links(
+                            label_node_from=added_poles.index[counter - 1],
+                            label_node_to=added_poles.index[counter],
+                        )
+                    counter += 1
 
-                    if [from_to_link in item for item in index_long_links][0] or [
-                        to_from_link in item for item in index_long_links
-                    ][0]:
-                        # If the selected link from the minimum spanning tree
-                        # already exists in the previous list of long links, it
-                        # should not ne drawn again.
-                        continue
+                    # Change the `how_added` tag for the new poles.
+                    grid.nodes.at[index_added_pole, "how_added"] = "long-distance"
 
-                else:
-                    grid.add_links(
-                        label_node_from=grid.poles().index[links_mst[link_mst, 0]],
-                        label_node_to=grid.poles().index[links_mst[link_mst, 1]],
-                    )
+            # If `link_mst` does not belong to the list of long links, it is
+            # simply connected without any further check.
             else:
                 grid.add_links(
                     label_node_from=grid.poles().index[links_mst[link_mst, 0]],
@@ -782,33 +734,7 @@ class GridOptimizer(Optimizer):
         ------
         number_of_poles: int
             the number of polse corresponding to the minimum cost of the grid
-
-
-        Notes
-        -----
-        The method assumes that the price of the configuration obtained using
-        the k-means clustering algorithm as a function of the price is a
-        striclty concave function. The method explores the prices associated
-        with different number in both increasing and decreasing direction and
-        stop 3 steps after the last minimum found.
         """
-
-        # make a copy of the grid and perform changes so that the grid remains unchanged
-        # grid_copy = copy.deepcopy(grid)
-
-        # in case the grid contains 'poles' from the previous optimization
-        # they must be removed, becasue the grid_optimizer will calculate
-        # new locations for poles considering the newly added nodes
-        # for node_with_fixed_type in grid_copy.get_nodes().index:
-        #    grid_copy.set_type_fixed(node_with_fixed_type, False)
-        # grid_copy.set_all_node_type_to_consumers()
-
-        # a pandas dataframe representing the grid costs for different configurations
-        grid_costs = pd.DataFrame()
-
-        # Number of nodes in the grid corresponds only to the connected nodes,
-        # not the nodes considered for SHS.
-        number_of_nodes = grid.nodes[grid.nodes["is_connected"] == True].shape[0]
 
         # obtain the location of poles using kmeans clustering method
         self.kmeans_clustering(grid=grid, n_clusters=min_n_clusters)
@@ -822,57 +748,6 @@ class GridOptimizer(Optimizer):
 
         # after the kmeans clustering algorithm, the  number of poles is obtained
         number_of_poles = grid.poles().shape[0]
-
-        # # initialize dataframe to store number of poles and corresponding costs
-        # grid_costs = pd.DataFrame({"poles": [], "cost": []}).set_index("poles")
-
-        # # put the first row of this dataframe
-        # grid_costs.loc[number_of_poles] = grid.cost()
-
-        # # create variable that is used to compare cost of the grid
-        # # corresponding to different number of poles
-        # compare_cost = grid_costs.cost.min()
-
-        # # initialize counter and iteration numbers to limit exploration of solution space
-        # # and to stop searching when costs are increasing after n steps (n = stop_counter)
-        # counter = 0
-        # iteration = 0
-        # stop_counter = 3
-
-        # while (
-        #     ((grid.cost() >= compare_cost) or (counter < stop_counter))
-        #     and (number_of_poles < int(number_of_nodes * 0.8))
-        #     and (iteration < number_of_nodes)
-        # ):
-        #     iteration += 1
-
-        #     # increase the number of poles and let the kmeans clustering algorithm re-calculate
-        #     # all new locations for poles, and the minimum spanning tree find the new interpole links
-        #     number_of_poles += 1
-        #     self.kmeans_clustering(grid=grid, n_clusters=number_of_poles)
-
-        #     # create the minimum spanning tree to obtain the optimal links between poles
-        #     self.create_minimum_spanning_tree(grid)
-
-        #     # connect all links in the grid based on the previous calculations
-        #     self.connect_grid_elements(grid)
-
-        #     # obtain the new cost for the new configuration of the grid
-        #     grid_costs.loc[number_of_poles] = grid.cost()
-
-        #     # if grid cost increases, the counter will also increase
-        #     if grid.cost() >= compare_cost:
-        #         counter += 1
-        #     else:
-        #         counter = 0
-
-        #     compare_cost = grid_costs.cost.min()
-
-        # # update the grid object based on the optimum number of the poles
-        # opt_number_of_poles = int(grid_costs.index[np.argmin(grid_costs)])
-        # self.kmeans_clustering(grid=grid, n_clusters=opt_number_of_poles)
-        # self.create_minimum_spanning_tree(grid)
-        # self.connect_grid_elements(grid)
 
         return number_of_poles
 
@@ -924,1065 +799,6 @@ class GridOptimizer(Optimizer):
                                 int(random_number * num_consumers)
                             ]
                         )
-
-    # ----------- LINEAR PROGRAMMING WITH CONSTRAINTS ---------- #
-    def linprog_optimization(
-        self,
-        grid,
-        label_long_link,
-        max_distance_trans_links=30,
-        max_distance_dist_links=20,
-    ):
-        """
-        In this part, a linear model is created for obtaining the optimal
-        position of poles in the selected village, so that all constraints
-        (e.g., min/max distances) are fulfilled.
-        The optimizer used here is `scipy.optimize.linprog`.
-
-        Parameter
-        ---------
-            grid (~grids.Grid):
-                Grid class.
-
-        Output
-        ---------
-            flag: boolean
-                Indicating if the optimization was succesful or not.
-            pole_new_locations: np.array/boolean
-                An array containing the results of the linear optimization,
-                which means if the flag is `True`, the new coordinates of the
-                poles are returned, otherwise result would be `False`.
-        """
-        links_interpole = grid.links[grid.links["link_type"] == "interpole"]
-        links_distribution = grid.links[grid.links["link_type"] == "distribution"]
-
-        n_interpole_links = links_interpole.shape[0]
-        n_distribution_links = links_distribution.shape[0]
-        n_links = n_interpole_links + n_distribution_links
-        n_poles = grid.poles().shape[0]
-
-        # For each link 4 equations are required for maximum constraints and
-        # 4 equations for the slack variable in the objective function:
-        # - 2 equations for Delta_X and 2 equations for Delta_Y for implementing
-        #   maximum allowed distanced, becuase Delta_X and Delta_Y are absolute
-        #   values.
-        # Moreover, since the unknown parameters are (x,y) coordinates of the
-        # poles and all slack variables defined for each connection, the total
-        # number of unknowns are: 2 * (n_poles + n_links)
-
-        if label_long_link != "":
-            remove_longest_link = -1
-
-            index_x_longest_link_from = int(label_long_link[1:-1].split(", ")[0][2:])
-            index_y_longest_link_from = index_x_longest_link_from + n_poles
-
-            index_x_longest_link_to = int(label_long_link[1:-1].split(", ")[1][2:])
-            index_y_longest_link_to = index_x_longest_link_to + n_poles
-        else:
-            remove_longest_link = 0
-            index_x_longest_link_from = 1000
-            index_y_longest_link_from = 1000
-            index_x_longest_link_to = 1000
-            index_y_longest_link_to = 1000
-
-        A = np.zeros(
-            (
-                8 * (n_links + remove_longest_link),
-                2 * (n_poles + n_links + remove_longest_link),
-            )
-        )
-        b = np.zeros((8 * (n_links + remove_longest_link)))
-        c = np.zeros((2 * (n_poles + n_links + remove_longest_link)))
-
-        # Formulating constraints
-        index_x_slack = 2 * n_poles
-        index_y_slack = 2 * n_poles + n_links + remove_longest_link
-        counter = 0
-        counter_slack = -1
-        for i in range(n_interpole_links):
-            pole_from = links_interpole.index[i][1:-1].split(", ")[0]
-            pole_to = links_interpole.index[i][1:-1].split(", ")[1]
-
-            # Calculate the index of (x,y) values for each pole. For all poles,
-            # x values have the same index as the pole itself (e.g., p-1 means
-            # index 1), and y values are defined as x_index + n_poles
-            index_x_from = int(pole_from[2:])
-            index_y_from = index_x_from + n_poles
-            index_x_to = int(pole_to[2:])
-            index_y_to = index_x_to + n_poles
-
-            # ----- MAXIMUM DISTANCE BETWEEN POLES -----
-            if (
-                index_x_from != index_x_longest_link_from
-                and index_y_from != index_y_longest_link_from
-                and index_x_to != index_x_longest_link_to
-                and index_y_to != index_y_longest_link_to
-            ):
-
-                # 1st equation (for x-value) after linearizing the absolute value
-                A[counter, index_x_from] = 1
-                A[counter, index_x_to] = -1
-                b[counter] = max_distance_trans_links
-
-                # 2nd equation (for x-value) after linearizing the absolute value
-                counter += 1
-                A[counter, index_x_from] = -1
-                A[counter, index_x_to] = 1
-                b[counter] = max_distance_trans_links
-
-                # 3rd equation (for y-value) after linearizing the absolute value
-                counter += 1
-                A[counter, index_y_from] = 1
-                A[counter, index_y_to] = -1
-                b[counter] = max_distance_trans_links
-
-                # 4th equation (for x-value) after linearizing the absolute value
-                counter += 1
-                A[counter, index_y_from] = -1
-                A[counter, index_y_to] = 1
-                b[counter] = max_distance_trans_links
-
-                # ----- SLACK VARIABLE DEFINED IN THE OBJECTIVE FUNCTION -----
-                # 1st equation representing |Delta X| in the objective function
-                counter += 1
-                counter_slack += 1
-                A[counter, index_x_from] = 1
-                A[counter, index_x_to] = -1
-                A[counter, index_x_slack + counter_slack] = -1
-
-                # 2nd equation representing |Delta X| in the objective function
-                counter += 1
-                A[counter, index_x_from] = -1
-                A[counter, index_x_to] = 1
-                A[counter, index_x_slack + counter_slack] = -1
-
-                # 3rd equation representing |Delta Y| in the objective function
-                counter += 1
-                A[counter, index_y_from] = 1
-                A[counter, index_y_to] = -1
-                A[counter, index_y_slack + counter_slack] = -1
-
-                # 4th equation representing |Delta Y| in the objective function
-                counter += 1
-                A[counter, index_y_from] = -1
-                A[counter, index_y_to] = 1
-                A[counter, index_y_slack + counter_slack] = -1
-
-        for i in range(n_distribution_links):
-            pole = links_distribution.index[i][1:-1].split(", ")[0]
-            index_consumer = links_distribution.index[i][1:-1].split(", ")[1]
-
-            # Calculate the index of (x,y) values for each pole and consumer.
-            # The same as before, x values have the same index as the pole
-            # itself (e.g., p-1 means index 1), and y values are defined as
-            # x_index + n_poles
-            index_x_pole = int(pole[2:])
-            index_y_pole = index_x_pole + n_poles
-
-            # ----- MAXIMUM DISTANCE BETWEEN POLES AND CONSUMERS -----
-            # 1st equation (for x-value) after linearizing the absolute value
-            counter += 1
-            A[counter, index_x_pole] = 1
-            b[counter] = max_distance_dist_links + grid.nodes.loc[index_consumer]["x"]
-
-            # 2nd equation (for x-value) after linearizing the absolute value
-            counter += 1
-            A[counter, index_x_pole] = -1
-            b[counter] = max_distance_dist_links - grid.nodes.loc[index_consumer]["x"]
-
-            # 3rd equation (for y-value) after linearizing the absolute value
-            counter += 1
-            A[counter, index_y_pole] = 1
-            b[counter] = max_distance_dist_links + grid.nodes.loc[index_consumer]["y"]
-
-            # 4th equation (for x-value) after linearizing the absolute value
-            counter += 1
-            A[counter, index_y_pole] = -1
-            b[counter] = max_distance_dist_links - grid.nodes.loc[index_consumer]["y"]
-
-            # ----- SLACK VARIABLE DEFINED IN THE OBJECTIVE FUNCTION -----
-            # 1st equation representing |Delta X| in the objective function
-            counter += 1
-            counter_slack += 1
-            A[counter, index_x_pole] = 1
-            A[counter, index_x_slack + counter_slack] = -1
-            b[counter] = grid.nodes.loc[index_consumer]["x"]
-
-            # 2nd equation representing |Delta X| in the objective function
-            counter += 1
-            A[counter, index_x_pole] = -1
-            A[counter, index_x_slack + counter_slack] = -1
-            b[counter] = -grid.nodes.loc[index_consumer]["x"]
-
-            # 3rd equation representing |Delta Y| in the objective function
-            counter += 1
-            A[counter, index_y_pole] = 1
-            A[counter, index_y_slack + counter_slack] = -1
-            b[counter] = grid.nodes.loc[index_consumer]["y"]
-
-            # 4th equation representing |Delta Y| in the objective function
-            counter += 1
-            A[counter, index_y_pole] = -1
-            A[counter, index_y_slack + counter_slack] = -1
-            b[counter] = -grid.nodes.loc[index_consumer]["y"]
-
-        # The function to be minizimed is defined using the slack functions, using a ratio for the transmission links
-        ratio = grid.epc_hv_cable / grid.epc_lv_cable
-
-        c[
-            index_x_slack : index_x_slack + n_interpole_links + remove_longest_link
-        ] = ratio
-        c[
-            index_y_slack : index_y_slack + n_interpole_links + remove_longest_link
-        ] = ratio
-        c[
-            index_x_slack
-            + n_interpole_links
-            + remove_longest_link : index_x_slack
-            + n_interpole_links
-            + remove_longest_link
-            + n_distribution_links
-        ] = 1
-        c[
-            index_y_slack
-            + n_interpole_links
-            + remove_longest_link : index_y_slack
-            + n_interpole_links
-            + remove_longest_link
-            + n_distribution_links
-        ] = 1
-
-        # # set of row indices
-
-        # I = range(len(A))
-
-        # # set of column indices
-        # J = range(len(A.T))
-
-        # # create a model instance
-        # model = po.ConcreteModel()
-
-        # model.I = po.Set()
-        # model.J = po.Set(initialize=x_init)
-
-        # # create x and y variables in the model
-        # model.x = po.Var(model.J, domain=po.NonNegativeReals)
-
-        # # add model constraints
-        # # model.constraints = po.ConstraintList()
-        # for i in I:
-        #     model.phi = po.Constraint(model, A, initialize=phi_rule)
-
-        #     model.constraints = po.Constraint(expr=sum(A[i, j]*model.x[j] for j in J) <= b[i])
-
-        # # add a model objective
-        # model.objective = po.Objective(expr=sum(c[j]*model.x[j] for j in J), sense=po.minimize)
-
-        # # create a solver
-        # solver = po.SolverFactory('cbc')
-
-        # # solve
-        # solver.solve(model)
-
-        # log_infeasible_constraints(model)
-
-        # Lower and upper bounds
-        bounds = []
-        max_x = max(grid.nodes["x"])
-        max_y = max(grid.nodes["y"])
-
-        for i in range(n_poles):
-            bounds.append((0, max_x))
-        for i in range(n_poles):
-            bounds.append((0, max_y))
-        for i in range(2 * (n_links + remove_longest_link)):
-            bounds.append((0, None))
-
-        res = linprog(c=c, A_ub=A, b_ub=b, bounds=bounds, method="highs")
-
-        return res
-
-    # def constraint_rule(model, A, i, b):
-    #     return sum(A[i, j] * model.x[j] for j in range(A.shape[1])) <= b[i]
-
-    # --------- NETWORK RELAXATION WITHOUT CONSTRAINTS --------- #
-
-    def nr_optimization(
-        self,
-        grid,
-        number_of_poles: int,
-        number_of_relaxation_steps: int,
-        damping_factor: float = 0.5,
-        weight_of_attraction: str = "constant",
-        first_guess_strategy="random",
-        number_of_steps_bewteen_random_shifts: int = 0,
-        number_of_hill_climbers_runs: int = 0,
-        save_output: bool = False,
-        output_folder: str = None,
-        print_progress_bar: bool = True,
-    ):
-        """
-        This iterative process finds an approximate solution for the minimum cost of the grid.
-        The main idea is to consider the links between poles as pulling strings exercing a force on each pole.
-        To this end, virtual poles are added to the grid, which are free to locate wherever
-        on the plane. At each iteration step, they are shifted in the direction of
-        the resulting "strength" from the nodes they are linked with.
-
-        Parameters
-        ----------
-            grid (~grids.Grid):
-                grid object
-
-            number_of_poles (int):
-                number of poles in the grid
-
-            number_of_relaxation_steps (int):
-                number of iteration in the relaxation process
-
-            damping_factor (int):
-                a factor determining how much the virtual poles can be shifted
-                together with shortest distance between pair of nodes
-
-            weight_of_attraction (str):
-                defines how strong each link attracts/pulls the pole.
-                Possibilites are:
-                    + 'constant':
-                        only depends on the type of link.
-                    + 'distance':
-                        depends on the type of the link and is proportional to the
-                        distance of the link. (i.e., long links pull stronger).
-
-            first_guess_strategy (str):
-                the stategy that should be used to get the starting configuration
-                Possibilites are:
-                    + 'k_means': (default)
-                        virtual poles are initially located at center of cluster
-                        obtained using a k_means clustering algorithm from the
-                        sklearn library
-                    + 'random':
-                        virtual nodes are randomly located in box containing
-                        all grid nodes
-                    + 'relax_input_grid':
-                        the starting configuration is the grid configuration given as input
-
-            number_of_steps_bewteen_random_shifts (int):
-                determines how often a random shift of one of the poles should occur
-
-            save_output (bool):
-                determines whether or not the output grid and the log should be
-                saved in the output_folder.
-
-            number_of_hill_climbers_runs (int):
-                when larger than 0, local cost optimization is performed
-                after the relaxation. The local optimization process
-                computes in which direction each pole should be shifted in
-                order to reduce the grid costs. The process is repeated
-                'number_of_hill_climbers_runs' times
-
-            output_folder (str):
-                path of the folder the grid output of the algorithm should be
-                saved in.
-
-            print_progress_bar (bool):
-                determines whether or not the progress bar should be displayed
-                in the console.
-
-        Output
-        ------
-            class:`pandas.core.frame.DataFrame`
-                log dataframe containg the detail of the run as well as the,
-                time evolution, the 'virtual_cost' (see notes for more info)
-                evolution and a measure of how much the poles are shifted at
-                each step.
-
-        TODO: check if we need this or not
-
-        Notes
-        -----
-            The 'virtual_cost' is the cost of the grid containing the poles.
-            Since, during the process, the layout is
-            not a feasible solution (the virtual poles are not located at house
-            location), the price that is computed cannot be interpreted as the
-            price of a feasible grid layout
-        """
-
-        if save_output:
-            # show the summary of problem in the terminal
-            print(f"|{42 * '_'}| NETWORK RELAXATION |{42 * '_'}|\n")
-            print(f"{35 * ' '}number of poles:{8 * ' '} {number_of_poles}\n")
-            print(
-                f"{35 * ' '}number of steps:{8 * ' '}" + f"{number_of_relaxation_steps}"
-            )
-            print("\n")
-            print(
-                f"{35 * ' '}first guess strategy:{3 * ' '}" + f"{first_guess_strategy}"
-            )
-            print(
-                f"\n{35 * ' '}weight of attraction:{3 * ' '}"
-                + f"{weight_of_attraction}\n\n"
-            )
-
-            # save all results in a folder
-            if output_folder is None:
-                path_to_folder = f"data/output/{grid.get_id()}"
-            else:
-                path_to_folder = output_folder
-            make_folder(path_to_folder)
-
-            folder_name = (
-                f"{grid.get_id()}_{number_of_poles}_poles_"
-                + f"{number_of_relaxation_steps}_steps_"
-                + f"attr-{weight_of_attraction[:4]}"
-            )
-
-            if os.path.exists(f"{path_to_folder}/{folder_name}"):
-                counter = 1
-                while os.path.exists(f"{path_to_folder}/{folder_name}_{counter}"):
-                    counter += 1
-                folder_name_with_path = f"{path_to_folder}/{folder_name}_{counter}"
-                folder_name = f"{folder_name}_{counter}"
-                make_folder(folder_name_with_path)
-            else:
-                folder_name_with_path = f"{path_to_folder}/{folder_name}"
-                make_folder(folder_name_with_path)
-
-        # Find out the range of (x,y) coordinate for all nodes of the grid
-        # except the nodes which are candidates for SHS.
-        x_range = [
-            grid.nodes[grid.nodes["is_connected"] == True].x.min(),
-            grid.nodes[grid.nodes["is_connected"] == True].x.max(),
-        ]
-        y_range = [
-            grid.nodes[grid.nodes["is_connected"] == True].y.min(),
-            grid.nodes[grid.nodes["is_connected"] == True].y.max(),
-        ]
-
-        # create log dataframe that will store info about run
-        info_log = pd.DataFrame(
-            {
-                "time": pd.Series([0] * number_of_relaxation_steps, dtype=float),
-                "cost": pd.Series([0] * number_of_relaxation_steps, dtype=float),
-                "norm_longest_shift": pd.Series(
-                    [0] * number_of_relaxation_steps, dtype=float
-                ),
-            }
-        )
-
-        """
-        # FIXME: I think the first guess strategy can be deleted
-        # Define number of virtual poles
-        number_of_virtual_poles = (number_of_poles
-                                   - grid_copy.get_poles()[
-                                       grid_copy.get_poles()[
-                                           'type_fixed']].shape[0]
-                                   )
-        # TODO: must be checked later. Maybe there is no need for that
-        if first_guess_strategy == 'random':
-            # flip all non-fixed poles from the grid for the optimization
-            for pole, row in grid_copy.get_poles().iterrows():
-                if not row['type_fixed']:
-                    grid_copy.flip_node(pole)
-
-            # Create virtual poles and add them randomly at locations within
-            # square containing all nodes
-            for i in range(number_of_virtual_poles):
-                grid_copy.add_node(label=f'V{i}',
-                                   x_coordinate=random.uniform(x_range[0],
-                                                               x_range[1]),
-                                   y_coordinate=random.uniform(y_range[0],
-                                                               y_range[1]),
-                                   node_type='pole',
-                                   segment='0',
-                                   allocation_capacity=allocation_capacity)
-
-        elif first_guess_strategy == 'k_means':
-            # TODO: I guess the flipping part should be removed because here we have poles AND consumers
-            # flip all non-fixed poles from the grid for the optimization
-            for pole, row in grid_copy.get_poles().iterrows():
-                if not row['type_fixed']:
-                    grid_copy.flip_node(pole)
-
-            # Create virtual poles and add them at centers of clusters
-            # given by the k_means_cluster_centers() method
-
-            cluster_centers = self.kmeans_clustering(
-                grid=grid_copy,
-                n_clusters=number_of_virtual_poles)
-
-            count = 0
-            for coord in cluster_centers:
-                grid_copy.add_node(label=f'V{count}',
-                                   x_coordinate=int(coord[0]),
-                                   y_coordinate=int(coord[1]),
-                                   node_type='pole',
-                                   segment='0',
-                                   allocation_capacity=allocation_capacity)
-                count += 1
-
-        elif first_guess_strategy == 'relax_input_grid':
-            counter = 0
-            intial_pole_indices = grid_copy.get_poles().index
-
-            for pole in intial_pole_indices:
-                grid_copy.add_node(
-                    label=f'V{counter}',
-                    x_coordinate=grid_copy.get_poles()['x_coordinate'][pole],
-                    y_coordinate=grid_copy.get_poles()['y_coordinate'][pole],
-                    node_type='pole',
-                    type_fixed=False,
-                    segment='0',
-                    allocation_capacity=allocation_capacity)
-                grid_copy.set_node_type(pole, 'consumer')
-                counter += 1
-
-        else:
-            raise Warning("invalid first_guess_strategy parameter, "
-                          + "possibilities are:\n- 'random'\n- 'k_means'\n- "
-                          + "'relax_input_grid'")
-        self.connect_grid_elements(grid_copy)
-        """
-        start_time = time.time()
-
-        # ---------- STEP 0 - Initialization step -------- #
-        if print_progress_bar:
-            self.print_progress_bar(0, 1)
-
-        # Compute the new relaxation_df
-        relaxation_df = self.nr_compute_relaxation_df(grid)
-
-        # Store the 'weighted_vector' from the current and the previous steps
-        # to adapt the 'damping_factor'.
-        # At each step, the scalar product between the 'weighted_vector'
-        # form the previous and current step will be computed and used
-        # to adapt the 'damping_factor' value
-        weighted_vectors_previous_step = relaxation_df["weighted_vector"]
-        # cost_connection = grid.get_price_consumer()
-
-        # Compute the 'damping_factor' such that the norm of the 'weighted_vector'
-        # at step 0 is equal to n% of the smallest link in the grid.
-        # 'n' is specified when calling nr_optimization.
-        # The the 'damping_factor' is applied to the 'weighted_vector' for each pole
-        for pole in relaxation_df.index:
-            multiplier = (
-                damping_factor
-                * self.nr_smallest_link(grid)
-                / self.nr_max_length_weighted_vector(relaxation_df)
-            )
-            relaxation_df.weighted_vector.loc[pole] = np.multiply(
-                relaxation_df.weighted_vector.loc[pole], multiplier
-            )
-
-        # Shift poles in the direction of the 'weighted_vector'
-        for pole in grid.poles().index:
-            grid.shift_node(
-                node=pole,
-                delta_x=relaxation_df.weighted_vector[pole][0],
-                delta_y=relaxation_df.weighted_vector[pole][1],
-            )
-
-        # update the (lon,lat) coordinates based on the new (x,y) coordinates for poles
-        grid.convert_lonlat_xy(inverse=True)
-
-        # create a new network based on the new coordinates of the poles in the grid
-        self.connect_grid_elements(grid)
-
-        # update the log file
-        info_log["time"][0] = time.time() - start_time
-        info_log["cost"][0] = grid.cost()
-        info_log["norm_longest_shift"][0] = self.nr_max_length_weighted_vector(
-            relaxation_df
-        ) / self.nr_smallest_link(grid)
-        if print_progress_bar:
-            self.print_progress_bar(
-                iteration=1, total=number_of_relaxation_steps + 1, cost=grid.cost()
-            )
-
-        # ------------ STEP n + 1 - ITERATIVE STEP ------------- #
-        for n in range(1, number_of_relaxation_steps + 1):
-            # Compute the new relaxation_df after the previous changes.
-            relaxation_df = self.nr_compute_relaxation_df(grid)
-
-            # Update the current 'weighted_vector'
-            weighted_vectors_current_step = relaxation_df["weighted_vector"]
-
-            # For each pole, compute the scalar product of the 'weighted_vector'
-            # from the previous and the current step.
-            # The values will be used to adapt the damping value
-            scalar_product_weighted_vectors = [
-                x1[0] * x2[0] + x1[1] * x2[1]
-                for x1, x2 in zip(
-                    weighted_vectors_current_step, weighted_vectors_previous_step
-                )
-            ]
-            if min(scalar_product_weighted_vectors) >= 0:
-                damping_factor = damping_factor * 2.5
-            else:
-                damping_factor = damping_factor / 1.5
-
-            # Apply the 'damping_factor' to the 'weighted_vector' for each pole.
-            for pole in relaxation_df.index:
-                multiplier = (
-                    damping_factor
-                    * self.nr_smallest_link(grid)
-                    / self.nr_max_length_weighted_vector(relaxation_df)
-                )
-                relaxation_df.weighted_vector.loc[pole] = np.multiply(
-                    relaxation_df.weighted_vector.loc[pole], multiplier
-                )
-
-            # Shift poles in the direction of the 'weighted_vector'.
-            for pole in grid.poles().index:
-                grid.shift_node(
-                    node=pole,
-                    delta_x=relaxation_df.weighted_vector[pole][0],
-                    delta_y=relaxation_df.weighted_vector[pole][1],
-                )
-
-            # Update the (lon,lat) coordinates based on the new (x,y) coordinates for poles.
-            grid.convert_lonlat_xy(inverse=True)
-
-            # Create a new network based on the new coordinates of the poles in the grid.
-            self.connect_grid_elements(grid)
-
-            # Update the log file.
-            info_log["time"][n] = time.time() - start_time
-            info_log["cost"][n] = grid.cost()
-            info_log["norm_longest_shift"][n] = self.nr_max_length_weighted_vector(
-                relaxation_df
-            ) / self.nr_smallest_link(grid)
-
-            # Update the progress bar.
-            if print_progress_bar:
-                self.print_progress_bar(
-                    iteration=n + 1,
-                    total=number_of_relaxation_steps + 1,
-                    cost=grid.cost(),
-                )
-
-            weighted_vectors_previous_step = weighted_vectors_current_step
-
-        # if number_of_hill_climbers_runs is non-zero, perform hill climber
-        # runs
-        if number_of_hill_climbers_runs > 0 and print_progress_bar:
-            print("\n\nHill climber runs...\n")
-        for i in range(number_of_hill_climbers_runs):
-            if print_progress_bar:
-                current_price = grid.price()
-                self.print_progress_bar(
-                    iteration=i, total=number_of_hill_climbers_runs, cost=current_price
-                )
-
-            counter = 0
-            for pole in grid.poles().index:
-                counter += 1
-                gradient = self.nr_compute_local_price_gradient(grid, pole)
-                self.nr_shift_pole_toward_minus_gradient(
-                    grid=grid_copy, pole=pole, gradient=gradient
-                )
-                self.connect_grid_elements(grid_copy)
-                if save_output:
-                    info_log.loc[f"{info_log.shape[0]}"] = [
-                        time.time() - start_time,
-                        grid_copy.price() - (number_of_virtual_poles * cost_connection),
-                        0,
-                    ]
-                if print_progress_bar:
-                    current_price = grid_copy.price() - (
-                        number_of_virtual_poles * cost_connection
-                    )
-                    self.print_progress_bar(
-                        iteration=i + ((counter + 1) / grid_copy.get_poles().shape[0]),
-                        total=number_of_hill_climbers_runs,
-                        cost=current_price,
-                    )
-
-        n_final = number_of_relaxation_steps + 1
-        info_log["time"][n_final] = time.time() - start_time
-        info_log["cost"][n_final] = grid.cost()
-        info_log["norm_longest_shift"][n_final] = self.nr_max_length_weighted_vector(
-            relaxation_df
-        ) / self.nr_smallest_link(grid)
-
-        if save_output:
-            print(f"\n\nFinal price: {grid_copy.price()} $\n")
-
-            info_log.to_csv(path_to_folder + "/" + folder_name + "/log.csv")
-            grid_copy.export(
-                backup_name=folder_name,
-                folder=path_to_folder,
-                allow_saving_in_existing_backup_folder=True,
-            )
-
-            # create json file containing about dictionary
-            about_dict = {
-                "grid id": grid_copy.get_id(),
-                "number_of_poles": number_of_poles,
-                "number_of_relaxation_steps": number_of_relaxation_steps,
-                "damping_factor": damping_factor,
-                "weight_of_attraction": weight_of_attraction,
-                "first_guess_strategy": first_guess_strategy,
-                "number_of_steps_bewteen_random_shifts": number_of_steps_bewteen_random_shifts,
-                "number_of_hill_climbers_runs": number_of_hill_climbers_runs,
-                "save_output": save_output,
-                "output_folder": output_folder,
-                "print_progress_bar": print_progress_bar,
-            }
-
-            json.dumps(about_dict)
-
-            with open(
-                path_to_folder + "/" + folder_name + "/about_run.json", "w"
-            ) as about:
-                about.write(json.dumps(about_dict))
-
-    def nr_smallest_link(self, grid: Grid):
-        """
-        +++ ok +++
-
-        This method returns the length of the smallest link in the grid.
-
-        Parameter
-        ---------
-            grid (~grids.Grid): Grid object.
-
-        Return
-        ------
-            float: length of the smallest link in the grid
-        """
-        return min([x for x in grid.links.length if x > 0])
-
-    def nr_max_length_weighted_vector(self, relaxation_df):
-        """
-        +++ ok +++
-
-        This method returns the norm (i.e. magnitude) of the longest 'weighted_vector'
-        from the relaxation DataFrame.
-
-        Parameter
-        ---------
-            relaxation_df : :class:`pandas.core.frame.DataFrame`
-                DataFrame containing all relaxation vectors for each invidiuda
-                poles.
-
-        Return
-        ------
-            float
-                Norm of the longest vector in vector_resulting.
-        """
-
-        max_length = 0.0
-
-        for pole in relaxation_df.index:
-            x_weighted_vector = relaxation_df.weighted_vector.loc[pole][0]
-            y_weighted_vector = relaxation_df.weighted_vector.loc[pole][1]
-            norm_weighted_vector = np.sqrt(
-                x_weighted_vector**2 + y_weighted_vector**2
-            )
-            if norm_weighted_vector > max_length:
-                max_length = norm_weighted_vector
-
-        return max_length
-
-    def nr_get_smaller_distance_between_nodes(self, grid: Grid):
-        """
-        This methods returns the distance between the two nodes
-        from the grid that are the closest.
-
-        Parameter
-        ---------
-        grid (~grids.Grid):
-            Grid object.
-
-        Output
-        ------
-            float
-                distance between the two nodes in [m] from the grid that are
-                the closest.
-        """
-
-        smaller_distance = grid.distance_between_nodes(
-            grid.get_nodes().index[0], grid.get_nodes().index[1]
-        )
-
-        node_indices = grid.consumers().index
-        for i in range(len(node_indices)):
-            for j in range(len(node_indices)):
-                if i > j:
-                    if (
-                        grid.distance_between_nodes(node_indices[i], node_indices[j])
-                        < smaller_distance
-                    ):
-                        smaller_distance = grid.distance_between_nodes(
-                            node_indices[i], node_indices[j]
-                        )
-        return smaller_distance
-
-    def nr_compute_relaxation_df(self, grid: Grid):
-        """
-        +++ ok +++
-
-        This method computes the vectors between all poles and nodes
-        that are connected to it. The Series 'weighted_vector' is the
-        sum of the vector multiplied by the corresponding costs per cable
-        length (i.e., distribution and interpole cabes).
-
-        Parameters
-        ----------
-            grid (~grids.Grid):
-                Grid object.
-
-        Return
-        ------
-            class:`pandas.core.frame.DataFrame`
-                DataFrame containing all relaxation vectors for each invidiudal
-                poles and the final equivalent vector called 'weighted_vector'
-        """
-
-        # Get costs per meter of cables.
-        epc_hv_cable = grid.epc_hv_cable
-        epc_lv_cable = grid.epc_lv_cable
-
-        # A dataframe including all data required for relaxation.
-        relaxation_df = pd.DataFrame(
-            {
-                "pole": pd.Series([], dtype=str),
-                "connected_consumers": pd.Series([]),
-                "xy_each_consumer": pd.Series([]),
-                "xy_equivalent_consumers": pd.Series([]),
-                "connected_poles": pd.Series([]),
-                "xy_each_pole": pd.Series([]),
-                "xy_equivalent_poles": pd.Series([]),
-                "weighted_vector": pd.Series([]),
-            }
-        ).set_index("pole")
-
-        # Update the 'relaxation_df' for all poles in the grid object.
-        for pole in grid.poles().index:
-            relaxation_df.loc[pole] = [[], [], [0, 0], [], [], [0, 0], [0, 0]]
-
-            # Find the connected poles and consumers to each pole
-            for link in grid.links.index:
-
-                # Links labels are strings in '(from, to)' format. So, first both
-                # parentheses and the comma must be removed to get 'from' and 'to' separately.
-                link_from = (link.replace("(", "")).replace(")", "").split(", ")[0]
-                link_to = (link.replace("(", "")).replace(")", "").split(", ")[1]
-
-                if link_from == pole:
-                    if link_to in grid.poles().index:
-                        relaxation_df["connected_poles"][pole].append(link_to)
-                    elif link_to in grid.consumers().index:
-                        relaxation_df["connected_consumers"][pole].append(link_to)
-
-                elif link_to == pole:
-                    if link_from in grid.poles().index:
-                        relaxation_df["connected_poles"][pole].append(link_from)
-                    elif link_from in grid.consumers().index:
-                        relaxation_df["connected_consumers"][pole].append(link_from)
-
-            # Calculate the relative (x,y) positions of poles and consumers connected to
-            # the pole being investigated.
-            for consumer in relaxation_df["connected_consumers"][pole]:
-                delta_x = grid.nodes.x[consumer] - grid.nodes.x[pole]
-                delta_y = grid.nodes.y[consumer] - grid.nodes.y[pole]
-                relaxation_df["xy_each_consumer"][pole].append([delta_x, delta_y])
-                relaxation_df["xy_equivalent_consumers"][pole][0] += delta_x
-                relaxation_df["xy_equivalent_consumers"][pole][1] += delta_y
-                relaxation_df["weighted_vector"][pole][0] += (
-                    delta_x * epc_lv_cable / epc_hv_cable
-                )
-                relaxation_df["weighted_vector"][pole][1] += (
-                    delta_y * epc_lv_cable / epc_hv_cable
-                )
-
-            for pole_2 in relaxation_df["connected_poles"][pole]:
-                delta_x = grid.nodes.x[pole_2] - grid.nodes.x[pole]
-                delta_y = grid.nodes.y[pole_2] - grid.nodes.y[pole]
-                relaxation_df["xy_each_pole"][pole].append([delta_x, delta_y])
-                relaxation_df["xy_equivalent_poles"][pole][0] += delta_x
-                relaxation_df["xy_equivalent_poles"][pole][1] += delta_y
-                relaxation_df["weighted_vector"][pole][0] += delta_x
-                relaxation_df["weighted_vector"][pole][1] += delta_y
-
-        return relaxation_df
-
-    def nr_compute_local_price_gradient(self, grid: Grid, pole, delta=1):
-        """
-        This method computes the price of four neighboring configurations
-        obatined by shifting the pole given as input by delta respectively
-        in the positive x direction, in the negative x directtion, in the
-        positive y direction and in the negative y direction. The gradient
-        vector is computed as follow:
-        (f(x + d, y) * e_x - f(x - d, y) * e_x
-        + f(x, y + d) * e_y - f(x, y -d) * e_y)/d
-        where d = delta, e_x and e_y are respectively the unit vectors in
-        direction x and y and f(x, y) is the price of the grid with the pole
-        given as input located at (x, y).
-
-        Parameters
-        ----------
-        grid (~grids.Grid):
-            Grid object.
-
-        pole (str):
-            index of the pole whose gradient is computed.
-
-        delta: float
-            Pixel distance used for computing the gradient.
-        """
-
-        # compute price of configuration with pole shifted from (delta, 0)
-        grid.shift_node(node=pole, delta_x=delta, delta_y=0)
-        self.connect_grid_elements(grid)
-        price_pos_x = grid.cost()
-
-        # compute price of configuration with pole shifted from (- delta, 0)
-        grid.shift_node(node=pole, delta_x=-2 * delta, delta_y=0)
-        self.connect_grid_elements(grid)
-        price_neg_x = grid.cost()
-
-        # compute price of configuration with pole shifted from (0, delta)
-        grid.shift_node(node=pole, delta_x=delta, delta_y=delta)
-        self.connect_grid_elements(grid)
-        price_pos_y = grid.cost()
-
-        # compute price of configuration with pole shifted from (0, - delta)
-        grid.shift_node(node=pole, delta_x=0, delta_y=-2 * delta)
-        self.connect_grid_elements(grid)
-        price_neg_y = grid.cost()
-
-        # Shift pole back to initial position
-        grid.shift_node(node=pole, delta_x=0, delta_y=delta)
-        self.connect_grid_elements(grid)
-
-        gradient = (
-            (price_pos_x - price_neg_x) / delta,
-            (price_pos_y - price_neg_y) / delta,
-        )
-
-        return gradient
-
-    def nr_shift_pole_toward_minus_gradient(self, grid: Grid, pole, gradient):
-        """
-        This method compares the price of the grid if pole is shifted by
-        different amplitudes toward the negative gradient direction and
-        performs shift that result in better price improvement.
-
-        Parameters
-        ----------
-        grid (~grids.Grid):
-            Grid object.
-
-        pole (str):
-            Index of the pole whose gradient is computed:
-
-        gradient: tuple
-            Two-dimensional vector pointing in price gradient direction.
-        """
-
-        # Store initial coordinates of pole to be shifted
-        nodes = grid.get_nodes()
-        links = grid.links()
-
-        amplitude = 15
-        price_after_shift = grid.cost()
-        price_before_shift = grid.cost()
-
-        counter = 0
-        while price_after_shift <= price_before_shift and counter < 20:
-            nodes = grid.get_nodes()
-            links = grid.links()
-            price_before_shift = grid.cost()
-            grid.shift_node(pole, -amplitude * gradient[0], -amplitude * gradient[1])
-            self.connect_grid_elements(grid)
-            amplitude *= 3
-            counter += 1
-
-            price_after_shift = grid.cost()
-        grid.set_nodes(nodes)
-        grid.set_links(links)
-        self.connect_grid_elements(grid)
-
-    def print_progress_bar(
-        self,
-        iteration: int,
-        total: int,
-        prefix: str = "",
-        suffix: str = "",
-        decimals: int = 1,
-        length: int = 50,
-        fill: str = "█",
-        print_end: str = "\r",
-        cost: float = None,
-    ):
-        """
-        +++ ok +++
-
-        Call in a loop to create terminal progress bar.
-
-        Parameters
-        ----------
-            iteration   - Required  : current iteration (int)
-            total       - Required  : total iterations (int)
-            prefix      - Optional  : prefix string (str)
-            suffix      - Optional  : suffix string (str)
-            decimals    - Optional  : positive number of decimals in percent
-                                    complete (int)
-            length      - Optional  : character length of bar (int)
-            fill        - Optional  : bar fill character (str)
-            print_end   - Optional  : end character (e.g., "\r", "\r\n") (str)
-
-            Notes
-            -----
-                Funtion inspired from https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console/30740258 # noqa: E501
-        """
-        # the precentage which is shown next to the progress bar
-        precision = "{:." + str(decimals) + "f}"
-        percent = precision.format(100 * iteration / total)
-
-        # fill some part of the progress bar depending on the iteration number
-        filled_length = int(length * iteration // total)
-        bar = fill * filled_length + "-" * (length - filled_length)
-
-        # update the progress bar based on the iteration number and cost
-        if cost is None:
-            print(f"\r{prefix} |{bar}| {percent}% {suffix}", end=print_end)
-        else:
-            print(
-                f"\r{prefix} |{bar}| {percent}% {suffix}, Cost: {cost:.2f} USD",
-                end=print_end,
-            )
-
-        # print a new empty line after all iterations
-        if iteration == total:
-            print()
-
-    def display_progress_bar(self, current, final, message=""):
-        """
-        This method displays a progress bar on the console. The progress is
-        displayed in percent and corresponds to current/final. The message
-        parameter is appended  after the progress bar.
-
-        Parameters
-        ----------
-        current: float
-            Current iteration.
-
-        final: float
-            Final iteration.
-
-        message (str):
-            Diplayed after the progress bar.
-
-        """
-        if current > final:
-            final = current
-
-        current_in_percent = int(current / final * 50)
-        remaining = 50 - current_in_percent
-
-        bar = "█" * current_in_percent + "-" * remaining
-        print(f"\r|{bar}|  {int(current / final * 100)}%   {message}", end="")
 
 
 class EnergySystemOptimizer(Optimizer):

@@ -204,12 +204,14 @@ class Grid:
 
         # Find the links longer than two times of the allowed distance
         critical_link = interpole_links[
-            interpole_links["length"] == interpole_links["length"].max()
+            interpole_links["length"] > max_distance_dist_links
         ]
-        if critical_link.length[0] > 2 * max_distance_dist_links:
-            return critical_link.index[0]
-        else:
-            return ""
+
+        return list(critical_link.index)
+        # if critical_link.length[0] > max_distance_dist_links:
+        #     return critical_link.index[0]
+        # else:
+        #     return ""
 
         # for index in interpole_links.index:
         #     if interpole_links.at[index, "length"] > 2 * max_distance_dist_links:
@@ -228,43 +230,70 @@ class Grid:
 
     def add_fixed_poles_on_long_links(
         self,
-        label_long_link,
+        long_links,
         max_allowed_distance,
     ):
-        x_from = self.links.x_from[label_long_link]
-        x_to = self.links.x_to[label_long_link]
-        y_from = self.links.y_from[label_long_link]
-        y_to = self.links.y_to[label_long_link]
-        n_required_poles = int(
-            np.ceil(self.links.length[label_long_link] / max_allowed_distance) - 1
-        )
-        index_last_pole = int(self.poles().index[-1].split("-")[1])
-        slope = (y_to - y_from) / (x_to - x_from)
-        length_of_each_new_link = self.links.length[label_long_link] / (
-            n_required_poles + 1
-        )
 
-        for i in range(1, n_required_poles + 1):
-            x = x_from + np.sign(x_to - x_from) * i * length_of_each_new_link * np.sqrt(
-                1 / (1 + slope**2)
-            )
-            y = y_from + np.sign(y_to - y_from) * i * length_of_each_new_link * abs(
-                slope
-            ) * np.sqrt(1 / (1 + slope**2))
+        for long_link in long_links:
+            # Get start and end coordinates of the long link.
+            x_from = self.links.x_from[long_link]
+            x_to = self.links.x_to[long_link]
+            y_from = self.links.y_from[long_link]
+            y_to = self.links.y_to[long_link]
 
-            pole_label = f"p-{i+index_last_pole}"
-            self.add_node(
-                label=pole_label,
-                x=x,
-                y=y,
-                node_type="pole",
-                consumer_type="n.a.",
-                consumer_detail="n.a.",
-                is_connected=True,
-                how_added="long-distance-init",
-                type_fixed=True,
-                cluster_label=1000,
+            # Calculate the number of additional poles required.
+            n_required_poles = int(
+                np.ceil(self.links.length[long_link] / max_allowed_distance) - 1
             )
+
+            # Get the index of the last pole in the grid. The new pole's index
+            # will start from this index.
+            last_pole = self.poles().index[-1]
+            # Split the pole's index using `-` as the separator, because poles
+            # are labeled in `p-x` format. x represents the index number, which
+            # must be an integer.
+            index_last_pole = int(last_pole.split("-")[1])
+
+            # Calculate the slope of the line, connecting the start and end
+            # points of the long link.
+            slope = (y_to - y_from) / (x_to - x_from)
+
+            # Calculate the final length of the smaller links after splitting
+            # the long links into smaller parts.
+            length_smaller_links = self.links.length[long_link] / (n_required_poles + 1)
+
+            # Add all poles between the start and end points of the long link.
+            for i in range(1, n_required_poles + 1):
+                x = x_from + np.sign(
+                    x_to - x_from
+                ) * i * length_smaller_links * np.sqrt(1 / (1 + slope**2))
+                y = y_from + np.sign(y_to - y_from) * i * length_smaller_links * abs(
+                    slope
+                ) * np.sqrt(1 / (1 + slope**2))
+
+                pole_label = f"p-{i+index_last_pole}"
+
+                # In adding the pole, the `how_added` attribute is considerd
+                # `long-distance-init`, which means the pole is added because
+                # of long distance in an interpole connection.
+                # The reason for using the `long_link` part is to distinguish
+                # it with the poles which are already `connected` to the grid.
+                # The poles in this stage are only placed on the line, and will
+                # be connected to the other poles using another function.
+                # The `cluster_label` is given as 1000, to avoid inclusion in
+                # other clusters.
+                self.add_node(
+                    label=pole_label,
+                    x=x,
+                    y=y,
+                    node_type="pole",
+                    consumer_type="n.a.",
+                    consumer_detail="n.a.",
+                    is_connected=True,
+                    how_added=long_link,
+                    type_fixed=True,
+                    cluster_label=1000,
+                )
 
     def add_node(
         self,

@@ -1016,133 +1016,48 @@ async def optimize_grid(
     else:
         min_number_of_poles = int(np.ceil(n_mg_consumers / (grid.pole_max_connection)))
 
-    if n_mg_consumers <= 2:
-        # For low number of consumers, the more accurate algorithm, which is
-        # based on the linear programming, can be used.
-        optimization_success = False
-        label_long_link = ""
-        while optimization_success == False and min_number_of_poles < n_mg_consumers:
-            # obtain the optimal number of poles by increasing the minimum number of poles
-            # and each time applying the kmeans clustering algorithm and minimum spanning tree
-            number_of_poles = opt.find_opt_number_of_poles(
-                grid=grid, min_n_clusters=min_number_of_poles
-            )
-
-            # Check if there is a very long connection in the grid.
-            label_long_link = grid.find_index_longest_pole(max_distance_dist_links=35)
-
-            opt_results = opt.linprog_optimization(
-                grid=grid,
-                label_long_link=label_long_link,
-                max_distance_trans_links=35 / np.sqrt(2),
-                max_distance_dist_links=25 / np.sqrt(2),
-            )
-
-            optimization_success = opt_results.success
-
-            # If the optimization problem did not converge, one more pole will be
-            # added.
-            min_number_of_poles += 1
-
-        # If the optimization converges, results will be saved into the grid
-        if optimization_success == True:
-            for pole in grid.poles().index:
-                index_x_pole = int(pole[2:])
-                index_y_pole = int(pole[2:]) + number_of_poles
-                grid.nodes.x[pole] = opt_results.x[index_x_pole]
-                grid.nodes.y[pole] = opt_results.x[index_y_pole]
-                grid.nodes.how_added[pole] = "linear-programming"
-
-            list_index_longest_links = []
-            label_long_link = grid.find_index_longest_pole(
-                max_distance_dist_links=35,
-            )
-            while label_long_link != "":
-
-                # Check if there is a very long connection in the grid.
-                grid.add_fixed_poles_on_long_links(
-                    max_allowed_distance=35,
-                    label_long_link=label_long_link,
-                )
-
-                # update the (lon,lat) coordinates based on the new (x,y)
-                # coordinates for poles
-                grid.convert_lonlat_xy(inverse=True)
-
-                # create a new network based on the new coordinates of the poles
-                # in the grid
-                list_index_longest_links.append(label_long_link)
-                opt.connect_grid_poles(grid, index_long_links=list_index_longest_links)
-
-                # Again obtain the longest link in the grid and if its length is
-                # more than the critical range, the procedure must be repeated.
-                label_long_link = grid.find_index_longest_pole(
-                    max_distance_dist_links=35,
-                )
-    else:
-        # In case the number of consumers are more than a certain number, a
-        # rough estimation is used for the grid layout.
-
-        # First, the appropriate number of poles should be selected, to meet
-        # the constraint on the maximum distance between consumers and poles.
-        while True:
-            # Initial number of poles.
-            number_of_poles = opt.find_opt_number_of_poles(
-                grid=grid, min_n_clusters=min_number_of_poles
-            )
-
-            # Find those connections with constraint violation.
-            constraints_violation = grid.links[
-                grid.links["link_type"] == "distribution"
-            ]
-            constraints_violation = constraints_violation[
-                constraints_violation["length"] > 30
-            ]
-
-            # Increase the number of poles if necessary.
-            if constraints_violation.shape[0] > 0:
-                min_number_of_poles += 1
-            else:
-                break
-
-        list_index_longest_links = []
-        label_long_link = grid.find_index_longest_pole(
-            max_distance_dist_links=35,
+    # ---------- MAX DISTANCE BETWEEN POLES AND CONSUMERS ----------
+    # First, the appropriate number of poles should be selected, to meet
+    # the constraint on the maximum distance between consumers and poles.
+    while True:
+        # Initial number of poles.
+        number_of_poles = opt.find_opt_number_of_poles(
+            grid=grid, min_n_clusters=min_number_of_poles
         )
-        while label_long_link != "":
 
-            # Check if there is a very long connection in the grid.
-            grid.add_fixed_poles_on_long_links(
-                max_allowed_distance=35,
-                label_long_link=label_long_link,
-            )
+        # Find those connections with constraint violation.
+        constraints_violation = grid.links[grid.links["link_type"] == "distribution"]
+        constraints_violation = constraints_violation[
+            constraints_violation["length"] > 30  # TODO: USER INPUT
+        ]
 
-            # update the (lon,lat) coordinates based on the new (x,y)
-            # coordinates for poles
-            grid.convert_lonlat_xy(inverse=True)
+        # Increase the number of poles if necessary.
+        if constraints_violation.shape[0] > 0:
+            min_number_of_poles += 1
+        else:
+            break
 
-            # # Connect all consumers to the nearest pole.
-            # opt.connect_grid_consumers(grid=grid)
+    # Find the links in the distribution network with lengths greater than
+    # the maximum allowed length for `distribution` cables, specified by
+    # the user.
+    long_links = grid.find_index_longest_pole(
+        max_distance_dist_links=35,
+    )
 
-            # create a new network based on the new coordinates of the poles
-            # in the grid
-            list_index_longest_links.append(label_long_link)
-            opt.connect_grid_poles(grid, index_long_links=list_index_longest_links)
+    # Add poles to the identified long distribution links, so that the
+    # distance between all poles remains below the maximum allowed distance.
+    # TODO: `max_allowed_distance` should be given by the user.
+    grid.add_fixed_poles_on_long_links(
+        long_links=long_links,
+        max_allowed_distance=35,
+    )
 
-            # Again obtain the longest link in the grid and if its length is
-            # more than the critical range, the procedure must be repeated.
-            label_long_link = grid.find_index_longest_pole(
-                max_distance_dist_links=35,
-            )
+    # Update the (lon,lat) coordinates based on the newly inserted poles
+    # which only have (x,y) coordinates.
+    grid.convert_lonlat_xy(inverse=True)
 
-        # number_of_relaxation_steps_nr = optimize_grid_request.optimization['n_relaxation_steps']
-
-        # opt.nr_optimization(grid=grid,
-        #                     number_of_poles=number_of_poles,
-        #                     number_of_relaxation_steps=number_of_relaxation_steps_nr,
-        #                     first_guess_strategy='random',
-        #                     save_output=False,
-        #                     number_of_hill_climbers_runs=0)
+    # Connect all poles together using the minimum spanning tree algorithm.
+    opt.connect_grid_poles(grid, long_links=long_links)
 
     # Calculate the cost of SHS.
     peak_demand_shs_consumers = grid.nodes[grid.nodes["is_connected"] == False].loc[
