@@ -439,7 +439,7 @@ function load_results(){
             document.getElementById("nPoles").innerText = results['n_poles'];
             document.getElementById("nConsumers").innerText = results['n_consumers'];
             document.getElementById("lengthHvCable").innerText = results['length_hv_cable'];
-            document.getElementById("lengthLvCable").innerText = results['length_lv_cable'];
+            document.getElementById("lengthConnectionCable").innerText = results['length_connection_cable'];
             document.getElementById("costGrid").innerText = results['cost_grid'];
             document.getElementById("lcoe").innerText = results['lcoe'];
             document.getElementById("res").innerText = results['res'];
@@ -474,8 +474,8 @@ function save_previous_data(page_name) {
                 consumer_selection: {
                     'hv_cable_lifetime': 0,
                     'hv_cable_capex': 0,
-                    'lv_cable_lifetime': 0,
-                    'lv_cable_capex': 0,
+                    'connection_cable_lifetime': 0,
+                    'connection_cable_capex': 0,
                     'pole_lifetime': 0,
                     'pole_capex': 0,
                     'mg_connection_cost': 0,
@@ -498,8 +498,8 @@ function save_previous_data(page_name) {
                 consumer_selection: {
                     'hv_cable_lifetime': hvCableLifetime.value,
                     'hv_cable_capex': hvCableCapex.value,
-                    'lv_cable_lifetime': lvCableLifetime.value,
-                    'lv_cable_capex': lvCableCapex.value,
+                    'connection_cable_lifetime': connectionCableLifetime.value,
+                    'connection_cable_capex': connectionCableCapex.value,
                     'pole_lifetime': poleLifetime.value,
                     'pole_capex': poleCapex.value,
                     'mg_connection_cost': mgConnectionCost.value,
@@ -545,8 +545,8 @@ function load_previous_data(page_name){
                 results = this.response;
                 document.getElementById("hvCableLifetime").value = results['hv_cable_lifetime'];
                 document.getElementById("hvCableCapex").value = results['hv_cable_capex'];
-                document.getElementById("lvCableLifetime").value = results['lv_cable_lifetime'];
-                document.getElementById("lvCableCapex").value = results['lv_cable_capex'];
+                document.getElementById("connectionCableLifetime").value = results['connection_cable_lifetime'];
+                document.getElementById("connectionCableCapex").value = results['connection_cable_capex'];
                 document.getElementById("poleLifetime").value = results['pole_lifetime'];
                 document.getElementById("poleCapex").value = results['pole_capex'];
                 document.getElementById("mgConnectionCost").value = results['mg_connection_cost'];

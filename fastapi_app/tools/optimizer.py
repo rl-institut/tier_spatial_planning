@@ -122,7 +122,7 @@ class GridOptimizer(Optimizer):
         """
 
         # Remove all existing connections between poles and consumers
-        grid.clear_links(link_type="distribution")
+        grid.clear_links(link_type="connection")
 
         # calculate the number of clusters and their labels obtained from kmeans clustering
         n_clusters = grid.poles()[grid.poles()["type_fixed"] == False].shape[0]
@@ -438,7 +438,7 @@ class GridOptimizer(Optimizer):
         """
         This method assigns each consumer of a grid to a pole
         of the same segment taking into consideration the maximum
-        capacity of the pole and minimizing the overall distribution
+        capacity of the pole and minimizing the overall connection
         line length. It is based on the Munkres algorithm from the munkres
         module.
 

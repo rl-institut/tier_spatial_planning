@@ -45,7 +45,7 @@ class Grid:
             - long_from
             - long_to
             - link_type
-                + 'distribution': between poles and consumers
+                + 'connection': between poles and consumers
                 + 'interpole': between two poles
             - length
 
@@ -53,14 +53,14 @@ class Grid:
         capital expenditure associated with:
             + pole [$/pcs]
             + connection [$/pcs]
-            + distribution_cable [$/m]
+            + connection_cable [$/m]
             + interpole_cable [$/m]
 
     opex: :class:`pandas.core.frame.DataFrame`
         operational expenditure associated with:
             + pole [$/pcs]
             + connection [$/pcs]
-            + distribution_cable [$/m]
+            + connection_cable [$/m]
             + interpole_cable [$/m]
 
     pole_max_connection: int
@@ -74,7 +74,7 @@ class Grid:
 
     cables: :class:`pandas.core.frame.DataFrame`
         a panda dataframe including the following characteristics of
-        the 'interpole' and 'distribution' cables:
+        the 'interpole' and 'connection' cables:
             + cross-section area in [mm²]
             + electrical resistivity in [Ohm*mm²/m].
     """
@@ -122,7 +122,7 @@ class Grid:
             }
         ).set_index("label"),
         epc_hv_cable=2,  # per meter
-        epc_lv_cable=0.5,  # per meter
+        epc_connection_cable=0.5,  # per meter
         epc_connection=12,
         epc_pole=100,
         pole_max_connection=0,
@@ -131,7 +131,7 @@ class Grid:
         grid_mst=pd.DataFrame({}, dtype=np.dtype(float)),
         cables=pd.DataFrame(
             {
-                "cable_type": pd.Series(["interpole", "distribution"], dtype=str),
+                "cable_type": pd.Series(["interpole", "connection"], dtype=str),
                 "section_area": pd.Series([4, 2.5], dtype=np.dtype(float)),  # [mm²]
                 "resistivity": pd.Series(
                     [0.0171, 0.0171], dtype=np.dtype(float)
@@ -149,7 +149,7 @@ class Grid:
         self.cables = cables
         self.grid_mst = grid_mst
         self.epc_hv_cable = epc_hv_cable  # per meter
-        self.epc_lv_cable = epc_lv_cable  # per meter
+        self.epc_connection_cable = epc_connection_cable  # per meter
         self.epc_connection = epc_connection
         self.epc_pole = epc_pole
 
@@ -483,7 +483,7 @@ class Grid:
             (label_node_from, label_node_to) = sorted([label_node_from, label_node_to])
             link_type = "interpole"
         else:
-            link_type = "distribution"
+            link_type = "connection"
 
         # calculate the length of the link
         length = self.distance_between_nodes(
@@ -514,16 +514,17 @@ class Grid:
         """
         return self.links.length[self.links.link_type == "interpole"].sum()
 
-    def total_length_distribution_cable(self):
+    def total_length_connection_cable(self):
         """
-        Calculates the total length of all cables between each pole and consumer.
+        Calculates the total length of all cables between each pole and
+        consumers.
 
         Returns
         ------
         type: float
-            total length of the distribution cable in the grid.
+            total length of the connection cable in the grid.
         """
-        return self.links.length[self.links.link_type == "distribution"].sum()
+        return self.links.length[self.links.link_type == "connection"].sum()
 
     # -------------------- OPERATIONS -------------------- #
 
@@ -602,13 +603,13 @@ class Grid:
         # calculate the total length of the cable used between poles [m]
         total_length_interpole_cable = self.total_length_interpole_cable()
 
-        # calculate the total length of the distribution cable between poles and consumers
-        total_length_distribution_cable = self.total_length_distribution_cable()
+        # calculate the total length of the `connection` cable between poles and consumers
+        total_length_connection_cable = self.total_length_connection_cable()
 
         grid_cost = (
             n_poles * self.epc_pole
             + n_mg_consumers * self.epc_connection
-            + total_length_distribution_cable * self.epc_lv_cable
+            + total_length_connection_cable * self.epc_connection_cable
             + total_length_interpole_cable * self.epc_hv_cable
         )
 
@@ -671,14 +672,14 @@ class Grid:
         """
         return self.id
 
-    def get_distribution_cable_price(self):
+    def get_connection_cable_price(self):
         """
-        Returns __distribution_cable_price attribute of the grid.
+        Returns __connection_cable_price attribute of the grid.
 
         Returns
         ------
         int
-            __distribution_cable_price parameter of the grid
+            __connection_cable_price parameter of the grid
         """
         return self.cost_connection_link_per_meter
 
@@ -1214,9 +1215,9 @@ class Grid:
         """Removes all the interpole links from the grid$."""
         self.links = self.links[self.links["type"] != "interpole"]
 
-    def clear_distribution_links(self):
-        """Removes all the interpole links from the grid."""
-        self.links = self.links[self.links["type"] != "distribution"]
+    def clear_connection_links(self):
+        """Removes all the connection links from the grid."""
+        self.links = self.links[self.links["type"] != "connection"]
 
     # ----------------- COMPUTE DISTANCE BETWEEN NODES -----------------#
 
@@ -1233,15 +1234,15 @@ class Grid:
         class:`pandas.core.frame.DataFrame`
             This method returns a pandas DataFrame containing all the
             nodes in the grid and the total length of interpole and
-            distribution cable separating it from its respective powerhub.
+            connection cable separating it from its respective powerhub.
         """
 
-        # Create dataframe with interpole and distribution cable length
+        # Create dataframe with interpole and connection cable length
         distance_df = pd.DataFrame(
             {
                 "label": [],
                 "interpole cable [m]": [],
-                "distribution cable [m]": [],
+                "connection cable [m]": [],
                 "powerhub label": [],
             }
         )
@@ -1341,7 +1342,7 @@ class Grid:
                 0,
                 index_powerhub,
             ]
-        elif self.get_links()["type"][index_link_between_nodes] == "distribution":
+        elif self.get_links()["type"][index_link_between_nodes] == "connection":
             distance_df.loc[node_n] = [
                 distance_df["interpole cable [m]"][node_n_minus_1],
                 self.distance_between_nodes(node_n_minus_1, node_n),
@@ -1406,16 +1407,16 @@ class Grid:
             / self.interpole_cable_section
         )
 
-        voltage_drop_df["distribution cable resistance [Ω]"] = (
-            self.distribution_cable_resistivity
+        voltage_drop_df["connection cable resistance [Ω]"] = (
+            self.connection_cable_resistivity
             * 2
-            * voltage_drop_df["distribution cable [m]"]
-            / self.distribution_cable_section
+            * voltage_drop_df["connection cable [m]"]
+            / self.connection_cable_section
         )
 
         voltage_drop_df["voltage drop [V]"] = (
             voltage_drop_df["interpole cable resistance [Ω]"] * self.max_current
-        ) + (voltage_drop_df["distribution cable resistance [Ω]"] * self.max_current)
+        ) + (voltage_drop_df["connection cable resistance [Ω]"] * self.max_current)
 
         voltage_drop_df["voltage drop fraction [%]"] = (
             100 * voltage_drop_df["voltage drop [V]"] / self.voltage

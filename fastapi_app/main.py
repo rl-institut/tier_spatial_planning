@@ -215,8 +215,8 @@ def home(request: Request):
             "n_days",
             "hv_cable_lifetime",
             "hv_cable_capex",
-            "lv_cable_lifetime",
-            "lv_cable_capex",
+            "connection_cable_lifetime",
+            "connection_cable_capex",
             "pole_lifetime",
             "pole_capex",
             "mg_connection_cost",
@@ -273,7 +273,7 @@ async def database_initialization(nodes, links):
         "n_shs_consumers",
         "n_poles",
         "length_hv_cable",
-        "length_lv_cable",
+        "length_connection_cable",
         "cost_grid",
         "cost_shs",
         "lcoe",
@@ -486,7 +486,9 @@ async def load_results():
     results["n_poles"] = str(df.loc[0, "n_poles"])
     results["n_consumers"] = str(df.loc[0, "n_consumers"])
     results["length_hv_cable"] = str(df.loc[0, "length_hv_cable"]) + " m"
-    results["length_lv_cable"] = str(df.loc[0, "length_lv_cable"]) + " m"
+    results["length_connection_cable"] = (
+        str(df.loc[0, "length_connection_cable"]) + " m"
+    )
     results["cost_grid"] = str(df.loc[0, "cost_grid"]) + " USD/a"
     results["lcoe"] = str(df.loc[0, "lcoe"]) + " c/kWh"
     results["res"] = str(df.loc[0, "res"]) + " %"
@@ -518,8 +520,12 @@ async def load_previous_data(page_name):
     elif page_name == "consumer_selection":
         previous_data["hv_cable_lifetime"] = str(df.loc[0, "hv_cable_lifetime"])
         previous_data["hv_cable_capex"] = str(df.loc[0, "hv_cable_capex"])
-        previous_data["lv_cable_lifetime"] = str(df.loc[0, "lv_cable_lifetime"])
-        previous_data["lv_cable_capex"] = str(df.loc[0, "lv_cable_capex"])
+        previous_data["connection_cable_lifetime"] = str(
+            df.loc[0, "connection_cable_lifetime"]
+        )
+        previous_data["connection_cable_capex"] = str(
+            df.loc[0, "connection_cable_capex"]
+        )
         previous_data["pole_lifetime"] = str(df.loc[0, "pole_lifetime"])
         previous_data["pole_capex"] = str(df.loc[0, "pole_capex"])
         previous_data["mg_connection_cost"] = str(df.loc[0, "mg_connection_cost"])
@@ -561,12 +567,12 @@ async def save_previous_data(
         df.loc[0, "hv_cable_capex"] = save_previous_data_request.consumer_selection[
             "hv_cable_capex"
         ]
-        df.loc[0, "lv_cable_lifetime"] = save_previous_data_request.consumer_selection[
-            "lv_cable_lifetime"
-        ]
-        df.loc[0, "lv_cable_capex"] = save_previous_data_request.consumer_selection[
-            "lv_cable_capex"
-        ]
+        df.loc[
+            0, "connection_cable_lifetime"
+        ] = save_previous_data_request.consumer_selection["connection_cable_lifetime"]
+        df.loc[
+            0, "connection_cable_capex"
+        ] = save_previous_data_request.consumer_selection["connection_cable_capex"]
         df.loc[0, "pole_lifetime"] = save_previous_data_request.consumer_selection[
             "pole_lifetime"
         ]
@@ -891,13 +897,13 @@ async def optimize_grid(
         / 365
     )
 
-    epc_lv_cable = (
+    epc_connection_cable = (
         (
             opt.crf
             * Optimizer.capex_multi_investment(
                 opt,
-                capex_0=grid_input_data["lv_cable_capex"],
-                component_lifetime=grid_input_data["lv_cable_lifetime"],
+                capex_0=grid_input_data["connection_cable_capex"],
+                component_lifetime=grid_input_data["connection_cable_lifetime"],
             )
         )
         * opt.n_days
@@ -945,7 +951,7 @@ async def optimize_grid(
 
     grid = Grid(
         epc_hv_cable=epc_hv_cable,
-        epc_lv_cable=epc_lv_cable,
+        epc_connection_cable=epc_connection_cable,
         epc_connection=epc_connection,
         epc_pole=epc_pole,
         pole_max_connection=optimize_grid_request.constraints["pole_max_connections"],
@@ -1026,7 +1032,7 @@ async def optimize_grid(
         )
 
         # Find those connections with constraint violation.
-        constraints_violation = grid.links[grid.links["link_type"] == "distribution"]
+        constraints_violation = grid.links[grid.links["link_type"] == "connection"]
         constraints_violation = constraints_violation[
             constraints_violation["length"] > 30  # TODO: USER INPUT
         ]
@@ -1037,14 +1043,13 @@ async def optimize_grid(
         else:
             break
 
-    # Find the links in the distribution network with lengths greater than
-    # the maximum allowed length for `distribution` cables, specified by
-    # the user.
+    # Find the connection links in the network with lengths greater than the
+    # maximum allowed length for `connection` cables, specified by the user.
     long_links = grid.find_index_longest_pole(
         max_distance_dist_links=35,
     )
 
-    # Add poles to the identified long distribution links, so that the
+    # Add poles to the identified long `distribution` links, so that the
     # distance between all poles remains below the maximum allowed distance.
     # TODO: `max_allowed_distance` should be given by the user.
     grid.add_fixed_poles_on_long_links(
@@ -1104,8 +1109,8 @@ async def optimize_grid(
     df.loc[0, "length_hv_cable"] = int(
         grid.links[grid.links.link_type == "interpole"]["length"].sum()
     )
-    df.loc[0, "length_lv_cable"] = int(
-        grid.links[grid.links.link_type == "distribution"]["length"].sum()
+    df.loc[0, "length_connection_cable"] = int(
+        grid.links[grid.links.link_type == "connection"]["length"].sum()
     )
     df.loc[0, "cost_grid"] = int(grid.cost())
     df.loc[0, "cost_shs"] = int(cost_shs)
