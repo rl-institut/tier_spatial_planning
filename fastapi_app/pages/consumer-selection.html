@@ -125,6 +125,9 @@
             </li>
             <li>Demand Estimation</li>
             <li>
+              <a href="{{ url_for('grid_design') }}">Grid Design</a>
+            </li>
+            <li>
               <a href="{{ url_for('energy_system_design') }}"
                 >Energy System Design</a
               >
@@ -282,174 +285,6 @@
                         accept=".xls, .xlsx"
                       /> -->
               </div>
-              <div class="row input-item">
-                <div class="col-3">
-                  <label class="form-label text-left"
-                    >Distribution Cable
-                  </label>
-                </div>
-                <div class="col-4">
-                  <div class="input-group">
-                    <span class="input-group-text">Lifetime</span>
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="distributionCableLifetime"
-                      value="25"
-                      required
-                    />
-                    <span
-                      id="distributionCableLifetimeUnit"
-                      class="input-group-text"
-                      >Year</span
-                    >
-                  </div>
-                </div>
-                <div class="col-5">
-                  <div class="input-group">
-                    <span class="input-group-text">CAPEX</span>
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="distributionCableCapex"
-                      value="10"
-                      required
-                    />
-                    <span
-                      id="distributionCableCapexUnit"
-                      class="input-group-text"
-                      >USD/m</span
-                    >
-                  </div>
-                </div>
-              </div>
-              <div class="row input-item">
-                <div class="col-3">
-                  <label class="form-label text-left">Distribution Pole</label>
-                </div>
-                <div class="col-4">
-                  <div class="input-group">
-                    <span class="input-group-text">Lifetime</span>
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="poleLifetime"
-                      value="25"
-                      required
-                    />
-                    <span id="poleLifetimeUnit" class="input-group-text"
-                      >Year</span
-                    >
-                  </div>
-                </div>
-                <div class="col-5">
-                  <div class="input-group">
-                    <span class="input-group-text">CAPEX</span>
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="poleCapex"
-                      value="800"
-                      required
-                    />
-                    <span id="poleCapexUnit" class="input-group-text">USD</span>
-                  </div>
-                </div>
-              </div>
-              <div class="row input-item">
-                <div class="col-3">
-                  <label class="form-label text-left">Connection Cable </label>
-                </div>
-                <div class="col-4">
-                  <div class="input-group">
-                    <span class="input-group-text">Lifetime</span>
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="connectionCableLifetime"
-                      value="25"
-                      required
-                    />
-                    <span
-                      id="connectionCableLifetimeUnit"
-                      class="input-group-text"
-                      >Year</span
-                    >
-                  </div>
-                </div>
-                <div class="col-5">
-                  <div class="input-group">
-                    <span class="input-group-text">CAPEX</span>
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="connectionCableCapex"
-                      value="2"
-                      required
-                    />
-                    <span id="connectionCableCapexUnit" class="input-group-text"
-                      >USD/m</span
-                    >
-                  </div>
-                </div>
-              </div>
-              <div class="row input-item">
-                <div class="col-4">
-                  <label class="form-label text-left"
-                    >Minigrid Connection</label
-                  >
-                </div>
-                <div class="col-8">
-                  <div class="input-group">
-                    <span class="input-group-text">Cost</span>
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="mgConnectionCost"
-                      value="100"
-                      required
-                    />
-                    <span id="mgConnectionCostUnit" class="input-group-text"
-                      >USD</span
-                    >
-                  </div>
-                </div>
-              </div>
-              <div class="row input-item">
-                <div class="col-1">
-                  <div class="form-switch">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      id="enableShs"
-                      onclick="enable_disable_shs();"
-                    />
-                  </div>
-                </div>
-                <div class="col-3">
-                  <label id="lblEnableShs" class="form-label text-left disabled"
-                    >Solar-Home-System</label
-                  >
-                </div>
-                <div class="col-8">
-                  <div class="input-group">
-                    <span id="lblShsCost" class="input-group-text disabled"
-                      >Cost</span
-                    >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="shsCapex"
-                      value="6"
-                      required
-                      disabled
-                    />
-                    <span id="shsCapexUnit" class="input-group-text disabled"
-                      >USD/kW</span
-                    >
-                  </div>
-                </div>
-              </div>
             </form>
           </div>
         </div>
@@ -473,7 +308,7 @@
           </a>
           <a
             class="btn btn--medium"
-            href="{{ url_for('energy_system_design') }}"
+            href="{{ url_for('grid_design') }}"
             onclick="save_previous_data('consumer_selection');"
             >Next</a
           >

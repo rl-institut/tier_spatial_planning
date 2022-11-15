@@ -70,7 +70,8 @@ function check_box_visibility(id) {
     // ---------- ENABLING ITEMS ---------- //
     if (document.getElementById("select"+toTitleCase(id)).checked) {
         // Change the border color.
-        document.getElementById("select"+toTitleCase(id)+"Box").style.border = '2px solid #198754';
+        // document.getElementById("select"+toTitleCase(id)+"Box").style.border = '2px solid #198754';
+        document.getElementById("select"+toTitleCase(id)+"Box").classList.remove('box--not-selected');
 
         for (index in component_specifications[id]) {
             // First, get the property listed in the above dictionary.
@@ -99,7 +100,8 @@ function check_box_visibility(id) {
     // ---------- DISABLING ITEMS ---------- //
     } else {
         // Change the border color.
-        document.getElementById("select"+toTitleCase(id)+"Box").style.border = '2px solid #dc3545';  
+        // document.getElementById("select"+toTitleCase(id)+"Box").style.border = '2px solid #dc3545';  
+        document.getElementById("select"+toTitleCase(id)+"Box").classList.add('box--not-selected');
 
         for (index in component_specifications[id]) {
             // First, get the property listed in the above dictionary.

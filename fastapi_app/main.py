@@ -234,6 +234,11 @@ async def consumer_selection(request: Request):
     return templates.TemplateResponse("consumer-selection.html", {"request": request})
 
 
+@app.get("/grid_design")
+async def grid_design(request: Request):
+    return templates.TemplateResponse("grid-design.html", {"request": request})
+
+
 @app.get("/energy_system_design")
 async def energy_system_design(request: Request):
     return templates.TemplateResponse("energy-system-design.html", {"request": request})

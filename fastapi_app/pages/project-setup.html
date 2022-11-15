@@ -84,7 +84,6 @@
               <a href="{{ url_for('home') }}">Project Setup</a>
             </li>
             <li>
-              <!-- <a onclick="consumer_selection();">Consumer Selection</a> -->
               <a
                 href="{{ url_for('consumer_selection') }}"
                 onclick="save_previous_data('project_setup');"
@@ -92,6 +91,13 @@
               >
             </li>
             <li>Demand Estimation</li>
+            <li>
+              <a
+                href="{{ url_for('grid_design') }}"
+                onclick="save_previous_data('project_setup');"
+                >Grid Design</a
+              >
+            </li>
             <li>
               <a
                 href="{{ url_for('energy_system_design') }}"
