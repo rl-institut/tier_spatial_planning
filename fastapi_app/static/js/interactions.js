@@ -134,9 +134,9 @@ function database_read(nodes_or_links, map_or_export, callback) {
                     links = this.response;
                     removeLinksFromMap(mainMap);
                     for (let index = 0; index < Object.keys(links.link_type).length; index++) {
-                        var color = links.link_type[index] === "interpole" ? "rgb(255, 99, 71)" : "rgb(0, 165, 114)";
-                        var weight = links.link_type[index] === "interpole" ? 4 : 3;
-                        var opacity = links.link_type[index] === "interpole" ? 1 : 1;
+                        var color = links.link_type[index] === "distribution" ? "rgb(255, 99, 71)" : "rgb(0, 165, 114)";
+                        var weight = links.link_type[index] === "distribution" ? 4 : 3;
+                        var opacity = links.link_type[index] === "distribution" ? 1 : 1;
                         drawLinkOnMap(
                             links.lat_from[index],
                             links.lon_from[index],
@@ -438,7 +438,7 @@ function load_results(){
             results = this.response;
             document.getElementById("nPoles").innerText = results['n_poles'];
             document.getElementById("nConsumers").innerText = results['n_consumers'];
-            document.getElementById("lengthHvCable").innerText = results['length_hv_cable'];
+            document.getElementById("lengthDistributionCable").innerText = results['length_distribution_cable'];
             document.getElementById("lengthConnectionCable").innerText = results['length_connection_cable'];
             document.getElementById("costGrid").innerText = results['cost_grid'];
             document.getElementById("lcoe").innerText = results['lcoe'];
@@ -472,8 +472,8 @@ function save_previous_data(page_name) {
                     'n_days': nDays.value,
                 },
                 consumer_selection: {
-                    'hv_cable_lifetime': 0,
-                    'hv_cable_capex': 0,
+                    'distribution_cable_lifetime': 0,
+                    'distribution_cable_capex': 0,
                     'connection_cable_lifetime': 0,
                     'connection_cable_capex': 0,
                     'pole_lifetime': 0,
@@ -496,8 +496,8 @@ function save_previous_data(page_name) {
                     'n_days': '',
                 },
                 consumer_selection: {
-                    'hv_cable_lifetime': hvCableLifetime.value,
-                    'hv_cable_capex': hvCableCapex.value,
+                    'distribution_cable_lifetime': distributionCableLifetime.value,
+                    'distribution_cable_capex': distributionCableCapex.value,
                     'connection_cable_lifetime': connectionCableLifetime.value,
                     'connection_cable_capex': connectionCableCapex.value,
                     'pole_lifetime': poleLifetime.value,
@@ -543,8 +543,8 @@ function load_previous_data(page_name){
             if (this.readyState == 4 && this.status == 200) {
                 // push nodes to the map
                 results = this.response;
-                document.getElementById("hvCableLifetime").value = results['hv_cable_lifetime'];
-                document.getElementById("hvCableCapex").value = results['hv_cable_capex'];
+                document.getElementById("distributionCableLifetime").value = results['distribution_cable_lifetime'];
+                document.getElementById("distributionCableCapex").value = results['distribution_cable_capex'];
                 document.getElementById("connectionCableLifetime").value = results['connection_cable_lifetime'];
                 document.getElementById("connectionCableCapex").value = results['connection_cable_capex'];
                 document.getElementById("poleLifetime").value = results['pole_lifetime'];
@@ -683,7 +683,7 @@ function import_data() {
 function identify_shs() {
     const max_distance_between_poles = 40; // must be definded globally in the fututre
     const cable_pole_price_per_meter =
-        cost_interpole_cable.value + cost_pole.value / max_distance_between_poles;
+        cost_distribution_cable.value + cost_pole.value / max_distance_between_poles;
     const algo = "mst1";
     $("#loading").show();
     $.ajax({

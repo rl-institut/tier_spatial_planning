@@ -163,7 +163,7 @@ class GridOptimizer(Optimizer):
         """
 
         # First, all links in the grid should be removed.
-        grid.clear_links(link_type="interpole")
+        grid.clear_links(link_type="distribution")
 
         # Now, all links from the sparse matrix obtained using the minimum
         # spanning tree are stored in `links_mst`.

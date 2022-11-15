@@ -213,8 +213,8 @@ def home(request: Request):
             "start_date",
             "temporal_resolution",
             "n_days",
-            "hv_cable_lifetime",
-            "hv_cable_capex",
+            "distribution_cable_lifetime",
+            "distribution_cable_capex",
             "connection_cable_lifetime",
             "connection_cable_capex",
             "pole_lifetime",
@@ -272,7 +272,7 @@ async def database_initialization(nodes, links):
         "n_consumers",
         "n_shs_consumers",
         "n_poles",
-        "length_hv_cable",
+        "length_distribution_cable",
         "length_connection_cable",
         "cost_grid",
         "cost_shs",
@@ -485,7 +485,9 @@ async def load_results():
 
     results["n_poles"] = str(df.loc[0, "n_poles"])
     results["n_consumers"] = str(df.loc[0, "n_consumers"])
-    results["length_hv_cable"] = str(df.loc[0, "length_hv_cable"]) + " m"
+    results["length_distribution_cable"] = (
+        str(df.loc[0, "length_distribution_cable"]) + " m"
+    )
     results["length_connection_cable"] = (
         str(df.loc[0, "length_connection_cable"]) + " m"
     )
@@ -518,8 +520,12 @@ async def load_previous_data(page_name):
         previous_data["temporal_resolution"] = str(df.loc[0, "temporal_resolution"])
         previous_data["n_days"] = str(df.loc[0, "n_days"])
     elif page_name == "consumer_selection":
-        previous_data["hv_cable_lifetime"] = str(df.loc[0, "hv_cable_lifetime"])
-        previous_data["hv_cable_capex"] = str(df.loc[0, "hv_cable_capex"])
+        previous_data["distribution_cable_lifetime"] = str(
+            df.loc[0, "distribution_cable_lifetime"]
+        )
+        previous_data["distribution_cable_capex"] = str(
+            df.loc[0, "distribution_cable_capex"]
+        )
         previous_data["connection_cable_lifetime"] = str(
             df.loc[0, "connection_cable_lifetime"]
         )
@@ -561,12 +567,12 @@ async def save_previous_data(
         ]
         df.loc[0, "n_days"] = save_previous_data_request.page_setup["n_days"]
     elif page_name == "consumer_selection":
-        df.loc[0, "hv_cable_lifetime"] = save_previous_data_request.consumer_selection[
-            "hv_cable_lifetime"
-        ]
-        df.loc[0, "hv_cable_capex"] = save_previous_data_request.consumer_selection[
-            "hv_cable_capex"
-        ]
+        df.loc[
+            0, "distribution_cable_lifetime"
+        ] = save_previous_data_request.consumer_selection["distribution_cable_lifetime"]
+        df.loc[
+            0, "distribution_cable_capex"
+        ] = save_previous_data_request.consumer_selection["distribution_cable_capex"]
         df.loc[
             0, "connection_cable_lifetime"
         ] = save_previous_data_request.consumer_selection["connection_cable_lifetime"]
@@ -884,13 +890,13 @@ async def optimize_grid(
     grid_input_data = await load_previous_data("consumer_selection")
 
     # create a new "grid" object from the Grid class
-    epc_hv_cable = (
+    epc_distribution_cable = (
         (
             opt.crf
             * Optimizer.capex_multi_investment(
                 opt,
-                capex_0=grid_input_data["hv_cable_capex"],
-                component_lifetime=grid_input_data["hv_cable_lifetime"],
+                capex_0=grid_input_data["distribution_cable_capex"],
+                component_lifetime=grid_input_data["distribution_cable_lifetime"],
             )
         )
         * opt.n_days
@@ -950,7 +956,7 @@ async def optimize_grid(
     )
 
     grid = Grid(
-        epc_hv_cable=epc_hv_cable,
+        epc_distribution_cable=epc_distribution_cable,
         epc_connection_cable=epc_connection_cable,
         epc_connection=epc_connection,
         epc_pole=epc_pole,
@@ -1045,7 +1051,7 @@ async def optimize_grid(
 
     # Find the connection links in the network with lengths greater than the
     # maximum allowed length for `connection` cables, specified by the user.
-    long_links = grid.find_index_longest_pole(
+    long_links = grid.find_index_longest_distribution_link(
         max_distance_dist_links=35,
     )
 
@@ -1106,8 +1112,8 @@ async def optimize_grid(
     df.loc[0, "n_consumers"] = len(grid.consumers())
     df.loc[0, "n_shs_consumers"] = n_shs_consumers
     df.loc[0, "n_poles"] = len(grid.poles())
-    df.loc[0, "length_hv_cable"] = int(
-        grid.links[grid.links.link_type == "interpole"]["length"].sum()
+    df.loc[0, "length_distribution_cable"] = int(
+        grid.links[grid.links.link_type == "distribution"]["length"].sum()
     )
     df.loc[0, "length_connection_cable"] = int(
         grid.links[grid.links.link_type == "connection"]["length"].sum()

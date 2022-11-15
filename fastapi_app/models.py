@@ -102,7 +102,7 @@ class SelectBoundariesRequest(BaseModel):
 class GenerateExportFileRequest(BaseModel):
     cost_pole: float
     cost_connection: float
-    cost_interpole_cable: float
+    cost_distribution_cable: float
     cost_connection_cable: float
     shs_identification_cable_cost: float
     shs_identification_connection_cost: float
