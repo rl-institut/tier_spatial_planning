@@ -415,11 +415,6 @@ function optimize_grid() {
         url: "optimize_grid/",
         type: "POST",
         contentType: "application/json",
-        data: JSON.stringify({
-            optimization: {'n_relaxation_steps': 10},
-            constraints: {'pole_max_n_connections': 4},
-                }),
-        dataType: "json",
     });
 
     // window.open("{{ url_for('simulation_results')}}");

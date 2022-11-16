@@ -394,6 +394,11 @@ async def database_add_remove_manual(
     if add_remove == "remove":
         # reading the existing CSV file of nodes, and then removing the corresponding row
         df = pd.read_csv(full_path_nodes)
+
+        # Since a node is removed, the calculated positions for ALL poles must
+        # be first removed.
+        df = df[df["node_type"] != "pole"]
+
         number_of_nodes = df.shape[0]
         for index in range(number_of_nodes):
             if (
@@ -403,7 +408,7 @@ async def database_add_remove_manual(
             ):
                 df.drop(labels=index, axis=0, inplace=True)
 
-        # removing all nodes and links
+        # Remove all existing nodes and links.
         await database_initialization(nodes=True, links=True)
 
         # storing the nodes in the database (updating the existing CSV file)
@@ -421,17 +426,20 @@ def database_add(add_nodes: bool, add_links: bool, inlet: dict):
         nodes = inlet
         # newly added nodes
         df = pd.DataFrame.from_dict(nodes).round(decimals=6)
+
         # the existing database
         df_existing = pd.read_csv(full_path_nodes)
 
-        # if df["node_type"].str.contains("pole").sum() > 0:
-        # If the added nodes are `poles`, first the existing ones must be
-        # append the existing database with the new nodes and remove duplicates (only when both lat and lon are identical)
+        # Remove all existing poles if the added nodes include poles.
+        df_existing = df_existing[df_existing["node_type"] != "pole"]
+
+        # Aappend the existing database with the new nodes and remove
+        # duplicates (only when both lat and lon are identical).
         df_total = df_existing.append(df).drop_duplicates(
             subset=["latitude", "longitude"], inplace=False
         )
 
-        # storing the nodes in the database (updating the existing CSV file)
+        # storing the nodes in the database (updating the existing CSV file).
         df_total = df_total.reset_index(drop=True)
 
         # If consumers are added to the database or removed from it, all
@@ -441,11 +449,6 @@ def database_add(add_nodes: bool, add_links: bool, inlet: dict):
             df_links = pd.read_csv(full_path_links)
             df_links.drop(labels=df_links.index, axis=0, inplace=True)
             df_links.to_csv(full_path_links, index=False, header=df_links.head)
-
-            # Remove existing poles.
-            for node_index in df_total.index:
-                if "pole" in df_total.node_type[node_index]:
-                    df_total.drop(labels=node_index, axis=0, inplace=True)
 
         # defining the precision of data
         df_total.latitude = df_total.latitude.map(lambda x: "%.6f" % x)
@@ -568,7 +571,9 @@ async def load_previous_data(page_name):
             previous_data["shs_lifetime"] = str(df.loc[0, "shs_lifetime"])
             previous_data["shs_tier_one_capex"] = str(df.loc[0, "shs_tier_one_capex"])
             previous_data["shs_tier_two_capex"] = str(df.loc[0, "shs_tier_two_capex"])
-            previous_data["shs_tier_three_capex"] = str(df.loc[0, "shs_tier_three_capex"])
+            previous_data["shs_tier_three_capex"] = str(
+                df.loc[0, "shs_tier_three_capex"]
+            )
             previous_data["shs_tier_four_capex"] = str(df.loc[0, "shs_tier_four_capex"])
             previous_data["shs_tier_five_capex"] = str(df.loc[0, "shs_tier_five_capex"])
 
@@ -920,9 +925,7 @@ def demand_estimation(nodes, update_total_demand):
 
 
 @app.post("/optimize_grid/")
-async def optimize_grid(
-    optimize_grid_request: models.OptimizeGridRequest, background_tasks: BackgroundTasks
-):
+async def optimize_grid():
 
     # create GridOptimizer object
     df = pd.read_csv(full_path_stored_inputs)
@@ -949,17 +952,14 @@ async def optimize_grid(
     # otherwise, when clicking on the 'optimize' button, the existing system won't be removed
     await database_initialization(nodes=False, links=True)
 
-    # get all stored data related to the grid layout
-    grid_input_data = await load_previous_data("grid_design")
-
     # create a new "grid" object from the Grid class
     epc_distribution_cable = (
         (
             opt.crf
             * Optimizer.capex_multi_investment(
                 opt,
-                capex_0=grid_input_data["distribution_cable_capex"],
-                component_lifetime=grid_input_data["distribution_cable_lifetime"],
+                capex_0=df.loc[0, "distribution_cable_capex"],
+                component_lifetime=df.loc[0, "distribution_cable_lifetime"],
             )
         )
         * opt.n_days
@@ -971,8 +971,8 @@ async def optimize_grid(
             opt.crf
             * Optimizer.capex_multi_investment(
                 opt,
-                capex_0=grid_input_data["connection_cable_capex"],
-                component_lifetime=grid_input_data["connection_cable_lifetime"],
+                capex_0=df.loc[0, "connection_cable_capex"],
+                component_lifetime=df.loc[0, "connection_cable_lifetime"],
             )
         )
         * opt.n_days
@@ -984,7 +984,7 @@ async def optimize_grid(
             opt.crf
             * Optimizer.capex_multi_investment(
                 opt,
-                capex_0=grid_input_data["mg_connection_cost"],
+                capex_0=df.loc[0, "mg_connection_cost"],
                 component_lifetime=opt.project_lifetime,
             )
         )
@@ -997,8 +997,8 @@ async def optimize_grid(
             opt.crf
             * Optimizer.capex_multi_investment(
                 opt,
-                capex_0=grid_input_data["pole_capex"],
-                component_lifetime=grid_input_data["pole_lifetime"],
+                capex_0=df.loc[0, "pole_capex"],
+                component_lifetime=df.loc[0, "pole_lifetime"],
             )
         )
         * opt.n_days
@@ -1011,10 +1011,10 @@ async def optimize_grid(
             * (
                 Optimizer.capex_multi_investment(
                     opt,
-                    capex_0=grid_input_data["shs_tier_one_capex"]
-                    + grid_input_data["shs_tier_two_capex"]
-                    + grid_input_data["shs_tier_three_capex"],
-                    component_lifetime=grid_input_data["shs_lifetime"],
+                    capex_0=df.loc[0, "shs_tier_one_capex"]
+                    + df.loc[0, "shs_tier_two_capex"]
+                    + df.loc[0, "shs_tier_three_capex"],
+                    component_lifetime=df.loc[0, "shs_lifetime"],
                 )
             )
         )
@@ -1027,7 +1027,7 @@ async def optimize_grid(
         epc_connection_cable=epc_connection_cable,
         epc_connection=epc_connection,
         epc_pole=epc_pole,
-        pole_max_connection=optimize_grid_request.constraints["pole_max_n_connections"],
+        pole_max_connection=df.loc[0, "pole_max_n_connections"],
     )
 
     # make sure that the new grid object is empty before adding nodes to it
