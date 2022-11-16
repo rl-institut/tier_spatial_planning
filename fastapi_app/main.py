@@ -215,12 +215,22 @@ def home(request: Request):
             "n_days",
             "distribution_cable_lifetime",
             "distribution_cable_capex",
+            "distribution_cable_max_length",
             "connection_cable_lifetime",
             "connection_cable_capex",
+            "connection_cable_max_length",
             "pole_lifetime",
             "pole_capex",
+            "pole_max_n_connections",
             "mg_connection_cost",
-            "shs_capex",
+            "mg_n_operators",
+            "mg_salary_operator",
+            "shs_lifetime",
+            "shs_tier_one_capex",
+            "shs_tier_two_capex",
+            "shs_tier_three_capex",
+            "shs_tier_four_capex",
+            "shs_tier_five_capex",
         ]
         pd.DataFrame(columns=header_stored_inputs).to_csv(
             full_path_stored_inputs, index=False
@@ -411,14 +421,6 @@ def database_add(add_nodes: bool, add_links: bool, inlet: dict):
         nodes = inlet
         # newly added nodes
         df = pd.DataFrame.from_dict(nodes).round(decimals=6)
-
-        # If consumers are added to the database or removed from it, all
-        # already existing links must be removed.
-        if df["node_type"].str.contains("consumer").sum() > 0:
-            df_links = pd.read_csv(full_path_links)
-            df_links.drop(labels=df_links.index, axis=0, inplace=True)
-            df_links.to_csv(full_path_links, index=False, header=df_links.head)
-
         # the existing database
         df_existing = pd.read_csv(full_path_nodes)
 
@@ -429,12 +431,21 @@ def database_add(add_nodes: bool, add_links: bool, inlet: dict):
             subset=["latitude", "longitude"], inplace=False
         )
 
-        # Poles will not be considered in the grid optimization.
-        for node_index in df_total.index:
-            if "pole" in df_total.node_type[node_index]:
-                df_total.drop(labels=node_index, axis=0, inplace=True)
         # storing the nodes in the database (updating the existing CSV file)
         df_total = df_total.reset_index(drop=True)
+
+        # If consumers are added to the database or removed from it, all
+        # already existing links and all existing poles must be removed.
+        if df["node_type"].str.contains("consumer").sum() > 0:
+            # Remove existing links.
+            df_links = pd.read_csv(full_path_links)
+            df_links.drop(labels=df_links.index, axis=0, inplace=True)
+            df_links.to_csv(full_path_links, index=False, header=df_links.head)
+
+            # Remove existing poles.
+            for node_index in df_total.index:
+                if "pole" in df_total.node_type[node_index]:
+                    df_total.drop(labels=node_index, axis=0, inplace=True)
 
         # defining the precision of data
         df_total.latitude = df_total.latitude.map(lambda x: "%.6f" % x)
@@ -516,31 +527,50 @@ async def load_previous_data(page_name):
 
     df = pd.read_csv(full_path_stored_inputs)
 
-    if page_name == "project_setup":
-        previous_data["project_name"] = str(df.loc[0, "project_name"])
-        previous_data["project_description"] = str(df.loc[0, "project_description"])
-        previous_data["interest_rate"] = str(df.loc[0, "interest_rate"])
-        previous_data["project_lifetime"] = str(df.loc[0, "project_lifetime"])
-        previous_data["start_date"] = str(df.loc[0, "start_date"])
-        previous_data["temporal_resolution"] = str(df.loc[0, "temporal_resolution"])
-        previous_data["n_days"] = str(df.loc[0, "n_days"])
-    elif page_name == "consumer_selection":
-        previous_data["distribution_cable_lifetime"] = str(
-            df.loc[0, "distribution_cable_lifetime"]
-        )
-        previous_data["distribution_cable_capex"] = str(
-            df.loc[0, "distribution_cable_capex"]
-        )
-        previous_data["connection_cable_lifetime"] = str(
-            df.loc[0, "connection_cable_lifetime"]
-        )
-        previous_data["connection_cable_capex"] = str(
-            df.loc[0, "connection_cable_capex"]
-        )
-        previous_data["pole_lifetime"] = str(df.loc[0, "pole_lifetime"])
-        previous_data["pole_capex"] = str(df.loc[0, "pole_capex"])
-        previous_data["mg_connection_cost"] = str(df.loc[0, "mg_connection_cost"])
-        previous_data["shs_capex"] = str(df.loc[0, "shs_capex"])
+    # In case the CSV file containing all stored inputs is empty, the following
+    # conditions will not be executed.
+    if not df.empty:
+        if page_name == "project_setup":
+            previous_data["project_name"] = str(df.loc[0, "project_name"])
+            previous_data["project_description"] = str(df.loc[0, "project_description"])
+            previous_data["interest_rate"] = str(df.loc[0, "interest_rate"])
+            previous_data["project_lifetime"] = str(df.loc[0, "project_lifetime"])
+            previous_data["start_date"] = str(df.loc[0, "start_date"])
+            previous_data["temporal_resolution"] = str(df.loc[0, "temporal_resolution"])
+            previous_data["n_days"] = str(df.loc[0, "n_days"])
+        elif page_name == "grid_design":
+            previous_data["distribution_cable_lifetime"] = str(
+                df.loc[0, "distribution_cable_lifetime"]
+            )
+            previous_data["distribution_cable_capex"] = str(
+                df.loc[0, "distribution_cable_capex"]
+            )
+            previous_data["distribution_cable_max_length"] = str(
+                df.loc[0, "distribution_cable_max_length"]
+            )
+            previous_data["connection_cable_lifetime"] = str(
+                df.loc[0, "connection_cable_lifetime"]
+            )
+            previous_data["connection_cable_capex"] = str(
+                df.loc[0, "connection_cable_capex"]
+            )
+            previous_data["connection_cable_max_length"] = str(
+                df.loc[0, "connection_cable_max_length"]
+            )
+            previous_data["pole_lifetime"] = str(df.loc[0, "pole_lifetime"])
+            previous_data["pole_capex"] = str(df.loc[0, "pole_capex"])
+            previous_data["pole_max_n_connections"] = str(
+                df.loc[0, "pole_max_n_connections"]
+            )
+            previous_data["mg_connection_cost"] = str(df.loc[0, "mg_connection_cost"])
+            previous_data["mg_n_operators"] = str(df.loc[0, "mg_n_operators"])
+            previous_data["mg_salary_operator"] = str(df.loc[0, "mg_salary_operator"])
+            previous_data["shs_lifetime"] = str(df.loc[0, "shs_lifetime"])
+            previous_data["shs_tier_one_capex"] = str(df.loc[0, "shs_tier_one_capex"])
+            previous_data["shs_tier_two_capex"] = str(df.loc[0, "shs_tier_two_capex"])
+            previous_data["shs_tier_three_capex"] = str(df.loc[0, "shs_tier_three_capex"])
+            previous_data["shs_tier_four_capex"] = str(df.loc[0, "shs_tier_four_capex"])
+            previous_data["shs_tier_five_capex"] = str(df.loc[0, "shs_tier_five_capex"])
 
     # importing nodes and links from the csv files to the map
     return previous_data
@@ -571,30 +601,58 @@ async def save_previous_data(
             "temporal_resolution"
         ]
         df.loc[0, "n_days"] = save_previous_data_request.page_setup["n_days"]
-    elif page_name == "consumer_selection":
+    elif page_name == "grid_design":
         df.loc[
             0, "distribution_cable_lifetime"
-        ] = save_previous_data_request.consumer_selection["distribution_cable_lifetime"]
+        ] = save_previous_data_request.grid_design["distribution_cable_lifetime"]
+        df.loc[0, "distribution_cable_capex"] = save_previous_data_request.grid_design[
+            "distribution_cable_capex"
+        ]
         df.loc[
-            0, "distribution_cable_capex"
-        ] = save_previous_data_request.consumer_selection["distribution_cable_capex"]
+            0, "distribution_cable_max_length"
+        ] = save_previous_data_request.grid_design["distribution_cable_max_length"]
+        df.loc[0, "connection_cable_lifetime"] = save_previous_data_request.grid_design[
+            "connection_cable_lifetime"
+        ]
+        df.loc[0, "connection_cable_capex"] = save_previous_data_request.grid_design[
+            "connection_cable_capex"
+        ]
         df.loc[
-            0, "connection_cable_lifetime"
-        ] = save_previous_data_request.consumer_selection["connection_cable_lifetime"]
-        df.loc[
-            0, "connection_cable_capex"
-        ] = save_previous_data_request.consumer_selection["connection_cable_capex"]
-        df.loc[0, "pole_lifetime"] = save_previous_data_request.consumer_selection[
+            0, "connection_cable_max_length"
+        ] = save_previous_data_request.grid_design["connection_cable_max_length"]
+        df.loc[0, "pole_lifetime"] = save_previous_data_request.grid_design[
             "pole_lifetime"
         ]
-        df.loc[0, "pole_capex"] = save_previous_data_request.consumer_selection[
-            "pole_capex"
+        df.loc[0, "pole_capex"] = save_previous_data_request.grid_design["pole_capex"]
+        df.loc[0, "pole_max_n_connections"] = save_previous_data_request.grid_design[
+            "pole_max_n_connections"
         ]
-        df.loc[0, "mg_connection_cost"] = save_previous_data_request.consumer_selection[
+        df.loc[0, "mg_connection_cost"] = save_previous_data_request.grid_design[
             "mg_connection_cost"
         ]
-        df.loc[0, "shs_capex"] = save_previous_data_request.consumer_selection[
-            "shs_capex"
+        df.loc[0, "mg_n_operators"] = save_previous_data_request.grid_design[
+            "mg_n_operators"
+        ]
+        df.loc[0, "mg_salary_operator"] = save_previous_data_request.grid_design[
+            "mg_salary_operator"
+        ]
+        df.loc[0, "shs_lifetime"] = save_previous_data_request.grid_design[
+            "shs_lifetime"
+        ]
+        df.loc[0, "shs_tier_one_capex"] = save_previous_data_request.grid_design[
+            "shs_tier_one_capex"
+        ]
+        df.loc[0, "shs_tier_two_capex"] = save_previous_data_request.grid_design[
+            "shs_tier_two_capex"
+        ]
+        df.loc[0, "shs_tier_three_capex"] = save_previous_data_request.grid_design[
+            "shs_tier_three_capex"
+        ]
+        df.loc[0, "shs_tier_four_capex"] = save_previous_data_request.grid_design[
+            "shs_tier_four_capex"
+        ]
+        df.loc[0, "shs_tier_five_capex"] = save_previous_data_request.grid_design[
+            "shs_tier_five_capex"
         ]
 
     # save the updated dataframe
@@ -892,7 +950,7 @@ async def optimize_grid(
     await database_initialization(nodes=False, links=True)
 
     # get all stored data related to the grid layout
-    grid_input_data = await load_previous_data("consumer_selection")
+    grid_input_data = await load_previous_data("grid_design")
 
     # create a new "grid" object from the Grid class
     epc_distribution_cable = (
@@ -950,10 +1008,14 @@ async def optimize_grid(
     epc_shs = (
         (
             opt.crf
-            * Optimizer.capex_multi_investment(
-                opt,
-                capex_0=grid_input_data["shs_capex"],
-                component_lifetime=10,  # TODO: must be implemented in the frontend
+            * (
+                Optimizer.capex_multi_investment(
+                    opt,
+                    capex_0=grid_input_data["shs_tier_one_capex"]
+                    + grid_input_data["shs_tier_two_capex"]
+                    + grid_input_data["shs_tier_three_capex"],
+                    component_lifetime=grid_input_data["shs_lifetime"],
+                )
             )
         )
         * opt.n_days
@@ -965,7 +1027,7 @@ async def optimize_grid(
         epc_connection_cable=epc_connection_cable,
         epc_connection=epc_connection,
         epc_pole=epc_pole,
-        pole_max_connection=optimize_grid_request.constraints["pole_max_connections"],
+        pole_max_connection=optimize_grid_request.constraints["pole_max_n_connections"],
     )
 
     # make sure that the new grid object is empty before adding nodes to it

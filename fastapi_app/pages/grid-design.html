@@ -58,7 +58,7 @@
     <title>Grid Design</title>
   </head>
 
-  <body onload="load_previous_data('grid-design'); boxVisibilityShs();">
+  <body onload="load_previous_data('grid_design'); boxVisibilityShs();">
     <!-- don't forget 'navbar--scenario' CSS class -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light navbar--scenario">
       <div class="container-fluid">
@@ -117,9 +117,17 @@
       <div>
         <div class="wizard__steps">
           <ul>
-            <li><a href="{{ url_for('home')}}">Project Setup</a></li>
             <li>
-              <a href="{{ url_for('consumer_selection') }}"
+              <a
+                href="{{ url_for('home')}}"
+                onclick="save_previous_data('grid_design');"
+                >Project Setup</a
+              >
+            </li>
+            <li>
+              <a
+                href="{{ url_for('consumer_selection') }}"
+                onclick="save_previous_data('grid_design');"
                 >Consumer Selection</a
               >
             </li>
@@ -128,12 +136,16 @@
               <a href="{{ url_for('grid_design') }}">Grid Design</a>
             </li>
             <li>
-              <a href="{{ url_for('energy_system_design') }}"
+              <a
+                href="{{ url_for('energy_system_design') }}"
+                onclick="save_previous_data('grid_design');"
                 >Energy System Design</a
               >
             </li>
             <li>
-              <a href="{{ url_for('simulation_results') }}"
+              <a
+                href="{{ url_for('simulation_results') }}"
+                onclick="save_previous_data('grid_design');"
                 >Simulation Results</a
               >
             </li>
@@ -327,7 +339,7 @@
                         <input
                           type="number"
                           class="form-control"
-                          id="mgOperatorsCost"
+                          id="mgSalaryOperator"
                           value="1000"
                           required
                         />
@@ -358,17 +370,34 @@
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span id="lblShsTierOneCost" class="input-group-text"
+                    <span id="lblShsLifetime" class="input-group-text"
+                      >Lifetime</span
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="shsLifetime"
+                      value="10"
+                      required
+                    />
+                    <span id="shsLifetimeUnit" class="input-group-text"
+                      >Years</span
+                    >
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="input-group">
+                    <span id="lblShsTierOneCapex" class="input-group-text"
                       >Tier One</span
                     >
                     <input
                       type="number"
                       class="form-control"
-                      id="shsTierOneCost"
+                      id="shsTierOneCapex"
                       value="100"
                       required
                     />
-                    <span id="shsTierOneCostUnit" class="input-group-text"
+                    <span id="shsTierOneCapexUnit" class="input-group-text"
                       >USD</span
                     >
                     <span
@@ -381,17 +410,17 @@
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span id="lblShsTierTwoCost" class="input-group-text"
+                    <span id="lblShsTierTwoCapex" class="input-group-text"
                       >Tier Two</span
                     >
                     <input
                       type="number"
                       class="form-control"
-                      id="shsTierTwoCost"
+                      id="shsTierTwoCapex"
                       value="350"
                       required
                     />
-                    <span id="shsTierTwoCostUnit" class="input-group-text"
+                    <span id="shsTierTwoCapexUnit" class="input-group-text"
                       >USD</span
                     >
                     <span
@@ -404,17 +433,17 @@
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span id="lblShsTierThreeCost" class="input-group-text"
+                    <span id="lblShsTierThreeCapex" class="input-group-text"
                       >Tier Three</span
                     >
                     <input
                       type="number"
                       class="form-control"
-                      id="shsTierThreeCost"
+                      id="shsTierThreeCapex"
                       value="600"
                       required
                     />
-                    <span id="shsTierThreeCostUnit" class="input-group-text"
+                    <span id="shsTierThreeCapexUnit" class="input-group-text"
                       >USD</span
                     >
                     <span
@@ -427,17 +456,17 @@
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span id="lblShsTierFourCost" class="input-group-text"
+                    <span id="lblShsTierFourCapex" class="input-group-text"
                       >Tier Four</span
                     >
                     <input
                       type="number"
                       class="form-control"
-                      id="shsTierFourCost"
+                      id="shsTierFourCapex"
                       value="20"
                       required
                     />
-                    <span id="shsTierFourCostUnit" class="input-group-text"
+                    <span id="shsTierFourCapexUnit" class="input-group-text"
                       >USD/kWh</span
                     >
                     <span
@@ -450,17 +479,17 @@
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span id="lblShsTierFiveCost" class="input-group-text"
+                    <span id="lblShsTierFiveCapex" class="input-group-text"
                       >Tier Five</span
                     >
                     <input
                       type="number"
                       class="form-control"
-                      id="shsTierFiveCost"
+                      id="shsTierFiveCapex"
                       value="30"
                       required
                     />
-                    <span id="shsTierFiveCostUnit" class="input-group-text"
+                    <span id="shsTierFiveCapexUnit" class="input-group-text"
                       >USD/kWh</span
                     >
                     <span

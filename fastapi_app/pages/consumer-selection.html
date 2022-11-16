@@ -58,7 +58,7 @@
     <title>Consumer Selection</title>
   </head>
 
-  <body onload="refresh_map();load_previous_data('consumer_selection')">
+  <body onload="refresh_map();">
     <!-- don't forget 'navbar--scenario' CSS class -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light navbar--scenario">
       <div class="container-fluid">
@@ -306,10 +306,7 @@
             href="{{ url_for('home')}}"
             >Previous
           </a>
-          <a
-            class="btn btn--medium"
-            href="{{ url_for('grid_design') }}"
-            onclick="save_previous_data('consumer_selection');"
+          <a class="btn btn--medium" href="{{ url_for('grid_design') }}"
             >Next</a
           >
         </div>
