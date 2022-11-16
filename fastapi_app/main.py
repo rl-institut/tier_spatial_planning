@@ -1096,6 +1096,8 @@ async def optimize_grid():
         min_number_of_poles = int(np.ceil(n_mg_consumers / (grid.pole_max_connection)))
 
     # ---------- MAX DISTANCE BETWEEN POLES AND CONSUMERS ----------
+    connection_cable_max_length = df.loc[0, "connection_cable_max_length"]
+
     # First, the appropriate number of poles should be selected, to meet
     # the constraint on the maximum distance between consumers and poles.
     while True:
@@ -1107,7 +1109,7 @@ async def optimize_grid():
         # Find those connections with constraint violation.
         constraints_violation = grid.links[grid.links["link_type"] == "connection"]
         constraints_violation = constraints_violation[
-            constraints_violation["length"] > 30  # TODO: USER INPUT
+            constraints_violation["length"] > connection_cable_max_length
         ]
 
         # Increase the number of poles if necessary.
@@ -1116,18 +1118,20 @@ async def optimize_grid():
         else:
             break
 
+    # ----------------- MAX DISTANCE BETWEEN POLES -----------------
+    distribution_cable_max_length = df.loc[0, "distribution_cable_max_length"]
+
     # Find the connection links in the network with lengths greater than the
     # maximum allowed length for `connection` cables, specified by the user.
     long_links = grid.find_index_longest_distribution_link(
-        max_distance_dist_links=35,
+        max_distance_dist_links=distribution_cable_max_length,
     )
 
     # Add poles to the identified long `distribution` links, so that the
     # distance between all poles remains below the maximum allowed distance.
-    # TODO: `max_allowed_distance` should be given by the user.
     grid.add_fixed_poles_on_long_links(
         long_links=long_links,
-        max_allowed_distance=35,
+        max_allowed_distance=distribution_cable_max_length,
     )
 
     # Update the (lon,lat) coordinates based on the newly inserted poles
