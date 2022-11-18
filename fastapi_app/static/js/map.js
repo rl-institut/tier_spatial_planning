@@ -203,6 +203,11 @@ var markerConsumer = new L.Icon({
   iconSize: [8, 8],
 });
 
+var markerPowerHouse = new L.Icon({
+  iconUrl: "fastapi_app/static/assets/icons/i_power_house.svg",
+  iconSize: [16, 16],
+});
+
 var markerPole = new L.Icon({
   iconUrl: "fastapi_app/static/assets/icons/i_pole.svg",
   iconSize: [12, 12],
@@ -216,8 +221,9 @@ var markerShs = new L.Icon({
 var legend = L.control({ position: "bottomright" });
 legend.onAdd = function (map) {
   var div = L.DomUtil.create("div", "info legend"),
-    description = ["Consumer", "Pole", "SHS", "Distribution", "Connection"],
+    description = ["Power House", "Consumer", "Pole", "SHS", "Distribution", "Connection"],
     image = [
+      "fastapi_app/static/assets/icons/i_power_house.svg",
       "fastapi_app/static/assets/icons/i_consumer.svg",
       "fastapi_app/static/assets/icons/i_pole.svg",
       "fastapi_app/static/assets/icons/i_shs.svg",

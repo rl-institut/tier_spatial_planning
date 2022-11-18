@@ -166,7 +166,7 @@ class Grid:
     def get_nodes_distances_from_load_centroid(self):
         """
         This function calculates all distances between the nodes and the load
-        centroid of the village.
+        centroid of the settlement.
         """
         for node_index in self.nodes.index:
             x_node = self.nodes.x.loc[node_index]
@@ -178,6 +178,39 @@ class Grid:
             )
 
             self.nodes.distance_to_load_center.loc[node_index] = distance
+
+    def get_poles_distances_from_load_centroid(self):
+        """
+        This function calculates all distances between the poles and the load
+        centroid of the settlement.
+        """
+        for pole_index in self.poles().index:
+            x_pole = self.poles().x.loc[pole_index]
+            y_node = self.poles().y.loc[pole_index]
+
+            distance = np.sqrt(
+                (x_pole - self.load_centroid[0]) ** 2
+                + (y_node - self.load_centroid[1]) ** 2
+            )
+
+            self.nodes.distance_to_load_center.loc[pole_index] = distance
+
+    def select_location_of_power_house(self):
+        """
+        This function assumes the closest pole to the calculated location for
+        the power house, as the new location of the power house.
+
+        TODO:
+        If the length of the cable connecting the power house and the nearest
+        pole is longer than the maximum allowed distance for distribution links,
+        some more poles will be placed on it.
+        """
+        min_distance_nearest_pole = self.poles()["distance_to_load_center"].min()
+        nearest_pole = self.nodes[
+            self.nodes["distance_to_load_center"] == min_distance_nearest_pole
+        ]
+
+        self.nodes.loc[nearest_pole.index, "node_type"] = "power-house"
 
     def clear_nodes(self):
         """
@@ -193,7 +226,7 @@ class Grid:
             [
                 label
                 for label in self.nodes.index
-                if self.nodes.node_type.loc[label] == "pole"
+                if self.nodes.node_type.loc[label] in ["pole", "power-house"]
             ],
             axis=0,
         )
@@ -377,14 +410,17 @@ class Grid:
 
     def poles(self):
         """
-        Returns only the 'pole' nodes from the grid.
+        Returns all poles and the power house in the grid.
 
         Returns
         ------
         class:`pandas.core.frame.DataFrame`
             filtered pandas dataframe containing all 'pole' nodes
         """
-        return self.nodes[self.nodes["node_type"] == "pole"]
+        return self.nodes[
+            (self.nodes["node_type"] == "pole")
+            | (self.nodes["node_type"] == "power-house")
+        ]
 
     def distance_between_nodes(self, label_node_1: str, label_node_2: str):
         """
@@ -548,7 +584,13 @@ class Grid:
         # if inverse=true, this is the case when the (x,y) coordinates of the obtained
         # poles (from the optimization) are converted into (lon,lat)
         if inverse:
-            for node_index in self.poles().index:
+            # First the possible candidates for inverse conversion are picked.
+            nodes_for_inverse_conversion = self.nodes[
+                (self.nodes["node_type"] == "pole")
+                | (self.nodes["node_type"] == "power-house")
+            ]
+
+            for node_index in nodes_for_inverse_conversion.index:
                 lon, lat = p(
                     self.nodes.x.loc[node_index] + self.ref_node[0],
                     self.nodes.y.loc[node_index] + self.ref_node[1],

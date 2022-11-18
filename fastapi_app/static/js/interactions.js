@@ -107,7 +107,13 @@ function database_read(nodes_or_links, map_or_export, callback) {
                     };
                     var counter;
                     for (counter = 0; counter < number_of_nodes; counter++) {
-                        if (nodes["node_type"][counter] === "pole") {
+                        if (nodes["node_type"][counter] === "power-house") {
+                            markers.push(
+                                L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
+                                    icon: markerPowerHouse,
+                                }).on('click', markerOnClick).addTo(mainMap)
+                            );
+                        } else if (nodes["node_type"][counter] === "pole") {
                             markers.push(
                                 L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
                                     icon: markerPole,
@@ -155,7 +161,8 @@ function database_read(nodes_or_links, map_or_export, callback) {
 }
 
 
-// add single nodes selected manually to the *.csv file
+// Add or remove single nodes selected manually to the *.csv file.
+// In case of removing, only `add_remove`, `latitude`, and `longitude` are used.
 function database_add_remove_manual(
     { add_remove = "add",
         latitude,

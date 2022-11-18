@@ -395,12 +395,11 @@ async def database_add_remove_manual(
         # reading the existing CSV file of nodes, and then removing the corresponding row
         df = pd.read_csv(full_path_nodes)
 
-        # Since a node is removed, the calculated positions for ALL poles must
-        # be first removed.
-        df = df[df["node_type"] != "pole"]
+        # Since a node is removed, the calculated positions for ALL poles and
+        # the power house must be first removed.
+        df = df[(df["node_type"] != "pole") & (df["node_type"] != "power-house")]
 
-        number_of_nodes = df.shape[0]
-        for index in range(number_of_nodes):
+        for index in df.index:
             if (
                 round(add_node_request.latitude, 6) == df.to_dict()["latitude"][index]
             ) and (
@@ -430,8 +429,11 @@ def database_add(add_nodes: bool, add_links: bool, inlet: dict):
         # the existing database
         df_existing = pd.read_csv(full_path_nodes)
 
-        # Remove all existing poles if the added nodes include poles.
-        df_existing = df_existing[df_existing["node_type"] != "pole"]
+        # Remove all existing poles and the power house.
+        df_existing = df_existing[
+            (df_existing["node_type"] != "pole")
+            & (df_existing["node_type"] != "power-house")
+        ]
 
         # Aappend the existing database with the new nodes and remove
         # duplicates (only when both lat and lon are identical).
@@ -1036,8 +1038,10 @@ async def optimize_grid():
 
     # exclude solar-home-systems and poles from the grid optimization
     for node_index in nodes.index:
-        if (nodes.is_connected[node_index]) and (
-            not nodes.node_type[node_index] == "pole"
+        if (
+            (nodes.is_connected[node_index])
+            and (not nodes.node_type[node_index] == "pole")
+            and (not nodes.node_type[node_index] == "power-house")
         ):
 
             # add all consumers which are not served by solar-home-systems
@@ -1141,6 +1145,12 @@ async def optimize_grid():
     # Connect all poles together using the minimum spanning tree algorithm.
     opt.connect_grid_poles(grid, long_links=long_links)
 
+    # Calculate distances of all poles from the load centroid.
+    grid.get_poles_distances_from_load_centroid()
+
+    # Find the location of the power house.
+    grid.select_location_of_power_house()
+
     # Calculate the cost of SHS.
     peak_demand_shs_consumers = grid.nodes[grid.nodes["is_connected"] == False].loc[
         :, "peak_demand"
@@ -1165,7 +1175,7 @@ async def optimize_grid():
         inplace=True,
     )
 
-    # store the list of poles in the "node" database
+    # Store the list of poles in the "node" database.
     database_add(add_nodes=True, add_links=False, inlet=poles.to_dict())
 
     # get all links obtained by the network relaxation method
