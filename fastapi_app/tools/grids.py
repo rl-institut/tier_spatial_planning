@@ -206,8 +206,8 @@ class Grid:
         some more poles will be placed on it.
         """
         min_distance_nearest_pole = self.poles()["distance_to_load_center"].min()
-        nearest_pole = self.nodes[
-            self.nodes["distance_to_load_center"] == min_distance_nearest_pole
+        nearest_pole = self.poles()[
+            self.poles()["distance_to_load_center"] == min_distance_nearest_pole
         ]
 
         self.nodes.loc[nearest_pole.index, "node_type"] = "power-house"

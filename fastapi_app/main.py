@@ -442,7 +442,7 @@ def database_add(add_nodes: bool, add_links: bool, inlet: dict):
         # Aappend the existing database with the new nodes and remove
         # duplicates (only when both lat and lon are identical).
         df_total = df_existing.append(df).drop_duplicates(
-            subset=["latitude", "longitude"], inplace=False
+            subset=["latitude", "longitude", "node_type"], inplace=False
         )
 
         # storing the nodes in the database (updating the existing CSV file).
