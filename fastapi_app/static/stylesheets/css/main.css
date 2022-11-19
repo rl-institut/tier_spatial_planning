@@ -2182,7 +2182,7 @@ nav.navbar .dropdown-menu li {
 }
 
 .dashboard .chart--small {
-  height: calc((34rem / 3) - ((2 * 1.5rem) / 3));
+  height: calc((34rem / 2) - ((1 * 1.5rem) / 2));
 }
 
 .dashboard .box--tiny{
@@ -2204,7 +2204,8 @@ nav.navbar .dropdown-menu li {
 .dashboard .chart--small .chart__content {
   display: -webkit-box;
   display: -ms-flexbox;
-  display: flex;
+  /* display: flex; */
+  display: inline-grid;
   -webkit-box-orient: horizontal;
   -webkit-box-direction: normal;
   -ms-flex-direction: row;
@@ -2235,11 +2236,14 @@ nav.navbar .dropdown-menu li {
 .dashboard .chart .item__name {
   font-size: 0.875rem;
   color: #495965;
-  padding-bottom: .25rem;
+  padding-top: 1.25rem;
+  padding-bottom: 0.25rem;
+  line-height: 1rem;
 }
 
 .dashboard .chart .item__value {
-  font-size: 1.25rem;
+  font-size: 1rem;
+  padding-bottom: 1rem;
 }
 
 .dashboard .chart .item--best .item__value {
@@ -2248,6 +2252,7 @@ nav.navbar .dropdown-menu li {
 }
 
 .dashboard .chart .item--worst .item__value {
+  font-weight: 700;
   color: #A10B0B;
 }
 

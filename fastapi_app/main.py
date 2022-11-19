@@ -317,7 +317,8 @@ async def database_initialization(nodes, links):
         "inverter_to_demand",
         "solver",
         "grid_optimization",
-        "time",
+        "time_energy_system_design",
+        "time_grid_design",
     ]
     header_energy_flows = [
         "diesel_genset_production",
@@ -506,6 +507,7 @@ async def load_results():
 
     results["n_poles"] = str(df.loc[0, "n_poles"])
     results["n_consumers"] = str(df.loc[0, "n_consumers"])
+    results["n_shs_consumers"] = str(df.loc[0, "n_shs_consumers"])
     results["length_distribution_cable"] = (
         str(df.loc[0, "length_distribution_cable"]) + " m"
     )
@@ -517,9 +519,10 @@ async def load_results():
     results["res"] = str(df.loc[0, "res"]) + " %"
     results["shortage_total"] = str(df.loc[0, "shortage_total"]) + " %"
     results["surplus_rate"] = str(df.loc[0, "surplus_rate"]) + " %"
-    results["solver"] = str(df.loc[0, "solver"]).title()
-    results["grid_optimization"] = str(df.loc[0, "grid_optimization"])
-    results["time"] = str(df.loc[0, "time"]) + " s"
+    results["time_energy_system_design"] = (
+        str(df.loc[0, "time_energy_system_design"]) + " s"
+    )
+    results["time_grid_design"] = str(df.loc[0, "time_grid_design"]) + " s"
 
     # importing nodes and links from the csv files to the map
     return results
@@ -929,6 +932,9 @@ def demand_estimation(nodes, update_total_demand):
 @app.post("/optimize_grid/")
 async def optimize_grid():
 
+    # Grab Currrent Time Before Running the Code
+    start_execution_time = time.monotonic()
+
     # create GridOptimizer object
     df = pd.read_csv(full_path_stored_inputs)
 
@@ -1188,6 +1194,9 @@ async def optimize_grid():
     # store the list of poles in the "node" database
     database_add(add_nodes=False, add_links=True, inlet=links.to_dict())
 
+    # Grab Currrent Time After Running the Code
+    end_execution_time = time.monotonic()
+
     # store data for showing in the final results
     df = pd.read_csv(full_path_stored_results)
     df.loc[0, "n_consumers"] = len(grid.consumers())
@@ -1201,7 +1210,7 @@ async def optimize_grid():
     )
     df.loc[0, "cost_grid"] = int(grid.cost())
     df.loc[0, "cost_shs"] = int(cost_shs)
-    df.loc[0, "grid_optimization"] = "NR"
+    df.loc[0, "time_grid_design"] = end_execution_time - start_execution_time
     df.to_csv(
         full_path_stored_results,
         mode="a",
@@ -1237,6 +1246,9 @@ async def optimize_energy_system(
         shortage=optimize_energy_system_request.shortage,
     )
     ensys_opt.optimize_energy_system()
+
+    # Grab Currrent Time After Running the Code
+    end_execution_time = time.monotonic()
 
     # unit for co2_emission_factor is kgCO2 per kWh of produced electricity
     if ensys_opt.capacity_genset < 60:
@@ -1311,10 +1323,7 @@ async def optimize_energy_system(
     )
     df.loc[0, "dc_bus_to_surplus"] = ensys_opt.sequences_surplus.sum() / 1000
     df.loc[0, "inverter_to_demand"] = ensys_opt.sequences_inverter.sum() / 1000
-    df.loc[0, "solver"] = ensys_opt.solver
-    # Grab Currrent Time After Running the Code
-    end_execution_time = time.monotonic()
-    df.loc[0, "time"] = end_execution_time - start_execution_time
+    df.loc[0, "time_energy_system_design"] = end_execution_time - start_execution_time
     df.to_csv(full_path_stored_results, index=False, float_format="%.1f")
 
     # store energy flows

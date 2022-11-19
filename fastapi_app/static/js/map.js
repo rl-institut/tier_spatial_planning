@@ -200,17 +200,17 @@ L.control.scale().addTo(mainMap);
 
 var markerConsumer = new L.Icon({
   iconUrl: "fastapi_app/static/assets/icons/i_consumer.svg",
-  iconSize: [8, 8],
+  iconSize: [6, 6],
 });
 
 var markerPowerHouse = new L.Icon({
   iconUrl: "fastapi_app/static/assets/icons/i_power_house.svg",
-  iconSize: [16, 16],
+  iconSize: [12, 12],
 });
 
 var markerPole = new L.Icon({
   iconUrl: "fastapi_app/static/assets/icons/i_pole.svg",
-  iconSize: [12, 12],
+  iconSize: [10, 10],
 });
 
 var markerShs = new L.Icon({

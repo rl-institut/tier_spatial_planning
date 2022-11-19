@@ -141,7 +141,7 @@ function database_read(nodes_or_links, map_or_export, callback) {
                     removeLinksFromMap(mainMap);
                     for (let index = 0; index < Object.keys(links.link_type).length; index++) {
                         var color = links.link_type[index] === "distribution" ? "rgb(255, 99, 71)" : "rgb(0, 165, 114)";
-                        var weight = links.link_type[index] === "distribution" ? 4 : 3;
+                        var weight = links.link_type[index] === "distribution" ? 3 : 2;
                         var opacity = links.link_type[index] === "distribution" ? 1 : 1;
                         drawLinkOnMap(
                             links.lat_from[index],
@@ -443,13 +443,14 @@ function load_results(){
             document.getElementById("lengthDistributionCable").innerText = results['length_distribution_cable'];
             document.getElementById("lengthConnectionCable").innerText = results['length_connection_cable'];
             document.getElementById("costGrid").innerText = results['cost_grid'];
+            document.getElementById("nShsConsumers").innerText = results['n_shs_consumers'];
+            document.getElementById("maxVoltageDrop").innerText = '1.3%';
+            document.getElementById("timeGridDesign").innerText = results['time_grid_design'];
             document.getElementById("lcoe").innerText = results['lcoe'];
             document.getElementById("res").innerText = results['res'];
             document.getElementById("shortageTotal").innerText = results['shortage_total'];
             document.getElementById("surplusRate").innerText = results['surplus_rate'];
-            document.getElementById("solver").innerText = results['solver'];
-            document.getElementById("gridOptimization").innerText = results['grid_optimization'];
-            document.getElementById("time").innerText = results['time'];
+            document.getElementById("timeEnergySystemDesign").innerText = results['time_energy_system_design'];
         }
     };
 }

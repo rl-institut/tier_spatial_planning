@@ -166,49 +166,46 @@
                   <div>
                     <span class="title">Grid Results</span>
                   </div>
-                  <div class="dropdown">
-                    <button
-                      class="btn dropdown-toggle btn--transparent"
-                      type="button"
-                      id="dropdownMenuButton1"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <span class="icon icon-more"></span>
-                    </button>
-                    <ul
-                      class="dropdown-menu"
-                      aria-labelledby="dropdownMenuButton1"
-                    >
-                      <li>
-                        <a class="dropdown-item" href="#">Export as .xls</a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="#">Export as PDF</a>
-                      </li>
-                    </ul>
-                  </div>
                 </div>
                 <div class="chart__content">
-                  <div class="item item--best">
-                    <div class="item__name">Poles</div>
-                    <div id="nPoles" class="item__value"></div>
+                  <div class="row">
+                    <div class="item item--best">
+                      <div class="item__name">Number of Consumers</div>
+                      <div id="nConsumers" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Number of SHS Consumers</div>
+                      <div id="nShsConsumers" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Number of Poles</div>
+                      <div id="nPoles" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Maximum Voltage Drop</div>
+                      <div id="maxVoltageDrop" class="item__value"></div>
+                    </div>
                   </div>
-                  <div class="item item--best">
-                    <div class="item__name">Consumers</div>
-                    <div id="nConsumers" class="item__value"></div>
-                  </div>
-                  <div class="item item--best">
-                    <div class="item__name">HV cable</div>
-                    <div id="lengthDistributionCable" class="item__value"></div>
-                  </div>
-                  <div class="item item--best">
-                    <div class="item__name">LV cable</div>
-                    <div id="lengthConnectionCable" class="item__value"></div>
-                  </div>
-                  <div class="item item--worst">
-                    <div class="item__name">Grid Cost</div>
-                    <div id="costGrid" class="item__value"></div>
+                  <div class="row">
+                    <div class="item item--best">
+                      <div class="item__name">Distribution Cable Length</div>
+                      <div
+                        id="lengthDistributionCable"
+                        class="item__value"
+                      ></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Connection Cable Length</div>
+                      <div id="lengthConnectionCable" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Total Levelized Cost</div>
+                      <div id="costGrid" class="item__value"></div>
+                    </div>
+                    <div class="item item--worst">
+                      <div class="item__name">Calculation Time</div>
+                      <div id="timeGridDesign" class="item__value"></div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -217,88 +214,36 @@
                   <div>
                     <span class="title">Energy System Results</span>
                   </div>
-                  <div class="dropdown">
-                    <button
-                      class="btn dropdown-toggle btn--transparent"
-                      type="button"
-                      id="dropdownMenuButton1"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <span class="icon icon-more"></span>
-                    </button>
-                    <ul
-                      class="dropdown-menu"
-                      aria-labelledby="dropdownMenuButton1"
-                    >
-                      <li>
-                        <a class="dropdown-item" href="#">Export as .xls</a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="#">Export as PDF</a>
-                      </li>
-                    </ul>
-                  </div>
                 </div>
                 <div class="chart__content">
-                  <div class="item item--worst">
-                    <div class="item__name">LCOE</div>
-                    <div id="lcoe" class="item__value"></div>
+                  <div class="row">
+                    <div class="item item--best">
+                      <div class="item__name">Renewable Energy Share</div>
+                      <div id="res" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Surplus Electricity</div>
+                      <div id="surplusRate" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Total Amount of Shortage</div>
+                      <div id="shortageTotal" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">
+                        Levelized Cost of Electricity
+                      </div>
+                      <div id="lcoe" class="item__value"></div>
+                    </div>
                   </div>
-                  <div class="item item--best">
-                    <div class="item__name">RES</div>
-                    <div id="res" class="item__value"></div>
-                  </div>
-                  <div class="item item--worst">
-                    <div class="item__name">Shortage</div>
-                    <div id="shortageTotal" class="item__value"></div>
-                  </div>
-                  <div class="item item--best">
-                    <div class="item__name">Surplus</div>
-                    <div id="surplusRate" class="item__value"></div>
-                  </div>
-                </div>
-              </div>
-              <div class="chart chart--small">
-                <div class="chart__header">
-                  <div>
-                    <span class="title">Optimization Verbose</span>
-                  </div>
-                  <div class="dropdown">
-                    <button
-                      class="btn dropdown-toggle btn--transparent"
-                      type="button"
-                      id="dropdownMenuButton1"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <span class="icon icon-more"></span>
-                    </button>
-                    <ul
-                      class="dropdown-menu"
-                      aria-labelledby="dropdownMenuButton1"
-                    >
-                      <li>
-                        <a class="dropdown-item" href="#">Export as .xls</a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="#">Export as PDF</a>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                <div class="chart__content">
-                  <div class="item item--best">
-                    <div class="item__name">Solver</div>
-                    <div id="solver" class="item__value"></div>
-                  </div>
-                  <div class="item item--best">
-                    <div class="item__name">Grid Optimization</div>
-                    <div id="gridOptimization" class="item__value"></div>
-                  </div>
-                  <div class="item item--best">
-                    <div class="item__name">Time</div>
-                    <div id="time" class="item__value"></div>
+                  <div class="row">
+                    <div class="item item--worst">
+                      <div class="item__name">Calculation Time</div>
+                      <div
+                        id="timeEnergySystemDesign"
+                        class="item__value"
+                      ></div>
+                    </div>
                   </div>
                 </div>
               </div>
