@@ -161,13 +161,12 @@
               </div>
             </div>
             <div class="col col-md-5">
-              <div class="chart chart--small">
+              <div class="chart">
                 <div class="chart__header">
-                  <div>
-                    <span class="title">Grid Results</span>
-                  </div>
+                  <span class="title">Summary of Results</span>
                 </div>
                 <div class="chart__content">
+                  <span class="subtitle">GRID</span>
                   <div class="row">
                     <div class="item item--best">
                       <div class="item__name">Number of Consumers</div>
@@ -195,27 +194,25 @@
                       ></div>
                     </div>
                     <div class="item item--best">
+                      <div class="item__name">Average Length Distribution</div>
+                      <div
+                        id="averageLengthDistributionCable"
+                        class="item__value"
+                      ></div>
+                    </div>
+                    <div class="item item--best">
                       <div class="item__name">Connection Cable Length</div>
                       <div id="lengthConnectionCable" class="item__value"></div>
                     </div>
                     <div class="item item--best">
-                      <div class="item__name">Total Levelized Cost</div>
-                      <div id="costGrid" class="item__value"></div>
-                    </div>
-                    <div class="item item--worst">
-                      <div class="item__name">Calculation Time</div>
-                      <div id="timeGridDesign" class="item__value"></div>
+                      <div class="item__name">Average Length Connection</div>
+                      <div
+                        id="averageLengthConnectionCable"
+                        class="item__value"
+                      ></div>
                     </div>
                   </div>
-                </div>
-              </div>
-              <div class="chart chart--small">
-                <div class="chart__header">
-                  <div>
-                    <span class="title">Energy System Results</span>
-                  </div>
-                </div>
-                <div class="chart__content">
+                  <span class="subtitle">ENERGY SYSTEM</span>
                   <div class="row">
                     <div class="item item--best">
                       <div class="item__name">Renewable Energy Share</div>
@@ -230,19 +227,21 @@
                       <div id="shortageTotal" class="item__value"></div>
                     </div>
                     <div class="item item--best">
+                      <div class="item__name">Total CO2 Savings</div>
+                      <div id="co2Savings" class="item__value"></div>
+                    </div>
+                  </div>
+                  <span class="subtitle">TOTAL</span>
+                  <div class="row">
+                    <div class="item item--worst">
                       <div class="item__name">
                         Levelized Cost of Electricity
                       </div>
                       <div id="lcoe" class="item__value"></div>
                     </div>
-                  </div>
-                  <div class="row">
                     <div class="item item--worst">
                       <div class="item__name">Calculation Time</div>
-                      <div
-                        id="timeEnergySystemDesign"
-                        class="item__value"
-                      ></div>
+                      <div id="time" class="item__value"></div>
                     </div>
                   </div>
                 </div>

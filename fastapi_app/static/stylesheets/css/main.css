@@ -2150,7 +2150,7 @@ nav.navbar .dropdown-menu li {
   -webkit-box-pack: justify;
   -ms-flex-pack: justify;
   justify-content: space-between;
-  border-bottom: 2px solid #F4F7F9;
+  /* border-bottom: 2px solid #F4F7F9; */
   padding: .75rem 1rem .5rem;
   /* added by me :) */
   font-size: 1.2rem;
@@ -2163,6 +2163,15 @@ nav.navbar .dropdown-menu li {
   color: #1F567D;
   text-decoration: none;
   cursor: pointer;
+}
+
+.dashboard .chart__content .subtitle {
+  font-weight: 600;
+  font-size: 1.10rem;
+  padding-top: 1.25rem;
+  padding-bottom: 0.5rem;
+  color: #515559;
+  border-top: 2px solid #c3c8cd;
 }
 
 .dashboard .chart__header .view .icon {
@@ -2201,7 +2210,7 @@ nav.navbar .dropdown-menu li {
   margin-bottom: 1.5rem;
 }
 
-.dashboard .chart--small .chart__content {
+.dashboard .chart .chart__content {
   display: -webkit-box;
   display: -ms-flexbox;
   /* display: flex; */
@@ -2210,7 +2219,7 @@ nav.navbar .dropdown-menu li {
   -webkit-box-direction: normal;
   -ms-flex-direction: row;
   flex-direction: row;
-  height: calc((32rem / 3) - ((2 * 1.5rem) / 3) - 3.25rem);
+  height: calc((34rem / 3) - ((2 * 1.5rem) / 3) - 3.25rem);
   -webkit-box-align: center;
   -ms-flex-align: center;
   align-items: center;
@@ -2236,14 +2245,14 @@ nav.navbar .dropdown-menu li {
 .dashboard .chart .item__name {
   font-size: 0.875rem;
   color: #495965;
-  padding-top: 1.25rem;
-  padding-bottom: 0.25rem;
+  /* padding-top: 1rem;
+  padding-bottom: 0.25rem; */
   line-height: 1rem;
 }
 
 .dashboard .chart .item__value {
   font-size: 1rem;
-  padding-bottom: 1rem;
+  padding-bottom: 1.5rem;
 }
 
 .dashboard .chart .item--best .item__value {

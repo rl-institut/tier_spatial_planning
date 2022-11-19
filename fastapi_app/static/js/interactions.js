@@ -438,19 +438,20 @@ function load_results(){
         if (this.readyState == 4 && this.status == 200) {
             // push nodes to the map
             results = this.response;
-            document.getElementById("nPoles").innerText = results['n_poles'];
             document.getElementById("nConsumers").innerText = results['n_consumers'];
-            document.getElementById("lengthDistributionCable").innerText = results['length_distribution_cable'];
-            document.getElementById("lengthConnectionCable").innerText = results['length_connection_cable'];
-            document.getElementById("costGrid").innerText = results['cost_grid'];
             document.getElementById("nShsConsumers").innerText = results['n_shs_consumers'];
+            document.getElementById("nPoles").innerText = results['n_poles'];
             document.getElementById("maxVoltageDrop").innerText = '1.3%';
-            document.getElementById("timeGridDesign").innerText = results['time_grid_design'];
-            document.getElementById("lcoe").innerText = results['lcoe'];
+            document.getElementById("lengthDistributionCable").innerText = results['length_distribution_cable'];
+            document.getElementById("averageLengthDistributionCable").innerText = results['average_length_distribution_cable'];
+            document.getElementById("lengthConnectionCable").innerText = results['length_connection_cable'];
+            document.getElementById("averageLengthConnectionCable").innerText = results['average_length_connection_cable'];
             document.getElementById("res").innerText = results['res'];
-            document.getElementById("shortageTotal").innerText = results['shortage_total'];
             document.getElementById("surplusRate").innerText = results['surplus_rate'];
-            document.getElementById("timeEnergySystemDesign").innerText = results['time_energy_system_design'];
+            document.getElementById("shortageTotal").innerText = results['shortage_total'];
+            document.getElementById("co2Savings").innerText = results['co2_savings'];
+            document.getElementById("lcoe").innerText = results['lcoe'];
+            document.getElementById("time").innerText = results['time'];
         }
     };
 }
