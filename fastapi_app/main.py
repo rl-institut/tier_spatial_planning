@@ -259,7 +259,7 @@ async def simulation_results(request: Request):
     return templates.TemplateResponse("simulation-results.html", {"request": request})
 
 
-@app.get("/get_demand_coverage_data")
+@app.get("/get_demand_coverage_data/")
 async def get_demand_coverage_data():
 
     return json.loads(pd.read_csv(full_path_demand_coverage).to_json())
@@ -501,7 +501,7 @@ async def database_read(nodes_or_links: str):
         return links_list
 
 
-@app.get("/load_results")
+@app.get("/load_results/")
 async def load_results():
 
     results = {}
@@ -697,7 +697,7 @@ async def save_previous_data(
     df.to_csv(full_path_stored_inputs, index=False)
 
 
-@app.get("/get_optimal_capacities")
+@app.get("/get_optimal_capacities/")
 async def get_optimal_capacities():
 
     optimal_capacities = {}
@@ -716,7 +716,7 @@ async def get_optimal_capacities():
     return optimal_capacities
 
 
-@app.get("/get_lcoe_breakdown")
+@app.get("/get_lcoe_breakdown/")
 async def get_lcoe_breakdown():
 
     lcoe_breakdown = {}
@@ -732,7 +732,7 @@ async def get_lcoe_breakdown():
     return lcoe_breakdown
 
 
-@app.get("/get_data_for_sankey_diagram")
+@app.get("/get_data_for_sankey_diagram/")
 async def get_data_for_sankey_diagram():
 
     sankey_data = {}
@@ -756,19 +756,19 @@ async def get_data_for_sankey_diagram():
     return sankey_data
 
 
-@app.get("/get_data_for_energy_flows")
+@app.get("/get_data_for_energy_flows/")
 async def get_data_for_energy_flows():
 
     return json.loads(pd.read_csv(full_path_energy_flows).to_json())
 
 
-@app.get("/get_data_for_duration_curves")
+@app.get("/get_data_for_duration_curves/")
 async def get_data_for_duration_curves():
 
     return json.loads(pd.read_csv(full_path_duration_curves).to_json())
 
 
-@app.get("/get_co2_emissions_data")
+@app.get("/get_co2_emissions_data/")
 async def get_co2_emissions_data():
 
     return json.loads(pd.read_csv(full_path_co2_emissions).to_json())
@@ -1255,7 +1255,7 @@ async def optimize_grid():
     )
 
 
-@app.post("/optimize_energy_system")
+@app.post("/optimize_energy_system/")
 async def optimize_energy_system(
     optimize_energy_system_request: models.OptimizeEnergySystemRequest,
 ):
