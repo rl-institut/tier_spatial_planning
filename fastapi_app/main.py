@@ -431,15 +431,18 @@ def database_add(add_nodes: bool, add_links: bool, inlet: dict):
         df = pd.DataFrame.from_dict(nodes).round(decimals=6)
 
         # the existing database
-        df_existing = pd.read_csv(full_path_nodes)
+        if os.path.exists(full_path_nodes):
+            df_existing = pd.read_csv(full_path_nodes)
 
-        # Remove all existing poles and the power house.
-        df_existing = df_existing[
-            (df_existing["node_type"] != "pole")
-            & (df_existing["node_type"] != "power-house")
-        ]
+            # Remove all existing poles and the power house.
+            df_existing = df_existing[
+                (df_existing["node_type"] != "pole")
+                & (df_existing["node_type"] != "power-house")
+            ]
+        else:
+            df_existing = pd.DataFrame()
 
-        # Aappend the existing database with the new nodes and remove
+            # Aappend the existing database with the new nodes and remove
         # duplicates (only when both lat and lon are identical).
         df_total = df_existing.append(df).drop_duplicates(
             subset=["latitude", "longitude", "node_type"], inplace=False
@@ -452,9 +455,10 @@ def database_add(add_nodes: bool, add_links: bool, inlet: dict):
         # already existing links and all existing poles must be removed.
         if df["node_type"].str.contains("consumer").sum() > 0:
             # Remove existing links.
-            df_links = pd.read_csv(full_path_links)
-            df_links.drop(labels=df_links.index, axis=0, inplace=True)
-            df_links.to_csv(full_path_links, index=False, header=df_links.head)
+            if os.path.exists(full_path_links):
+                df_links = pd.read_csv(full_path_links)
+                df_links.drop(labels=df_links.index, axis=0, inplace=True)
+                df_links.to_csv(full_path_links, index=False, header=df_links.head)
 
         # defining the precision of data
         df_total.latitude = df_total.latitude.map(lambda x: "%.6f" % x)
