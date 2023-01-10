@@ -7,3 +7,4 @@ run
 venv/
 *.DS_Store
 data
+scratch.py

@@ -507,55 +507,28 @@ async def database_read(nodes_or_links: str):
 
 @app.get("/load_results/")
 async def load_results():
-
-    results = {}
-
     df = pd.read_csv(full_path_stored_results)
-
-    results["n_poles"] = str(df.loc[0, "n_poles"])
-    results["n_consumers"] = str(df.loc[0, "n_consumers"])
-    results["n_shs_consumers"] = str(df.loc[0, "n_shs_consumers"])
-    results["length_distribution_cable"] = (
-        str(df.loc[0, "length_distribution_cable"]) + " m"
-    )
-    results["average_length_distribution_cable"] = (
-        str(
-            round(
-                df.loc[0, "length_distribution_cable"]
-                / df.loc[0, "n_distribution_links"],
-                1,
-            )
-        )
-        + " m"
-    )
-    results["length_connection_cable"] = (
-        str(df.loc[0, "length_connection_cable"]) + " m"
-    )
-    results["average_length_connection_cable"] = (
-        str(
-            round(
-                df.loc[0, "length_connection_cable"] / df.loc[0, "n_connection_links"],
-                1,
-            )
-        )
-        + " m"
-    )
-    results["cost_grid"] = str(df.loc[0, "cost_grid"]) + " USD/a"
-    results["lcoe"] = str(df.loc[0, "lcoe"]) + " c/kWh"
-    results["res"] = str(df.loc[0, "res"]) + " %"
-    results["shortage_total"] = str(df.loc[0, "shortage_total"]) + " %"
-    results["surplus_rate"] = str(df.loc[0, "surplus_rate"]) + " %"
-    results["time"] = (
-        str(
-            round(
-                df.loc[0, "time_grid_design"] + df.loc[0, "time_energy_system_design"],
-                1,
-            )
-        )
-        + " s"
-    )
-    results["co2_savings"] = str(df.loc[0, "co2_savings"]) + " t/a"
-
+    df["average_length_distribution_cable"] = df["length_distribution_cable"] / df["n_distribution_links"]
+    df["average_length_connection_cable"] = df["length_connection_cable"] / df["n_connection_links"]
+    df["time"] = df["time_grid_design"] + df["time_energy_system_design"]
+    unit_dict = {'n_poles': '',
+                 'n_consumers': '',
+                 'n_shs_consumers': '',
+                 'length_distribution_cable': 'm',
+                 'average_length_distribution_cable': 'm',
+                 'length_connection_cable': 'm',
+                 'average_length_connection_cable': 'm',
+                 'cost_grid': 'USD/a',
+                 'lcoe': 'c/kWh',
+                 'res': '%',
+                 'shortage_total': '%',
+                 'surplus_rate': '%',
+                 'time': 's',
+                 'co2_savings': 't/a'}
+    df = df[list(unit_dict.keys())].round(1).astype(str)
+    for col in df.columns:
+        df[col] = df[col] + ' ' + unit_dict[col]
+    results = df.to_dict(orient='records')[0]
     # importing nodes and links from the csv files to the map
     return results
 
@@ -1276,7 +1249,7 @@ async def optimize_energy_system(
         wacc=df.loc[0, "interest_rate"] / 100,
         tax=0,
         path_data=full_path_timeseries,
-        solver="gurobi",
+        solver="cbc",
         pv=optimize_energy_system_request.pv,
         diesel_genset=optimize_energy_system_request.diesel_genset,
         battery=optimize_energy_system_request.battery,
