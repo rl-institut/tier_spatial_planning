@@ -535,58 +535,21 @@ async def load_results():
 
 @app.get("/load_previous_data/{page_name}")
 async def load_previous_data(page_name):
-
-    previous_data = {}
-
     df = pd.read_csv(full_path_stored_inputs)
-
     # In case the CSV file containing all stored inputs is empty, the following
     # conditions will not be executed.
     if not df.empty:
         if page_name == "project_setup":
-            previous_data["project_name"] = str(df.loc[0, "project_name"])
-            previous_data["project_description"] = str(df.loc[0, "project_description"])
-            previous_data["interest_rate"] = str(df.loc[0, "interest_rate"])
-            previous_data["project_lifetime"] = str(df.loc[0, "project_lifetime"])
-            previous_data["start_date"] = str(df.loc[0, "start_date"])
-            previous_data["temporal_resolution"] = str(df.loc[0, "temporal_resolution"])
-            previous_data["n_days"] = str(df.loc[0, "n_days"])
+            selection = ['project_name', 'project_description', 'interest_rate', 'project_lifetime',
+                         'start_date', 'temporal_resolution', 'n_days']
         elif page_name == "grid_design":
-            previous_data["distribution_cable_lifetime"] = str(
-                df.loc[0, "distribution_cable_lifetime"]
-            )
-            previous_data["distribution_cable_capex"] = str(
-                df.loc[0, "distribution_cable_capex"]
-            )
-            previous_data["distribution_cable_max_length"] = str(
-                df.loc[0, "distribution_cable_max_length"]
-            )
-            previous_data["connection_cable_lifetime"] = str(
-                df.loc[0, "connection_cable_lifetime"]
-            )
-            previous_data["connection_cable_capex"] = str(
-                df.loc[0, "connection_cable_capex"]
-            )
-            previous_data["connection_cable_max_length"] = str(
-                df.loc[0, "connection_cable_max_length"]
-            )
-            previous_data["pole_lifetime"] = str(df.loc[0, "pole_lifetime"])
-            previous_data["pole_capex"] = str(df.loc[0, "pole_capex"])
-            previous_data["pole_max_n_connections"] = str(
-                df.loc[0, "pole_max_n_connections"]
-            )
-            previous_data["mg_connection_cost"] = str(df.loc[0, "mg_connection_cost"])
-            previous_data["mg_n_operators"] = str(df.loc[0, "mg_n_operators"])
-            previous_data["mg_salary_operator"] = str(df.loc[0, "mg_salary_operator"])
-            previous_data["shs_lifetime"] = str(df.loc[0, "shs_lifetime"])
-            previous_data["shs_tier_one_capex"] = str(df.loc[0, "shs_tier_one_capex"])
-            previous_data["shs_tier_two_capex"] = str(df.loc[0, "shs_tier_two_capex"])
-            previous_data["shs_tier_three_capex"] = str(
-                df.loc[0, "shs_tier_three_capex"]
-            )
-            previous_data["shs_tier_four_capex"] = str(df.loc[0, "shs_tier_four_capex"])
-            previous_data["shs_tier_five_capex"] = str(df.loc[0, "shs_tier_five_capex"])
-
+            selection = ['distribution_cable_lifetime', 'distribution_cable_capex', 'distribution_cable_max_length',
+                         'connection_cable_lifetime', 'connection_cable_capex', 'connection_cable_max_length',
+                         'pole_lifetime', 'pole_capex', 'pole_max_n_connections', 'mg_connection_cost',
+                         'mg_n_operators', 'mg_salary_operator', 'shs_lifetime', 'shs_tier_one_capex',
+                         'shs_tier_two_capex', 'shs_tier_three_capex', 'shs_tier_four_capex', 'shs_tier_five_capex']
+    df = df[selection].astype(str)
+    previous_data = df.to_dict(orient='records')[0]
     # importing nodes and links from the csv files to the map
     return previous_data
 
