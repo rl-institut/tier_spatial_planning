@@ -580,18 +580,11 @@ async def save_previous_data(
 
 @app.get("/get_optimal_capacities/")
 async def get_optimal_capacities():
-
-    optimal_capacities = {}
-
     df = pd.read_csv(full_path_stored_results)
-
-    optimal_capacities["pv"] = str(df.loc[0, "pv_capacity"])
-    optimal_capacities["battery"] = str(df.loc[0, "battery_capacity"])
-    optimal_capacities["inverter"] = str(df.loc[0, "inverter_capacity"])
-    optimal_capacities["rectifier"] = str(df.loc[0, "rectifier_capacity"])
-    optimal_capacities["diesel_genset"] = str(df.loc[0, "diesel_genset_capacity"])
-    optimal_capacities["peak_demand"] = str(df.loc[0, "peak_demand"])
-    optimal_capacities["surplus"] = str(df.loc[0, "surplus"])
+    df = df.rename(columns={'pv_capacity': 'pv', 'battery_capacity': 'battery', 'inverter_capacity': 'inverter',
+                            'rectifier_capacity': 'rectifier', 'diesel_genset_capacity': 'diesel_genset'})
+    df = df[['pv', 'battery', 'inverter', 'rectifier', 'diesel_genset', 'peak_demand', 'surplus']].astype(str)
+    optimal_capacities = df.to_dict(orient='records')[0]
 
     # importing nodes and links from the csv files to the map
     return optimal_capacities
