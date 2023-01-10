@@ -605,23 +605,12 @@ async def get_lcoe_breakdown():
 
 @app.get("/get_data_for_sankey_diagram/")
 async def get_data_for_sankey_diagram():
-
-    sankey_data = {}
-
     df = pd.read_csv(full_path_stored_results)
-
-    sankey_data["fuel_to_diesel_genset"] = str(df.loc[0, "fuel_to_diesel_genset"])
-    sankey_data["diesel_genset_to_rectifier"] = str(
-        df.loc[0, "diesel_genset_to_rectifier"]
-    )
-    sankey_data["diesel_genset_to_demand"] = str(df.loc[0, "diesel_genset_to_demand"])
-    sankey_data["rectifier_to_dc_bus"] = str(df.loc[0, "rectifier_to_dc_bus"])
-    sankey_data["pv_to_dc_bus"] = str(df.loc[0, "pv_to_dc_bus"])
-    sankey_data["battery_to_dc_bus"] = str(df.loc[0, "battery_to_dc_bus"])
-    sankey_data["dc_bus_to_battery"] = str(df.loc[0, "dc_bus_to_battery"])
-    sankey_data["dc_bus_to_inverter"] = str(df.loc[0, "dc_bus_to_inverter"])
-    sankey_data["dc_bus_to_surplus"] = str(df.loc[0, "dc_bus_to_surplus"])
-    sankey_data["inverter_to_demand"] = str(df.loc[0, "inverter_to_demand"])
+    df = df[['fuel_to_diesel_genset', 'diesel_genset_to_rectifier', 'diesel_genset_to_demand',
+             'rectifier_to_dc_bus', 'pv_to_dc_bus', 'battery_to_dc_bus', 'dc_bus_to_battery', 'dc_bus_to_inverter',
+             'dc_bus_to_surplus', 'inverter_to_demand']]
+    df = df.astype(str)
+    sankey_data = df.to_dict(orient='records')[0]
 
     # importing nodes and links from the csv files to the map
     return sankey_data
