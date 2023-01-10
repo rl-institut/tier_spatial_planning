@@ -592,16 +592,13 @@ async def get_optimal_capacities():
 
 @app.get("/get_lcoe_breakdown/")
 async def get_lcoe_breakdown():
-
-    lcoe_breakdown = {}
-
     df = pd.read_csv(full_path_stored_results)
-
-    lcoe_breakdown["renewable_assets"] = str(df.loc[0, "cost_renewable_assets"])
-    lcoe_breakdown["non_renewable_assets"] = str(df.loc[0, "cost_non_renewable_assets"])
-    lcoe_breakdown["grid"] = str(df.loc[0, "cost_grid"])
-    lcoe_breakdown["fuel"] = str(df.loc[0, "cost_fuel"])
-
+    df = df.rename(columns={'cost_renewable_assets': 'renewable_assets',
+                            'cost_non_renewable_assets': 'non_renewable_assets',
+                            'cost_grid': 'grid',
+                            'cost_fuel': 'fuel'})
+    df = df[['renewable_assets', 'non_renewable_assets', 'grid', 'fuel']].astype(str)
+    lcoe_breakdown = df.to_dict(orient='records')[0]
     # importing nodes and links from the csv files to the map
     return lcoe_breakdown
 
