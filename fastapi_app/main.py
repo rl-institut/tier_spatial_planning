@@ -548,7 +548,7 @@ async def load_previous_data(page_name):
                          'pole_lifetime', 'pole_capex', 'pole_max_n_connections', 'mg_connection_cost',
                          'mg_n_operators', 'mg_salary_operator', 'shs_lifetime', 'shs_tier_one_capex',
                          'shs_tier_two_capex', 'shs_tier_three_capex', 'shs_tier_four_capex', 'shs_tier_five_capex']
-    df = df[selection].astype(str)
+        df = df[selection].astype(str)
     previous_data = df.to_dict(orient='records')[0]
     # importing nodes and links from the csv files to the map
     return previous_data
@@ -558,80 +558,21 @@ async def load_previous_data(page_name):
 async def save_previous_data(
     page_name: str, save_previous_data_request: models.SavePreviousDataRequest
 ):
-
     df = pd.read_csv(full_path_stored_inputs)
 
     if page_name == "project_setup":
-        df.loc[0, "project_name"] = save_previous_data_request.page_setup[
-            "project_name"
-        ]
-        df.loc[0, "project_description"] = save_previous_data_request.page_setup[
-            "project_description"
-        ]
-        df.loc[0, "interest_rate"] = save_previous_data_request.page_setup[
-            "interest_rate"
-        ]
-        df.loc[0, "project_lifetime"] = save_previous_data_request.page_setup[
-            "project_lifetime"
-        ]
-        df.loc[0, "start_date"] = save_previous_data_request.page_setup["start_date"]
-        df.loc[0, "temporal_resolution"] = save_previous_data_request.page_setup[
-            "temporal_resolution"
-        ]
-        df.loc[0, "n_days"] = save_previous_data_request.page_setup["n_days"]
+        selection = ['project_name', 'project_description', 'interest_rate', 'project_lifetime',
+                     'start_date', 'temporal_resolution', 'n_days']
+        for col in selection:
+            df[col].iat[0] = save_previous_data_request.page_setup[col]
     elif page_name == "grid_design":
-        df.loc[
-            0, "distribution_cable_lifetime"
-        ] = save_previous_data_request.grid_design["distribution_cable_lifetime"]
-        df.loc[0, "distribution_cable_capex"] = save_previous_data_request.grid_design[
-            "distribution_cable_capex"
-        ]
-        df.loc[
-            0, "distribution_cable_max_length"
-        ] = save_previous_data_request.grid_design["distribution_cable_max_length"]
-        df.loc[0, "connection_cable_lifetime"] = save_previous_data_request.grid_design[
-            "connection_cable_lifetime"
-        ]
-        df.loc[0, "connection_cable_capex"] = save_previous_data_request.grid_design[
-            "connection_cable_capex"
-        ]
-        df.loc[
-            0, "connection_cable_max_length"
-        ] = save_previous_data_request.grid_design["connection_cable_max_length"]
-        df.loc[0, "pole_lifetime"] = save_previous_data_request.grid_design[
-            "pole_lifetime"
-        ]
-        df.loc[0, "pole_capex"] = save_previous_data_request.grid_design["pole_capex"]
-        df.loc[0, "pole_max_n_connections"] = save_previous_data_request.grid_design[
-            "pole_max_n_connections"
-        ]
-        df.loc[0, "mg_connection_cost"] = save_previous_data_request.grid_design[
-            "mg_connection_cost"
-        ]
-        df.loc[0, "mg_n_operators"] = save_previous_data_request.grid_design[
-            "mg_n_operators"
-        ]
-        df.loc[0, "mg_salary_operator"] = save_previous_data_request.grid_design[
-            "mg_salary_operator"
-        ]
-        df.loc[0, "shs_lifetime"] = save_previous_data_request.grid_design[
-            "shs_lifetime"
-        ]
-        df.loc[0, "shs_tier_one_capex"] = save_previous_data_request.grid_design[
-            "shs_tier_one_capex"
-        ]
-        df.loc[0, "shs_tier_two_capex"] = save_previous_data_request.grid_design[
-            "shs_tier_two_capex"
-        ]
-        df.loc[0, "shs_tier_three_capex"] = save_previous_data_request.grid_design[
-            "shs_tier_three_capex"
-        ]
-        df.loc[0, "shs_tier_four_capex"] = save_previous_data_request.grid_design[
-            "shs_tier_four_capex"
-        ]
-        df.loc[0, "shs_tier_five_capex"] = save_previous_data_request.grid_design[
-            "shs_tier_five_capex"
-        ]
+        selection = ['distribution_cable_lifetime', 'distribution_cable_capex', 'distribution_cable_max_length',
+                     'connection_cable_lifetime', 'connection_cable_capex', 'connection_cable_max_length',
+                     'pole_lifetime', 'pole_capex', 'pole_max_n_connections', 'mg_connection_cost',
+                     'mg_n_operators', 'mg_salary_operator', 'shs_lifetime', 'shs_tier_one_capex',
+                     'shs_tier_two_capex', 'shs_tier_three_capex', 'shs_tier_four_capex', 'shs_tier_five_capex']
+        for col in selection:
+            df[col].iat[0] = save_previous_data_request.grid_design[col]
 
     # save the updated dataframe
     df.to_csv(full_path_stored_inputs, index=False)
