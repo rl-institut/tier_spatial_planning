@@ -17,7 +17,7 @@ from fastapi_app.database import SessionLocal, engine
 from sqlalchemy.orm import Session, raiseload
 import sqlite3
 from fastapi_app.tools.grids import Grid
-from fastapi_app.tools.optimizer import Optimizer, GridOptimizer, EnergySystemOptimizer
+from fastapi_app.tools.optimizer import Optimizer, GridOptimizer, EnergySystemOptimizer, po
 import math
 import urllib.request
 import ssl
@@ -1125,6 +1125,8 @@ async def optimize_energy_system(
 
     df = pd.read_csv(full_path_stored_inputs)
 
+    solver = 'gurobi' if po.SolverFactory('gurobi').available() else 'cbc'
+
     ensys_opt = EnergySystemOptimizer(
         start_date=df.loc[0, "start_date"],
         n_days=df.loc[0, "n_days"],
@@ -1132,7 +1134,7 @@ async def optimize_energy_system(
         wacc=df.loc[0, "interest_rate"] / 100,
         tax=0,
         path_data=full_path_timeseries,
-        solver="cbc",
+        solver=solver,
         pv=optimize_energy_system_request.pv,
         diesel_genset=optimize_energy_system_request.diesel_genset,
         battery=optimize_energy_system_request.battery,
