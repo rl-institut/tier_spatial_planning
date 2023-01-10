@@ -6,6 +6,7 @@ from fastapi_app.tools.io import make_folder
 from configparser import ConfigParser
 import os
 from pyproj import Proj
+pd.options.mode.chained_assignment = None  # default='warn'
 
 
 class Grid:

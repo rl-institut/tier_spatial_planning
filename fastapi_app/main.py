@@ -564,7 +564,7 @@ async def save_previous_data(
         selection = ['project_name', 'project_description', 'interest_rate', 'project_lifetime',
                      'start_date', 'temporal_resolution', 'n_days']
         for col in selection:
-            df[col].iat[0] = save_previous_data_request.page_setup[col]
+            df.loc[0, col] = save_previous_data_request.page_setup[col]
     elif page_name == "grid_design":
         selection = ['distribution_cable_lifetime', 'distribution_cable_capex', 'distribution_cable_max_length',
                      'connection_cable_lifetime', 'connection_cable_capex', 'connection_cable_max_length',
@@ -572,7 +572,7 @@ async def save_previous_data(
                      'mg_n_operators', 'mg_salary_operator', 'shs_lifetime', 'shs_tier_one_capex',
                      'shs_tier_two_capex', 'shs_tier_three_capex', 'shs_tier_four_capex', 'shs_tier_five_capex']
         for col in selection:
-            df[col].iat[0] = save_previous_data_request.grid_design[col]
+            df.loc[0, col] = save_previous_data_request.grid_design[col]
 
     # save the updated dataframe
     df.to_csv(full_path_stored_inputs, index=False)
