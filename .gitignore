@@ -8,3 +8,4 @@ venv/
 *.DS_Store
 data
 scratch.py
+fastapi_app/config.py
