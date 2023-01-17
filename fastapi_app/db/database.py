@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from fastapi_app.config import host, db_name, user_name, password, port
+from fastapi_app.db.config import host, db_name, user_name, password, port
 
 
 # nodes database

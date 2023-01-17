@@ -1,21 +1,12 @@
-from statistics import mode
-from sqlalchemy.sql.expression import column, false, true
-from sqlalchemy.sql.sqltypes import Boolean
-from fastapi_app.tools import grids
 import fastapi_app.tools.boundary_identification as bi
 import fastapi_app.tools.coordinates_conversion as conv
 import fastapi_app.tools.shs_identification as shs_ident
-import fastapi_app.tools.io as io
-import fastapi_app.models as models
-from fastapi.param_functions import Query
-from fastapi import FastAPI, Request, Depends, BackgroundTasks, File, UploadFile
+import fastapi_app.db.models as models
+from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi_app.database import SessionLocal, engine
-from sqlalchemy.orm import Session, raiseload
-import sqlite3
+from fastapi_app.db.database import engine
 from fastapi_app.tools.grids import Grid
 from fastapi_app.tools.optimizer import Optimizer, GridOptimizer, EnergySystemOptimizer, po
 import math
@@ -24,9 +15,7 @@ import ssl
 import json
 import pandas as pd
 import numpy as np
-import time
 import os
-import aiofiles
 
 # for debugging
 import uvicorn
@@ -39,7 +28,6 @@ from typing import Any, Dict, List, Union
 
 # import the builtin time module
 import time
-from datetime import timedelta
 
 app = FastAPI()
 
