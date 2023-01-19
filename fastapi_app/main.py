@@ -1090,6 +1090,7 @@ async def optimize_grid():
                 node_type=nodes.node_type[node_index],
                 is_connected=nodes.is_connected[node_index],
                 peak_demand=nodes.peak_demand[node_index],
+                average_consumption=nodes.average_consumption[node_index],
                 surface_area=nodes.surface_area[node_index],
             )
 
@@ -1205,9 +1206,9 @@ async def optimize_grid():
             "x",
             "y",
             "cluster_label",
-            "segment",
             "type_fixed",
-            "allocation_capacity",
+            "n_connection_links",
+            "n_distribution_links",
         ],
         axis=1,
         inplace=True,
@@ -1221,7 +1222,20 @@ async def optimize_grid():
 
     # remove the unnecessary columns to make it compatible with the CSV files
     # TODO: When some of these columns are removed in the future, this part here needs to be updated too.
-    links.drop(labels=["x_from", "y_from", "x_to", "y_to"], axis=1, inplace=True)
+    links.drop(
+        labels=[
+            "x_from",
+            "y_from",
+            "x_to",
+            "y_to",
+            "n_consumers",
+            "total_power",
+            "from_node",
+            "to_node",
+        ],
+        axis=1,
+        inplace=True,
+    )
 
     # store the list of poles in the "node" database
     database_add(add_nodes=False, add_links=True, inlet=links.to_dict())
@@ -1257,6 +1271,12 @@ async def optimize_grid():
         index=False,
         float_format="%.0f",
     )
+
+    grid.find_n_links_connected_to_each_pole()
+
+    grid.find_capacity_of_each_link()
+
+    grid.distribute_grid_cost_among_consumers()
 
 
 @app.post("/optimize_energy_system/")
