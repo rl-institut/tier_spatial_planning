@@ -1045,15 +1045,32 @@ async def optimize_grid():
         / 365
     )
 
+    # TODO: The following probability distribution function needs to be updated
+    # considering the outcome of WP3
+
+    # Assume the probability of each SHS tier level in the community.
+    pdf_shs = [0.35, 0.2, 0.1, 0.2, 0.15]
+
+    # TotaL average consumption of the community.
+    average_consumption_total = nodes[
+        nodes["node_type"] == "consumer"
+    ].average_consumption.sum()
+
     epc_shs = (
         (
             opt.crf
             * (
                 Optimizer.capex_multi_investment(
                     opt,
-                    capex_0=df.loc[0, "shs_tier_one_capex"]
-                    + df.loc[0, "shs_tier_two_capex"]
-                    + df.loc[0, "shs_tier_three_capex"],
+                    capex_0=pdf_shs[0] * df.loc[0, "shs_tier_one_capex"]
+                    + pdf_shs[1] * df.loc[0, "shs_tier_two_capex"]
+                    + pdf_shs[2] * df.loc[0, "shs_tier_three_capex"]
+                    + (
+                        pdf_shs[3] * df.loc[0, "shs_tier_four_capex"]
+                        + pdf_shs[4] * df.loc[0, "shs_tier_five_capex"]
+                    )
+                    * average_consumption_total
+                    / 100,
                     component_lifetime=df.loc[0, "shs_lifetime"],
                 )
             )
