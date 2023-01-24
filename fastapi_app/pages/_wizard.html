@@ -1,9 +1,9 @@
     <section class="wizard">
       <div>
         <div class="wizard__steps">
-          <ul>
-            <li class="active">
-              <a href="{{ url_for('home') }}">Project Setup</a>
+          <ul id="wiz">
+            <li>
+              <a href="{{ url_for('project_setup') }}">Project Setup</a>
             </li>
             <li>
               <a
@@ -12,7 +12,13 @@
                 >Consumer Selection</a
               >
             </li>
-            <li>Demand Estimation</li>
+            <li>
+                <a
+                href="{{ url_for('demand_estimation') }}"
+                onclick="save_previous_data('demand_estimation');"
+                >Demand Estimation</a
+              >
+            </li>
             <li>
               <a
                 href="{{ url_for('grid_design') }}"

@@ -283,6 +283,11 @@ async def grid_design(request: Request):
     return templates.TemplateResponse("grid-design.html", {"request": request})
 
 
+@app.get("/demand_estimation")
+async def demand_estimation(request: Request):
+    return templates.TemplateResponse("demand_estimation.html", {"request": request})
+
+
 @app.get("/energy_system_design")
 async def energy_system_design(request: Request):
     return templates.TemplateResponse("energy-system-design.html", {"request": request})
