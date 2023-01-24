@@ -462,6 +462,57 @@ function refresh_map(){
 
 }
 
+/************************************************************/
+/*                    User Registration                     */
+/************************************************************/
+
+
+function add_user_to_db() {
+    $.ajax({url: "add_user_to_db/",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({email: userEmail.value,
+                                       password: userPassword.value,}),
+            dataType: "json",})
+        .done(function (response) {
+            document.getElementById("responseMsg").innerHTML = response.msg;
+            let fontcolor;
+            if (response.validation === true)
+                {fontcolor = 'green';}
+            else
+                {fontcolor = 'red';};
+            document.getElementById("responseMsg").style.color = fontcolor;});
+}
+
+
+function get_access_token() {
+    $.ajax({url: "get_access_token/",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({email: email.value,
+                                       password: password.value,}),
+            dataType: "json",})
+}
+
+
+function logout()  {
+    $.ajax({url: "logout/",
+            type: "GET",
+            contentType: "application/json",
+            dataType: "json",})
+}
+
+
+function account_overview() {
+    $.ajax({url: "query_account_data/",
+            type: "POST",
+            contentType: "application/json",
+            dataType: "json",})
+        .done(function (response) {
+            document.getElementById("userEmail").innerHTML = response.email;});
+}
+
+
 function save_previous_data(page_name) {
     if (page_name === "project_setup") {
         transfer_data = JSON.stringify(
