@@ -1,0 +1,40 @@
+    <section class="wizard">
+      <div>
+        <div class="wizard__steps">
+          <ul>
+            <li class="active">
+              <a href="{{ url_for('home') }}">Project Setup</a>
+            </li>
+            <li>
+              <a
+                href="{{ url_for('consumer_selection') }}"
+                onclick="save_previous_data('project_setup');"
+                >Consumer Selection</a
+              >
+            </li>
+            <li>Demand Estimation</li>
+            <li>
+              <a
+                href="{{ url_for('grid_design') }}"
+                onclick="save_previous_data('project_setup');"
+                >Grid Design</a
+              >
+            </li>
+            <li>
+              <a
+                href="{{ url_for('energy_system_design') }}"
+                onclick="save_previous_data('project_setup');"
+                >Energy System Design</a
+              >
+            </li>
+            <li>
+              <a
+                href="{{ url_for('simulation_results') }}"
+                onclick="save_previous_data('project_setup');"
+                >Simulation Results</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
