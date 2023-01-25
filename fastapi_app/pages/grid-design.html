@@ -385,20 +385,7 @@
       </div>
     </footer>
   </body>
-  <!-- <script>
-    var urlZoom = `{{ url_for('static', path='assets/icons/i_zoom_to_all.png') }}`;
-  </script> -->
-  <script
-    src="https://code.jquery.com/jquery-3.6.0.js"
-    integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
-    crossorigin="anonymous"
-  ></script>
+  {% include '_scripts.html' %}
   <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=Promise"></script>
-  <script src="{{ url_for('static', path='js/bootstrap.bundle.min.js') }}"></script>
-  <script src="{{ url_for('static', path='node_modules/aos/dist/aos.js') }}"></script>
   <script src="{{ url_for('static', path='js/grid-design.js') }}"></script>
-  <script src="{{ url_for('static', path='js/interactions.js') }}"></script>
-  <!-- <script>
-    const src_clear = `{{ url_for('static', path='assets/icons/i_clear_all.png')}}`;
-  </script> -->
 </html>

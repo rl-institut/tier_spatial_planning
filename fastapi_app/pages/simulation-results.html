@@ -415,21 +415,13 @@
       </div>
     </footer>
   </body>
-
-  <script
-    src="https://code.jquery.com/jquery-3.6.0.js"
-    integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
-    crossorigin="anonymous"
-  ></script>
+  {% include '_scripts.html' %}
   <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"></script>
   <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=Promise"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.js"></script>
   <script src="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.umd.js"></script>
-  <script src="{{ url_for('static', path='js/bootstrap.bundle.min.js') }}"></script>
-  <script src="{{ url_for('static', path='node_modules/aos/dist/aos.js') }}"></script>
   <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
   <script src="https://cdn.plot.ly/plotly-2.0.0.min.js"></script>
-  <script src="{{ url_for('static', path='js/interactions.js') }}"></script>
   <script src="{{ url_for('static', path='js/plots.js') }}"></script>
   <script src="{{ url_for('static', path='js/map.js') }}"></script>
 </html>
