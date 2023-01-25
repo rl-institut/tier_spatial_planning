@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en-us">
   <head>
+    {% set title='Grid Design' %}
     {% include '_head.html' %}
-    <title>Grid Design</title>
   </head>
   <body onload="load_previous_data('grid_design'); boxVisibilityShs();activate_wizard_element();">
     <!-- don't forget 'navbar--scenario' CSS class -->
@@ -364,26 +364,7 @@
         </div>
       </section>
     </main>
-
-    <footer class="step-footer">
-      <div>
-        <div class="step-footer__left"></div>
-        <div class="step-footer__center">
-          <a
-            class="btn btn--medium btn--hollow btn--previous"
-            href="{{ url_for('consumer_selection')}}"
-            >Previous
-          </a>
-          <a
-            class="btn btn--medium"
-            href="{{ url_for('energy_system_design') }}"
-            onclick="save_previous_data('grid_design');"
-            >Next</a
-          >
-        </div>
-        <div class="step-footer__left"></div>
-      </div>
-    </footer>
+  {% include '_footer.html' %}
   </body>
   {% include '_scripts.html' %}
   <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=Promise"></script>

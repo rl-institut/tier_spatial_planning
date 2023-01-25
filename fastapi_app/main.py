@@ -246,11 +246,6 @@ async def project_setup(request: Request):
     return templates.TemplateResponse("project-setup.html", {"request": request})
 
 
-@app.get("/navbar")
-async def project_setup(request: Request):
-    return templates.TemplateResponse("_navbar.html", {"request": request})
-
-
 @app.get("/user_registration")
 async def user_registration(request: Request):
     return templates.TemplateResponse("user-registration.html", {"request": request})

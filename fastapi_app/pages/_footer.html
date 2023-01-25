@@ -1,0 +1,49 @@
+<footer class="step-footer">
+      <div>
+        <div class="step-footer__left"></div>
+        <div class="step-footer__center">
+        {% if title != 'PeopleSun' %}
+          <a class="btn btn--medium btn--hollow btn--previous"
+             {% if title == 'Project Setup' %}
+                 href="/"
+             {% elif title == 'Consumer Selection' %}
+                 href="{{ url_for('project_setup')}}"
+             {% elif title == 'Grid Design' %}
+                 href="{{ url_for('consumer_selection')}}"
+            {% elif title == 'Energy System Design' %}
+                 href="{{ url_for('grid_design')}}"
+            {% elif title == 'Simulation Results' %}
+                 href="{{ url_for('energy_system_design')}}"
+             {% endif %}
+          >Previous</a>
+        {% endif %}
+        {% if title != 'Simulation Results' %}
+              <a class="btn btn--medium"
+            {% if title == 'PeopleSun' %}
+                 href="{{ url_for('project_setup')}}"
+            {% elif title == 'Project Setup' %}
+                 href="{{ url_for('consumer_selection')}}"
+                 onclick="save_previous_data('project_setup');"
+            {% elif title == 'Consumer Selection' %}
+                 href="{{ url_for('grid_design')}}"
+                 onclick="save_previous_data('consumer_selection');"
+            {% elif title == 'Grid Design' %}
+                 href="{{ url_for('energy_system_design')}}"
+                 onclick="save_previous_data('grid_design');"
+            {% elif title == 'Energy System Design' %}
+                 href="{{ url_for('simulation_results')}}"
+                 onclick="save_previous_data('energy_system_design');"
+            {% endif %}
+            {% if title == 'PeopleSun' %}
+                 {% set next_str='Start' %}
+            {% elif title == 'Energy System Design' %}
+                 {% set next_str='Simulate' %}
+            {% else %}
+                 {% set next_str='Next' %}
+            {% endif %}
+            >{{ next_str }}</a>
+        {% endif %}
+        </div>
+        <div class="step-footer__right"></div>
+      </div>
+</footer>

@@ -1,12 +1,10 @@
 <!DOCTYPE html>
 <html lang="en-us">
   <head>
+    {% set title='Energy System Design' %}
     {% include '_head.html' %}
-    <title>Simulation Results</title>
   </head>
-  <body
-    onload="refreshBlocksOnDiagramOnLoad();check_box_visibility('shortage');activate_wizard_element();"
-  >
+  <body onload="refreshBlocksOnDiagramOnLoad();check_box_visibility('shortage');activate_wizard_element();">
   {% include '_navbar.html' %}
   {% include '_wizard.html' %}
     <main>
@@ -1232,34 +1230,7 @@
         </div>
       </section>
     </main>
-
-    <footer class="step-footer">
-      <div>
-        <div class="step-footer__left"></div>
-        <div class="step-footer__center">
-          <a
-            class="btn btn--medium btn--hollow btn--previous"
-            href="{{ url_for('grid_design')}}"
-            >Previous
-          </a>
-          <a
-            id="btnSimulate"
-            class="btn btn--medium"
-            href="{{ url_for('simulation_results')}}"
-            onclick="optimization();"
-            >Simulate
-            <span
-              id="spnSpinner"
-              class="spinner-border spinner-border-sm"
-              role="status"
-              aria-hidden="true"
-              style="display: none"
-            ></span>
-          </a>
-        </div>
-        <div class="step-footer__right"></div>
-      </div>
-    </footer>
+  {% include '_footer.html' %}
   </body>
   {% include '_scripts.html' %}
   <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"></script>

@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en-us">
   <head>
+    {% set title='Consumer Selection' %}
     {% include '_head.html' %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.css" />
-    <title>Consumer Selection</title>
   </head>
   <body onload="refresh_map();activate_wizard_element();">
   {% include '_navbar.html' %}
@@ -164,23 +164,7 @@
         </div>
       </section>
     </main>
-
-    <footer class="step-footer">
-      <div>
-        <div class="step-footer__left"></div>
-        <div class="step-footer__center">
-          <a
-            class="btn btn--medium btn--hollow btn--previous"
-            href="{{ url_for('home')}}"
-            >Previous
-          </a>
-          <a class="btn btn--medium" href="{{ url_for('grid_design') }}"
-            >Next</a
-          >
-        </div>
-        <div class="step-footer__left"></div>
-      </div>
-    </footer>
+  {% include '_footer.html' %}
   </body>
     {% include '_scripts.html' %}
   <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"></script>
