@@ -1,63 +1,9 @@
 <!DOCTYPE html>
 <html lang="en-us">
   <head>
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no"
-    />
-    <!-- <link
-      rel="apple-touch-icon"
-      sizes="180x180"
-      href="../assets/favicon/apple-touch-icon.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href="../assets/favicon/favicon-32x32.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="16x16"
-      href="../assets/favicon/favicon-16x16.png"
-    />
-    <link rel="manifest" href="../assets/favicon/site.webmanifest" />
-    <link
-      rel="mask-icon"
-      href="../assets/favicon/safari-pinned-tab.svg"
-      color="#5bbad5"
-    /> -->
-    <!-- <meta name="msapplication-TileColor" content="#2b5797" /> -->
-    <!-- <meta name="theme-color" content="#ffffff" /> -->
-    <link
-      href="{{ url_for('static', path='stylesheets/css/bootstrap.min.css') }} "
-      rel="stylesheet"
-    />
-    <link
-      href="{{ url_for('static', path='node_modules/aos/dist/aos.css') }}"
-      rel="stylesheet"
-    />
-    <link
-      href="{{ url_for('static', path='stylesheets/css/main.css') }}"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.css"
-    />
+    {% include '_head.html' %}
     <title>Grid Design</title>
   </head>
-
   <body onload="load_previous_data('grid_design'); boxVisibilityShs();activate_wizard_element();">
     <!-- don't forget 'navbar--scenario' CSS class -->
   {% include '_navbar.html' %}

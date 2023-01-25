@@ -1,25 +1,7 @@
 <!DOCTYPE html>
 <html lang="en-us">
   <head>
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no"
-    />
-    <meta name="msapplication-TileColor" content="#2b5797" />
-    <meta name="theme-color" content="#ffffff" />
-    <link
-      href="{{ url_for('static', path='stylesheets/css/bootstrap.min.css') }} "
-      rel="stylesheet"
-    />
-    <link
-      href="{{ url_for('static', path='node_modules/aos/dist/aos.css') }}"
-      rel="stylesheet"
-    />
-    <link
-      href="{{ url_for('static', path='stylesheets/css/main.css') }}"
-      rel="stylesheet"
-    />
+    {% include '_head.html' %}
     <title>User Registration</title>
   </head>
   <body>
