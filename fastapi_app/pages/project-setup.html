@@ -58,7 +58,7 @@
 
               <div class="input-item">
                 <label for="state" class="form-label">State</label>
-                <span id="state-code"><input type="text" id="state" /></span>
+                <span id="state-code" ><input type="text" id="state" /></span>
               </div>
             </form>
           </div>
@@ -179,4 +179,8 @@
   </body>
   {% include '_scripts.html' %}
   <script src="{{ url_for('static', path='js/country-states.js') }}"></script>
+  <script> document.getElementById("state").style.backgroundColor = '#FAFAFA';
+         document.getElementById("state-code").style.backgroundColor = '#FAFAFA';
+         document.getElementById("country").style.backgroundColor = '#FAFAFA';
+  </script>
 </html>

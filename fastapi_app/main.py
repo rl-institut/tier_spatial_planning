@@ -602,8 +602,8 @@ async def add_user_to_db(user: models.Credentials, db: Session = Depends(get_db)
     return models.ValidRegistration(validation=res[0], msg=res[1])
 
 
-@app.post("/get_access_token/", response_model=models.Token)
-def get_access_token(response: Response, credentials: models.Credentials, db: Session = Depends(get_db)):
+@app.post("/set_access_token/", response_model=models.Token)
+def set_access_token(response: Response, credentials: models.Credentials, db: Session = Depends(get_db)):
     if isinstance(credentials.email, str) and len(credentials.email) > 3:
         user = authenticate_user(credentials.email, credentials.password, db)
         name = user.email
@@ -614,6 +614,18 @@ def get_access_token(response: Response, credentials: models.Credentials, db: Se
     response.set_cookie(key="access_token", value=f"Bearer {access_token}",
                         httponly=True)  # set HttpOnly cookie in response
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@app.post("/login/", response_model=models.Token)
+def login(response: Response, credentials: models.Credentials, db: Session = Depends(get_db)):
+    if isinstance(credentials.email, str) and len(credentials.email) > 3:
+        user = authenticate_user(credentials.email, credentials.password, db)
+        name = user.email
+        access_token_expires = datetime.timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(data={"sub": name}, expires_delta=access_token_expires)
+        response.set_cookie(key="access_token", value=f"Bearer {access_token}",
+                            httponly=True)  # set HttpOnly cookie in response
+        return {"access_token": access_token, "token_type": "bearer"}
 
 
 @app.get("/logout/")

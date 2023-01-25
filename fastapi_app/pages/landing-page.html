@@ -9,15 +9,14 @@
   {% include '_navbar.html' %}
     <main>
       <section class="project-setup two-columns">
-        <div class="left">
           <div>
-            <form>
-                <label for= class="form-label">
+                <p>
                   Welcome!
-                </label>
-                <label  class="form-label">
-                 The PeopleSun application can be tested without a user account. However, users are recommended to create an account to get access to larger computing capacity and to be able to store models.
-                </label>
+                </p>
+                <p>
+                 You can test the application without aa user account. However, users are recommended to create an account to get access to larger computing capacity and to be able to store models.
+                </p>
+            <form>
               <div class="input-item">
                 <label for="email" class="form-label">
                   Email
@@ -42,10 +41,17 @@
                   placeholder="Enter your password"
                 />
               </div>
+                <button
+                      class="btn btn--long text-right"
+                      type="button"
+                      aria-disabled="false"
+                      onclick="set_access_token();"
+                    >
+                      Log in
+                </button>
             </form>
               <p id="responseMsg"></p>
           </div>
-        </div>
       </section>
     </main>
   {% include '_footer.html' %}

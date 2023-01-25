@@ -485,8 +485,8 @@ function add_user_to_db() {
 }
 
 
-function get_access_token() {
-    $.ajax({url: "get_access_token/",
+function set_access_token() {
+    $.ajax({url: "set_access_token/",
             type: "POST",
             contentType: "application/json",
             data: JSON.stringify({email: email.value,
