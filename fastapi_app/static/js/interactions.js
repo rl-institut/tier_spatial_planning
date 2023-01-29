@@ -486,8 +486,6 @@ function save_previous_data(page_name) {
                     'pole_capex': 0,
                     'pole_max_n_connections': 0,
                     'mg_connection_cost': 0,
-                    'mg_n_operators': 0,
-                    'mg_salary_operator': 0,
                     'shs_lifetime': 0,
                     'shs_tier_one_capex': 0,
                     'shs_tier_two_capex': 0,
@@ -520,8 +518,6 @@ function save_previous_data(page_name) {
                     'pole_capex': poleCapex.value,
                     'pole_max_n_connections': poleMaxNumberOfConnections.value,
                     'mg_connection_cost': mgConnectionCost.value,
-                    'mg_n_operators': mgNumberOfOperators.value,
-                    'mg_salary_operator': mgSalaryOperator.value,
                     'shs_lifetime': shsLifetime.value,
                     'shs_tier_one_capex': shsTierOneCapex.value,
                     'shs_tier_two_capex': shsTierTwoCapex.value,
@@ -580,8 +576,6 @@ function load_previous_data(page_name){
                     document.getElementById("poleCapex").value = results['pole_capex'];
                     document.getElementById("poleMaxNumberOfConnections").value = results['pole_max_n_connections'];
                     document.getElementById("mgConnectionCost").value = results['mg_connection_cost'];
-                    document.getElementById("mgNumberOfOperators").value = results['mg_n_operators'];
-                    document.getElementById("mgSalaryOperator").value = results['mg_salary_operator'];
                     document.getElementById("shsLifetime").value = results['shs_lifetime'];
                     document.getElementById("shsTierOneCapex").value = results['shs_tier_one_capex'];
                     document.getElementById("shsTierTwoCapex").value = results['shs_tier_two_capex'];

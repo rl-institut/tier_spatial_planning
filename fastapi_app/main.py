@@ -224,8 +224,6 @@ def home(request: Request):
             "pole_capex",
             "pole_max_n_connections",
             "mg_connection_cost",
-            "mg_n_operators",
-            "mg_salary_operator",
             "shs_lifetime",
             "shs_tier_one_capex",
             "shs_tier_two_capex",
@@ -604,8 +602,6 @@ async def load_previous_data(page_name):
                 df.loc[0, "pole_max_n_connections"]
             )
             previous_data["mg_connection_cost"] = str(df.loc[0, "mg_connection_cost"])
-            previous_data["mg_n_operators"] = str(df.loc[0, "mg_n_operators"])
-            previous_data["mg_salary_operator"] = str(df.loc[0, "mg_salary_operator"])
             previous_data["shs_lifetime"] = str(df.loc[0, "shs_lifetime"])
             previous_data["shs_tier_one_capex"] = str(df.loc[0, "shs_tier_one_capex"])
             previous_data["shs_tier_two_capex"] = str(df.loc[0, "shs_tier_two_capex"])
@@ -672,12 +668,6 @@ async def save_previous_data(
         ]
         df.loc[0, "mg_connection_cost"] = save_previous_data_request.grid_design[
             "mg_connection_cost"
-        ]
-        df.loc[0, "mg_n_operators"] = save_previous_data_request.grid_design[
-            "mg_n_operators"
-        ]
-        df.loc[0, "mg_salary_operator"] = save_previous_data_request.grid_design[
-            "mg_salary_operator"
         ]
         df.loc[0, "shs_lifetime"] = save_previous_data_request.grid_design[
             "shs_lifetime"
