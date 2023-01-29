@@ -27,6 +27,7 @@ import numpy as np
 import time
 import os
 import aiofiles
+from datetime import datetime, timedelta
 
 # for debugging
 import uvicorn
@@ -1049,12 +1050,31 @@ async def optimize_grid():
     # considering the outcome of WP3
 
     # Assume the probability of each SHS tier level in the community.
-    pdf_shs = [0.35, 0.2, 0.1, 0.2, 0.15]
+    pdf_shs = [0.05, 0.1, 0.15, 0.4, 0.3]
 
-    # TotaL average consumption of the community.
-    average_consumption_total = nodes[
-        nodes["node_type"] == "consumer"
-    ].average_consumption.sum()
+    # This part calculated the total consumption of the community for the
+    # selected time period.
+    start_date_obj = datetime.strptime(opt.start_date, "%Y-%m-%d")
+    start_datetime = datetime.combine(start_date_obj.date(), start_date_obj.time())
+    end_datetime = start_datetime + timedelta(days=int(opt.n_days))
+
+    # First, the demand for the entire year is read from the CSV file.
+    demand_full_year = pd.read_csv(filepath_or_buffer=full_path_timeseries)
+    demand_full_year.index = pd.date_range(
+        start=start_datetime, periods=len(demand_full_year), freq="H"
+    )
+
+    # Then the demand for the selected time peroid given by the user will be
+    # obtained.
+    demand_selected_period = demand_full_year.Demand.loc[start_datetime:end_datetime]
+
+    # The average consumption of the entire community in kWh for the selected
+    # time period is calculated.
+    average_consumption_selected_period = demand_selected_period.sum()
+
+    # Total number of consumers that must be considered for calculating the
+    # the total number of required SHS tier 1 to 3.
+    n_consumers = nodes[nodes["node_type"] == "consumer"].shape[0]
 
     epc_shs = (
         (
@@ -1062,14 +1082,17 @@ async def optimize_grid():
             * (
                 Optimizer.capex_multi_investment(
                     opt,
-                    capex_0=pdf_shs[0] * df.loc[0, "shs_tier_one_capex"]
-                    + pdf_shs[1] * df.loc[0, "shs_tier_two_capex"]
-                    + pdf_shs[2] * df.loc[0, "shs_tier_three_capex"]
+                    capex_0=(
+                        pdf_shs[0] * df.loc[0, "shs_tier_one_capex"]
+                        + pdf_shs[1] * df.loc[0, "shs_tier_two_capex"]
+                        + pdf_shs[2] * df.loc[0, "shs_tier_three_capex"]
+                    )
+                    * n_consumers
                     + (
                         pdf_shs[3] * df.loc[0, "shs_tier_four_capex"]
                         + pdf_shs[4] * df.loc[0, "shs_tier_five_capex"]
                     )
-                    * average_consumption_total
+                    * average_consumption_selected_period
                     / 100,
                     component_lifetime=df.loc[0, "shs_lifetime"],
                 )
