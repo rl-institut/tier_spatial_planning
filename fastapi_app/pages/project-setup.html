@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <meta name="msapplication-TileColor" content="#2b5797" />
+    <meta name="theme-color" content="#ffffff" />
+    <link
+      href="{{ url_for('static', path='stylesheets/css/bootstrap.min.css') }} "
+      rel="stylesheet"
+    />
+    <link
+      href="{{ url_for('static', path='node_modules/aos/dist/aos.css') }}"
+      rel="stylesheet"
+    />
+    <link
+      href="{{ url_for('static', path='stylesheets/css/main.css') }}"
+      rel="stylesheet"
+    />
+    <title>Project Setup</title>
+  </head>
+  <body onload="load_previous_data('project_setup')">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light navbar--scenario">
+      <div class="container-fluid">
+        <span class="navbar-brand">
+          <img
+            src="{{ url_for('static', path='assets/logos/peoplesun_logo.webp') }}"
+            alt="peoplesun Logo"
+          />
+        </span>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarSupportedContent"
+          aria-controls="navbarSupportedContent"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav mb-2 mb-lg-0">
+            <li class="nav-item dropdown profile">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="navbarDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                <img
+                  src="{{ url_for('static', path='assets/icons/i_profile.svg') }}"
+                  alt="Profile icon"
+                />
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                <li><a class="dropdown-item" href="#">Use cases</a></li>
+                <li><a class="dropdown-item" href="#">License</a></li>
+                <li><a class="dropdown-item" href="about.html">Contact</a></li>
+                <li>
+                  <a class="dropdown-item" href="account.html">Account</a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a class="dropdown-item" href="../index.html">Log out</a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <section class="wizard">
+      <div>
+        <div class="wizard__steps">
+          <ul>
+            <li class="active">
+              <a href="{{ url_for('home') }}">Project Setup</a>
+            </li>
+            <li>
+              <a
+                href="{{ url_for('consumer_selection') }}"
+                onclick="save_previous_data('project_setup');"
+                >Consumer Selection</a
+              >
+            </li>
+            <li>Demand Estimation</li>
+            <li>
+              <a
+                href="{{ url_for('grid_design') }}"
+                onclick="save_previous_data('project_setup');"
+                >Grid Design</a
+              >
+            </li>
+            <li>
+              <a
+                href="{{ url_for('energy_system_design') }}"
+                onclick="save_previous_data('project_setup');"
+                >Energy System Design</a
+              >
+            </li>
+            <li>
+              <a
+                href="{{ url_for('simulation_results') }}"
+                onclick="save_previous_data('project_setup');"
+                >Simulation Results</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <main>
+      <section class="project-setup two-columns">
+        <div class="left">
+          <div>
+            <form>
+              <div class="input-item">
+                <label for="projectName" class="form-label">
+                  Project name
+                  <span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Maximum of 50 characters"
+                  >
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="projectName"
+                  placeholder="Name"
+                  value="Off-Grid System"
+                  required
+                />
+              </div>
+              <div class="input-item optional">
+                <label for="projectDescription" class="form-label"
+                  >Project description
+                  <span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Maximum of 300 characters"
+                  >
+                  </span>
+                </label>
+                <textarea
+                  class="form-control"
+                  id="projectDescription"
+                  placeholder="Description"
+                >
+ Simulation and optimization of power supply and grid layout for an off-grid system in a rural settlement.
+                </textarea>
+              </div>
+              <div class="input-item">
+                <label for="country" class="form-label">Country</label>
+                <select id="country" class="form-select">
+                  <option>Select Country</option>
+                </select>
+              </div>
+
+              <div class="input-item">
+                <label for="state" class="form-label">State</label>
+                <span id="state-code"><input type="text" id="state" /></span>
+              </div>
+            </form>
+          </div>
+        </div>
+        <div class="right">
+          <div>
+            <form>
+              <div class="input-item">
+                <label for="interestRate" class="form-label">
+                  Interest rate
+                  <span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="A guess of what the interest rate will be in during the project lifetime. Could be provided as constant or timeseries"
+                  ></span>
+                </label>
+                <div class="input-group">
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="interestRate"
+                    placeholder="Interest"
+                    value="6"
+                    required
+                  />
+                  <span class="input-group-text">%</span>
+                </div>
+              </div>
+              <div class="input-item">
+                <label for="projectLifetime" class="form-label">
+                  Project lifetime
+                  <span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Simulation time"
+                  ></span>
+                </label>
+                <div class="input-group">
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="projectLifetime"
+                    placeholder="Lifetime"
+                    value="25"
+                    required
+                  />
+                  <span class="input-group-text">Year</span>
+                </div>
+              </div>
+              <div class="input-item">
+                <div>
+                  <label for="startDate" class="form-label">Start date</label>
+                  <input
+                    type="date"
+                    class="form-control"
+                    id="startDate"
+                    name="project-start"
+                    value="2022-01-01"
+                    min="2020-01-01"
+                    max="2050-12-31"
+                    required
+                  />
+                </div>
+              </div>
+              <div class="input-item">
+                <label for="temporalResolution" class="form-label"
+                  >Temporal resolution
+                  <span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Time step of the simulation. A higher resolution requires more data and can lead to longer simulation times."
+                  ></span>
+                </label>
+                <div class="input-group">
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="temporalResolution"
+                    placeholder="Time step"
+                    value="1"
+                    min="1"
+                    step="1"
+                    required
+                  />
+                  <span class="input-group-text">Hour</span>
+                </div>
+              </div>
+              <div class="input-item">
+                <label for="nDays" class="form-label"
+                  >Number of days
+                  <span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Number of days used in the simulation."
+                  ></span>
+                </label>
+                <div class="input-group">
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="nDays"
+                    placeholder="Number of days"
+                    value="365"
+                    min="1"
+                    max="365"
+                    step="1"
+                    required
+                  />
+                  <span class="input-group-text">Day</span>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="step-footer">
+      <div>
+        <div class="step-footer__left"></div>
+        <div class="step-footer__center">
+          <a
+            class="btn btn--medium btn--hollow btn--previous disabled hidden"
+            href=""
+            aria-disabled="true"
+            >Previous</a
+          >
+          <a
+            class="btn btn--medium"
+            href="{{ url_for('consumer_selection')}}"
+            onclick="save_previous_data('project_setup');"
+            >Next</a
+          >
+        </div>
+        <div class="step-footer__right"></div>
+      </div>
+    </footer>
+  </body>
+
+  <script
+    src="https://code.jquery.com/jquery-3.6.0.js"
+    integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
+    crossorigin="anonymous"
+  ></script>
+  <script src="{{ url_for('static', path='js/bootstrap.bundle.min.js') }}"></script>
+  <script src="{{ url_for('static', path='node_modules/aos/dist/aos.js') }}"></script>
+  <script src="{{ url_for('static', path='js/country-states.js') }}"></script>
+  <script src="{{ url_for('static', path='js/interactions.js') }}"></script>
+</html>

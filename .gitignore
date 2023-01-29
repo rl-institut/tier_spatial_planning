@@ -1,9 +1,9 @@
 .idea
 *.pyc
 .vscode/
-fastapi_app/data/
-fastapi_app/draft.ipynb
 .ipynb_checkpoints/
 *.db
 run
 venv/
+*.DS_Store
+data

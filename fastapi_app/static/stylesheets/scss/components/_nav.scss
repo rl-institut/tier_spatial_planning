@@ -1,0 +1,214 @@
+nav.navbar {
+  position: fixed;
+  width: 100%;
+  background-color: $white;
+  z-index: $z-index-nav;
+
+  &.navbar-light {
+    background-color: $white!important;
+  }
+  .navbar-brand {
+    img {
+      height: $logo-height;
+    }
+  }
+
+  .dropdown-menu[data-bs-popper] {
+    left: auto;
+    right: 0;
+  }
+
+  .dropdown-item:focus, .dropdown-item:hover {
+    background-color: $white;
+  }
+
+  .dropdown-menu {
+    li {
+      padding-top: .5rem;
+      padding-bottom: .5rem;
+    }
+  }
+}
+
+@media (min-width: $medium-screen) {
+  .navbar {
+
+    &.navbar-expand-lg {
+      .container-fluid {
+        @include nav-section-width;
+        justify-content: center;
+      }
+
+      .navbar-collapse {
+        justify-content: flex-end;
+      }
+    }
+
+    &.navbar-expand-lg.navbar--website .container-fluid {
+      max-width: $section-max-width;
+    }
+
+    .nav-item.locale {
+      position: relative;
+      padding-left: 1.5rem;
+
+      &::before {
+        content: '|';
+        position: absolute;
+        top: 0.5rem;
+        left: 1.1rem;
+      }
+    }
+
+    .nav-item .btn {
+      margin-left: 1rem;
+    }
+
+    .nav-item a.nav-link {
+      padding-left: $space-between-project-elements;
+    }
+
+    .nav-item.dropdown.profile {
+      a {
+        padding-top: 0;
+        padding-bottom: 0;
+      }
+
+      a::after {
+        vertical-align: -3px;
+      }
+
+      img {
+        height: 2rem;
+        width: 2rem;
+        @include translateY(3px);
+      }
+    }
+
+    &.navbar--signup .nav-item.locale::before {
+      content: '';
+    }
+
+    &.navbar--scenario {
+      position: relative;
+
+      .nav-item.locale::before {
+        content: '';
+      }
+    }
+  }
+}
+
+.wizard {
+  position: relative;
+  background-color: $primary-gray-color-1;
+  height: $wizard-height;
+  min-height: $wizard-height;
+
+  @include flex-row-justify-center;
+  padding-bottom: 2rem;
+
+  &> div {
+    @include flex-column-align-justify-center;
+    @include user-select-none;
+    @include section-width;
+    padding-top: 2rem;
+    position: relative;
+  }
+
+  &__back {
+    position: absolute;
+    right: 2rem;
+    top: 3rem;
+    bottom: $padding-sides-normal;
+    font-size: $font-size-small;
+
+    &::before {
+      @include back-icon;
+      top: 0.3rem;
+    }
+
+    @media only screen and (max-width: 1300px) {
+      font-size: $font-size-small;
+
+      &::before {
+        top: 0.25rem;
+      }
+    }
+
+    @media only screen and (max-width: 1100px) {
+      display: none;
+    }
+  }
+
+  &__name {
+    @include flex-row-justify-center;
+    padding-bottom: .5rem;
+    font-size: $font-size-small;
+
+    .project {
+      font-weight: 700;
+    }
+
+    .scenario {
+      font-size: $font-size-small;
+    }
+  }
+
+  &__steps {
+	  @include flex-column-align-justify-center;
+
+    ul {
+      @include ul-horizontal;
+    }
+  
+    li {
+      display: inline-block;
+      color: $primary-gray-color-3;
+      position: relative;
+      font-weight: 700;
+      font-size: $font-size-small;
+  
+      &:not(:last-of-type) {
+        padding-right: 2rem;
+      }
+  
+      &::before {
+        font-size: $font-size-small;
+        font-weight: 700;
+        margin-right: 0.5rem;
+        color: $white;
+        background-color: $primary-gray-color-3;
+        padding: 0.25rem 0.5rem;
+        width: 2rem;
+        border-radius: 100px;
+      }
+  
+      @for $i from 1 through 4 {
+        &:nth-child(#{$i})::before {
+          content: "#{$i}";
+        }
+      }
+  
+      &.active {
+        color: $primary-color-1;
+  
+        &::before {
+          background-color: $primary-color-1;
+        }
+      }
+    }
+
+    @media only screen and (max-width: 1300px) {
+      li::before {
+        font-size: $font-size-xsmall;
+        padding: 0.25rem 0.45rem;
+      }
+
+      li:not(:first-of-type)::after {
+        width: 1.25rem;
+        margin-left: -2.5rem;
+      }
+    }
+  }
+}

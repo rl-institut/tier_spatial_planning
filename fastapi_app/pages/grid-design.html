@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <!-- <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../assets/favicon/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="../assets/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="../assets/favicon/favicon-16x16.png"
+    />
+    <link rel="manifest" href="../assets/favicon/site.webmanifest" />
+    <link
+      rel="mask-icon"
+      href="../assets/favicon/safari-pinned-tab.svg"
+      color="#5bbad5"
+    /> -->
+    <!-- <meta name="msapplication-TileColor" content="#2b5797" /> -->
+    <!-- <meta name="theme-color" content="#ffffff" /> -->
+    <link
+      href="{{ url_for('static', path='stylesheets/css/bootstrap.min.css') }} "
+      rel="stylesheet"
+    />
+    <link
+      href="{{ url_for('static', path='node_modules/aos/dist/aos.css') }}"
+      rel="stylesheet"
+    />
+    <link
+      href="{{ url_for('static', path='stylesheets/css/main.css') }}"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.css"
+    />
+    <title>Grid Design</title>
+  </head>
+
+  <body onload="load_previous_data('grid_design'); boxVisibilityShs();">
+    <!-- don't forget 'navbar--scenario' CSS class -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light navbar--scenario">
+      <div class="container-fluid">
+        <span class="navbar-brand">
+          <img
+            src="{{ url_for('static', path='assets/logos/peoplesun_logo.webp')}}"
+            alt="peoplesun Logo"
+          />
+        </span>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarSupportedContent"
+          aria-controls="navbarSupportedContent"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav mb-2 mb-lg-0">
+            <li class="nav-item dropdown profile">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="navbarDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                <img
+                  src="{{ url_for('static', path='assets/icons/i_profile.svg')}}"
+                  alt="Profile icon"
+                />
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                <li><a class="dropdown-item" href="#">Use cases</a></li>
+                <li><a class="dropdown-item" href="#">License</a></li>
+                <li><a class="dropdown-item" href="about.html">Contact</a></li>
+                <li>
+                  <a class="dropdown-item" href="account.html">Account</a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a class="dropdown-item" href="../index.html">Log out</a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <section class="wizard">
+      <div>
+        <div class="wizard__steps">
+          <ul>
+            <li>
+              <a
+                href="{{ url_for('home')}}"
+                onclick="save_previous_data('grid_design');"
+                >Project Setup</a
+              >
+            </li>
+            <li>
+              <a
+                href="{{ url_for('consumer_selection') }}"
+                onclick="save_previous_data('grid_design');"
+                >Consumer Selection</a
+              >
+            </li>
+            <li>Demand Estimation</li>
+            <li class="active">
+              <a href="{{ url_for('grid_design') }}">Grid Design</a>
+            </li>
+            <li>
+              <a
+                href="{{ url_for('energy_system_design') }}"
+                onclick="save_previous_data('grid_design');"
+                >Energy System Design</a
+              >
+            </li>
+            <li>
+              <a
+                href="{{ url_for('simulation_results') }}"
+                onclick="save_previous_data('grid_design');"
+                >Simulation Results</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <main>
+      <section class="dashboard">
+        <div>
+          <div class="row">
+            <div class="col-md-8">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="box box--tiny">
+                    <div class="box__header">
+                      <span class="grid-title">Distrubution Cable</span>
+                    </div>
+                    <div class="row">
+                      <div class="input-group">
+                        <span class="input-group-text">Lifetime</span>
+                        <input
+                          type="number"
+                          class="form-control"
+                          id="distributionCableLifetime"
+                          value="25"
+                          required
+                        />
+                        <span class="input-group-text">Year</span>
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div class="input-group">
+                        <span class="input-group-text">CAPEX</span>
+                        <input
+                          type="number"
+                          class="form-control"
+                          id="distributionCableCapex"
+                          value="10"
+                          required
+                        />
+                        <span class="input-group-text">USD/m</span>
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div class="input-group">
+                        <span class="input-group-text">Max. Length</span>
+                        <input
+                          type="number"
+                          class="form-control"
+                          id="distributionCableMaxLength"
+                          value="40"
+                          required
+                        />
+                        <span class="input-group-text">m</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="box box--tiny">
+                    <div class="box__header">
+                      <span class="grid-title">Connection Cable</span>
+                    </div>
+                    <div class="row">
+                      <div class="input-group">
+                        <span class="input-group-text">Lifetime</span>
+                        <input
+                          type="number"
+                          class="form-control"
+                          id="connectionCableLifetime"
+                          value="25"
+                          required
+                        />
+                        <span class="input-group-text">Year</span>
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div class="input-group">
+                        <span class="input-group-text">CAPEX</span>
+                        <input
+                          type="number"
+                          class="form-control"
+                          id="connectionCableCapex"
+                          value="4"
+                          required
+                        />
+                        <span class="input-group-text">USD/m</span>
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div class="input-group">
+                        <span class="input-group-text">Max. Length</span>
+                        <input
+                          type="number"
+                          class="form-control"
+                          id="connectionCableMaxLength"
+                          value="20"
+                          required
+                        />
+                        <span class="input-group-text">m</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="box box--tiny">
+                    <div class="box__header">
+                      <span class="grid-title">Pole</span>
+                    </div>
+                    <div class="row">
+                      <div class="input-group">
+                        <span class="input-group-text">Lifetime</span>
+                        <input
+                          type="number"
+                          class="form-control"
+                          id="poleLifetime"
+                          value="25"
+                          required
+                        />
+                        <span class="input-group-text">Year</span>
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div class="input-group">
+                        <span class="input-group-text">CAPEX</span>
+                        <input
+                          type="number"
+                          class="form-control"
+                          id="poleCapex"
+                          value="800"
+                          required
+                        />
+                        <span class="input-group-text">USD/m</span>
+                      </div>
+                    </div>
+                    <div class="row">
+                      <div class="input-group">
+                        <span class="input-group-text"
+                          >Max. Number of Connections</span
+                        >
+                        <input
+                          type="number"
+                          class="form-control"
+                          id="poleMaxNumberOfConnections"
+                          value="4"
+                          required
+                        />
+                        <span class="input-group-text">-</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="box box--tiny">
+                    <div class="box__header">
+                      <span class="grid-title">Minigrid</span>
+                    </div>
+                    <div class="row">
+                      <div class="input-group">
+                        <span class="input-group-text">Connection Cost</span>
+                        <input
+                          type="number"
+                          class="form-control"
+                          id="mgConnectionCost"
+                          value="350"
+                          required
+                        />
+                        <span class="input-group-text">USD/con</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div id="selectShsBox" class="box box--medium box--not-selected">
+                <div class="box__header">
+                  <form class="was-validated">
+                    <div class="form-check">
+                      <input
+                        type="checkbox"
+                        class="form-check-input"
+                        id="selectShs"
+                        required
+                        onclick="boxVisibilityShs()"
+                      />
+                      <label class="form-check-label" for="selectShs"
+                        >Solar Home System</label
+                      >
+                    </div>
+                  </form>
+                </div>
+                <div class="row">
+                  <div class="input-group">
+                    <span id="lblShsLifetime" class="input-group-text"
+                      >Lifetime</span
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="shsLifetime"
+                      value="10"
+                      required
+                    />
+                    <span id="shsLifetimeUnit" class="input-group-text"
+                      >Years</span
+                    >
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="input-group">
+                    <span id="lblShsTierOneCapex" class="input-group-text"
+                      >Tier One</span
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="shsTierOneCapex"
+                      value="100"
+                      required
+                    />
+                    <span id="shsTierOneCapexUnit" class="input-group-text"
+                      >USD</span
+                    >
+                    <span
+                      id="icnShsTierOneTooltip"
+                      class="icon icon-question"
+                      data-bs-toggle="tooltip"
+                      title="List of assets in this tier level (to be updated)"
+                    ></span>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="input-group">
+                    <span id="lblShsTierTwoCapex" class="input-group-text"
+                      >Tier Two</span
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="shsTierTwoCapex"
+                      value="350"
+                      required
+                    />
+                    <span id="shsTierTwoCapexUnit" class="input-group-text"
+                      >USD</span
+                    >
+                    <span
+                      id="icnShsTierTwoTooltip"
+                      class="icon icon-question"
+                      data-bs-toggle="tooltip"
+                      title="List of assets in this tier level (to be updated)"
+                    ></span>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="input-group">
+                    <span id="lblShsTierThreeCapex" class="input-group-text"
+                      >Tier Three</span
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="shsTierThreeCapex"
+                      value="600"
+                      required
+                    />
+                    <span id="shsTierThreeCapexUnit" class="input-group-text"
+                      >USD</span
+                    >
+                    <span
+                      id="icnShsTierThreeTooltip"
+                      class="icon icon-question"
+                      data-bs-toggle="tooltip"
+                      title="List of assets in this tier level (to be updated)"
+                    ></span>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="input-group">
+                    <span id="lblShsTierFourCapex" class="input-group-text"
+                      >Tier Four</span
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="shsTierFourCapex"
+                      value="20"
+                      required
+                    />
+                    <span id="shsTierFourCapexUnit" class="input-group-text"
+                      >c/kWh</span
+                    >
+                    <span
+                      id="icnShsTierFourTooltip"
+                      class="icon icon-question"
+                      data-bs-toggle="tooltip"
+                      title="List of assets in this tier level (to be updated)"
+                    ></span>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="input-group">
+                    <span id="lblShsTierFiveCapex" class="input-group-text"
+                      >Tier Five</span
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="shsTierFiveCapex"
+                      value="30"
+                      required
+                    />
+                    <span id="shsTierFiveCapexUnit" class="input-group-text"
+                      >c/kWh</span
+                    >
+                    <span
+                      id="icnShsTierFiveTooltip"
+                      class="icon icon-question"
+                      data-bs-toggle="tooltip"
+                      title="List of assets in this tier level (to be updated)"
+                    ></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="step-footer">
+      <div>
+        <div class="step-footer__left"></div>
+        <div class="step-footer__center">
+          <a
+            class="btn btn--medium btn--hollow btn--previous"
+            href="{{ url_for('consumer_selection')}}"
+            >Previous
+          </a>
+          <a
+            class="btn btn--medium"
+            href="{{ url_for('energy_system_design') }}"
+            onclick="save_previous_data('grid_design');"
+            >Next</a
+          >
+        </div>
+        <div class="step-footer__left"></div>
+      </div>
+    </footer>
+  </body>
+  <!-- <script>
+    var urlZoom = `{{ url_for('static', path='assets/icons/i_zoom_to_all.png') }}`;
+  </script> -->
+  <script
+    src="https://code.jquery.com/jquery-3.6.0.js"
+    integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
+    crossorigin="anonymous"
+  ></script>
+  <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=Promise"></script>
+  <script src="{{ url_for('static', path='js/bootstrap.bundle.min.js') }}"></script>
+  <script src="{{ url_for('static', path='node_modules/aos/dist/aos.js') }}"></script>
+  <script src="{{ url_for('static', path='js/grid-design.js') }}"></script>
+  <script src="{{ url_for('static', path='js/interactions.js') }}"></script>
+  <!-- <script>
+    const src_clear = `{{ url_for('static', path='assets/icons/i_clear_all.png')}}`;
+  </script> -->
+</html>
