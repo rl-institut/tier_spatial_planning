@@ -23,7 +23,7 @@ def create_empty_nodes_df():
             pd.Series([], dtype=np.dtype(float)),
             'node_type':
             pd.Series([], dtype=np.dtype(str)),
-            'customer_type':
+            'consumer_type':
             pd.Series([], dtype=np.dtype(str)),
             'peak_demand':
             pd.Series([], dtype=np.dtype(float)),

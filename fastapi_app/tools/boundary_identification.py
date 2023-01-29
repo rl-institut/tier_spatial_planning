@@ -46,6 +46,8 @@ def convert_overpass_json_to_geojson(json_dict):
             } for d in json_dict['elements'] if d['type'] == "way"]}
     return geojson
 
+# TODO: Remove the area in the final version of the tool
+
 
 def obtain_areas_and_mean_coordinates_from_geojson(geojson: dict):
     """
@@ -57,22 +59,21 @@ def obtain_areas_and_mean_coordinates_from_geojson(geojson: dict):
     ----------
         geojson (dict):
             Dictionary containing the geojson data of the building of a
-            specific area. Output of the 
+            specific area. Output of the
             tools.conversion.convert_overpass_json_to_geojson function.
 
     Returns
     -------
-        (1)
         Dict containing the 'id' of each building as a key
         and the mean loaction of the building as value in the form [long, lat].
 
-        (2)
         Dict containing the 'id' of each building as a key
         and the surface area of the buildings.
     """
 
     building_mean_coordinates = {}
     building_surface_areas = {}
+
     if len(geojson["features"]) != 0:
         reference_coordinate = geojson["features"][0]["geometry"]["coordinates"][0][0]
         for building in geojson["features"]:

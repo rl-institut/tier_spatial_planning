@@ -1,8 +1,8 @@
 from sqlalchemy import Boolean, Column, Integer, String, Numeric
-#from sqlalchemy.orm import relationship
+# from sqlalchemy.orm import relationship
 from pydantic import BaseModel
 from fastapi_app.database import Base
-from typing import List
+from typing import List, Dict, Union
 
 # Models
 
@@ -41,9 +41,9 @@ class Links(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     lat_from = Column(Numeric(10, 5))
-    long_from = Column(Numeric(10, 5))
+    lon_from = Column(Numeric(10, 5))
     lat_to = Column(Numeric(10, 5))
-    long_to = Column(Numeric(10, 5))
+    lon_to = Column(Numeric(10, 5))
     x_from = Column(Numeric(10, 5))
     y_from = Column(Numeric(10, 5))
     x_to = Column(Numeric(10, 5))
@@ -56,22 +56,34 @@ class Links(Base):
 class AddNodeRequest(BaseModel):
     latitude: float
     longitude: float
-    area: float
     node_type: str
     consumer_type: str
-    demand_type: str
+    consumer_detail: str
+    surface_area: float
     peak_demand: float
+    average_consumption: float
     is_connected: bool
     how_added: str
 
 
+class SavePreviousDataRequest(BaseModel):
+    page_setup: Dict[str, str]
+    grid_design: Dict[str, str]
+
+
 class OptimizeGridRequest(BaseModel):
-    cost_pole: float
-    cost_connection: float
-    cost_interpole_cable: float
-    cost_distribution_cable: float
-    number_of_relaxation_steps_nr: int
-    max_connection_poles: int
+    optimization: Dict[str, int]
+    constraints: Dict[str, int]
+
+
+class OptimizeEnergySystemRequest(BaseModel):
+    pv: Dict[str, Union[Dict[str, bool], Dict[str, float]]]
+    diesel_genset: Dict[str, Union[Dict[str, bool], Dict[str, float]]]
+    battery: Dict[str, Union[Dict[str, bool], Dict[str, float]]]
+    inverter: Dict[str, Union[Dict[str, bool], Dict[str, float]]]
+    rectifier: Dict[str, Union[Dict[str, bool], Dict[str, float]]]
+    shortage: Dict[str, Union[Dict[str, bool], Dict[str, float]]]
+    # path_data: str
 
 
 class ShsIdentificationRequest(BaseModel):
@@ -90,8 +102,8 @@ class SelectBoundariesRequest(BaseModel):
 class GenerateExportFileRequest(BaseModel):
     cost_pole: float
     cost_connection: float
-    cost_interpole_cable: float
     cost_distribution_cable: float
+    cost_connection_cable: float
     shs_identification_cable_cost: float
     shs_identification_connection_cost: float
     number_of_relaxation_steps_nr: int

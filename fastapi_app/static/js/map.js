@@ -36,8 +36,11 @@ var esriSatelliteMap = {
   esriBaseMap: esriWorldImageryLayer,
 };
 
+lat = 9.8838;
+lon = 5.9231;
+
 var mainMap = L.map("leafletMap", {
-  center: [11.3929, 9.1248], // 1st arg.: latitude, 2nd arg.: longitude
+  center: [lat, lon], // 1st arg.: latitude, 2nd arg.: longitude
   zoom: 17,
   layers: [osmLayer],
 });
@@ -64,12 +67,14 @@ mainMap.removeControl(mainMap.zoomControl);
 L.Control.zoomHome = L.Control.extend({
   options: {
     position: "topleft",
-    zoomInText: "+",
+    // zoomInText: "+",
+    zoomInText:'<img class="leaflet-zoom-in-out" src="/fastapi_app/static/assets/icons/i_zoom_in.svg"></img>',
     zoomInTitle: "Zoom in",
-    zoomOutText: "&#8722", //this is a long minus sign
+    // zoomOutText: "&#8722", //this is a long minus sign
+    zoomOutText:'<img class="leaflet-zoom-in-out" src="/fastapi_app/static/assets/icons/i_zoom_out.svg"></img>',
     zoomOutTitle: "Zoom out",
     zoomHomeText:
-      '<img src="fastapi_app/static/images/imgZoomToAll.png"></img>',
+      '<img class="leaflet-zoom-fit" src="/fastapi_app/static/assets/icons/i_zoom_fit.svg"></img>',
     zoomHomeTitle: "Show all nodes",
   },
 
@@ -167,7 +172,8 @@ function zoomAll(mainMap) {
 }
 
 L.easyButton(
-  '<img class="leaflet-touch" src="fastapi_app/static/images/imgClearAll.png">',
+  // '<img class="leaflet-touch" src="'+src_clear+'">',
+  '<img class="leaflet-touch" src="/fastapi_app/static/assets/icons/i_clear_all.svg">',
   function (btn, map) {
     database_initialization(nodes = true, links = true);
     database_read(nodes_or_links = 'nodes', map_or_export = 'map')
@@ -179,11 +185,11 @@ L.easyButton(
 
 var layer = L.geoJson(null).addTo(mainMap);
 
-layer.fire("data:loading");
-$.getJSON("http://server/path.geojson", function (data) {
-  layer.fire("data:loaded");
-  layer.addData(data);
-});
+// layer.fire("data:loading");
+// $.getJSON("http://server/path.geojson", function (data) {
+//   layer.fire("data:loaded");
+//   layer.addData(data);
+// });
 
 var siteBoundaries = [];
 
@@ -192,31 +198,19 @@ var dashedBoundaryLine = null;
 
 L.control.scale().addTo(mainMap);
 
-var markerDefault = new L.Icon({
-  iconUrl: "fastapi_app/static/images/markers/markerDefault.png",
-  iconSize: [15, 15],
-  iconAnchor: [7.5, 7.5],
-  popupAnchor: [0, 0],
+var markerConsumer = new L.Icon({
+  iconUrl: "fastapi_app/static/assets/icons/i_consumer.svg",
+  iconSize: [6, 6],
 });
 
-var markerHighDemand = new L.Icon({
-  iconUrl: "fastapi_app/static/images/markers/markerHighDemand.png",
-  iconSize: [18, 18],
-});
-
-var markerMediumDemand = new L.Icon({
-  iconUrl: "fastapi_app/static/images/markers/markerMediumDemand.png",
-  iconSize: [16, 16],
-});
-
-var markerLowDemand = new L.Icon({
-  iconUrl: "fastapi_app/static/images/markers/markerLowDemand.png",
-  iconSize: [14, 14],
+var markerPowerHouse = new L.Icon({
+  iconUrl: "fastapi_app/static/assets/icons/i_power_house.svg",
+  iconSize: [12, 12],
 });
 
 var markerPole = new L.Icon({
-  iconUrl: "fastapi_app/static/images/markers/markerPole.png",
-  iconSize: [16, 16],
+  iconUrl: "fastapi_app/static/assets/icons/i_pole.svg",
+  iconSize: [10, 10],
 });
 
 var markerShs = new L.Icon({
@@ -227,13 +221,14 @@ var markerShs = new L.Icon({
 var legend = L.control({ position: "bottomright" });
 legend.onAdd = function (map) {
   var div = L.DomUtil.create("div", "info legend"),
-    description = ["High Demand", "Medium Demand", "Low Demand", "Pole", "SHS"],
+    description = ["Power House", "Consumer", "Pole", "SHS", "Distribution", "Connection"],
     image = [
-      "fastapi_app/static/images/markers/markerHighDemand.png",
-      "fastapi_app/static/images/markers/markerMediumDemand.png",
-      "fastapi_app/static/images/markers/markerLowDemand.png",
-      "fastapi_app/static/images/markers/markerPole.png",
-      "fastapi_app/static/images/markers/markerShs.png",
+      "fastapi_app/static/assets/icons/i_power_house.svg",
+      "fastapi_app/static/assets/icons/i_consumer.svg",
+      "fastapi_app/static/assets/icons/i_pole.svg",
+      "fastapi_app/static/assets/icons/i_shs.svg",
+      "fastapi_app/static/assets/icons/i_distribution.svg",
+      "fastapi_app/static/assets/icons/i_connection.svg",
     ];
 
   // loop through our density intervals and generate a label with a colored square for each interval
@@ -241,7 +236,7 @@ legend.onAdd = function (map) {
     div.innerHTML +=
       " <img src=" +
       image[i] +
-      " height='20' width='20'>" +
+      " height='12' width='12'>" +
       "&nbsp" +
       description[i] +
       "<br>";
@@ -253,82 +248,24 @@ legend.addTo(mainMap);
 mainMap.on("click", function (e) {
   var poplocation = e.latlng;
 
-  if (document.getElementById("radio_button_nodes_manually").checked) {
-    if (document.getElementsByName("radio_button_nodes_manually")[0].checked) {
-      database_add_manual(
-        {
-          latitude: poplocation.lat,
-          longitude: poplocation.lng,
-          node_type: "consumer",
-          consumer_type: 'household',
-          demand_type: 'high-demand',
-        }
-      );
-      drawMarker(
-        poplocation.lat,
-        poplocation.lng,
-        "high-demand"
-      );
-    }
-
-    if (document.getElementsByName("radio_button_nodes_manually")[1].checked) {
-      database_add_manual(
-        {
-          latitude: poplocation.lat,
-          longitude: poplocation.lng,
-          node_type: "consumer",
-          consumer_type: 'household',
-          demand_type: 'medium-demand',
-        }
-      );
-      drawMarker(
-        poplocation.lat,
-        poplocation.lng,
-        "medium-demand"
-      );
-    }
-
-    if (document.getElementsByName("radio_button_nodes_manually")[2].checked) {
-      database_add_manual(
-        {
-          latitude: poplocation.lat,
-          longitude: poplocation.lng,
-          node_type: "consumer",
-          consumer_type: 'household',
-          demand_type: 'low-demand',
-        }
-      );
-      drawMarker(
-        poplocation.lat,
-        poplocation.lng,
-        "low-demand"
-      );
-    }
-
-    if (document.getElementsByName("radio_button_nodes_manually")[3].checked) {
-      database_add_manual(
-        {
-          latitude: poplocation.lat,
-          longitude: poplocation.lng,
-          node_type: "pole",
-          consumer_type: '-',
-          demand_type: '-',
-        }
-      );
-      drawMarker(
-        poplocation.lat,
-        poplocation.lng,
-        "pole"
-      );
-    }
-  }
-
+  if (document.getElementById("selectionMap").checked) {
+    database_add_remove_manual(
+      {
+        add_remove: 'add',
+        latitude: poplocation.lat,
+        longitude: poplocation.lng,
+      }
+    );
+    drawMarker(
+      poplocation.lat,
+      poplocation.lng,
+      'consumer'
+    );
+  };
   if (
-    document.getElementById("radio_button_nodes_boundaries").checked &&
-    (document.getElementById("button_draw_boundaries_add").innerHTML ===
-      "Select" ||
-      document.getElementById("button_draw_boundaries_remove").innerHTML ===
-      "Remove")
+    document.getElementById("selectionBoundaries").checked &&
+    (document.getElementById("btnDrawBoundariesAdd").innerText === 'Draw Lines' ||
+      document.getElementById("btnDrawBoundariesRemove").innerText === 'Draw Lines')
   ) {
     siteBoundaries.push([poplocation.lat, poplocation.lng]);
 
@@ -349,7 +286,7 @@ mainMap.on("click", function (e) {
 
     // adding the new dashed line to the map
     dashedBoundaryLine.addTo(mainMap);
-  }
+  };
 });
 
 // --------------------FUNCTIONS DECLARATION----------------------//
@@ -357,20 +294,30 @@ mainMap.on("click", function (e) {
 // INTERACTION WITH LEAFLET MAP
 
 function drawMarker(latitude, longitude, type) {
-  if (type === "high-demand") {
-    icon_type = markerHighDemand;
-  } else if (type === "medium-demand") {
-    icon_type = markerMediumDemand;
-  } else if (type === "low-demand") {
-    icon_type = markerLowDemand;
+  if (type === "consumer") {
+    icon_type = markerConsumer;
   } else if (type === "pole") {
     icon_type = markerPole;
   } else if (type === "shs") {
     icon_type = markerShs;
   }
   markers.push(
-    L.marker([latitude, longitude], { icon: icon_type }).addTo(mainMap)
+    L.marker([latitude, longitude], { icon: icon_type }).on('click', markerOnClick).addTo(mainMap)
   );
+}
+
+function markerOnClick(e)
+{
+  L.DomEvent.stopPropagation(e);
+  database_add_remove_manual (
+    {
+      add_remove: 'remove',
+      latitude: e.latlng.lat,
+      longitude: e.latlng.lng,
+    }
+  );
+  database_read(nodes_or_links = 'nodes', map_or_export = 'map');
+  database_read(nodes_or_links = 'links', map_or_export = 'map');
 }
 
 function drawLinkOnMap(
@@ -381,7 +328,7 @@ function drawLinkOnMap(
   color,
   map,
   weight,
-  opacity = 0.5
+  opacity,
 ) {
   var pointA = new L.LatLng(latitude_from, longitude_from);
   var pointB = new L.LatLng(latitude_to, longitude_to);
@@ -390,7 +337,7 @@ function drawLinkOnMap(
   var link_polyline = new L.polyline(pointList, {
     color: color,
     weight: weight,
-    opacity: 0.5,
+    opacity: opacity,
     smoothFactor: 1,
   });
   lines.push(
