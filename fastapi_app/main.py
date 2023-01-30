@@ -243,7 +243,11 @@ async def home(request: Request, db: Session = Depends(get_db)):
     if user is None:
         return templates.TemplateResponse("landing-page.html", {"request": request})
     else:
-        return templates.TemplateResponse("account_overview.html", {"request": request})
+        projects = queries.get_project_of_user(user.id, db)
+        for project in projects:
+            project.created_at = project.created_at.date()
+            project.updated_at = project.updated_at.date()
+        return templates.TemplateResponse("user_projects.html", {"request": request, 'projects': projects})
 
 
 @app.get("/project_setup")

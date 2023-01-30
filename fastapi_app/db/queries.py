@@ -19,3 +19,8 @@ def next_project_id_of_user(user_id, db):
     else:
         next_project_id = max_project_id + 1
     return next_project_id
+
+
+def get_project_of_user(user_id, db):
+    projects = db.query(models.ProjectSetup).filter(models.ProjectSetup.id == user_id).all()
+    return projects

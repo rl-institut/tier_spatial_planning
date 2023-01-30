@@ -110,6 +110,12 @@
         font-size: $font-size-medium;
       }
 
+      &__ud1 {
+        font-size: $font-size-small;
+                font-weight: 700;
+        white-space: nowrap;
+
+      }
       &--best .item__value {
         font-weight: 700;
         color: $dashboard-profitable-value;
