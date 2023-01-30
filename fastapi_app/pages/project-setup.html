@@ -4,7 +4,10 @@
     {% set title='Project Setup' %}
     {% include '_head.html' %}
   </head>
-  <body onload="load_previous_data('project_setup');activate_wizard_element()show_user_email_in_navbar();">
+  <body onload="redirect_if_cookie_is_missing();
+                load_previous_data('project_setup');
+                activate_wizard_element();
+                show_user_email_in_navbar();">
   {% include '_navbar.html' %}
   {% include '_wizard.html' %}
     <main>

@@ -4,7 +4,10 @@
     {% set title='Energy System Design' %}
     {% include '_head.html' %}
   </head>
-  <body onload="refreshBlocksOnDiagramOnLoad();check_box_visibility('shortage');activate_wizard_element();
+  <body onload="redirect_if_cookie_is_missing();
+                refreshBlocksOnDiagramOnLoad();
+                check_box_visibility('shortage');
+                activate_wizard_element();
                 show_user_email_in_navbar();">
   {% include '_navbar.html' %}
   {% include '_wizard.html' %}

@@ -648,6 +648,15 @@ async def query_account_data(request: Request, db: Session = Depends(get_db)):
         return models.UserOverview(email="")
 
 
+@app.post("/has_cookie/")
+async def has_cookie(request: Request):
+    token = request.cookies.get("access_token")
+    if token is not None:
+        return True
+    else:
+        return False
+
+
 @app.post("/save_previous_data/{page_name}")
 async def save_previous_data(request: Request, page_name: str, save_previous_data_request:
                              models.SavePreviousDataRequest, db: Session = Depends(get_db)):

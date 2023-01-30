@@ -673,7 +673,7 @@ function export_data() {
       Title: "Import and Export Data form/to the Optimization Web App.",
       Subject: "Off-Grid Network and Energy Supply System",
       Author: "Saeed Sayadi",
-      CreatedDate: new Date(2022, 08, 08)
+      CreatedDate: new Date(2022, 8, 8)
     };
   
     // Get all nodes from the database.
@@ -830,4 +830,11 @@ function show_user_email_in_navbar() {
             type: "POST",
             contentType: "application/json",})
         .done(function (response) { document.getElementById("showMail").innerHTML = response.email;})
+}
+
+function redirect_if_cookie_is_missing(){
+        $.ajax({url: "has_cookie/",
+            type: "POST",
+            contentType: "application/json",})
+        .done(function (response) {if (response == false) {window.location.href = window.location.origin;}})
 }

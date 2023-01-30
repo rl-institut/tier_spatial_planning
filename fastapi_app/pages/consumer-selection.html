@@ -7,7 +7,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.css" />
   </head>
-  <body onload="refresh_map();activate_wizard_element();show_user_email_in_navbar();">
+  <body onload="redirect_if_cookie_is_missing();
+                refresh_map();
+                activate_wizard_element();
+                show_user_email_in_navbar();">
   {% include '_navbar.html' %}
   {% include '_wizard.html' %}
     <main>
