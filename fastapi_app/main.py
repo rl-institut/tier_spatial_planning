@@ -204,7 +204,7 @@ async def import_data(import_files: import_structure = None):
 
 
 @app.get("/")
-async def home(request: Request):
+async def home(request: Request, db: Session = Depends(get_db)):
     if os.path.exists(full_path_stored_inputs) is False:
         header_stored_inputs = [
             "project_name",
@@ -238,7 +238,11 @@ async def home(request: Request):
         )
 
     # return templates.TemplateResponse("project-setup.html", {"request": request})
-    return templates.TemplateResponse("landing-page.html", {"request": request})
+    user = accounts.get_user_from_cookie(request, db)
+    if user is None:
+        return templates.TemplateResponse("landing-page.html", {"request": request})
+    else:
+        return templates.TemplateResponse("account_overview.html", {"request": request})
 
 
 @app.get("/project_setup")
@@ -616,27 +620,31 @@ def set_access_token(response: Response, credentials: models.Credentials, db: Se
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@app.post("/login/", response_model=models.Token)
+@app.post("/login/")
 def login(response: Response, credentials: models.Credentials, db: Session = Depends(get_db)):
     if isinstance(credentials.email, str) and len(credentials.email) > 3:
         user = authenticate_user(credentials.email, credentials.password, db)
-        name = user.email
-        access_token_expires = datetime.timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token(data={"sub": name}, expires_delta=access_token_expires)
-        response.set_cookie(key="access_token", value=f"Bearer {access_token}",
-                            httponly=True)  # set HttpOnly cookie in response
+        del credentials
+        if user is not False:
+            access_token_expires = datetime.timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
+            access_token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
+            response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
         return {"access_token": access_token, "token_type": "bearer"}
 
 
-@app.get("/logout/")
+@app.post("/logout/")
 async def logout(response: Response):
     response.delete_cookie("access_token")
+    return {"status": "success"}
 
 
 @app.post("/query_account_data/")
 async def query_account_data(request: Request, db: Session = Depends(get_db)):
     user = accounts.get_user_from_cookie(request, db)
-    return models.UserOverview(email=user.email)
+    if user is not None:
+        return models.UserOverview(email=user.email)
+    else:
+        return models.UserOverview(email="")
 
 
 @app.post("/save_previous_data/{page_name}")

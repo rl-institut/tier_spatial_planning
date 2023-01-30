@@ -485,6 +485,19 @@ function add_user_to_db() {
 }
 
 
+function login() {
+    $.ajax({url: "login/",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({email: userEmail.value,
+                                       password: userPassword.value,}),
+            dataType: "json",})
+        .done(function () {document.getElementById("userPassword").value = '';
+                           document.getElementById("userEmail").value = '';
+                           window.location.href=window.location.href;});
+}
+
+
 function set_access_token() {
     $.ajax({url: "set_access_token/",
             type: "POST",
@@ -497,9 +510,11 @@ function set_access_token() {
 
 function logout()  {
     $.ajax({url: "logout/",
-            type: "GET",
+            type: "POST",
             contentType: "application/json",
-            dataType: "json",})
+            dataType: "json"})
+        .done(function () {window.location.href=window.location.origin;});
+
 }
 
 
@@ -805,5 +820,12 @@ function activate_wizard_element() {
     $('#wiz li').each(function(){
         let $this = $(this);
         let text = $this[0].getElementsByTagName('a')[0].href.split('/').pop()
-        if(text.indexOf(current) !== -1){
-            $this.addClass('active');}})}
+        if(text.indexOf(current) !== -1){$this.addClass('active');}})}
+
+
+function show_user_email_in_navbar() {
+    $.ajax({url: "query_account_data/",
+            type: "POST",
+            contentType: "application/json",})
+        .done(function (response) { document.getElementById("showMail").innerHTML = response.email;})
+}

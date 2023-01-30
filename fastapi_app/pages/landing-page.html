@@ -5,56 +5,86 @@
     {% include '_head.html' %}
     <title>PeopleSun</title>
   </head>
-  <body>
+  <body onload="show_user_email_in_navbar();">
   {% include '_navbar.html' %}
     <main>
       <section class="project-setup two-columns">
-          <div>
-                <p>
-                  Welcome!
-                </p>
-                <p>
-                 You can test the application without aa user account. However, users are recommended to create an account to get access to larger computing capacity and to be able to store models.
-                </p>
-            <form>
-              <div class="input-item">
-                <label for="email" class="form-label">
-                  Email
-                </label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="email"
-                  name="email"
-                  placeholder="Enter your mail address"
-                />
+          <div class="left">
+              <div>
+                    <h1>
+                      Welcome!
+                    </h1>
+                    <p>
+                    PeopleSun is a planning tool for offgrid systems in Nigeria. The tool is used to plan distribution grids, to design energy supply by using solar modules, diesel engines, and battery storage, and to perform operational optimization.
+                    The tool was developed with the support of XYZ and has no commercial purpose, there are no fees for the users.
+                    </p>
+
+                    <p>
+                     You can test the application without an user account. However, users are recommended to create an account to get access to larger computing capacity and to be able to store models.
+                    </p>
+                    <button
+                          class="btn btn--long text-right"
+                          type="button"
+                          aria-disabled="false"
+                          onclick="set_access_token();"
+                        >
+                          Start
+                    </button>
+                  <p id="responseMsg"></p>
               </div>
-                <div class="input-item">
-                <label for="password" class="form-label">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="password"
-                  name="password"
-                  placeholder="Enter your password"
-                />
+          </div>
+                    <div class="right">
+              <div>
+                                      <h1>
+                      Login
+                    </h1>
+                <form>
+                  <div class="input-item">
+                    <label for="userEmail" class="form-label">
+                      Email
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="userEmail"
+                      name="email"
+                      placeholder="Enter your mail address"
+                    />
+                  </div>
+                    <div class="input-item">
+                    <label for="userPassword" class="form-label">
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      class="form-control"
+                      id="userPassword"
+                      name="password"
+                      placeholder="Enter your password"
+                    />
+                  </div>
+                      <input type="checkbox" class="form-check-input" id="isEnabled"/>
+                    <label for="isEnabled" > <span>&nbsp;Remember me</span></label>
+                    <p></p>
+                    <p style="text-align:left;">&nbsp;Don't have an account yet?
+                        <a href="{{url_for('user_registration')}}">Register here</a>
+                        <span style="float:right;">
+                            <a href="{{url_for('user_registration')}} ">&nbsp;Forgot your password?</a>
+                        </span>
+                    </p>
+                    <button
+                          class="btn btn--long text-right"
+                          type="button"
+                          onclick="login();"
+                        >
+                          Log in
+                    </button>
+                </form>
+                  <p id="responseMsg"></p>
               </div>
-                <button
-                      class="btn btn--long text-right"
-                      type="button"
-                      aria-disabled="false"
-                      onclick="set_access_token();"
-                    >
-                      Log in
-                </button>
-            </form>
-              <p id="responseMsg"></p>
           </div>
       </section>
     </main>
-  {% include '_footer.html' %}
   </body>
 {% include '_scripts.html' %}
 </html>

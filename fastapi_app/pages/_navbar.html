@@ -3,9 +3,12 @@
         <span class="navbar-brand">
             <a href="/"><img src="{{ url_for('static', path='assets/logos/peoplesun_logo.webp') }}" alt="peoplesun Logo" ></a>
         </span>
+
+
         <button
           class="navbar-toggler"
           type="button"
+          name="open"
           data-bs-toggle="collapse"
           data-bs-target="#navbarSupportedContent"
           aria-controls="navbarSupportedContent"
@@ -15,6 +18,8 @@
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <span id="showMail">
+          </span>
           <ul class="navbar-nav mb-2 mb-lg-0">
             <li class="nav-item dropdown profile">
               <a
@@ -36,11 +41,12 @@
                 </li>
                 <li><hr class="dropdown-divider" /></li>
                 <li>
-                  <a class="dropdown-item" href="/fastapi_app/static" onclick="logout();">Log out</a>
+                  <a class="dropdown-item" onclick="logout();">Log out</a>
                 </li>
               </ul>
             </li>
           </ul>
+
         </div>
       </div>
     </nav>
