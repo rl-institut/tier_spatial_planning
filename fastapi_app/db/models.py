@@ -40,8 +40,8 @@ class User(Base):
 class ProjectSetup(Base):
     id = Column(SMALLINT, primary_key=True, index=True)
     project_id = Column(SMALLINT, primary_key=True, unique=False, index=True)
-    name = Column(VARCHAR(61), nullable=True, unique=False)
-    descr = Column(VARCHAR(201), nullable=True, unique=False)
+    project_name = Column(VARCHAR(51), nullable=True, unique=False)
+    project_description = Column(VARCHAR(201), nullable=True, unique=False)
     country = Column(VARCHAR(50), nullable=True, unique=False)
     state = Column(VARCHAR(50), nullable=True, unique=False)
     created_at = Column(DateTime, nullable=False, server_default=sa.func.now())
@@ -50,7 +50,7 @@ class ProjectSetup(Base):
     project_lifetime = Column(TINYINT, nullable=False, server_default="25")
     start_date = Column(DateTime, nullable=False, default=pd.to_datetime(str(pd.Timestamp.now().year - 1)))
     temporal_resolution = Column(SMALLINT, nullable=False, server_default="1")
-    number_of_days = Column(SMALLINT, nullable=False, server_default="365")
+    n_days = Column(SMALLINT, nullable=False, server_default="365")
 
 
 class Nodes(Base):

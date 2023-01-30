@@ -540,6 +540,8 @@ function save_previous_data(page_name) {
                     'start_date': startDate.value,
                     'temporal_resolution': temporalResolution.value,
                     'n_days': nDays.value,
+                    'country': country.value,
+                    'state': state.value,
                 },
                 grid_design: {
                     'distribution_cable_lifetime': 0,

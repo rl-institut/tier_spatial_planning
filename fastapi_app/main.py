@@ -17,6 +17,7 @@ from fastapi_app.tools.accounts import Hasher, create_guid, is_valid_credentials
 from fastapi_app.tools import accounts
 from fastapi_app.db import config
 from fastapi_app.db.database import get_db
+from fastapi_app.db import queries
 import math
 import urllib.request
 import ssl
@@ -648,17 +649,20 @@ async def query_account_data(request: Request, db: Session = Depends(get_db)):
 
 
 @app.post("/save_previous_data/{page_name}")
-async def save_previous_data(
-        page_name: str, save_previous_data_request: models.SavePreviousDataRequest
-):
-    df = pd.read_csv(full_path_stored_inputs)
-
+async def save_previous_data(request: Request, page_name: str, save_previous_data_request:
+                             models.SavePreviousDataRequest, db: Session = Depends(get_db)):
     if page_name == "project_setup":
-        selection = ['project_name', 'project_description', 'interest_rate', 'project_lifetime',
-                     'start_date', 'temporal_resolution', 'n_days']
-        for col in selection:
-            df.loc[0, col] = save_previous_data_request.page_setup[col]
+        user = accounts.get_user_from_cookie(request, db)
+        save_previous_data_request.page_setup['created_at'] = pd.Timestamp.now()
+        save_previous_data_request.page_setup['updated_at'] = pd.Timestamp.now()
+        save_previous_data_request.page_setup['id'] = user.id
+        save_previous_data_request.page_setup['project_id'] = queries.next_project_id_of_user(user_id=user.id, db=db)
+        project_setup = models.ProjectSetup(**save_previous_data_request.page_setup)
+        db.add(project_setup)
+        db.commit()
+        db.refresh(project_setup)
     elif page_name == "grid_design":
+        df = pd.read_csv(full_path_stored_inputs)
         selection = ['distribution_cable_lifetime', 'distribution_cable_capex', 'distribution_cable_max_length',
                      'connection_cable_lifetime', 'connection_cable_capex', 'connection_cable_max_length',
                      'pole_lifetime', 'pole_capex', 'pole_max_n_connections', 'mg_connection_cost',
@@ -666,9 +670,8 @@ async def save_previous_data(
                      'shs_tier_two_capex', 'shs_tier_three_capex', 'shs_tier_four_capex', 'shs_tier_five_capex']
         for col in selection:
             df.loc[0, col] = save_previous_data_request.grid_design[col]
-
-    # save the updated dataframe
-    df.to_csv(full_path_stored_inputs, index=False)
+        # save the updated dataframe
+        df.to_csv(full_path_stored_inputs, index=False)
 
 
 @app.get("/get_optimal_capacities/")
