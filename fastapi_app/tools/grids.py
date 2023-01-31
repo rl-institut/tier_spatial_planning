@@ -102,8 +102,10 @@ class Grid:
                 "how_added": pd.Series([], dtype=str),
                 "type_fixed": pd.Series([], dtype=bool),
                 "cluster_label": pd.Series([], dtype=np.dtype(int)),
-                "segment": pd.Series([], dtype=np.dtype(str)),
-                "allocation_capacity": pd.Series([], dtype=np.dtype(int)),
+                "n_connection_links": pd.Series([], dtype=np.dtype(str)),
+                "n_distribution_links": pd.Series([], dtype=np.dtype(int)),
+                "parent": pd.Series([], dtype=np.dtype(str)),
+                "distribution_cost": pd.Series([], dtype=np.dtype(float)),
             }
         ).set_index("label"),
         ref_node=np.zeros(2),
@@ -120,6 +122,10 @@ class Grid:
                 "y_to": pd.Series([], dtype=np.dtype(float)),
                 "link_type": pd.Series([], dtype=str),
                 "length": pd.Series([], dtype=int),
+                "n_consumers": pd.Series([], dtype=int),
+                "total_power": pd.Series([], dtype=int),
+                "from_node": pd.Series([], dtype=str),
+                "to_node": pd.Series([], dtype=str),
             }
         ).set_index("label"),
         epc_distribution_cable=2,  # per meter
@@ -346,9 +352,11 @@ class Grid:
         is_connected=True,
         how_added="automatic",
         type_fixed=False,
-        segment="0",
         cluster_label=0,
-        allocation_capacity=0,
+        n_connection_links="0",
+        n_distribution_links=0,
+        parent="unknown",
+        distribution_cost=0,
     ):
         """
         adds a node to the grid's node dataframe.
@@ -372,8 +380,11 @@ class Grid:
         self.nodes.at[label, "is_connected"] = is_connected
         self.nodes.at[label, "how_added"] = how_added
         self.nodes.at[label, "type_fixed"] = type_fixed
-        self.nodes.at[label, "segment"] = segment
         self.nodes.at[label, "cluster_label"] = cluster_label
+        self.nodes.at[label, "n_connection_links"] = n_connection_links
+        self.nodes.at[label, "n_distribution_links"] = n_distribution_links
+        self.nodes.at[label, "parent"] = parent
+        self.nodes.at[label, "distribution_cost"] = distribution_cost
 
     def remove_node(self, node_label):
         """
@@ -539,6 +550,229 @@ class Grid:
         self.links.at[label, "y_to"] = self.nodes.y.loc[label_node_to]
         self.links.at[label, "link_type"] = link_type
         self.links.at[label, "length"] = length
+        self.links.at[label, "n_consumers"] = 0
+        self.links.at[label, "total_power"] = 0
+        self.links.at[label, "from_node"] = ""
+        self.links.at[label, "to_node"] = ""
+
+    def distribute_grid_cost_among_consumers(self):
+        """
+        Distribute the total cost of the gird including the cost of poles,
+        connection, and distribution cables, as well as connection costs
+        among all consumers, based on the route between the consumer and the
+        power house.
+        """
+
+        consumers = self.nodes[self.nodes["node_type"] == "consumer"]
+        connection_links = self.links[self.links["link_type"] == "connection"]
+        distribution_links = self.links[self.links["link_type"] == "distribution"]
+
+        for consumer_index in consumers.index:
+            # First, find the connection link, and then add its costs to the
+            # total cost of the consumer.
+            chosen_link = connection_links[
+                connection_links["to_node"] == consumer_index
+            ]
+            length = chosen_link["length"][0]
+            cost = self.epc_connection_cable * length + self.epc_connection
+
+            # Child is the pole that serves the consumer, which is itself a
+            # child for another pole.
+            child = self.nodes.parent.loc[consumer_index]
+            while True:
+                parent = self.poles().parent.loc[child]
+
+                # If we reach the powerhouse, the searching for parent must be
+                # stopped.
+                if parent == "none":
+                    break
+
+                parent_child_link_1 = "(" + parent + ", " + child + ")"
+                parent_child_link_2 = "(" + child + ", " + parent + ")"
+                if parent_child_link_1 in distribution_links.index:
+                    parent_child_link = parent_child_link_1
+                else:
+                    parent_child_link = parent_child_link_2
+
+                length = distribution_links.length.loc[parent_child_link]
+                n_consumers = distribution_links.n_consumers.loc[parent_child_link]
+
+                cost += (
+                    self.epc_distribution_cable * length + self.epc_pole
+                ) / n_consumers
+
+                child = parent
+
+            # TODO: Once the demand estimation is done and real demand profiles
+            # are used instead of dummy profiles, the cost of the distribution
+            # grid in cent/kWh for each consumer should be updated.
+
+            # Specific cost per kWh for each consumer is calculeted. It must be
+            # noted that this cost if not a REAL cost, but it is a ficticious
+            # cost that must be added to the specific cost of electricity
+            # produced by the energy system to obtain the TOTAL cost of
+            # electrification for each consumer. If it is cheaper than the SHS,
+            # the consumer will stay connected to the mini-grid. Otherwise, it
+            # needs to be disconnected and be served by a SHS.
+            specific_cost = (
+                cost / self.nodes.average_consumption.loc[consumer_index] * 100
+            )
+            self.nodes.distribution_cost.loc[consumer_index] = specific_cost
+
+            # The number of connection links connected to each consumer is only
+            # one. But for poles, it can be more.
+            self.nodes.n_connection_links.loc[consumer_index] = 1
+
+            # The parent of each consumer is the pole connected to that
+            # consumer which is the cluster centroid obtained from the k-means
+            # clustering method.
+            self.nodes.parent.loc[consumer_index] = self.poles()[
+                self.poles()["cluster_label"]
+                == self.nodes.cluster_label.loc[consumer_index]
+            ].index[0]
+
+    def find_capacity_of_each_link(self):
+        """
+        This function calculates the number of consumers that are served by
+        each link in the grid.
+
+        This is important to distribute the cost of grid layout between all
+        consumers in a fair way.
+        """
+
+        # The label of all links are split into two parts: `from_node` and
+        # `to_node`, which makes it easier to work with this DataFrame.
+        for link in self.links.index:
+            self.links.from_node.loc[link] = link.split(", ")[0].split("(")[1]
+            self.links.to_node.loc[link] = link.split(", ")[1].split(")")[0]
+
+        # Exclude the power-house.
+        poles_indices = self.poles()[self.poles()["node_type"] != "power-house"].index
+        power_house_index = self.nodes[self.nodes["node_type"] == "power-house"].index
+        self.nodes.parent.loc[power_house_index] = "none"
+
+        # Then, select all `distribution` links in the network.
+        links = self.links[self.links["link_type"] == "distribution"]
+
+        # Initialize the dictionary representing the known capacities among all
+        # links in the network.
+        # It is considered that the capacity of all links are umknown.
+        n_known_capacity = {}
+        difference_unknown_known = {}
+        for pole_index in poles_indices:
+            n_known_capacity[pole_index] = 0
+
+            # As long as all elements of these dictionaty are 1, the calculation
+            # must continue.
+            difference_unknown_known[
+                pole_index
+            ] = self.poles().n_distribution_links.loc[pole_index]
+
+        # Keep calculating until the capacity of all links are known.
+        while True:
+            poles_with_one_unknown = {
+                k: v for k, v in difference_unknown_known.items() if v == 1
+            }
+
+            if poles_with_one_unknown == {}:
+                break
+
+            # Each link consists of two poles, which are named `pole 1` and
+            # `pole 2` here.
+            # To process a link, first `pole_1` is chosen from the dictionary
+            # containing all poles with only one unknown connection.
+            for pole_1 in poles_with_one_unknown:
+
+                # Select all links that include `pole_1` in either side.
+                links_with_pole_1 = links[
+                    (links["from_node"] == pole_1) | (links["to_node"] == pole_1)
+                ]
+
+                # In case, there are more than one link in the system
+                # containing `pole_1`, the number of consumers in the child
+                # link should be added to the parent link.
+                if links_with_pole_1.shape[0] > 1:
+                    # Total number of connected consumers to all children links
+                    # must be added to the parent link.
+                    n_connected_consumers_children = links_with_pole_1.n_consumers.sum()
+                else:
+                    n_connected_consumers_children = 0
+
+                for link in links_with_pole_1.index:
+                    # If the number of served consumers in a link is equal to 0,
+                    # it means that the link still has its initial state and
+                    # must be calculated.
+                    if links.n_consumers.loc[link] == 0:
+                        # The second end of the link, which is another pole in
+                        # the network now has one known connected link.
+                        # So, its value in the dictionary should be updated.
+                        if pole_1 == links.from_node.loc[link]:
+                            pole_2 = links.to_node.loc[link]
+                        else:
+                            pole_2 = links.from_node.loc[link]
+
+                        n_known_capacity[pole_1] += 1
+                        difference_unknown_known[pole_1] -= n_known_capacity[pole_1]
+                        if pole_2 != power_house_index[0]:
+                            n_known_capacity[pole_2] += 1
+                            difference_unknown_known[pole_2] -= n_known_capacity[pole_2]
+
+                            self.nodes.parent.loc[pole_1] = pole_2
+                        else:
+                            self.nodes.parent.loc[pole_1] = power_house_index[0]
+
+                        n_connected_consumers = self.poles().n_connection_links.loc[
+                            pole_1
+                        ]
+                        self.links.n_consumers.loc[link] += n_connected_consumers
+                        self.links.n_consumers.loc[
+                            link
+                        ] += n_connected_consumers_children
+
+                    # Re-create `links` to implement the last changes in the
+                    # original object.
+                    links = self.links[self.links["link_type"] == "distribution"]
+
+        consumers = self.nodes[self.nodes["node_type"] == "consumer"]
+        for consumer_index in consumers.index:
+            self.nodes.n_connection_links.loc[consumer_index] = 1
+            self.nodes.parent.loc[consumer_index] = self.poles()[
+                self.poles()["cluster_label"]
+                == self.nodes.cluster_label.loc[consumer_index]
+            ].index[0]
+
+    def find_n_links_connected_to_each_pole(self):
+        """
+        Finds the number of both `distribution` and `connection` links that are
+        connected to each pole in the network.
+        """
+
+        # Then, select all `distribution` links in the network.
+        links_indices = self.links[self.links["link_type"] == "distribution"].index
+
+        # Initialize the dictionary containing all `distribution` links and
+        # obtain the final number of `connection` links attached to each pole.
+        n_distribution_links = {}
+        for pole_index in self.poles().index:
+            n_distribution_links[pole_index] = 0
+
+            cluster_label = self.nodes.cluster_label.loc[pole_index]
+            n_connections = self.nodes[
+                (self.nodes["cluster_label"] == cluster_label)
+                & (self.nodes["node_type"] == "consumer")
+            ].shape[0]
+            self.nodes.n_connection_links.loc[pole_index] = n_connections
+
+        # Find the number of `distribution` links attached to each pole.
+        for link_index in links_indices:
+            for pole_index in self.poles().index:
+                if pole_index in link_index:
+                    n_distribution_links[pole_index] += 1
+
+        # Add the number of `distribution` links connected to each pole in the
+        # grid object.
+        for pole, n_links in n_distribution_links.items():
+            self.nodes.n_distribution_links.loc[pole] = n_links
 
     def total_length_distribution_cable(self):
         """
