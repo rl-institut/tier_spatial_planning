@@ -24,3 +24,9 @@ def next_project_id_of_user(user_id, db):
 def get_project_of_user(user_id, db):
     projects = db.query(models.ProjectSetup).filter(models.ProjectSetup.id == user_id).all()
     return projects
+
+
+def get_project_setup_of_user(user_id, project_id, db):
+    project_setup = db.query(models.ProjectSetup).filter(models.ProjectSetup.id == user_id,
+                                                         models.ProjectSetup.project_id == project_id).first()
+    return project_setup

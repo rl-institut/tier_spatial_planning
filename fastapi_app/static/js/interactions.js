@@ -610,13 +610,15 @@ function load_previous_data(page_name){
     xhr.open("GET", url, true);
     xhr.responseType = "json";
     xhr.send();
-    
-    if (page_name === "project_setup") {
+
+    if (page_name.includes("project_setup")) {
         xhr.onreadystatechange = function () {
             if (this.readyState == 4 && this.status == 200) {
                 // push nodes to the map
                 results = this.response;
-                if (Object.keys(results).length !== 0 & results['projectName'] !== 'nan') {
+                if (Object.keys(results).length !== 0
+                    & results['projectName'] !== 'nan'
+                    & results['projectName'] === true){
                     document.getElementById("projectName").value = results['project_name'];
                     document.getElementById("projectDescription").value = results['project_description'];
                     document.getElementById("interestRate").value = results['interest_rate'];
@@ -627,7 +629,7 @@ function load_previous_data(page_name){
                 }
             }
         };
-    } else if (page_name === "grid_design") {
+    } else if (page_name.includes("grid_design")) {
         xhr.onreadystatechange = function () {
             if (this.readyState == 4 && this.status == 200) {
                 // push nodes to the map                

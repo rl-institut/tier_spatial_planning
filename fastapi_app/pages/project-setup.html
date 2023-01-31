@@ -5,7 +5,7 @@
     {% include '_head.html' %}
   </head>
   <body onload="redirect_if_cookie_is_missing();
-                load_previous_data('project_setup');
+                load_previous_data('project_setup/?project_id={{ project_id }}');
                 activate_wizard_element();
                 show_user_email_in_navbar();">
   {% include '_navbar.html' %}
@@ -53,17 +53,6 @@
                 >
  Simulation and optimization of power supply and grid layout for an off-grid system in a rural settlement.
                 </textarea>
-              </div>
-              <div class="input-item">
-                <label for="country" class="form-label">Country</label>
-                <select id="country" class="form-select">
-                  <option>Select Country</option>
-                </select>
-              </div>
-
-              <div class="input-item">
-                <label for="state" class="form-label">State</label>
-                <span id="state-code" ><input type="text" id="state" /></span>
               </div>
             </form>
           </div>
@@ -189,9 +178,4 @@
   {% include '_footer.html' %}
   </body>
   {% include '_scripts.html' %}
-  <script src="{{ url_for('static', path='js/country-states.js') }}"></script>
-  <script> document.getElementById("state").style.backgroundColor = '#FAFAFA';
-         document.getElementById("state-code").style.backgroundColor = '#FAFAFA';
-         document.getElementById("country").style.backgroundColor = '#FAFAFA';
-  </script>
 </html>

@@ -66,7 +66,6 @@ full_path_energy_flows = os.path.join(directory_database, "energy_flows.csv").re
 full_path_duration_curves = os.path.join(directory_database, "duration_curves.csv").replace("\\", "/")
 full_path_co2_emissions = os.path.join(directory_database, "co2_emissions.csv").replace("\\", "/")
 os.makedirs(directory_database, exist_ok=True)
-
 directory_inputs = os.path.join(directory_parent, "data", "inputs").replace("\\", "/")
 full_path_timeseries = os.path.join(directory_inputs, "timeseries.csv").replace("\\", "/")
 os.makedirs(directory_inputs, exist_ok=True)
@@ -212,8 +211,12 @@ async def home(request: Request, db: Session = Depends(get_db)):
 
 
 @app.get("/project_setup")
-async def project_setup(request: Request):
-    return templates.TemplateResponse("project-setup.html", {"request": request})
+async def project_setup(request: Request, db: Session = Depends(get_db)):
+    user_id = accounts.get_user_from_cookie(request, db).id
+    project_id = request.query_params.get('project_id')
+    if project_id is None:
+        project_id = queries.next_project_id_of_user(user_id, db)
+    return templates.TemplateResponse("project-setup.html", {"request": request, 'project_id': project_id})
 
 
 @app.get("/user_registration")
@@ -439,6 +442,7 @@ def database_add(add_nodes: bool, add_links: bool, inlet: dict):
         if len(df.index) != 0:
             df.to_csv(full_path_links, mode="a", header=False, index=False, float_format="%.0f",)
 
+
 @app.get("/database_to_js/{nodes_or_links}")
 async def database_read(nodes_or_links: str):
     # importing nodes and links from the csv files to the map
@@ -479,21 +483,30 @@ async def load_results():
 
 
 @app.get("/load_previous_data/{page_name}")
-async def load_previous_data(page_name):
+async def load_previous_data(page_name, request: Request, db: Session = Depends(get_db)):
     previous_data = {}
-    df = pd.read_csv(full_path_stored_inputs)
+
     # In case the CSV file containing all stored inputs is empty, the following
     # conditions will not be executed.
+    if page_name == "project_setup":
+        user_id = accounts.get_user_from_cookie(request, db).id
+        project_id = request.query_params.get('project_id')
+        if project_id == 'new':
+            project_id = queries.next_project_id_of_user(user_id, db)
+            return models.ProjectSetup(project_id=project_id)
+        try:
+            project_id = int(project_id)
+        except ValueError:
+            return None
+        project_setup = queries.get_project_setup_of_user(user_id, project_id, db)
+        if hasattr(project_setup, 'start_date'):
+            project_setup.start_date = str(project_setup.start_date.date())
+            return project_setup
+        else:
+            return None
+    df = pd.read_csv(full_path_stored_inputs)
     if not df.empty:
-        if page_name == "project_setup":
-            previous_data["project_name"] = str(df.loc[0, "project_name"])
-            previous_data["project_description"] = str(df.loc[0, "project_description"])
-            previous_data["interest_rate"] = str(df.loc[0, "interest_rate"])
-            previous_data["project_lifetime"] = str(df.loc[0, "project_lifetime"])
-            previous_data["start_date"] = str(df.loc[0, "start_date"])
-            previous_data["temporal_resolution"] = str(df.loc[0, "temporal_resolution"])
-            previous_data["n_days"] = str(df.loc[0, "n_days"])
-        elif page_name == "grid_design":
+            df = pd.read_csv(full_path_stored_inputs)
             previous_data["distribution_cable_lifetime"] = str(df.loc[0, "distribution_cable_lifetime"])
             previous_data["distribution_cable_capex"] = str(df.loc[0, "distribution_cable_capex"])
             previous_data["distribution_cable_max_length"] = str(df.loc[0, "distribution_cable_max_length"])

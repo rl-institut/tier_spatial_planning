@@ -42,8 +42,6 @@ class ProjectSetup(Base):
     project_id = Column(SMALLINT, primary_key=True, unique=False, index=True)
     project_name = Column(VARCHAR(51), nullable=True, unique=False)
     project_description = Column(VARCHAR(201), nullable=True, unique=False)
-    country = Column(VARCHAR(50), nullable=True, unique=False)
-    state = Column(VARCHAR(50), nullable=True, unique=False)
     created_at = Column(DateTime, nullable=False, server_default=sa.func.now())
     updated_at = Column(DateTime, nullable=False, server_default=sa.func.now(), server_onupdate=sa.func.now(),)
     interest_rate = Column(FLOAT, nullable=False)
