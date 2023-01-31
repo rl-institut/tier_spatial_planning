@@ -416,8 +416,7 @@ function optimize_energy_system() {
 // TODO: start date, interest rate, lifetime and wacc that come from another page are not recognized. 
 // Either global parameters must be defined or something else.
 function optimize_grid() {
-    document.getElementById('spnSpinner').style.display = "";
-    
+
     $.ajax({
         url: "optimize_grid/",
         type: "POST",

@@ -26,13 +26,12 @@
                  onclick="save_previous_data('project_setup');"
             {% elif title == 'Consumer Selection' %}
                  href="{{ url_for('grid_design')}}"
-                 onclick="save_previous_data('consumer_selection');"
             {% elif title == 'Grid Design' %}
                  href="{{ url_for('energy_system_design')}}"
                  onclick="save_previous_data('grid_design');"
             {% elif title == 'Energy System Design' %}
                  href="{{ url_for('simulation_results')}}"
-                 onclick="save_previous_data('energy_system_design');"
+                 onclick="optimization();"
             {% endif %}
             {% if title == 'PeopleSun' %}
                  {% set next_str='Test' %}
