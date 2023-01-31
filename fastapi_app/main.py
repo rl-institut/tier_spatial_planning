@@ -651,7 +651,7 @@ def set_access_token(response: Response, credentials: models.Credentials, db: Se
         name = user.email
     else:
         name = 'anonymous'
-    access_token_expires = datetime.timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(data={"sub": name}, expires_delta=access_token_expires)
     response.set_cookie(key="access_token", value=f"Bearer {access_token}",
                         httponly=True)  # set HttpOnly cookie in response
@@ -664,7 +664,7 @@ def login(response: Response, credentials: models.Credentials, db: Session = Dep
         user = authenticate_user(credentials.email, credentials.password, db)
         del credentials
         if user is not False:
-            access_token_expires = datetime.timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
+            access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
             access_token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
             response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
         return {"access_token": access_token, "token_type": "bearer"}
