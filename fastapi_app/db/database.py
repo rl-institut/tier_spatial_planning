@@ -1,3 +1,5 @@
+import pandas as pd
+import inspect
 from typing import Any
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
 from sqlalchemy import create_engine
@@ -22,6 +24,15 @@ class Base:
     @declared_attr
     def __tablename__(cls) -> str:
         return cls.__name__.lower()
+
+    def _get_df(self):
+        attr_dict = dict()
+        for (key, value) in inspect.getmembers(self):
+            if key[:1] != '_':
+                if key not in 'metadata' and type(value) != 'method':
+                    attr_dict[key] = value
+        df = pd.DataFrame.from_dict(attr_dict, orient='index').T
+        return df
 
 
 def get_db():

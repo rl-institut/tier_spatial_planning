@@ -47,5 +47,5 @@ def get_grid_design_of_user(user_id, project_id, db):
 def get_input_df(user_id, project_id, db):
     project_setup = get_project_setup_of_user(user_id, project_id, db)
     grid_design = get_grid_design_of_user(user_id, project_id, db)
-    df = pd.concat([pd.DataFrame(project_setup), pd.DataFrame(grid_design)])
+    df = pd.concat([project_setup._get_df(), grid_design._get_df()], axis=1).drop(columns=['id', 'project_id'])
     return df

@@ -65,9 +65,9 @@ class GridDesign(Base):
     pole_max_n_connections = Column(TINYINT(unsigned=True))
     mg_connection_cost = Column(FLOAT(precision=5, scale=1, unsigned=True))
     shs_lifetime = Column(TINYINT(unsigned=True))
-    shs_tier_one_capex = SMALLINT(unsigned=True)
-    shs_tier_two_capex = SMALLINT(unsigned=True)
-    shs_tier_three_capex = SMALLINT(unsigned=True)
+    shs_tier_one_capex = Column(SMALLINT(unsigned=True))
+    shs_tier_two_capex = Column(SMALLINT(unsigned=True))
+    shs_tier_three_capex = Column(SMALLINT(unsigned=True))
     shs_tier_four_capex = Column(FLOAT(precision=5, scale=1, unsigned=True))
     shs_tier_five_capex = Column(FLOAT(precision=5, scale=1, unsigned=True))
 

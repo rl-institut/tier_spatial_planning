@@ -904,7 +904,7 @@ class EnergySystemOptimizer(Optimizer):
         """
         explanation
         """
-        start_date_obj = datetime.strptime(self.start_date, "%Y-%m-%d")
+        start_date_obj = self.start_date
         self.start_date = start_date_obj.date()
         self.start_time = start_date_obj.time()
         self.start_datetime = datetime.combine(

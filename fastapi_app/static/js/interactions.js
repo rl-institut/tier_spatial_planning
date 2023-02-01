@@ -319,15 +319,16 @@ function boundary_select(mode) {
 /************************************************************/
 /*                       OPTIMIZATION                       */
 /************************************************************/
-function optimization() {
-    optimize_grid();
-    optimize_energy_system();
+function optimization(project_id) {
+    optimize_grid(project_id);
+    optimize_energy_system(project_id);
 }
 
-function optimize_energy_system() {
+function optimize_energy_system(project_id) {
+    window.alert('gurobi')
     // $("#loading").show();
     $.ajax({
-        url: "optimize_energy_system/",
+        url: "optimize_energy_system/"  + project_id,
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify({
@@ -415,10 +416,10 @@ function optimize_energy_system() {
 
 // TODO: start date, interest rate, lifetime and wacc that come from another page are not recognized. 
 // Either global parameters must be defined or something else.
-function optimize_grid() {
-
+function optimize_grid(project_id) {
+    window.alert('grid')
     $.ajax({
-        url: "optimize_grid/",
+        url: "optimize_grid/" + project_id,
         type: "POST",
         contentType: "application/json",
     });
