@@ -173,31 +173,6 @@ async def import_data(import_files: import_structure = None):
 
 @app.get("/")
 async def home(request: Request, db: Session = Depends(get_db)):
-    if os.path.exists(full_path_stored_inputs) is False:
-        header_stored_inputs = ["project_name",
-                                "project_description",
-                                "interest_rate",
-                                "project_lifetime",
-                                "start_date",
-                                "temporal_resolution",
-                                "n_days",
-                                "distribution_cable_lifetime",
-                                "distribution_cable_capex",
-                                "distribution_cable_max_length",
-                                "connection_cable_lifetime",
-                                "connection_cable_capex",
-                                "connection_cable_max_length",
-                                "pole_lifetime",
-                                "pole_capex",
-                                "pole_max_n_connections",
-                                "mg_connection_cost",
-                                "shs_lifetime",
-                                "shs_tier_one_capex",
-                                "shs_tier_two_capex",
-                                "shs_tier_three_capex",
-                                "shs_tier_four_capex",
-                                "shs_tier_five_capex",]
-        pd.DataFrame(columns=header_stored_inputs).to_csv(full_path_stored_inputs, index=False)
     # return templates.TemplateResponse("project-setup.html", {"request": request})
     user = accounts.get_user_from_cookie(request, db)
     if user is None:
@@ -243,12 +218,14 @@ async def account_overview(request: Request, db: Session = Depends(get_db)):
 
 @app.get("/consumer_selection")
 async def consumer_selection(request: Request):
-    return templates.TemplateResponse("consumer-selection.html", {"request": request})
+    project_id = request.query_params.get('project_id')
+    return templates.TemplateResponse("consumer-selection.html", {"request": request, 'project_id': project_id})
 
 
 @app.get("/grid_design")
 async def grid_design(request: Request):
-    return templates.TemplateResponse("grid-design.html", {"request": request})
+    project_id = request.query_params.get('project_id')
+    return templates.TemplateResponse("grid-design.html", {"request": request, 'project_id': project_id})
 
 
 @app.get("/demand_estimation")
@@ -484,19 +461,15 @@ async def load_results():
 
 @app.get("/load_previous_data/{page_name}")
 async def load_previous_data(page_name, request: Request, db: Session = Depends(get_db)):
-    previous_data = {}
-
-    # In case the CSV file containing all stored inputs is empty, the following
-    # conditions will not be executed.
+    user_id = accounts.get_user_from_cookie(request, db).id
+    project_id = request.query_params.get('project_id')
     if page_name == "project_setup":
-        user_id = accounts.get_user_from_cookie(request, db).id
-        project_id = request.query_params.get('project_id')
         if project_id == 'new':
             project_id = queries.next_project_id_of_user(user_id, db)
             return models.ProjectSetup(project_id=project_id)
         try:
             project_id = int(project_id)
-        except ValueError:
+        except (ValueError, TypeError):
             return None
         project_setup = queries.get_project_setup_of_user(user_id, project_id, db)
         if hasattr(project_setup, 'start_date'):
@@ -504,28 +477,22 @@ async def load_previous_data(page_name, request: Request, db: Session = Depends(
             return project_setup
         else:
             return None
-    df = pd.read_csv(full_path_stored_inputs)
-    if not df.empty:
-            df = pd.read_csv(full_path_stored_inputs)
-            previous_data["distribution_cable_lifetime"] = str(df.loc[0, "distribution_cable_lifetime"])
-            previous_data["distribution_cable_capex"] = str(df.loc[0, "distribution_cable_capex"])
-            previous_data["distribution_cable_max_length"] = str(df.loc[0, "distribution_cable_max_length"])
-            previous_data["connection_cable_lifetime"] = str(df.loc[0, "connection_cable_lifetime"])
-            previous_data["connection_cable_capex"] = str(df.loc[0, "connection_cable_capex"])
-            previous_data["connection_cable_max_length"] = str(df.loc[0, "connection_cable_max_length"])
-            previous_data["pole_lifetime"] = str(df.loc[0, "pole_lifetime"])
-            previous_data["pole_capex"] = str(df.loc[0, "pole_capex"])
-            previous_data["pole_max_n_connections"] = str(df.loc[0, "pole_max_n_connections"])
-            previous_data["mg_connection_cost"] = str(df.loc[0, "mg_connection_cost"])
-            previous_data["shs_lifetime"] = str(df.loc[0, "shs_lifetime"])
-            previous_data["shs_tier_one_capex"] = str(df.loc[0, "shs_tier_one_capex"])
-            previous_data["shs_tier_two_capex"] = str(df.loc[0, "shs_tier_two_capex"])
-            previous_data["shs_tier_three_capex"] = str(df.loc[0, "shs_tier_three_capex"])
-            previous_data["shs_tier_four_capex"] = str(df.loc[0, "shs_tier_four_capex"])
-            previous_data["shs_tier_five_capex"] = str(df.loc[0, "shs_tier_five_capex"])
-
-    # importing nodes and links from the csv files to the map
-    return previous_data
+    elif page_name == "consumer_selection":
+        try:
+            project_id = int(project_id)
+        except (ValueError, TypeError):
+            return None
+        is_nodes = request.query_params.get('nodes')
+        if is_nodes == 'true':
+            nodes = queries.get_nodes_of_user_project(user_id, project_id, db)
+            return nodes
+    elif page_name == "grid_design":
+        try:
+            project_id = int(project_id)
+        except (ValueError, TypeError):
+            return None
+        grid_design = queries.get_grid_design_of_user(user_id, project_id, db)
+        return grid_design
 
 
 @app.post("/add_user_to_db/")
@@ -599,36 +566,25 @@ async def has_cookie(request: Request):
 @app.post("/save_previous_data/{page_name}")
 async def save_previous_data(request: Request, page_name: str, save_previous_data_request:
                              models.SavePreviousDataRequest, db: Session = Depends(get_db)):
-    if page_name == "project_setup":
-        user = accounts.get_user_from_cookie(request, db)
+    user = accounts.get_user_from_cookie(request, db)
+    if "project_setup" in page_name:
         save_previous_data_request.page_setup['created_at'] = pd.Timestamp.now()
         save_previous_data_request.page_setup['updated_at'] = pd.Timestamp.now()
         save_previous_data_request.page_setup['id'] = user.id
-        save_previous_data_request.page_setup['project_id'] = queries.next_project_id_of_user(user_id=user.id, db=db)
+        project_id = int(request.query_params.get('project_id'))
+        # ToDo: Raise Error if project id missing redirect
+        save_previous_data_request.page_setup['project_id'] = project_id
         project_setup = models.ProjectSetup(**save_previous_data_request.page_setup)
-        db.add(project_setup)
+        db.merge(project_setup)
         db.commit()
-        db.refresh(project_setup)
-    elif page_name == "grid_design":
-        df = pd.read_csv(full_path_stored_inputs)
-        df.loc[0, "distribution_cable_lifetime"] = save_previous_data_request.grid_design["distribution_cable_lifetime"]
-        df.loc[0, "distribution_cable_capex"] = save_previous_data_request.grid_design["distribution_cable_capex"]
-        df.loc[0, "distribution_cable_max_length"] = save_previous_data_request.grid_design["distribution_cable_max_length"]
-        df.loc[0, "connection_cable_lifetime"] = save_previous_data_request.grid_design["connection_cable_lifetime"]
-        df.loc[0, "connection_cable_capex"] = save_previous_data_request.grid_design["connection_cable_capex"]
-        df.loc[0, "connection_cable_max_length"] = save_previous_data_request.grid_design["connection_cable_max_length"]
-        df.loc[0, "pole_lifetime"] = save_previous_data_request.grid_design["pole_lifetime"]
-        df.loc[0, "pole_capex"] = save_previous_data_request.grid_design["pole_capex"]
-        df.loc[0, "pole_max_n_connections"] = save_previous_data_request.grid_design["pole_max_n_connections"]
-        df.loc[0, "mg_connection_cost"] = save_previous_data_request.grid_design["mg_connection_cost"]
-        df.loc[0, "shs_lifetime"] = save_previous_data_request.grid_design["shs_lifetime"]
-        df.loc[0, "shs_tier_one_capex"] = save_previous_data_request.grid_design["shs_tier_one_capex"]
-        df.loc[0, "shs_tier_two_capex"] = save_previous_data_request.grid_design["shs_tier_two_capex"]
-        df.loc[0, "shs_tier_three_capex"] = save_previous_data_request.grid_design["shs_tier_three_capex"]
-        df.loc[0, "shs_tier_four_capex"] = save_previous_data_request.grid_design["shs_tier_four_capex"]
-        df.loc[0, "shs_tier_five_capex"] = save_previous_data_request.grid_design["shs_tier_five_capex"]
-        # save the updated dataframe
-        df.to_csv(full_path_stored_inputs, index=False)
+    elif "grid_design" in page_name:
+        save_previous_data_request.grid_design['id'] = user.id
+        # ToDo: Raise Error if project id missing redirect
+        project_id = int(request.query_params.get('project_id'))
+        save_previous_data_request.grid_design['project_id'] = project_id
+        grid_design = models.GridDesign(**save_previous_data_request.grid_design)
+        db.merge(grid_design)
+        db.commit()
 
 
 @app.get("/get_optimal_capacities/")
@@ -854,13 +810,17 @@ def demand_estimation(nodes, update_total_demand):
 
 
 @app.post("/optimize_grid/")
-async def optimize_grid():
+async def optimize_grid(request: Request, db: Session = Depends(get_db)):
+
+    user_id = accounts.get_user_from_cookie(request, db).id
+    project_id = request.query_params.get('project_id')
 
     # Grab Currrent Time Before Running the Code
     start_execution_time = time.monotonic()
 
     # create GridOptimizer object
-    df = pd.read_csv(full_path_stored_inputs)
+    #df = pd.read_csv(full_path_stored_inputs)
+    df = queries.get_input_df(user_id, project_id, db)
 
     opt = GridOptimizer(
         start_date=df.loc[0, "start_date"],

@@ -456,7 +456,6 @@ function load_results(){
 }
 
 function refresh_map(){
-    database_read(nodes_or_link = 'nodes', map_or_export = 'map');
     database_read(nodes_or_link = 'links', map_or_export = 'map');
 
 }
@@ -528,7 +527,7 @@ function account_overview() {
 
 
 function save_previous_data(page_name) {
-    if (page_name === "project_setup") {
+    if (page_name.includes("project_setup")) {
         transfer_data = JSON.stringify(
             {
                 page_setup: {
@@ -539,8 +538,6 @@ function save_previous_data(page_name) {
                     'start_date': startDate.value,
                     'temporal_resolution': temporalResolution.value,
                     'n_days': nDays.value,
-                    'country': country.value,
-                    'state': state.value,
                 },
                 grid_design: {
                     'distribution_cable_lifetime': 0,
@@ -562,7 +559,8 @@ function save_previous_data(page_name) {
                 }
             }
         );
-    } else if (page_name === "grid_design") {
+    }
+    else if (page_name.includes("grid_design")) {
         transfer_data = JSON.stringify(
             {
                 page_setup: {
@@ -826,6 +824,7 @@ function show_user_email_in_navbar() {
             contentType: "application/json",})
         .done(function (response) { document.getElementById("showMail").innerHTML = response.email;})
 }
+
 
 function redirect_if_cookie_is_missing(){
         $.ajax({url: "has_cookie/",

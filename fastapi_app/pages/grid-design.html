@@ -5,7 +5,7 @@
     {% include '_head.html' %}
   </head>
   <body onload="redirect_if_cookie_is_missing();
-                load_previous_data('grid_design');
+                load_previous_data('grid_design/?project_id={{ project_id }}');
                 boxVisibilityShs();
                 activate_wizard_element();
                 show_user_email_in_navbar();">
@@ -28,6 +28,8 @@
                         <span class="input-group-text">Lifetime</span>
                         <input
                           type="number"
+                          step="1"
+                          onchange="this.value = Math.max(0, Math.min(100, parseInt(this.value)));"
                           class="form-control"
                           id="distributionCableLifetime"
                           value="25"
@@ -41,6 +43,7 @@
                         <span class="input-group-text">CAPEX</span>
                         <input
                           type="number"
+                          onchange="this.value = Math.max(0, Math.min(100, parseFloat(this.value))).toFixed(1);"
                           class="form-control"
                           id="distributionCableCapex"
                           value="10"
@@ -54,6 +57,8 @@
                         <span class="input-group-text">Max. Length</span>
                         <input
                           type="number"
+                          step="1"
+                          onchange="this.value = Math.max(0, Math.min(150, parseInt(this.value)));"
                           class="form-control"
                           id="distributionCableMaxLength"
                           value="40"
@@ -75,6 +80,7 @@
                         <input
                           type="number"
                           class="form-control"
+                          onchange="this.value = Math.max(0, Math.min(100, parseInt(this.value)));"
                           id="connectionCableLifetime"
                           value="25"
                           required
@@ -87,6 +93,7 @@
                         <span class="input-group-text">CAPEX</span>
                         <input
                           type="number"
+                          onchange="this.value = Math.max(0, Math.min(100, parseFloat(this.value))).toFixed(1);"
                           class="form-control"
                           id="connectionCableCapex"
                           value="4"
@@ -100,6 +107,7 @@
                         <span class="input-group-text">Max. Length</span>
                         <input
                           type="number"
+                          onchange="this.value = Math.max(0, Math.min(200, parseInt(this.value)));"
                           class="form-control"
                           id="connectionCableMaxLength"
                           value="20"
@@ -123,6 +131,7 @@
                         <input
                           type="number"
                           class="form-control"
+                          onchange="this.value = Math.max(0, Math.min(100, parseInt(this.value)));"
                           id="poleLifetime"
                           value="25"
                           required
@@ -135,6 +144,7 @@
                         <span class="input-group-text">CAPEX</span>
                         <input
                           type="number"
+                          onchange="this.value = Math.max(0, Math.min(3000, parseFloat(this.value))).toFixed(1);"
                           class="form-control"
                           id="poleCapex"
                           value="800"
@@ -150,6 +160,7 @@
                         >
                         <input
                           type="number"
+                          onchange="this.value = Math.max(0, Math.min(20, parseInt(this.value)));"
                           class="form-control"
                           id="poleMaxNumberOfConnections"
                           value="4"
@@ -170,6 +181,7 @@
                         <span class="input-group-text">Connection Cost</span>
                         <input
                           type="number"
+                          onchange="this.value = Math.max(0, Math.min(1500, parseFloat(this.value))).toFixed(1);"
                           class="form-control"
                           id="mgConnectionCost"
                           value="350"
@@ -207,6 +219,7 @@
                     >
                     <input
                       type="number"
+                      onchange="this.value = Math.max(0, Math.min(35, parseInt(this.value)));"
                       class="form-control"
                       id="shsLifetime"
                       value="10"
@@ -224,6 +237,7 @@
                     >
                     <input
                       type="number"
+                      onchange="this.value = Math.max(0, Math.min(1500, parseInt(this.value)));"
                       class="form-control"
                       id="shsTierOneCapex"
                       value="100"
@@ -247,6 +261,7 @@
                     >
                     <input
                       type="number"
+                      onchange="this.value = Math.max(0, Math.min(1500, parseInt(this.value)));"
                       class="form-control"
                       id="shsTierTwoCapex"
                       value="350"
@@ -270,6 +285,7 @@
                     >
                     <input
                       type="number"
+                      onchange="this.value = Math.max(0, Math.min(1500, parseInt(this.value)));"
                       class="form-control"
                       id="shsTierThreeCapex"
                       value="600"
@@ -293,6 +309,7 @@
                     >
                     <input
                       type="number"
+                      onchange="this.value = Math.max(0, Math.min(400, parseFloat(this.value))).toFixed(1);"
                       class="form-control"
                       id="shsTierFourCapex"
                       value="20"
@@ -316,6 +333,7 @@
                     >
                     <input
                       type="number"
+                      onchange="this.value = Math.max(0, Math.min(100, parseFloat(this.value))).toFixed(1);"
                       class="form-control"
                       id="shsTierFiveCapex"
                       value="30"

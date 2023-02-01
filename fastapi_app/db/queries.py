@@ -30,3 +30,22 @@ def get_project_setup_of_user(user_id, project_id, db):
     project_setup = db.query(models.ProjectSetup).filter(models.ProjectSetup.id == user_id,
                                                          models.ProjectSetup.project_id == project_id).first()
     return project_setup
+
+
+def get_nodes_of_user_project(user_id, project_id, db):
+    nodes = db.query(models.Nodes).filter(models.Nodes.id == user_id,
+                                          models.Nodes.project_id == project_id).first()
+    return nodes
+
+
+def get_grid_design_of_user(user_id, project_id, db):
+    grid_design = db.query(models.GridDesign).filter(models.GridDesign.id == user_id,
+                                                     models.GridDesign.project_id == project_id).first()
+    return grid_design
+
+
+def get_input_df(user_id, project_id, db):
+    project_setup = get_project_setup_of_user(user_id, project_id, db)
+    grid_design = get_grid_design_of_user(user_id, project_id, db)
+    df = pd.concat([pd.DataFrame(project_setup), pd.DataFrame(grid_design)])
+    return df
