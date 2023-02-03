@@ -64,6 +64,7 @@ def update_nodes_and_links(add_nodes: bool, add_links: bool, inlet: dict, user_i
         df_total.average_consumption = df_total.average_consumption.map(lambda x: "%.3f" % x)
         # finally adding the refined dataframe (if it is not empty) to the existing csv file
         if len(df_total.index) != 0:
+            df_total['parent'] = df_total['parent'].replace('unknown', None)
             insert_nodes_df(df_total, user_id, project_id, db)
     if add_links:
         links = inlet

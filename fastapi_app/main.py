@@ -772,7 +772,7 @@ async def optimize_grid(project_id, request: Request, db: Session = Depends(get_
     # get nodes from the database (CSV file) as a dictionary
     # then convert it again to a panda dataframe for simplicity
     # TODO: check the format of nodes from the database_read()
-    nodes = await database_read(nodes_or_links="nodes", project_id=project_id, request=request)
+    nodes = await database_read(nodes_or_links="nodes", project_id=project_id, request=request, db=db)
     nodes = pd.DataFrame.from_dict(nodes)
 
     # if there is no element in the nodes, optimization will be terminated
