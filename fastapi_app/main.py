@@ -217,6 +217,10 @@ async def account_overview(request: Request, db: Session = Depends(get_db)):
 @app.get("/consumer_selection")
 async def consumer_selection(request: Request):
     project_id = request.query_params.get('project_id')
+    try:
+        int(project_id)
+    except (TypeError, ValueError):
+        return templates.TemplateResponse("landing-page.html", {"request": request})
     return templates.TemplateResponse("consumer-selection.html", {"request": request, 'project_id': project_id})
 
 
@@ -240,6 +244,10 @@ async def energy_system_design(request: Request):
 @app.get("/simulation_results")
 async def simulation_results(request: Request):
     project_id = request.query_params.get('project_id')
+    try:
+        int(project_id)
+    except (TypeError, ValueError):
+        return templates.TemplateResponse("landing-page.html", {"request": request})
     return templates.TemplateResponse("simulation-results.html", {"request": request, 'project_id': project_id})
 
 
@@ -417,15 +425,6 @@ async def load_previous_data(page_name, request: Request, db: Session = Depends(
             return project_setup
         else:
             return None
-    elif page_name == "consumer_selection":
-        try:
-            project_id = int(project_id)
-        except (ValueError, TypeError):
-            return None
-        is_nodes = request.query_params.get('nodes')
-        if is_nodes == 'true':
-            nodes = queries.get_nodes_of_user_project(user_id, project_id, db)
-            return nodes
     elif page_name == "grid_design":
         try:
             project_id = int(project_id)
@@ -773,7 +772,7 @@ async def optimize_grid(project_id, request: Request, db: Session = Depends(get_
     # get nodes from the database (CSV file) as a dictionary
     # then convert it again to a panda dataframe for simplicity
     # TODO: check the format of nodes from the database_read()
-    nodes = await database_read(nodes_or_links="nodes")
+    nodes = await database_read(nodes_or_links="nodes", project_id=project_id, request=request)
     nodes = pd.DataFrame.from_dict(nodes)
 
     # if there is no element in the nodes, optimization will be terminated

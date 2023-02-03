@@ -38,8 +38,6 @@ class Base:
     def get_json(self):
         df = self.get_df().dropna(how='all', axis=0)
         data_json = json.loads(df.to_json())
-        data_json.pop('id')
-        data_json.pop('project_id')
         return data_json
 
 

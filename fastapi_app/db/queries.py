@@ -1,3 +1,4 @@
+import json
 import pandas as pd
 import sqlalchemy as sa
 from fastapi_app.db import models
@@ -32,44 +33,28 @@ def get_project_setup_of_user(user_id, project_id, db):
     return project_setup
 
 
-def get_nodes_of_user_project(user_id, project_id, db):
-    nodes = db.query(models.Nodes).filter(models.Nodes.id == user_id,
-                                          models.Nodes.project_id == project_id).first()
-    if nodes is None:
-        nodes = models.Nodes()
-    return nodes
-
-
 def get_nodes_df(user_id, project_id, db):
-    nodes = get_nodes_of_user_project(user_id, project_id, db)
-    df = nodes.get_df().drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
+    query = db.query(models.Nodes).filter(models.Nodes.id == user_id, models.Nodes.project_id == project_id)
+    df = pd.read_sql(query.statement, db.bind).drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
     return df
 
 
 def get_nodes_json(user_id, project_id, db):
-    nodes = get_nodes_of_user_project(user_id, project_id, db)
-    nodes_json = nodes.get_json()
+    nodes_df = get_nodes_df(user_id, project_id, db)
+    nodes_json = json.loads(nodes_df.to_json())
     return nodes_json
 
 
-def get_links_of_user_project(user_id, project_id, db):
-    links = db.query(models.Links).filter(models.Links.id == user_id,
-                                          models.Links.project_id == project_id).first()
-    if links is None:
-        links = models.Links()
-    return links
-
-
 def get_links_df(user_id, project_id, db):
-    links = get_links_of_user_project(user_id, project_id, db)
-    df = links.get_df().drop(columns=['id', 'project_id'])
+    query = db.query(models.Links).filter(models.Links.id == user_id, models.Links.project_id == project_id)
+    df = pd.read_sql(query.statement, db.bind).drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
     return df
 
 
 def get_links_json(user_id, project_id, db):
-    links = get_links_of_user_project(user_id, project_id, db)
-    links_json = links.get_json()
-    return links_json
+    links_df = get_links_df(user_id, project_id, db)
+    nodes_json = json.loads(links_df.to_json())
+    return nodes_json
 
 
 def get_grid_design_of_user(user_id, project_id, db):

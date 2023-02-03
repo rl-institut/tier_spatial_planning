@@ -1,9 +1,4 @@
-// $(document).ready(function () {
-//     // $(document).foundation();
-//     database_read(nodes_or_links = 'nodes', map_or_export = 'map');
 
-//     // database_initialization(nodes = true, links = true);
-// });
 
 // SET FUNCTIONS
 function setVisibilityNodeBox() {
@@ -662,7 +657,7 @@ function load_previous_data(page_name){
 /*                   EXPORT DATA AS XLSX                    */
 /************************************************************/
 
-function export_data() {
+function export_data(project_id) {
     // Create the excel workbook and fill it out with some properties
     var workbook = XLSX.utils.book_new();
     workbook.Props = {
@@ -673,7 +668,7 @@ function export_data() {
     };
   
     // Get all nodes from the database.
-    database_read(nodes_or_links = 'nodes', map_or_export = 'export', function (data_nodes) {
+    database_read(nodes_or_links = 'nodes', map_or_export = 'export', project_id, function (data_nodes) {
         
         // Since the format of the JSON file exported by the `database_read` is
         // not compatible with the `Sheetjs` library, we need to restructure it
@@ -770,8 +765,8 @@ function import_data(project_id) {
             dataType: "json",
             statusCode: {
             200: function () {
-                database_read(nodes_or_links = 'nodes', map_or_export = 'map');
-                database_read(nodes_or_links = 'links', map_or_export = 'map');
+                database_read(nodes_or_links = 'nodes', map_or_export = 'map', project_id);
+                database_read(nodes_or_links = 'links', map_or_export = 'map', project_id);
             },
             },
         });
@@ -782,7 +777,7 @@ function import_data(project_id) {
 /*                    SOLAR-HOME-SYSTEM                     */
 /************************************************************/
 
-function identify_shs() {
+function identify_shs(project_id) {
     const max_distance_between_poles = 40; // must be definded globally in the fututre
     const cable_pole_price_per_meter =
         cost_distribution_cable.value + cost_pole.value / max_distance_between_poles;
@@ -803,7 +798,7 @@ function identify_shs() {
         dataType: "json",
         statusCode: {
             200: function () {
-                database_read(nodes_or_links = 'nodes', map_or_export = 'map');
+                database_read(nodes_or_links = 'nodes', map_or_export = 'map', project_id);
                 //refreshNodeFromDataBase();
                 clearLinksDataBase();
                 $("#loading").hide();
