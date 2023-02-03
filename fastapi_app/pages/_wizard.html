@@ -3,39 +3,39 @@
         <div class="wizard__steps">
           <ul id="wiz">
             <li>
-              <a href="{{ url_for('project_setup') }}">Project Setup</a>
+              <a href="project_setup/?project_id={{ project_id }}">Project Setup</a>
             </li>
             <li>
               <a
-                href="{{ url_for('consumer_selection') }}"
+                href="consumer_selection/?project_id={{ project_id }}"
                 onclick="save_previous_data('project_setup');"
                 >Consumer Selection</a
               >
             </li>
             <li>
                 <a
-                href="{{ url_for('demand_estimation') }}"
+                href="demand_estimation/?project_id={{ project_id }}"
                 onclick="save_previous_data('demand_estimation');"
                 >Demand Estimation</a
               >
             </li>
             <li>
               <a
-                href="{{ url_for('grid_design') }}"
+                href="grid_design/?project_id={{ project_id }}"
                 onclick="save_previous_data('project_setup');"
                 >Grid Design</a
               >
             </li>
             <li>
               <a
-                href="{{ url_for('energy_system_design') }}"
+                href="energy_system_design/?project_id={{ project_id }}"
                 onclick="save_previous_data('project_setup');"
                 >Energy System Design</a
               >
             </li>
             <li>
               <a
-                href="{{ url_for('simulation_results') }}"
+                href="simulation_results/?project_id={{ project_id }}"
                 onclick="save_previous_data('project_setup');"
                 >Simulation Results</a
               >

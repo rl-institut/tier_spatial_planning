@@ -812,7 +812,7 @@ function activate_wizard_element() {
     let current = location.pathname.split('/').pop();
     $('#wiz li').each(function(){
         let $this = $(this);
-        let text = $this[0].getElementsByTagName('a')[0].href.split('/').pop()
+        let text = $this[0].getElementsByTagName('a')[0].href.split('/')[3]
         if(text.indexOf(current) !== -1){$this.addClass('active');}})}
 
 
