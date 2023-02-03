@@ -2,7 +2,7 @@ import fastapi_app.tools.boundary_identification as bi
 import fastapi_app.tools.coordinates_conversion as conv
 import fastapi_app.tools.shs_identification as shs_ident
 import fastapi_app.db.models as models
-from fastapi import FastAPI, Request, APIRouter, Response
+from fastapi import FastAPI, Request, Response
 from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -16,7 +16,7 @@ from fastapi_app.tools.accounts import Hasher, create_guid, is_valid_credentials
 from fastapi_app.tools import accounts
 from fastapi_app.db import config
 from fastapi_app.db.database import get_db
-from fastapi_app.db import queries
+from fastapi_app.db import queries, inserts
 import math
 import urllib.request
 import ssl
@@ -24,7 +24,6 @@ import json
 import pandas as pd
 import numpy as np
 import os
-import aiofiles
 from datetime import datetime, timedelta
 
 # for debugging
@@ -56,10 +55,7 @@ templates = Jinja2Templates(directory="fastapi_app/pages")
 directory_parent = "fastapi_app"
 
 directory_database = os.path.join(directory_parent, "data", "database").replace("\\", "/")
-full_path_nodes = os.path.join(directory_database, "nodes.csv").replace("\\", "/")
-full_path_links = os.path.join(directory_database, "links.csv").replace("\\", "/")
 full_path_demands = os.path.join(directory_database, "demands.csv").replace("\\", "/")
-full_path_stored_inputs = os.path.join(directory_database, "stored_inputs.csv").replace("\\", "/")
 full_path_stored_results = os.path.join(directory_database, "stored_results.csv").replace("\\", "/")
 full_path_demand_coverage = os.path.join(directory_database, "demand_coverage.csv").replace("\\", "/")
 full_path_energy_flows = os.path.join(directory_database, "energy_flows.csv").replace("\\", "/")
@@ -122,7 +118,7 @@ async def export_data(generate_export_file_request: models.GenerateExportFileReq
 
     # create the *.xlsx file with sheets for nodes, links and settings
     with pd.ExcelWriter(
-        full_path_import_export
+            full_path_import_export
     ) as writer:  # pylint: disable=abstract-class-instantiated
         nodes_df.to_excel(
             excel_writer=writer,
@@ -143,7 +139,7 @@ async def export_data(generate_export_file_request: models.GenerateExportFileReq
 
 @app.get("/download_export_file",
          responses={200: {"description": "xlsx file containing the information about the configuration.",
-                          "content": {"static/io/test_excel_node.xlsx": {"example": "No example available."}},}},)
+                          "content": {"static/io/test_excel_node.xlsx": {"example": "No example available."}}, }}, )
 async def download_export_file():
     file_name = "temp.xlsx"
     # Download xlsx file
@@ -156,17 +152,19 @@ async def download_export_file():
         return {"error": "File not found!"}
 
 
-@app.post("/import_data")
-async def import_data(import_files: import_structure = None):
+@app.post("/import_data/{project_id}")
+async def import_data(project_id, request: Request, import_files: import_structure = None,
+                      db: Session = Depends(get_db)):
     # add nodes from the 'nodes' sheet of the excel file to the 'nodes.csv' file
     # TODO: update the template for adding nodes
     nodes = import_files["nodes_to_import"]
     links = import_files["links_to_import"]
+    user_id = accounts.get_user_from_cookie(request, db).id
     if len(nodes) > 0:
-        database_add(add_nodes=True, add_links=False, inlet=nodes)
+        inserts.update_nodes_and_links(True, False, nodes, user_id, project_id, db)
 
     if len(links) > 0:
-        database_add(add_nodes=False, add_links=True, inlet=links)
+        inserts.update_nodes_and_links(False, True, links, user_id, project_id, db)
 
     # ------------------------------ HANDLE REQUEST ------------------------------#
 
@@ -235,12 +233,14 @@ async def demand_estimation(request: Request):
 
 @app.get("/energy_system_design")
 async def energy_system_design(request: Request):
-    return templates.TemplateResponse("energy-system-design.html", {"request": request})
+    project_id = request.query_params.get('project_id')
+    return templates.TemplateResponse("energy-system-design.html", {"request": request, 'project_id': project_id})
 
 
 @app.get("/simulation_results")
 async def simulation_results(request: Request):
-    return templates.TemplateResponse("simulation-results.html", {"request": request})
+    project_id = request.query_params.get('project_id')
+    return templates.TemplateResponse("simulation-results.html", {"request": request, 'project_id': project_id})
 
 
 @app.get("/get_demand_coverage_data/")
@@ -253,82 +253,67 @@ async def database_initialization(nodes, links):
     # creating the csv files
     # - in case these files do not exist they will be created here
     # - each time the code runs from the beginning, the old csv files will be replaced with new blank ones
-    header_nodes = ["latitude",
-                    "longitude",
-                    "node_type",
-                    "consumer_type",
-                    "consumer_detail",
-                    "surface_area",
-                    "peak_demand",
-                    "average_consumption",
-                    "is_connected",
-                    "how_added",]
-    header_links = ["lat_from", "lon_from", "lat_to", "lon_to", "link_type", "length"]
     header_stored_results = ["n_consumers",
-                            "n_shs_consumers",
-                            "n_poles",
-                            "n_distribution_links",
-                            "n_connection_links",
-                            "length_distribution_cable",
-                            "average_length_distribution_cable",
-                            "length_connection_cable",
-                            "average_length_connection_cable",
-                            "cost_grid",
-                            "cost_shs",
-                            "lcoe",
-                            "res",
-                            "shortage_total",
-                            "surplus_rate",
-                            "cost_renewable_assets",
-                            "cost_non_renewable_assets",
-                            "cost_fuel",
-                            "pv_capacity",
-                            "battery_capacity",
-                            "inverter_capacity",
-                            "rectifier_capacity",
-                            "diesel_genset_capacity",
-                            "peak_demand",
-                            "surplus",
-                            "fuel_to_diesel_genset",
-                            "diesel_genset_to_rectifier",
-                            "diesel_genset_to_demand",
-                            "rectifier_to_dc_bus",
-                            "pv_to_dc_bus",
-                            "battery_to_dc_bus",
-                            "dc_bus_to_battery",
-                            "dc_bus_to_inverter",
-                            "dc_bus_to_surplus",
-                            "inverter_to_demand",
-                            "time_grid_design",
-                            "time_energy_system_design",
-                            "time",]
+                             "n_shs_consumers",
+                             "n_poles",
+                             "n_distribution_links",
+                             "n_connection_links",
+                             "length_distribution_cable",
+                             "average_length_distribution_cable",
+                             "length_connection_cable",
+                             "average_length_connection_cable",
+                             "cost_grid",
+                             "cost_shs",
+                             "lcoe",
+                             "res",
+                             "shortage_total",
+                             "surplus_rate",
+                             "cost_renewable_assets",
+                             "cost_non_renewable_assets",
+                             "cost_fuel",
+                             "pv_capacity",
+                             "battery_capacity",
+                             "inverter_capacity",
+                             "rectifier_capacity",
+                             "diesel_genset_capacity",
+                             "peak_demand",
+                             "surplus",
+                             "fuel_to_diesel_genset",
+                             "diesel_genset_to_rectifier",
+                             "diesel_genset_to_demand",
+                             "rectifier_to_dc_bus",
+                             "pv_to_dc_bus",
+                             "battery_to_dc_bus",
+                             "dc_bus_to_battery",
+                             "dc_bus_to_inverter",
+                             "dc_bus_to_surplus",
+                             "inverter_to_demand",
+                             "time_grid_design",
+                             "time_energy_system_design",
+                             "time", ]
     header_energy_flows = ["diesel_genset_production",
-                            "pv_production",
-                            "battery_charge",
-                            "battery_discharge",
-                            "battery_content",
-                            "demand",
-                            "surplus",]
+                           "pv_production",
+                           "battery_charge",
+                           "battery_discharge",
+                           "battery_content",
+                           "demand",
+                           "surplus", ]
     header_demand_coverage = ["demand", "renewable", "non-renewable", "surplus"]
     header_duration_curves = ["diesel_genset_percentage",
-                                "diesel_genset_duration",
-                                "pv_percentage",
-                                "pv_duration",
-                                "rectifier_percentage",
-                                "rectifier_duration",
-                                "inverter_percentage",
-                                "inverter_duration",
-                                "battery_charge_percentage",
-                                "battery_charge_duration",
-                                "battery_discharge_percentage",
-                                "battery_discharge_duration",]
+                              "diesel_genset_duration",
+                              "pv_percentage",
+                              "pv_duration",
+                              "rectifier_percentage",
+                              "rectifier_duration",
+                              "inverter_percentage",
+                              "inverter_duration",
+                              "battery_charge_percentage",
+                              "battery_charge_duration",
+                              "battery_discharge_percentage",
+                              "battery_discharge_duration", ]
     header_co2_emissions = ["non_renewable_electricity_production",
                             "hybrid_electricity_production",
-                            "co2_savings",]
-    if nodes:
-        pd.DataFrame(columns=header_nodes).to_csv(full_path_nodes, index=False)
-    if links:
-        pd.DataFrame(columns=header_links).to_csv(full_path_links, index=False)
+                            "co2_savings", ]
     pd.DataFrame(columns=header_stored_results).to_csv(full_path_stored_results, index=False)
     pd.DataFrame(columns=header_energy_flows).to_csv(full_path_energy_flows, index=False)
     pd.DataFrame(columns=header_duration_curves).to_csv(full_path_duration_curves, index=False)
@@ -336,10 +321,15 @@ async def database_initialization(nodes, links):
     pd.DataFrame(columns=header_demand_coverage).to_csv(full_path_demand_coverage, index=False)
 
 
+
 # add new manually-selected nodes to the *.csv file
-@app.post("/database_add_remove_manual/{add_remove}")
-async def database_add_remove_manual(add_remove: str, add_node_request: models.AddNodeRequest):
-    headers = pd.read_csv(full_path_nodes).columns
+@app.post("/database_add_remove_manual/{add_remove}/{project_id}")
+async def database_add_remove_manual(add_remove: str, project_id, add_node_request: models.AddNodeRequest,
+                                     request: Request, db: Session = Depends(get_db)):
+    user_id = accounts.get_user_from_cookie(request, db).id
+    # headers = pd.read_csv(full_path_nodes).columns
+    df = queries.get_nodes_df(user_id, project_id, db)
+    headers = df.columns
     nodes = {}
     nodes[headers[0]] = [add_node_request.latitude]
     nodes[headers[1]] = [add_node_request.longitude]
@@ -353,82 +343,32 @@ async def database_add_remove_manual(add_remove: str, add_node_request: models.A
     nodes[headers[9]] = [add_node_request.how_added]
     if add_remove == "remove":
         # reading the existing CSV file of nodes, and then removing the corresponding row
-        df = pd.read_csv(full_path_nodes)
         # Since a node is removed, the calculated positions for ALL poles and
         # the power house must be first removed.
         df = df[(df["node_type"] != "pole") & (df["node_type"] != "power-house")]
         for index in df.index:
             if (round(add_node_request.latitude, 6) == df.to_dict()["latitude"][index]) and \
-               (round(add_node_request.longitude, 6) == df.to_dict()["longitude"][index]):
+                    (round(add_node_request.longitude, 6) == df.to_dict()["longitude"][index]):
                 df.drop(labels=index, axis=0, inplace=True)
         # Remove all existing nodes and links.
         await database_initialization(nodes=True, links=True)
         # storing the nodes in the database (updating the existing CSV file)
         df = df.reset_index(drop=True)
-        database_add(add_nodes=True, add_links=False, inlet=df.to_dict())
+        inserts.update_nodes_and_links(True, False, df.to_dict(), user_id, project_id, db)
     else:
-        database_add(add_nodes=True, add_links=False, inlet=nodes)
+        inserts.update_nodes_and_links(True, False, nodes, user_id, project_id, db)
 
 
-# add new nodes/links to the database
-def database_add(add_nodes: bool, add_links: bool, inlet: dict):
-    # updating csv files based on the added nodes
-    if add_nodes:
-        nodes = inlet
-        # newly added nodes
-        df = pd.DataFrame.from_dict(nodes).round(decimals=6)
-        # the existing database
-        if os.path.exists(full_path_nodes):
-            df_existing = pd.read_csv(full_path_nodes)
-            # Remove all existing poles and the power house.
-            df_existing = df_existing[(df_existing["node_type"] != "pole") &
-                                      (df_existing["node_type"] != "power-house")]
-        else:
-            df_existing = pd.DataFrame()
-            # Aappend the existing database with the new nodes and remove
-        # duplicates (only when both lat and lon are identical).
-        df_total = df_existing.append(df).drop_duplicates(subset=["latitude", "longitude", "node_type"], inplace=False)
-        # storing the nodes in the database (updating the existing CSV file).
-        df_total = df_total.reset_index(drop=True)
-        # If consumers are added to the database or removed from it, all
-        # already existing links and all existing poles must be removed.
-        if df["node_type"].str.contains("consumer").sum() > 0:
-            # Remove existing links.
-            if os.path.exists(full_path_links):
-                df_links = pd.read_csv(full_path_links)
-                df_links.drop(labels=df_links.index, axis=0, inplace=True)
-                df_links.to_csv(full_path_links, index=False, header=df_links.head)
-        # defining the precision of data
-        df_total.latitude = df_total.latitude.map(lambda x: "%.6f" % x)
-        df_total.longitude = df_total.longitude.map(lambda x: "%.6f" % x)
-        df_total.surface_area = df_total.surface_area.map(lambda x: "%.2f" % x)
-        df_total.peak_demand = df_total.peak_demand.map(lambda x: "%.3f" % x)
-        df_total.average_consumption = df_total.average_consumption.map(lambda x: "%.3f" % x)
-        # finally adding the refined dataframe (if it is not empty) to the existing csv file
-        if len(df_total.index) != 0:
-            df_total.to_csv(full_path_nodes, index=False, header=df_existing.head)
-    if add_links:
-        links = inlet
-        # defining the precision of data
-        df = pd.DataFrame.from_dict(links)
-        df.lat_from = df.lat_from.map(lambda x: "%.6f" % x)
-        df.lon_from = df.lon_from.map(lambda x: "%.6f" % x)
-        df.lat_to = df.lat_to.map(lambda x: "%.6f" % x)
-        df.lon_to = df.lon_to.map(lambda x: "%.6f" % x)
-        # adding the links to the existing csv file
-        if len(df.index) != 0:
-            df.to_csv(full_path_links, mode="a", header=False, index=False, float_format="%.0f",)
-
-
-@app.get("/database_to_js/{nodes_or_links}")
-async def database_read(nodes_or_links: str):
+@app.get("/database_to_js/{nodes_or_links}/{project_id}")
+async def database_read(nodes_or_links: str, project_id, request: Request, db: Session = Depends(get_db)):
     # importing nodes and links from the csv files to the map
+    user_id = accounts.get_user_from_cookie(request, db).id
     if nodes_or_links == "nodes":
-        nodes_list = json.loads(pd.read_csv(full_path_nodes).to_json())
-        return nodes_list
+        nodes_json = queries.get_nodes_json(user_id, project_id, db)
+        return nodes_json
     else:
-        links_list = json.loads(pd.read_csv(full_path_links).to_json())
-        return links_list
+        links_json = queries.get_links_json(user_id, project_id, db)
+        return links_json
 
 
 @app.get("/load_results/")
@@ -565,7 +505,7 @@ async def has_cookie(request: Request):
 
 @app.post("/save_previous_data/{page_name}")
 async def save_previous_data(request: Request, page_name: str, save_previous_data_request:
-                             models.SavePreviousDataRequest, db: Session = Depends(get_db)):
+models.SavePreviousDataRequest, db: Session = Depends(get_db)):
     user = accounts.get_user_from_cookie(request, db)
     if "project_setup" in page_name:
         save_previous_data_request.page_setup['created_at'] = pd.Timestamp.now()
@@ -647,8 +587,11 @@ async def get_co2_emissions_data():
     return json.loads(pd.read_csv(full_path_co2_emissions).to_json())
 
 
-@app.post("/database_add_remove_automatic/{add_remove}")
-async def database_add_remove_automatic(add_remove: str, selectBoundariesRequest: models.SelectBoundariesRequest):
+@app.post("/database_add_remove_automatic/{add_remove}/{project_id}")
+async def database_add_remove_automatic(add_remove: str, project_id,
+                                        selectBoundariesRequest: models.SelectBoundariesRequest,
+                                        request: Request, db: Session = Depends(get_db)):
+    user_id = accounts.get_user_from_cookie(request, db).id
     boundary_coordinates = selectBoundariesRequest.boundary_coordinates
     # latitudes and longitudes of all buildings in the selected boundary
     latitudes = [x[0] for x in boundary_coordinates]
@@ -680,7 +623,7 @@ async def database_add_remove_automatic(add_remove: str, selectBoundariesRequest
             [feature for feature in features if mask_building_within_boundaries[feature["property"]["@id"]]]
         formated_geojson["features"] = filtered_features
         building_coordidates_within_boundaries = \
-            { key: value for key, value in building_coord.items() if mask_building_within_boundaries[key]}
+            {key: value for key, value in building_coord.items() if mask_building_within_boundaries[key]}
         # creating a dictionary from the given nodes and sending this dictionary
         # to the 'database_add' function to store nodes properties in the database
         nodes = defaultdict(list)
@@ -695,29 +638,29 @@ async def database_add_remove_automatic(add_remove: str, selectBoundariesRequest
         # Add the peak demand and average annual consumption for each node
         demand_estimation(nodes=nodes, update_total_demand=False)
         # storing the nodes in the database
-        database_add(add_nodes=True, add_links=False, inlet=nodes)
+        inserts.update_nodes_and_links(True, False, nodes, user_id, project_id, db)
     else:
         # reading the existing CSV file of nodes, and then removing the corresponding row
-        df = pd.read_csv(full_path_nodes)
+        #df = pd.read_csv(full_path_nodes)
+        df = queries.get_nodes_df(user_id, project_id, db)
         number_of_nodes = df.shape[0]
         for index in range(number_of_nodes):
             if bi.is_point_in_boundaries(
-                point_coordinates=(
-                    df.to_dict()["latitude"][index],
-                    df.to_dict()["longitude"][index],
-                ),
-                boundaries=boundary_coordinates,
+                    point_coordinates=(
+                            df.to_dict()["latitude"][index],
+                            df.to_dict()["longitude"][index],
+                    ),
+                    boundaries=boundary_coordinates,
             ):
                 df.drop(labels=index, axis=0, inplace=True)
         # removing all nodes and links
         await database_initialization(nodes=True, links=True)
         # storing the nodes in the database (updating the existing CSV file)
         df = df.reset_index(drop=True)
-        database_add(add_nodes=True, add_links=False, inlet=df.to_dict())
+        inserts.update_nodes_and_links(True, False, df.to_dict(), user_id, project_id, db)
 
 
 def demand_estimation(nodes, update_total_demand):
-
     # after collecting all surface areas, based on a simple assumption, the peak demand will be obtained
     max_surface_area = max(nodes["surface_area"])
 
@@ -746,11 +689,11 @@ def demand_estimation(nodes, update_total_demand):
 
         # create the total demand profile of the selected buildings
         total_demand = (
-            normalized_demands.iloc[:, 0] * peak_very_low_demand
-            + normalized_demands.iloc[:, 1] * peak_low_demand
-            + normalized_demands.iloc[:, 2] * peak_medium_demand
-            + normalized_demands.iloc[:, 3] * peak_high_demand
-            + normalized_demands.iloc[:, 4] * peak_very_high_demand
+                normalized_demands.iloc[:, 0] * peak_very_low_demand
+                + normalized_demands.iloc[:, 1] * peak_low_demand
+                + normalized_demands.iloc[:, 2] * peak_medium_demand
+                + normalized_demands.iloc[:, 3] * peak_high_demand
+                + normalized_demands.iloc[:, 4] * peak_very_high_demand
         )
 
         # load timeseries data
@@ -809,17 +752,14 @@ def demand_estimation(nodes, update_total_demand):
         return nodes
 
 
-@app.post("/optimize_grid/")
-async def optimize_grid(request: Request, db: Session = Depends(get_db)):
-
+@app.post("/optimize_grid/{project_id}")
+async def optimize_grid(project_id, request: Request, db: Session = Depends(get_db)):
     user_id = accounts.get_user_from_cookie(request, db).id
-    project_id = request.query_params.get('project_id')
 
     # Grab Currrent Time Before Running the Code
     start_execution_time = time.monotonic()
 
     # create GridOptimizer object
-    #df = pd.read_csv(full_path_stored_inputs)
     df = queries.get_input_df(user_id, project_id, db)
 
     opt = GridOptimizer(
@@ -846,55 +786,55 @@ async def optimize_grid(request: Request, db: Session = Depends(get_db)):
 
     # create a new "grid" object from the Grid class
     epc_distribution_cable = (
-        (
-            opt.crf
-            * Optimizer.capex_multi_investment(
+            (
+                    opt.crf
+                    * Optimizer.capex_multi_investment(
                 opt,
                 capex_0=df.loc[0, "distribution_cable_capex"],
                 component_lifetime=df.loc[0, "distribution_cable_lifetime"],
             )
-        )
-        * opt.n_days
-        / 365
+            )
+            * opt.n_days
+            / 365
     )
 
     epc_connection_cable = (
-        (
-            opt.crf
-            * Optimizer.capex_multi_investment(
+            (
+                    opt.crf
+                    * Optimizer.capex_multi_investment(
                 opt,
                 capex_0=df.loc[0, "connection_cable_capex"],
                 component_lifetime=df.loc[0, "connection_cable_lifetime"],
             )
-        )
-        * opt.n_days
-        / 365
+            )
+            * opt.n_days
+            / 365
     )
 
     epc_connection = (
-        (
-            opt.crf
-            * Optimizer.capex_multi_investment(
+            (
+                    opt.crf
+                    * Optimizer.capex_multi_investment(
                 opt,
                 capex_0=df.loc[0, "mg_connection_cost"],
                 component_lifetime=opt.project_lifetime,
             )
-        )
-        * opt.n_days
-        / 365
+            )
+            * opt.n_days
+            / 365
     )
 
     epc_pole = (
-        (
-            opt.crf
-            * Optimizer.capex_multi_investment(
+            (
+                    opt.crf
+                    * Optimizer.capex_multi_investment(
                 opt,
                 capex_0=df.loc[0, "pole_capex"],
                 component_lifetime=df.loc[0, "pole_lifetime"],
             )
-        )
-        * opt.n_days
-        / 365
+            )
+            * opt.n_days
+            / 365
     )
 
     # TODO: The following probability distribution function needs to be updated
@@ -905,7 +845,7 @@ async def optimize_grid(request: Request, db: Session = Depends(get_db)):
 
     # This part calculated the total consumption of the community for the
     # selected time period.
-    start_date_obj = datetime.strptime(opt.start_date, "%Y-%m-%d")
+    start_date_obj = opt.start_date
     start_datetime = datetime.combine(start_date_obj.date(), start_date_obj.time())
     end_datetime = start_datetime + timedelta(days=int(opt.n_days))
 
@@ -928,29 +868,29 @@ async def optimize_grid(request: Request, db: Session = Depends(get_db)):
     n_consumers = nodes[nodes["node_type"] == "consumer"].shape[0]
 
     epc_shs = (
-        (
-            opt.crf
-            * (
-                Optimizer.capex_multi_investment(
-                    opt,
-                    capex_0=(
-                        pdf_shs[0] * df.loc[0, "shs_tier_one_capex"]
-                        + pdf_shs[1] * df.loc[0, "shs_tier_two_capex"]
-                        + pdf_shs[2] * df.loc[0, "shs_tier_three_capex"]
+            (
+                    opt.crf
+                    * (
+                        Optimizer.capex_multi_investment(
+                            opt,
+                            capex_0=(
+                                            pdf_shs[0] * df.loc[0, "shs_tier_one_capex"]
+                                            + pdf_shs[1] * df.loc[0, "shs_tier_two_capex"]
+                                            + pdf_shs[2] * df.loc[0, "shs_tier_three_capex"]
+                                    )
+                                    * n_consumers
+                                    + (
+                                            pdf_shs[3] * df.loc[0, "shs_tier_four_capex"]
+                                            + pdf_shs[4] * df.loc[0, "shs_tier_five_capex"]
+                                    )
+                                    * average_consumption_selected_period
+                                    / 100,
+                            component_lifetime=df.loc[0, "shs_lifetime"],
+                        )
                     )
-                    * n_consumers
-                    + (
-                        pdf_shs[3] * df.loc[0, "shs_tier_four_capex"]
-                        + pdf_shs[4] * df.loc[0, "shs_tier_five_capex"]
-                    )
-                    * average_consumption_selected_period
-                    / 100,
-                    component_lifetime=df.loc[0, "shs_lifetime"],
-                )
             )
-        )
-        * opt.n_days
-        / 365
+            * opt.n_days
+            / 365
     )
 
     grid = Grid(
@@ -968,11 +908,10 @@ async def optimize_grid(request: Request, db: Session = Depends(get_db)):
     # exclude solar-home-systems and poles from the grid optimization
     for node_index in nodes.index:
         if (
-            (nodes.is_connected[node_index])
-            and (not nodes.node_type[node_index] == "pole")
-            and (not nodes.node_type[node_index] == "power-house")
+                (nodes.is_connected[node_index])
+                and (not nodes.node_type[node_index] == "pole")
+                and (not nodes.node_type[node_index] == "power-house")
         ):
-
             # add all consumers which are not served by solar-home-systems
             grid.add_node(
                 label=str(node_index),
@@ -1044,7 +983,7 @@ async def optimize_grid(request: Request, db: Session = Depends(get_db)):
         constraints_violation = grid.links[grid.links["link_type"] == "connection"]
         constraints_violation = constraints_violation[
             constraints_violation["length"] > connection_cable_max_length
-        ]
+            ]
 
         # Increase the number of poles if necessary.
         if constraints_violation.shape[0] > 0:
@@ -1083,8 +1022,8 @@ async def optimize_grid(request: Request, db: Session = Depends(get_db)):
 
     # Calculate the cost of SHS.
     peak_demand_shs_consumers = grid.nodes[grid.nodes["is_connected"] == False].loc[
-        :, "peak_demand"
-    ]
+                                :, "peak_demand"
+                                ]
     cost_shs = epc_shs * peak_demand_shs_consumers.sum()
 
     # get all poles obtained by the network relaxation method
@@ -1106,7 +1045,7 @@ async def optimize_grid(request: Request, db: Session = Depends(get_db)):
     )
 
     # Store the list of poles in the "node" database.
-    database_add(add_nodes=True, add_links=False, inlet=poles.to_dict())
+    inserts.update_nodes_and_links(True, False, poles.to_dict(), user_id, project_id, db)
 
     # get all links obtained by the network relaxation method
     links = grid.links.reset_index(drop=True)
@@ -1129,7 +1068,7 @@ async def optimize_grid(request: Request, db: Session = Depends(get_db)):
     )
 
     # store the list of poles in the "node" database
-    database_add(add_nodes=False, add_links=True, inlet=links.to_dict())
+    inserts.update_nodes_and_links(False, True, links.to_dict(), user_id, project_id, db)
 
     # Grab Currrent Time After Running the Code
     end_execution_time = time.monotonic()
@@ -1170,15 +1109,14 @@ async def optimize_grid(request: Request, db: Session = Depends(get_db)):
     grid.distribute_grid_cost_among_consumers()
 
 
-@app.post("/optimize_energy_system/")
-async def optimize_energy_system(
-        optimize_energy_system_request: models.OptimizeEnergySystemRequest,
-):
-
+@app.post("/optimize_energy_system/{project_id}")
+async def optimize_energy_system(project_id, request: Request, optimize_energy_system_request:
+models.OptimizeEnergySystemRequest, db: Session = Depends(get_db)):
+    user_id = accounts.get_user_from_cookie(request, db).id
     # Grab Currrent Time Before Running the Code
     start_execution_time = time.monotonic()
 
-    df = pd.read_csv(full_path_stored_inputs)
+    df = queries.get_input_df(user_id, project_id, db)
 
     solver = 'gurobi' if po.SolverFactory('gurobi').available() else 'cbc'
 
@@ -1213,14 +1151,14 @@ async def optimize_energy_system(
     # store fuel co2 emissions (kg_CO2 per L of fuel)
     df = pd.read_csv(full_path_co2_emissions)
     df.loc[:, "non_renewable_electricity_production"] = (
-        np.cumsum(ensys_opt.demand) * co2_emission_factor / 1000
+            np.cumsum(ensys_opt.demand) * co2_emission_factor / 1000
     )  # tCO2 per year
     df.loc[:, "hybrid_electricity_production"] = (
-        np.cumsum(ensys_opt.sequences_genset) * co2_emission_factor / 1000
+            np.cumsum(ensys_opt.sequences_genset) * co2_emission_factor / 1000
     )  # tCO2 per year
     df.loc[:, "co2_savings"] = (
-        df.loc[:, "non_renewable_electricity_production"]
-        - df.loc[:, "hybrid_electricity_production"]
+            df.loc[:, "non_renewable_electricity_production"]
+            - df.loc[:, "hybrid_electricity_production"]
     )  # tCO2 per year
     df.to_csv(full_path_co2_emissions, index=False, float_format="%.3f")
     # TODO: -2 must actually be -1, but for some reason, the co2-emission csv file has an additional empty row
@@ -1234,9 +1172,9 @@ async def optimize_energy_system(
     df.loc[0, "cost_non_renewable_assets"] = ensys_opt.total_non_renewable
     df.loc[0, "cost_fuel"] = ensys_opt.total_fuel
     df.loc[0, "lcoe"] = (
-        100
-        * (ensys_opt.total_revenue + df.loc[0, "cost_grid"] + df.loc[0, "cost_shs"])
-        / ensys_opt.total_demand
+            100
+            * (ensys_opt.total_revenue + df.loc[0, "cost_grid"] + df.loc[0, "cost_shs"])
+            / ensys_opt.total_demand
     )
     df.loc[0, "res"] = ensys_opt.res
     df.loc[0, "shortage_total"] = ensys_opt.shortage
@@ -1250,28 +1188,28 @@ async def optimize_energy_system(
     df.loc[0, "surplus"] = ensys_opt.sequences_surplus.max()
     # data for sankey diagram - all in MWh
     df.loc[0, "fuel_to_diesel_genset"] = (
-        ensys_opt.sequences_fuel_consumption.sum()
-        * 0.846
-        * ensys_opt.diesel_genset["parameters"]["fuel_lhv"]
-        / 1000
+            ensys_opt.sequences_fuel_consumption.sum()
+            * 0.846
+            * ensys_opt.diesel_genset["parameters"]["fuel_lhv"]
+            / 1000
     )
     df.loc[0, "diesel_genset_to_rectifier"] = (
-        ensys_opt.sequences_rectifier.sum()
-        / ensys_opt.rectifier["parameters"]["efficiency"]
-        / 1000
+            ensys_opt.sequences_rectifier.sum()
+            / ensys_opt.rectifier["parameters"]["efficiency"]
+            / 1000
     )
     df.loc[0, "diesel_genset_to_demand"] = (
-        ensys_opt.sequences_genset.sum() / 1000
-        - df.loc[0, "diesel_genset_to_rectifier"]
+            ensys_opt.sequences_genset.sum() / 1000
+            - df.loc[0, "diesel_genset_to_rectifier"]
     )
     df.loc[0, "rectifier_to_dc_bus"] = ensys_opt.sequences_rectifier.sum() / 1000
     df.loc[0, "pv_to_dc_bus"] = ensys_opt.sequences_pv.sum() / 1000
     df.loc[0, "battery_to_dc_bus"] = ensys_opt.sequences_battery_discharge.sum() / 1000
     df.loc[0, "dc_bus_to_battery"] = ensys_opt.sequences_battery_charge.sum() / 1000
     df.loc[0, "dc_bus_to_inverter"] = (
-        ensys_opt.sequences_inverter.sum()
-        / ensys_opt.inverter["parameters"]["efficiency"]
-        / 1000
+            ensys_opt.sequences_inverter.sum()
+            / ensys_opt.inverter["parameters"]["efficiency"]
+            / 1000
     )
     df.loc[0, "dc_bus_to_surplus"] = ensys_opt.sequences_surplus.sum() / 1000
     df.loc[0, "inverter_to_demand"] = ensys_opt.sequences_inverter.sum() / 1000
@@ -1303,61 +1241,61 @@ async def optimize_energy_system(
     # store duration curves
     df = pd.read_csv(full_path_duration_curves)
     df.loc[:, "diesel_genset_percentage"] = (
-        100
-        * np.arange(1, len(ensys_opt.sequences_genset) + 1)
-        / len(ensys_opt.sequences_genset)
+            100
+            * np.arange(1, len(ensys_opt.sequences_genset) + 1)
+            / len(ensys_opt.sequences_genset)
     )
     df.loc[:, "diesel_genset_duration"] = (
-        100
-        * np.sort(ensys_opt.sequences_genset)[::-1]
-        / ensys_opt.sequences_genset.max()
+            100
+            * np.sort(ensys_opt.sequences_genset)[::-1]
+            / ensys_opt.sequences_genset.max()
     )
     df.loc[:, "pv_percentage"] = (
-        100
-        * np.arange(1, len(ensys_opt.sequences_pv) + 1)
-        / len(ensys_opt.sequences_pv)
+            100
+            * np.arange(1, len(ensys_opt.sequences_pv) + 1)
+            / len(ensys_opt.sequences_pv)
     )
     df.loc[:, "pv_duration"] = (
-        100 * np.sort(ensys_opt.sequences_pv)[::-1] / ensys_opt.sequences_pv.max()
+            100 * np.sort(ensys_opt.sequences_pv)[::-1] / ensys_opt.sequences_pv.max()
     )
     df.loc[:, "rectifier_percentage"] = (
-        100
-        * np.arange(1, len(ensys_opt.sequences_rectifier) + 1)
-        / len(ensys_opt.sequences_rectifier)
+            100
+            * np.arange(1, len(ensys_opt.sequences_rectifier) + 1)
+            / len(ensys_opt.sequences_rectifier)
     )
     df.loc[:, "rectifier_duration"] = 100 * np.nan_to_num(
         np.sort(ensys_opt.sequences_rectifier)[::-1]
         / ensys_opt.sequences_rectifier.max()
     )
     df.loc[:, "inverter_percentage"] = (
-        100
-        * np.arange(1, len(ensys_opt.sequences_inverter) + 1)
-        / len(ensys_opt.sequences_inverter)
+            100
+            * np.arange(1, len(ensys_opt.sequences_inverter) + 1)
+            / len(ensys_opt.sequences_inverter)
     )
     df.loc[:, "inverter_duration"] = (
-        100
-        * np.sort(ensys_opt.sequences_inverter)[::-1]
-        / ensys_opt.sequences_inverter.max()
+            100
+            * np.sort(ensys_opt.sequences_inverter)[::-1]
+            / ensys_opt.sequences_inverter.max()
     )
     df.loc[:, "battery_charge_percentage"] = (
-        100
-        * np.arange(1, len(ensys_opt.sequences_battery_charge) + 1)
-        / len(ensys_opt.sequences_battery_charge)
+            100
+            * np.arange(1, len(ensys_opt.sequences_battery_charge) + 1)
+            / len(ensys_opt.sequences_battery_charge)
     )
     df.loc[:, "battery_charge_duration"] = (
-        100
-        * np.sort(ensys_opt.sequences_battery_charge)[::-1]
-        / ensys_opt.sequences_battery_charge.max()
+            100
+            * np.sort(ensys_opt.sequences_battery_charge)[::-1]
+            / ensys_opt.sequences_battery_charge.max()
     )
     df.loc[:, "battery_discharge_percentage"] = (
-        100
-        * np.arange(1, len(ensys_opt.sequences_battery_discharge) + 1)
-        / len(ensys_opt.sequences_battery_discharge)
+            100
+            * np.arange(1, len(ensys_opt.sequences_battery_discharge) + 1)
+            / len(ensys_opt.sequences_battery_discharge)
     )
     df.loc[:, "battery_discharge_duration"] = (
-        100
-        * np.sort(ensys_opt.sequences_battery_discharge)[::-1]
-        / ensys_opt.sequences_battery_discharge.max()
+            100
+            * np.sort(ensys_opt.sequences_battery_discharge)[::-1]
+            / ensys_opt.sequences_battery_discharge.max()
     )
     df.to_csv(full_path_duration_curves, index=False, float_format="%.3f")
 
@@ -1368,7 +1306,7 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest):
     # res = db.execute("select * from nodes")
     # nodes = res.fetchall()
     if len(nodes) == 0:
-        return {"code": "success", "message": "No nodes in table, no identification to be performed",}
+        return {"code": "success", "message": "No nodes in table, no identification to be performed", }
     # use latitude of the node that is the most west to set origin of x coordinates
     ref_latitude = min([node[1] for node in nodes])
     # use latitude of the node that is the most south to set origin of y coordinates

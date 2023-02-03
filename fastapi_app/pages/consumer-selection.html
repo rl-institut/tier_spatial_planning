@@ -9,7 +9,7 @@
   </head>
   <body onload="redirect_if_cookie_is_missing();
                 load_previous_data('consumer_selection/?project_id={{ project_id }}&nodes=true');
-                refresh_map();
+                refresh_map({{ project_id }});
                 activate_wizard_element();
                 show_user_email_in_navbar();">
   {% include '_navbar.html' %}
@@ -101,7 +101,7 @@
                       type="button"
                       id="btnDrawBoundariesAdd"
                       aria-disabled="true"
-                      onclick="boundary_select('add');"
+                      onclick="boundary_select('add', {{ project_id }});"
                     >
                       Start
                     </button>
@@ -123,7 +123,7 @@
                       type="button"
                       id="btnDrawBoundariesRemove"
                       aria-disabled="true"
-                      onclick="boundary_select('remove');"
+                      onclick="boundary_select('remove', {{ project_id }});"
                     >
                       Start
                     </button>

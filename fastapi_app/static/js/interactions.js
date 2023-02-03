@@ -73,9 +73,9 @@ function database_initialization(nodes, links) {
 // then push the corresponding icon to the map
 // or return their correcponding json files for exporting the excel file
 // note: both "nodes" and "links" cannot be called simultaneously
-function database_read(nodes_or_links, map_or_export, callback) {
+function database_read(nodes_or_links, map_or_export, project_id, callback) {
     var xhr = new XMLHttpRequest();
-    url = "database_to_js/" + nodes_or_links;
+    url = "database_to_js/" + nodes_or_links + '/' + project_id;
     xhr.open("GET", url, true);
     xhr.responseType = "json";
     xhr.send();
@@ -174,10 +174,11 @@ function database_add_remove_manual(
         peak_demand = 0,
         average_consumption = 0,
         is_connected = true,
-        how_added = 'manual' } = {}
+        how_added = 'manual' } = {},
+    project_id
 ) {
     $.ajax({
-        url: "/database_add_remove_manual/" + add_remove,
+        url: "/database_add_remove_manual/" + add_remove + '/' + project_id,
         type: "POST",
         dataType: "json",
         contentType: "application/json",
@@ -201,10 +202,12 @@ function database_add_remove_manual(
 // add/remove nodes automatically from a given boundary
 function database_add_remove_automatic(
     { add_remove = "add",
-        boundariesCoordinates } = {}
+        project_id,
+        boundariesCoordinates } = {},
+
 ) {
     $.ajax({
-        url: "/database_add_remove_automatic/" + add_remove,
+        url: "/database_add_remove_automatic/" + add_remove + '/' + project_id,
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify({
@@ -213,8 +216,8 @@ function database_add_remove_automatic(
         dataType: "json",
         statusCode: {
             200: function () {
-                database_read(nodes_or_links = 'nodes', map_or_export = 'map');
-                database_read(nodes_or_links = 'links', map_or_export = 'map');
+                database_read(nodes_or_links = 'nodes', map_or_export = 'map', project_id);
+                database_read(nodes_or_links = 'links', map_or_export = 'map', project_id);
             },
         },
     });
@@ -281,7 +284,7 @@ function enable_disable_shs() {
 /*                    BOUNDARY SELECTION                    */
 /************************************************************/
 // selecting boundaries of the site for adding new nodes
-function boundary_select(mode) {
+function boundary_select(mode, project_id) {
     button_text = 'Start'
     if (mode == 'add') {
         button_class = 'btn--success'
@@ -310,7 +313,8 @@ function boundary_select(mode) {
 
     // only when a boundary is drawn, the next steps will be executed
     if (siteBoundaryLines.length > 0) {
-        database_add_remove_automatic({ add_remove: mode, boundariesCoordinates: siteBoundaries });
+        database_add_remove_automatic({ add_remove: mode,
+            project_id: project_id, boundariesCoordinates: siteBoundaries });
         removeBoundaries();
     }
 }
@@ -325,7 +329,6 @@ function optimization(project_id) {
 }
 
 function optimize_energy_system(project_id) {
-    window.alert('gurobi')
     // $("#loading").show();
     $.ajax({
         url: "optimize_energy_system/"  + project_id,
@@ -417,7 +420,6 @@ function optimize_energy_system(project_id) {
 // TODO: start date, interest rate, lifetime and wacc that come from another page are not recognized. 
 // Either global parameters must be defined or something else.
 function optimize_grid(project_id) {
-    window.alert('grid')
     $.ajax({
         url: "optimize_grid/" + project_id,
         type: "POST",
@@ -456,9 +458,9 @@ function load_results(){
     };
 }
 
-function refresh_map(){
-    database_read(nodes_or_link = 'links', map_or_export = 'map');
-
+function refresh_map(project_id){
+    database_read(nodes_or_link = 'nodes', map_or_export = 'map', project_id);
+    database_read(nodes_or_link = 'links', map_or_export = 'map', project_id);
 }
 
 /************************************************************/
@@ -730,7 +732,7 @@ function export_data() {
 /*                   IMPORT DATA AS XLSX                    */
 /************************************************************/
 
-function import_data() {
+function import_data(project_id) {
     // Choose the selected file in the web app.
     var selected_file = document.getElementById("fileImport").files[0];
     let file_reader = new FileReader();
@@ -758,7 +760,7 @@ function import_data() {
         let nodes_to_import = XLSX.utils.sheet_to_row_object_array(workbook.Sheets['Nodes']);
         let links_to_import = XLSX.utils.sheet_to_row_object_array(workbook.Sheets['Links']);
         $.ajax({
-            url: "/import_data",
+            url: "import_data/" + project_id,
             type: "POST",
             contentType: "application/json",
             data: JSON.stringify({

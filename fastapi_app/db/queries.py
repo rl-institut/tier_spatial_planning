@@ -35,7 +35,41 @@ def get_project_setup_of_user(user_id, project_id, db):
 def get_nodes_of_user_project(user_id, project_id, db):
     nodes = db.query(models.Nodes).filter(models.Nodes.id == user_id,
                                           models.Nodes.project_id == project_id).first()
+    if nodes is None:
+        nodes = models.Nodes()
     return nodes
+
+
+def get_nodes_df(user_id, project_id, db):
+    nodes = get_nodes_of_user_project(user_id, project_id, db)
+    df = nodes.get_df().drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
+    return df
+
+
+def get_nodes_json(user_id, project_id, db):
+    nodes = get_nodes_of_user_project(user_id, project_id, db)
+    nodes_json = nodes.get_json()
+    return nodes_json
+
+
+def get_links_of_user_project(user_id, project_id, db):
+    links = db.query(models.Links).filter(models.Links.id == user_id,
+                                          models.Links.project_id == project_id).first()
+    if links is None:
+        links = models.Links()
+    return links
+
+
+def get_links_df(user_id, project_id, db):
+    links = get_links_of_user_project(user_id, project_id, db)
+    df = links.get_df().drop(columns=['id', 'project_id'])
+    return df
+
+
+def get_links_json(user_id, project_id, db):
+    links = get_links_of_user_project(user_id, project_id, db)
+    links_json = links.get_json()
+    return links_json
 
 
 def get_grid_design_of_user(user_id, project_id, db):
@@ -47,5 +81,5 @@ def get_grid_design_of_user(user_id, project_id, db):
 def get_input_df(user_id, project_id, db):
     project_setup = get_project_setup_of_user(user_id, project_id, db)
     grid_design = get_grid_design_of_user(user_id, project_id, db)
-    df = pd.concat([project_setup._get_df(), grid_design._get_df()], axis=1).drop(columns=['id', 'project_id'])
+    df = pd.concat([project_setup.get_df(), grid_design.get_df()], axis=1).drop(columns=['id', 'project_id'])
     return df

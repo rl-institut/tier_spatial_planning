@@ -73,13 +73,13 @@ class GridDesign(Base):
 
 
 class Nodes(Base):
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(SMALLINT, primary_key=True, index=True)
     project_id = Column(SMALLINT, primary_key=True, index=True)
-    latitude = Column(Numeric(10, 5))
-    longitude = Column(Numeric(10, 5))
-    node_type = Column(VARCHAR(55))
-    consumer_type = Column(Numeric(10, 5))
-    consumer_detail = Column(Numeric(10, 5))
+    latitude = Column(Numeric(10, 5), primary_key=True)
+    longitude = Column(Numeric(10, 5), primary_key=True)
+    node_type = Column(VARCHAR(55), primary_key=True)
+    consumer_type = Column(VARCHAR(55))
+    consumer_detail = Column(VARCHAR(55))
     surface_area = Column(Numeric(10, 5))
     peak_demand = Column(Numeric(10, 5))
     average_consumption = Column(Numeric(10, 5))
@@ -90,32 +90,15 @@ class Nodes(Base):
     distribution_cost = Column(Numeric(10, 5))
 
 
-# class Nodes():
-
-#     id: int
-#     lat: float
-#     long: float
-#     x: float
-#     y: float
-#     area: float
-#     node_type: str
-#     peak_demand: float
-#     is_connected: bool
-
-
 class Links(Base):
-    id = Column(Integer, primary_key=True, index=True)
-    lat_from = Column(Numeric(10, 5))
-    lon_from = Column(Numeric(10, 5))
-    lat_to = Column(Numeric(10, 5))
-    lon_to = Column(Numeric(10, 5))
-    x_from = Column(Numeric(10, 5))
-    y_from = Column(Numeric(10, 5))
-    x_to = Column(Numeric(10, 5))
-    y_to = Column(Numeric(10, 5))
-    link_type = Column(VARCHAR(55))
-    cable_thickness = Column(Numeric(10, 3))
-    length = Column(Numeric(10, 2))
+    id = Column(SMALLINT, primary_key=True, index=True)
+    project_id = Column(SMALLINT, primary_key=True, index=True)
+    lat_from = Column(Numeric(10, 5), primary_key=True)
+    lon_from = Column(Numeric(10, 5), primary_key=True)
+    lat_to = Column(Numeric(10, 5), primary_key=True)
+    lon_to = Column(Numeric(10, 5), primary_key=True)
+    link_type = Column(VARCHAR(50), primary_key=True)
+    length = Column(SMALLINT(unsigned=True))
 
 
 class AddNodeRequest(BaseModel):
