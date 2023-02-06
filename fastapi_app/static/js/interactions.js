@@ -606,15 +606,12 @@ function load_previous_data(page_name){
     xhr.open("GET", url, true);
     xhr.responseType = "json";
     xhr.send();
-
     if (page_name.includes("project_setup")) {
         xhr.onreadystatechange = function () {
             if (this.readyState == 4 && this.status == 200) {
                 // push nodes to the map
                 results = this.response;
-                if (Object.keys(results).length !== 0
-                    & results['projectName'] !== 'nan'
-                    & results['projectName'] === true){
+                if (Object.keys(results).length > 1){
                     document.getElementById("projectName").value = results['project_name'];
                     document.getElementById("projectDescription").value = results['project_description'];
                     document.getElementById("interestRate").value = results['interest_rate'];
@@ -630,7 +627,7 @@ function load_previous_data(page_name){
             if (this.readyState == 4 && this.status == 200) {
                 // push nodes to the map                
                 results = this.response;
-                if (Object.keys(results).length !== 0 & results['distribution_cable_capex'] !== 'nan') {
+                if (Object.keys(results).length > 1) {
                     document.getElementById("distributionCableLifetime").value = results['distribution_cable_lifetime'];
                     document.getElementById("distributionCableCapex").value = results['distribution_cable_capex'];
                     document.getElementById("distributionCableMaxLength").value = results['distribution_cable_max_length'];
