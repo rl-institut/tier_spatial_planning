@@ -13,18 +13,20 @@ def insert_links_df(df, user_id, project_id, db):
     insert_df('links', df, db, if_exists='update')
 
 
-def insert_nodes_df(df, user_id, project_id, db):
+def insert_nodes_df(df, user_id, project_id, db, replace=True):
     model_class = models.Nodes
-    remove(model_class, user_id, project_id, db)
+    if replace:
+        remove(model_class, user_id, project_id, db)
     df['id'] = user_id
     df['project_id'] = project_id
     insert_df('nodes', df, db, if_exists='update')
 
 
 def remove(model_class, user_id, project_id, db):
-    if isinstance(model_class, models.Nodes) or isinstance(model_class, models.Links):
+    if model_class == models.Nodes or model_class == models.Links:
         try:
-            db.delete(model_class).where(model_class.id == user_id).where(model_class.project_id == project_id)
+            query = db.query(model_class).filter(model_class.id == user_id, model_class.project_id == project_id)
+            query.delete()
         except Exception as e:
             db.rollback()
             raise e
@@ -32,31 +34,23 @@ def remove(model_class, user_id, project_id, db):
             db.commit()
 
 
-def update_nodes_and_links(add_nodes: bool, add_links: bool, inlet: dict, user_id, project_id, db):
-    # updating csv files based on the added nodes
-    if add_nodes:
+def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, project_id, db, add=True, replace=True):
+    if nodes:
         nodes = inlet
-        # newly added nodes
         df = pd.DataFrame.from_dict(nodes).round(decimals=6)
-        # the existing database
-        df_existing = get_nodes_df(user_id, project_id, db)
-        if not df_existing.empty:
-            df_existing = df_existing[(df_existing["node_type"] != "pole") &
-                                      (df_existing["node_type"] != "power-house")]
-            # Aappend the existing database with the new nodes and remove
-        # duplicates (only when both lat and lon are identical).
-        df_total = df_existing.append(df).drop_duplicates(subset=["latitude", "longitude", "node_type"], inplace=False)
-        # storing the nodes in the database (updating the existing CSV file).
-        df_total = df_total.reset_index(drop=True)
-        # If consumers are added to the database or removed from it, all
-        # already existing links and all existing poles must be removed.
+        if add and replace:
+            df_existing = get_nodes_df(user_id, project_id, db)
+            if not df_existing.empty:
+                df_existing = df_existing[(df_existing["node_type"] != "pole") &
+                                          (df_existing["node_type"] != "power-house")]
+            df_total = df_existing.append(df).drop_duplicates(subset=["latitude", "longitude", "node_type"], inplace=False)
+        else:
+            df_total = df
         if df["node_type"].str.contains("consumer").sum() > 0:
-            # Remove existing links.
             df_links = get_links_df(user_id, project_id, db)
             if not df_links.empty:
                 df_links.drop(labels=df_links.index, axis=0, inplace=True)
                 insert_links_df(df_links, user_id, project_id, db)
-        # defining the precision of data
         df_total.latitude = df_total.latitude.map(lambda x: "%.6f" % x)
         df_total.longitude = df_total.longitude.map(lambda x: "%.6f" % x)
         df_total.surface_area = df_total.surface_area.map(lambda x: "%.2f" % x)
@@ -64,9 +58,10 @@ def update_nodes_and_links(add_nodes: bool, add_links: bool, inlet: dict, user_i
         df_total.average_consumption = df_total.average_consumption.map(lambda x: "%.3f" % x)
         # finally adding the refined dataframe (if it is not empty) to the existing csv file
         if len(df_total.index) != 0:
-            df_total['parent'] = df_total['parent'].replace('unknown', None)
-            insert_nodes_df(df_total, user_id, project_id, db)
-    if add_links:
+            if 'parent' in df_total.columns:
+                df_total['parent'] = df_total['parent'].replace('unknown', None)
+            insert_nodes_df(df_total, user_id, project_id, db, replace=replace)
+    if links:
         links = inlet
         # defining the precision of data
         df = pd.DataFrame.from_dict(links)

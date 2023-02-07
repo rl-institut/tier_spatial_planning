@@ -329,44 +329,6 @@ async def database_initialization(nodes, links):
     pd.DataFrame(columns=header_demand_coverage).to_csv(full_path_demand_coverage, index=False)
 
 
-
-# add new manually-selected nodes to the *.csv file
-@app.post("/database_add_remove_manual/{add_remove}/{project_id}")
-async def database_add_remove_manual(add_remove: str, project_id, add_node_request: models.AddNodeRequest,
-                                     request: Request, db: Session = Depends(get_db)):
-    user_id = accounts.get_user_from_cookie(request, db).id
-    # headers = pd.read_csv(full_path_nodes).columns
-    df = queries.get_nodes_df(user_id, project_id, db)
-    headers = df.columns
-    nodes = {}
-    nodes[headers[0]] = [add_node_request.latitude]
-    nodes[headers[1]] = [add_node_request.longitude]
-    nodes[headers[2]] = [add_node_request.node_type]
-    nodes[headers[3]] = [add_node_request.consumer_type]
-    nodes[headers[4]] = [add_node_request.consumer_detail]
-    nodes[headers[5]] = [add_node_request.surface_area]
-    nodes[headers[6]] = [add_node_request.peak_demand]
-    nodes[headers[7]] = [add_node_request.average_consumption]
-    nodes[headers[8]] = [add_node_request.is_connected]
-    nodes[headers[9]] = [add_node_request.how_added]
-    if add_remove == "remove":
-        # reading the existing CSV file of nodes, and then removing the corresponding row
-        # Since a node is removed, the calculated positions for ALL poles and
-        # the power house must be first removed.
-        df = df[(df["node_type"] != "pole") & (df["node_type"] != "power-house")]
-        for index in df.index:
-            if (round(add_node_request.latitude, 6) == df.to_dict()["latitude"][index]) and \
-                    (round(add_node_request.longitude, 6) == df.to_dict()["longitude"][index]):
-                df.drop(labels=index, axis=0, inplace=True)
-        # Remove all existing nodes and links.
-        await database_initialization(nodes=True, links=True)
-        # storing the nodes in the database (updating the existing CSV file)
-        df = df.reset_index(drop=True)
-        inserts.update_nodes_and_links(True, False, df.to_dict(), user_id, project_id, db)
-    else:
-        inserts.update_nodes_and_links(True, False, nodes, user_id, project_id, db)
-
-
 @app.get("/database_to_js/{nodes_or_links}/{project_id}")
 async def database_read(nodes_or_links: str, project_id, request: Request, db: Session = Depends(get_db)):
     # importing nodes and links from the csv files to the map
@@ -644,19 +606,48 @@ async def database_add_remove_automatic(add_remove: str, project_id,
         df = queries.get_nodes_df(user_id, project_id, db)
         number_of_nodes = df.shape[0]
         for index in range(number_of_nodes):
-            if bi.is_point_in_boundaries(
-                    point_coordinates=(
-                            df.to_dict()["latitude"][index],
-                            df.to_dict()["longitude"][index],
-                    ),
-                    boundaries=boundary_coordinates,
-            ):
+            if bi.is_point_in_boundaries(point_coordinates=(df.to_dict()["latitude"][index],
+                                                            df.to_dict()["longitude"][index],),
+                                         boundaries=boundary_coordinates,):
                 df.drop(labels=index, axis=0, inplace=True)
-        # removing all nodes and links
+        inserts.update_nodes_and_links(True, False, df.to_dict(), user_id, project_id, db, False)
+
+
+# add new manually-selected nodes to the *.csv file
+@app.post("/database_add_remove_manual/{add_remove}/{project_id}")
+async def database_add_remove_manual(add_remove: str, project_id, add_node_request: models.AddNodeRequest,
+                                     request: Request, db: Session = Depends(get_db)):
+    user_id = accounts.get_user_from_cookie(request, db).id
+    # headers = pd.read_csv(full_path_nodes).columns
+    df = queries.get_nodes_df(user_id, project_id, db)
+    headers = df.columns
+    nodes = {}
+    nodes[headers[0]] = [add_node_request.latitude]
+    nodes[headers[1]] = [add_node_request.longitude]
+    nodes[headers[2]] = [add_node_request.node_type]
+    nodes[headers[3]] = [add_node_request.consumer_type]
+    nodes[headers[4]] = [add_node_request.consumer_detail]
+    nodes[headers[5]] = [add_node_request.surface_area]
+    nodes[headers[6]] = [add_node_request.peak_demand]
+    nodes[headers[7]] = [add_node_request.average_consumption]
+    nodes[headers[8]] = [add_node_request.is_connected]
+    nodes[headers[9]] = [add_node_request.how_added]
+    if add_remove == "remove":
+        # reading the existing CSV file of nodes, and then removing the corresponding row
+        # Since a node is removed, the calculated positions for ALL poles and
+        # the power house must be first removed.
+        df = df[(df["node_type"] != "pole") & (df["node_type"] != "power-house")]
+        for index in df.index:
+            if (round(add_node_request.latitude, 6) == df.to_dict()["latitude"][index]) and \
+                    (round(add_node_request.longitude, 6) == df.to_dict()["longitude"][index]):
+                df.drop(labels=index, axis=0, inplace=True)
+        # Remove all existing nodes and links.
         await database_initialization(nodes=True, links=True)
         # storing the nodes in the database (updating the existing CSV file)
         df = df.reset_index(drop=True)
-        inserts.update_nodes_and_links(True, False, df.to_dict(), user_id, project_id, db)
+        inserts.update_nodes_and_links(True, False, df.to_dict(), user_id, project_id, db, add=False)
+    else:
+        inserts.update_nodes_and_links(True, False, nodes, user_id, project_id, db, add=True, replace=False)
 
 
 def demand_estimation(nodes, update_total_demand):

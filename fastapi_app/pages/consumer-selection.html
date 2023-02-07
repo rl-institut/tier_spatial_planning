@@ -15,9 +15,8 @@
   {% include '_navbar.html' %}
   {% include '_wizard.html' %}
     <main>
-      <section class="project-setup two-columns">
-        <div class="left">
-          <div>
+        <section class="dashboard">
+            <div class="row">
             <form>
               <div class="input-item">
                 <label for="nodesSelection" class="form-label"
@@ -158,15 +157,11 @@
                       /> -->
               </div>
             </form>
-          </div>
+            <div class="map" style="min-height: 700px;">
+               <div id="leafletMap"></div>
+            </div>
         </div>
-        <div class="right">
-          <!-- Insert map -->
-          <div class="map">
-            <div id="leafletMap"></div>
-          </div>
-        </div>
-      </section>
+        </section>
     </main>
   {% include '_footer.html' %}
   </body>

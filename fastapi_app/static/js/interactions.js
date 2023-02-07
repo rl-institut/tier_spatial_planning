@@ -156,7 +156,6 @@ function database_read(nodes_or_links, map_or_export, project_id, callback) {
 }
 
 
-// Add or remove single nodes selected manually to the *.csv file.
 // In case of removing, only `add_remove`, `latitude`, and `longitude` are used.
 function database_add_remove_manual(
     { add_remove = "add",
@@ -170,8 +169,9 @@ function database_add_remove_manual(
         average_consumption = 0,
         is_connected = true,
         how_added = 'manual' } = {},
-    project_id
-) {
+
+) { const urlParams = new URLSearchParams(window.location.search);
+    project_id = urlParams.get('project_id');
     $.ajax({
         url: "/database_add_remove_manual/" + add_remove + '/' + project_id,
         type: "POST",
