@@ -1,8 +1,10 @@
 // BAR DIAGRAM FOR OPTIMAL CAPACITY OF COMPONENTS
 // get optimal capacities from energy system optimizer
+const urlParams = new URLSearchParams(window.location.search);
+project_id = urlParams.get('project_id');
 var yValue = [0, 0, 0, 0, 0, 0, 0];
 var xhr = new XMLHttpRequest();
-url = "get_optimal_capacities/";
+url = "get_optimal_capacities/" + project_id;
 xhr.open("GET", url, true);
 xhr.responseType = "json";
 xhr.send();
@@ -66,7 +68,7 @@ xhr.onreadystatechange = function () {
 // PIE DIAGRAM FOR BREAKDOWN OF LCOE
 lcoeBreakdown = document.getElementById('lcoeBreakdown');
 var xhr = new XMLHttpRequest();
-url = "get_lcoe_breakdown/";
+url = "get_lcoe_breakdown/"  + project_id;;
 xhr.open("GET", url, true);
 xhr.responseType = "json";
 xhr.send();
@@ -112,7 +114,7 @@ xhr.onreadystatechange = function () {
 // SANKEY DIAGRAM
 sankeyDiagram = document.getElementById('sankeyDiagram');
 var xhr = new XMLHttpRequest();
-url = "get_data_for_sankey_diagram/";
+url = "get_data_for_sankey_diagram/" + project_id;;
 xhr.open("GET", url, true);
 xhr.responseType = "json";
 xhr.send();
@@ -309,7 +311,7 @@ makeplot_energy_flows();
 // DEMAND COVERAGE PLOT
 function makeplot_demand_coverage() {
   var xhr = new XMLHttpRequest();
-  url = 'get_demand_coverage_data/';
+  url = 'get_demand_coverage_data/' + project_id;
   xhr.open("GET", url, true);
   xhr.responseType = "json";
   xhr.send()

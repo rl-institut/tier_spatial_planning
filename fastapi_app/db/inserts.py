@@ -8,8 +8,8 @@ from fastapi_app.db.database import insert_df
 def insert_links_df(df, user_id, project_id, db):
     model_class = models.Links
     remove(model_class, user_id, project_id, db)
-    df['id'] = user_id
-    df['project_id'] = project_id
+    df['id'] = int(user_id)
+    df['project_id'] = int(project_id)
     insert_df('links', df, db, if_exists='update')
 
 
@@ -17,9 +17,29 @@ def insert_nodes_df(df, user_id, project_id, db, replace=True):
     model_class = models.Nodes
     if replace:
         remove(model_class, user_id, project_id, db)
-    df['id'] = user_id
-    df['project_id'] = project_id
+    df['id'] = int(user_id)
+    df['project_id'] = int(project_id)
     insert_df('nodes', df, db, if_exists='update')
+
+
+def insert_results_df(df, user_id, project_id, db):
+    df = df.dropna(how='all', axis=0)
+    if not df.empty:
+        model_class = models.Results
+        remove(model_class, user_id, project_id, db)
+        df['id'] = int(user_id)
+        df['project_id'] = int(project_id)
+        insert_df('results', df, db, if_exists='update')
+
+
+def insert_demand_coverage_df(df, user_id, project_id, db):
+    df = df.dropna(how='all', axis=0)
+    if not df.empty:
+        model_class = models.DemandCoverage
+        remove(model_class, user_id, project_id, db)
+        df['id'] = int(user_id)
+        df['project_id'] = int(project_id)
+        insert_df('demandcoverage', df, db, if_exists='update')
 
 
 def remove(model_class, user_id, project_id, db):

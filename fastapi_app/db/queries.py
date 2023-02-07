@@ -68,3 +68,16 @@ def get_input_df(user_id, project_id, db):
     grid_design = get_grid_design_of_user(user_id, project_id, db)
     df = pd.concat([project_setup.get_df(), grid_design.get_df()], axis=1).drop(columns=['id', 'project_id'])
     return df
+
+
+def get_results_df(user_id, project_id, db):
+    query = db.query(models.Results).filter(models.Results.id == user_id, models.Results.project_id == project_id)
+    df = pd.read_sql(query.statement, db.bind).drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
+    return df
+
+
+def get_demand_coverage_df(user_id, project_id, db):
+    query = db.query(models.DemandCoverage).filter(models.DemandCoverage.id == user_id, models.DemandCoverage.project_id == project_id)
+    df = pd.read_sql(query.statement, db.bind).drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
+    df = df.set_index('dt')
+    return df

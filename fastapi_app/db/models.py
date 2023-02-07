@@ -101,6 +101,60 @@ class Links(Base):
     length = Column(SMALLINT(unsigned=True))
 
 
+class Results(Base):
+    id = Column(SMALLINT, primary_key=True, index=True)
+    project_id = Column(SMALLINT, primary_key=True, index=True)
+    n_consumers = Column(SMALLINT(unsigned=True))
+    n_shs_consumers = Column(SMALLINT(unsigned=True))
+    n_poles = Column(SMALLINT(unsigned=True))
+    n_distribution_links = Column(SMALLINT(unsigned=True))
+    n_connection_links = Column(SMALLINT(unsigned=True))
+    length_distribution_cable = Column(SMALLINT(unsigned=True))
+    average_length_distribution_cable = Column(Numeric(10, 3))
+    length_connection_cable = Column(SMALLINT(unsigned=True))
+    average_length_connection_cable = Column(Numeric(10, 3))
+    cost_grid = Column(SMALLINT(unsigned=True))
+    cost_shs = Column(SMALLINT(unsigned=True))
+    lcoe = Column(SMALLINT(unsigned=True))
+    res = Column(Numeric(10, 3))
+    shortage_total = Column(Numeric(10, 3))
+    surplus_rate = Column(Numeric(10, 3))
+    cost_renewable_assets = Column(Numeric(10, 3))
+    cost_non_renewable_assets = Column(Numeric(10, 3))
+    cost_fuel = Column(Numeric(10, 3))
+    pv_capacity = Column(Numeric(10, 3))
+    battery_capacity = Column(Numeric(10, 3))
+    inverter_capacity = Column(Numeric(10, 3))
+    rectifier_capacity = Column(Numeric(10, 3))
+    diesel_genset_capacity = Column(Numeric(10, 3))
+    peak_demand = Column(Numeric(10, 3))
+    surplus = Column(Numeric(10, 3))
+    fuel_to_diesel_genset = Column(Numeric(10, 3))
+    diesel_genset_to_rectifier = Column(Numeric(10, 3))
+    diesel_genset_to_demand = Column(Numeric(10, 3))
+    rectifier_to_dc_bus = Column(Numeric(10, 3))
+    pv_to_dc_bus = Column(Numeric(10, 3))
+    battery_to_dc_bus = Column(Numeric(10, 3))
+    dc_bus_to_battery = Column(Numeric(10, 3))
+    dc_bus_to_inverter = Column(Numeric(10, 3))
+    dc_bus_to_surplus = Column(Numeric(10, 3))
+    inverter_to_demand = Column(Numeric(10, 3))
+    time_grid_design = Column(Numeric(10, 3))
+    time_energy_system_design = Column(Numeric(10, 3))
+    time = Column(Numeric(10, 3))
+    co2_savings = Column(Numeric(10, 3))
+
+
+class DemandCoverage(Base):
+    id = Column(SMALLINT, primary_key=True, index=True)
+    project_id = Column(SMALLINT, primary_key=True, index=True)
+    dt = Column(DateTime)
+    demand = Column(Numeric(10, 3))
+    renewable = Column(Numeric(10, 3))
+    non_renewable = Column(Numeric(10, 3))
+    surplus = Column(Numeric(10, 3))
+
+
 class AddNodeRequest(BaseModel):
     latitude: float
     longitude: float

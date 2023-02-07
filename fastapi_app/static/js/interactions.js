@@ -424,9 +424,11 @@ function optimize_grid(project_id) {
     // window.open("{{ url_for('simulation_results')}}");
 }
 
-function load_results(){
+function load_results() {
+    const urlParams = new URLSearchParams(window.location.search);
+    project_id = urlParams.get('project_id');
     var xhr = new XMLHttpRequest();
-    url = "load_results/";
+    url = "load_results/" + project_id;
     xhr.open("GET", url, true);
     xhr.responseType = "json";
     xhr.send();
