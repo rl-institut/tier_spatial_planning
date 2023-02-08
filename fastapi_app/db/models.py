@@ -28,6 +28,11 @@ class UserOverview(BaseModel):
 
 
 class User(Base):
+
+    @staticmethod
+    def __name__():
+        return 'EnergyFlow'
+
     id = Column(SMALLINT(unsigned=True), primary_key=True, index=True)
     email = Column(VARCHAR(255), nullable=False, unique=True, index=True)
     hashed_password = Column(VARCHAR(255), nullable=False)
@@ -38,6 +43,11 @@ class User(Base):
 
 
 class ProjectSetup(Base):
+
+    @staticmethod
+    def __name__():
+        return 'EnergyFlow'
+
     id = Column(SMALLINT(unsigned=True), primary_key=True, index=True)
     project_id = Column(SMALLINT(unsigned=True), primary_key=True, index=True)
     project_name = Column(VARCHAR(51), nullable=True, unique=False)
@@ -52,6 +62,11 @@ class ProjectSetup(Base):
 
 
 class GridDesign(Base):
+
+    @staticmethod
+    def __name__():
+        return 'EnergyFlow'
+
     id = Column(SMALLINT(unsigned=True), primary_key=True, index=True)
     project_id = Column(SMALLINT(unsigned=True), primary_key=True, index=True)
     distribution_cable_lifetime = Column(TINYINT(unsigned=True))
@@ -73,6 +88,11 @@ class GridDesign(Base):
 
 
 class Nodes(Base):
+
+    @staticmethod
+    def __name__():
+        return 'EnergyFlow'
+
     id = Column(SMALLINT, primary_key=True, index=True)
     project_id = Column(SMALLINT, primary_key=True, index=True)
     latitude = Column(Numeric(10, 5), primary_key=True)
@@ -91,6 +111,11 @@ class Nodes(Base):
 
 
 class Links(Base):
+
+    @staticmethod
+    def __name__():
+        return 'EnergyFlow'
+
     id = Column(SMALLINT, primary_key=True, index=True)
     project_id = Column(SMALLINT, primary_key=True, index=True)
     lat_from = Column(Numeric(10, 5), primary_key=True)
@@ -102,6 +127,11 @@ class Links(Base):
 
 
 class Results(Base):
+
+    @staticmethod
+    def __name__():
+        return 'EnergyFlow'
+
     id = Column(SMALLINT, primary_key=True, index=True)
     project_id = Column(SMALLINT, primary_key=True, index=True)
     n_consumers = Column(SMALLINT(unsigned=True))
@@ -146,6 +176,11 @@ class Results(Base):
 
 
 class DemandCoverage(Base):
+
+    @staticmethod
+    def __name__():
+        return 'EnergyFlow'
+
     id = Column(SMALLINT, primary_key=True, index=True)
     project_id = Column(SMALLINT, primary_key=True, index=True)
     dt = Column(DateTime, primary_key=True, index=True)
@@ -171,6 +206,29 @@ class EnergyFlow(Base):
     battery_content = Column(Numeric(10, 3))
     demand = Column(Numeric(10, 3))
     surplus = Column(Numeric(10, 3))
+
+
+class DurationCurve(Base):
+
+    @staticmethod
+    def __name__():
+        return 'DurationCurve'
+
+    id = Column(SMALLINT, primary_key=True, index=True)
+    project_id = Column(SMALLINT, primary_key=True, index=True)
+    h = Column(SMALLINT, primary_key=True, index=True)
+    diesel_genset_percentage = Column(Numeric(10, 3))
+    diesel_genset_duration = Column(Numeric(10, 3))
+    pv_percentage = Column(Numeric(10, 3))
+    pv_duration = Column(Numeric(10, 3))
+    rectifier_percentage = Column(Numeric(10, 3))
+    rectifier_duration = Column(Numeric(10, 3))
+    inverter_percentage = Column(Numeric(10, 3))
+    inverter_duration = Column(Numeric(10, 3))
+    battery_charge_percentage = Column(Numeric(10, 3))
+    battery_charge_duration = Column(Numeric(10, 3))
+    battery_discharge_percentage = Column(Numeric(10, 3))
+    battery_discharge_duration = Column(Numeric(10, 3))
 
 
 class AddNodeRequest(BaseModel):

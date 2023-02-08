@@ -40,7 +40,7 @@ import time
 
 app = FastAPI()
 
-app.mount(    "/fastapi_app/static", StaticFiles(directory="fastapi_app/static"), name="static")
+app.mount("/fastapi_app/static", StaticFiles(directory="fastapi_app/static"), name="static")
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -54,7 +54,6 @@ directory_parent = "fastapi_app"
 
 directory_database = os.path.join(directory_parent, "data", "database").replace("\\", "/")
 full_path_demands = os.path.join(directory_database, "demands.csv").replace("\\", "/")
-full_path_duration_curves = os.path.join(directory_database, "duration_curves.csv").replace("\\", "/")
 full_path_co2_emissions = os.path.join(directory_database, "co2_emissions.csv").replace("\\", "/")
 os.makedirs(directory_database, exist_ok=True)
 directory_inputs = os.path.join(directory_parent, "data", "inputs").replace("\\", "/")
@@ -259,24 +258,11 @@ async def database_initialization(nodes, links):
     # creating the csv files
     # - in case these files do not exist they will be created here
     # - each time the code runs from the beginning, the old csv files will be replaced with new blank ones
-    header_duration_curves = ["diesel_genset_percentage",
-                              "diesel_genset_duration",
-                              "pv_percentage",
-                              "pv_duration",
-                              "rectifier_percentage",
-                              "rectifier_duration",
-                              "inverter_percentage",
-                              "inverter_duration",
-                              "battery_charge_percentage",
-                              "battery_charge_duration",
-                              "battery_discharge_percentage",
-                              "battery_discharge_duration", ]
+
     header_co2_emissions = ["non_renewable_electricity_production",
                             "hybrid_electricity_production",
                             "co2_savings", ]
-    pd.DataFrame(columns=header_duration_curves).to_csv(full_path_duration_curves, index=False)
     pd.DataFrame(columns=header_co2_emissions).to_csv(full_path_co2_emissions, index=False)
-
 
 
 @app.get("/database_to_js/{nodes_or_links}/{project_id}")
@@ -495,9 +481,11 @@ async def get_data_for_energy_flows(project_id, request: Request, db: Session = 
     return json.loads(df.to_json())
 
 
-@app.get("/get_data_for_duration_curves/")
-async def get_data_for_duration_curves():
-    return json.loads(pd.read_csv(full_path_duration_curves).to_json())
+@app.get("/get_data_for_duration_curves/{project_id}")
+async def get_data_for_duration_curves(project_id, request: Request, db: Session = Depends(get_db)):
+    user_id = accounts.get_user_from_cookie(request, db).id
+    df = queries.get_df(models.DurationCurve, user_id, project_id, db)
+    return json.loads(df.to_json())
 
 
 @app.get("/get_co2_emissions_data/")
@@ -559,13 +547,13 @@ async def database_add_remove_automatic(add_remove: str, project_id,
         inserts.update_nodes_and_links(True, False, nodes, user_id, project_id, db)
     else:
         # reading the existing CSV file of nodes, and then removing the corresponding row
-        #df = pd.read_csv(full_path_nodes)
+        # df = pd.read_csv(full_path_nodes)
         df = queries.get_nodes_df(user_id, project_id, db)
         number_of_nodes = df.shape[0]
         for index in range(number_of_nodes):
             if bi.is_point_in_boundaries(point_coordinates=(df.to_dict()["latitude"][index],
                                                             df.to_dict()["longitude"][index],),
-                                         boundaries=boundary_coordinates,):
+                                         boundaries=boundary_coordinates, ):
                 df.drop(labels=index, axis=0, inplace=True)
         inserts.update_nodes_and_links(True, False, df.to_dict(), user_id, project_id, db, False)
 
@@ -1175,7 +1163,6 @@ models.OptimizeEnergySystemRequest, db: Session = Depends(get_db)):
     df["surplus"] = ensys_opt.sequences_surplus
     inserts.insert_df(models.EnergyFlow, df, user_id, project_id, db)
 
-
     df = pd.DataFrame()
     df["demand"] = ensys_opt.sequences_demand
     df["renewable"] = ensys_opt.sequences_inverter
@@ -1186,65 +1173,34 @@ models.OptimizeEnergySystemRequest, db: Session = Depends(get_db)):
     inserts.insert_demand_coverage_df(df, user_id, project_id, db)
 
     # store duration curves
-    df = pd.read_csv(full_path_duration_curves)
-    df.loc[:, "diesel_genset_percentage"] = (
-            100
-            * np.arange(1, len(ensys_opt.sequences_genset) + 1)
-            / len(ensys_opt.sequences_genset)
-    )
-    df.loc[:, "diesel_genset_duration"] = (
-            100
-            * np.sort(ensys_opt.sequences_genset)[::-1]
-            / ensys_opt.sequences_genset.max()
-    )
-    df.loc[:, "pv_percentage"] = (
-            100
-            * np.arange(1, len(ensys_opt.sequences_pv) + 1)
-            / len(ensys_opt.sequences_pv)
-    )
-    df.loc[:, "pv_duration"] = (
-            100 * np.sort(ensys_opt.sequences_pv)[::-1] / ensys_opt.sequences_pv.max()
-    )
-    df.loc[:, "rectifier_percentage"] = (
-            100
-            * np.arange(1, len(ensys_opt.sequences_rectifier) + 1)
-            / len(ensys_opt.sequences_rectifier)
-    )
-    df.loc[:, "rectifier_duration"] = 100 * np.nan_to_num(
+    df = pd.DataFrame()
+    df["diesel_genset_percentage"] = (100 * np.arange(1, len(ensys_opt.sequences_genset) + 1)
+                                      / len(ensys_opt.sequences_genset))
+    df["diesel_genset_duration"] = (100 * np.sort(ensys_opt.sequences_genset)[::-1]
+                                    / ensys_opt.sequences_genset.max())
+    df["pv_percentage"] = (100 * np.arange(1, len(ensys_opt.sequences_pv) + 1)
+                           / len(ensys_opt.sequences_pv))
+    df["pv_duration"] = (
+            100 * np.sort(ensys_opt.sequences_pv)[::-1] / ensys_opt.sequences_pv.max())
+    df["rectifier_percentage"] = (100 * np.arange(1, len(ensys_opt.sequences_rectifier) + 1)
+                                  / len(ensys_opt.sequences_rectifier))
+    df["rectifier_duration"] = 100 * np.nan_to_num(
         np.sort(ensys_opt.sequences_rectifier)[::-1]
-        / ensys_opt.sequences_rectifier.max()
-    )
-    df.loc[:, "inverter_percentage"] = (
-            100
-            * np.arange(1, len(ensys_opt.sequences_inverter) + 1)
-            / len(ensys_opt.sequences_inverter)
-    )
-    df.loc[:, "inverter_duration"] = (
-            100
-            * np.sort(ensys_opt.sequences_inverter)[::-1]
-            / ensys_opt.sequences_inverter.max()
-    )
-    df.loc[:, "battery_charge_percentage"] = (
-            100
-            * np.arange(1, len(ensys_opt.sequences_battery_charge) + 1)
-            / len(ensys_opt.sequences_battery_charge)
-    )
-    df.loc[:, "battery_charge_duration"] = (
-            100
-            * np.sort(ensys_opt.sequences_battery_charge)[::-1]
-            / ensys_opt.sequences_battery_charge.max()
-    )
-    df.loc[:, "battery_discharge_percentage"] = (
-            100
-            * np.arange(1, len(ensys_opt.sequences_battery_discharge) + 1)
-            / len(ensys_opt.sequences_battery_discharge)
-    )
-    df.loc[:, "battery_discharge_duration"] = (
-            100
-            * np.sort(ensys_opt.sequences_battery_discharge)[::-1]
-            / ensys_opt.sequences_battery_discharge.max()
-    )
-    df.to_csv(full_path_duration_curves, index=False, float_format="%.3f")
+        / ensys_opt.sequences_rectifier.max())
+    df["inverter_percentage"] = (100 * np.arange(1, len(ensys_opt.sequences_inverter) + 1)
+                                 / len(ensys_opt.sequences_inverter))
+    df["inverter_duration"] = (100 * np.sort(ensys_opt.sequences_inverter)[::-1]
+                               / ensys_opt.sequences_inverter.max())
+    df["battery_charge_percentage"] = (100 * np.arange(1, len(ensys_opt.sequences_battery_charge) + 1)
+                                       / len(ensys_opt.sequences_battery_charge))
+    df["battery_charge_duration"] = (100 * np.sort(ensys_opt.sequences_battery_charge)[::-1]
+                                     / ensys_opt.sequences_battery_charge.max())
+    df["battery_discharge_percentage"] = (100 * np.arange(1, len(ensys_opt.sequences_battery_discharge) + 1)
+                                          / len(ensys_opt.sequences_battery_discharge))
+    df["battery_discharge_duration"] = (100 * np.sort(ensys_opt.sequences_battery_discharge)[::-1]
+                                        / ensys_opt.sequences_battery_discharge.max())
+    df['h'] = len(ensys_opt.sequences_genset) - np.arange(1, len(ensys_opt.sequences_genset) + 1)
+    inserts.insert_df(models.DurationCurve, df, user_id, project_id, db)
 
 
 @app.post("/shs_identification/")

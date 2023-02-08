@@ -400,7 +400,7 @@ makeplot_demand_coverage();
 // DURATION CURVES
 function makeplot_duration_curves() {
   var xhr = new XMLHttpRequest();
-  url = 'get_data_for_duration_curves/';
+  url = 'get_data_for_duration_curves/' + project_id;
   xhr.open("GET", url, true);
   xhr.responseType = "json";
   xhr.send()
