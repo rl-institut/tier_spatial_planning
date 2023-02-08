@@ -197,7 +197,7 @@ xhr.onreadystatechange = function () {
 // ENERGY FLOWS PLOT
 function makeplot_energy_flows() {
   var xhr = new XMLHttpRequest();
-  url = 'get_data_for_energy_flows/';
+  url = 'get_data_for_energy_flows/' + project_id;
   xhr.open("GET", url, true);
   xhr.responseType = "json";
   xhr.send()
@@ -320,7 +320,6 @@ function makeplot_demand_coverage() {
       if (this.readyState == 4 && this.status == 200) {
           // push nodes to the map
           demand_coverage = this.response;
-
           var time = [], renewable = [], non_renewable = [], demand = [], surplus = [];
               
           for (var i=0; i<Object.keys(demand_coverage['demand']).length; i++) {
@@ -330,7 +329,6 @@ function makeplot_demand_coverage() {
             non_renewable.push( demand_coverage['non_renewable'][i] );
             surplus.push( demand_coverage['surplus'][i]);
           }
-  
           var demandCoverage = document.getElementById("demandCoverage");
           var trace1 = {
             x: time,

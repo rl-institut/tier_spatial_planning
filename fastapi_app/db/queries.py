@@ -81,3 +81,11 @@ def get_demand_coverage_df(user_id, project_id, db):
     df = pd.read_sql(query.statement, db.bind).drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
     df = df.set_index('dt')
     return df
+
+
+def get_df(model, user_id, project_id, db):
+    query = db.query(model).filter(model.id == user_id, model.project_id == project_id)
+    df = pd.read_sql(query.statement, db.bind).drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
+    if 'dt' in df.columns:
+        df = df.set_index('dt')
+    return df

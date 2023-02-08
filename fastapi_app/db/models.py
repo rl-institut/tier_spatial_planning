@@ -148,10 +148,28 @@ class Results(Base):
 class DemandCoverage(Base):
     id = Column(SMALLINT, primary_key=True, index=True)
     project_id = Column(SMALLINT, primary_key=True, index=True)
-    dt = Column(DateTime)
+    dt = Column(DateTime, primary_key=True, index=True)
     demand = Column(Numeric(10, 3))
     renewable = Column(Numeric(10, 3))
     non_renewable = Column(Numeric(10, 3))
+    surplus = Column(Numeric(10, 3))
+
+
+class EnergyFlow(Base):
+
+    @staticmethod
+    def __name__():
+        return 'EnergyFlow'
+
+    id = Column(SMALLINT, primary_key=True, index=True)
+    project_id = Column(SMALLINT, primary_key=True, index=True)
+    dt = Column(DateTime, primary_key=True, index=True)
+    diesel_genset_production = Column(Numeric(10, 3))
+    pv_production = Column(Numeric(10, 3))
+    battery_charge = Column(Numeric(10, 3))
+    battery_discharge = Column(Numeric(10, 3))
+    battery_content = Column(Numeric(10, 3))
+    demand = Column(Numeric(10, 3))
     surplus = Column(Numeric(10, 3))
 
 

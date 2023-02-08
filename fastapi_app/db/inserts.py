@@ -2,7 +2,7 @@ import os
 import pandas as pd
 from fastapi_app.db import models
 from fastapi_app.db.queries import get_nodes_df, get_links_df
-from fastapi_app.db.database import insert_df
+from fastapi_app.db.database import _insert_df
 
 
 def insert_links_df(df, user_id, project_id, db):
@@ -10,7 +10,7 @@ def insert_links_df(df, user_id, project_id, db):
     remove(model_class, user_id, project_id, db)
     df['id'] = int(user_id)
     df['project_id'] = int(project_id)
-    insert_df('links', df, db, if_exists='update')
+    _insert_df('links', df, db, if_exists='update')
 
 
 def insert_nodes_df(df, user_id, project_id, db, replace=True):
@@ -19,7 +19,7 @@ def insert_nodes_df(df, user_id, project_id, db, replace=True):
         remove(model_class, user_id, project_id, db)
     df['id'] = int(user_id)
     df['project_id'] = int(project_id)
-    insert_df('nodes', df, db, if_exists='update')
+    _insert_df('nodes', df, db, if_exists='update')
 
 
 def insert_results_df(df, user_id, project_id, db):
@@ -29,7 +29,7 @@ def insert_results_df(df, user_id, project_id, db):
         remove(model_class, user_id, project_id, db)
         df['id'] = int(user_id)
         df['project_id'] = int(project_id)
-        insert_df('results', df, db, if_exists='update')
+        _insert_df('results', df, db, if_exists='update')
 
 
 def insert_demand_coverage_df(df, user_id, project_id, db):
@@ -39,11 +39,23 @@ def insert_demand_coverage_df(df, user_id, project_id, db):
         remove(model_class, user_id, project_id, db)
         df['id'] = int(user_id)
         df['project_id'] = int(project_id)
-        insert_df('demandcoverage', df, db, if_exists='update')
+        _insert_df('demandcoverage', df, db, if_exists='update')
+
+
+def insert_df(model_class, df, user_id, project_id, db):
+    df = df.dropna(how='all', axis=0)
+    if not df.empty:
+        remove(model_class, user_id, project_id, db)
+        if hasattr(model_class, 'dt') and 'dt' not in df.columns:
+            df.index.name = 'dt'
+            df = df.reset_index()
+        df['id'] = int(user_id)
+        df['project_id'] = int(project_id)
+        _insert_df(model_class.__name__.lower(), df, db, if_exists='update')
 
 
 def remove(model_class, user_id, project_id, db):
-    if model_class == models.Nodes or model_class == models.Links:
+    if model_class in [models.Nodes, models.Links, models.DemandCoverage]:
         try:
             query = db.query(model_class).filter(model_class.id == user_id, model_class.project_id == project_id)
             query.delete()

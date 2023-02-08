@@ -61,7 +61,7 @@ def sql_str_2_db(sql, cnx=None):
         raise Exception(err)
 
 
-def insert_df(table: str, df, cnx, if_exists='update', chunk_size=None):
+def _insert_df(table: str, df, cnx, if_exists='update', chunk_size=None):
     if df.empty:
         return
     max_rows = int(150000 / len(df.columns))

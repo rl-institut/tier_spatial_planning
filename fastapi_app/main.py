@@ -40,9 +40,7 @@ import time
 
 app = FastAPI()
 
-app.mount(
-    "/fastapi_app/static", StaticFiles(directory="fastapi_app/static"), name="static"
-)
+app.mount(    "/fastapi_app/static", StaticFiles(directory="fastapi_app/static"), name="static")
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -56,8 +54,6 @@ directory_parent = "fastapi_app"
 
 directory_database = os.path.join(directory_parent, "data", "database").replace("\\", "/")
 full_path_demands = os.path.join(directory_database, "demands.csv").replace("\\", "/")
-
-full_path_energy_flows = os.path.join(directory_database, "energy_flows.csv").replace("\\", "/")
 full_path_duration_curves = os.path.join(directory_database, "duration_curves.csv").replace("\\", "/")
 full_path_co2_emissions = os.path.join(directory_database, "co2_emissions.csv").replace("\\", "/")
 os.makedirs(directory_database, exist_ok=True)
@@ -253,7 +249,9 @@ async def simulation_results(request: Request):
 @app.get("/get_demand_coverage_data/{project_id}")
 async def get_demand_coverage_data(project_id, request: Request, db: Session = Depends(get_db)):
     user_id = accounts.get_user_from_cookie(request, db).id
-    return json.loads(queries.get_demand_coverage_df(user_id, project_id, db).to_json())
+    df = queries.get_demand_coverage_df(user_id, project_id, db)
+    df = df.reset_index(drop=True)
+    return json.loads(df.to_json())
 
 
 @app.get("/database_initialization/{nodes}/{links}")
@@ -261,13 +259,6 @@ async def database_initialization(nodes, links):
     # creating the csv files
     # - in case these files do not exist they will be created here
     # - each time the code runs from the beginning, the old csv files will be replaced with new blank ones
-    header_energy_flows = ["diesel_genset_production",
-                           "pv_production",
-                           "battery_charge",
-                           "battery_discharge",
-                           "battery_content",
-                           "demand",
-                           "surplus", ]
     header_duration_curves = ["diesel_genset_percentage",
                               "diesel_genset_duration",
                               "pv_percentage",
@@ -283,7 +274,6 @@ async def database_initialization(nodes, links):
     header_co2_emissions = ["non_renewable_electricity_production",
                             "hybrid_electricity_production",
                             "co2_savings", ]
-    pd.DataFrame(columns=header_energy_flows).to_csv(full_path_energy_flows, index=False)
     pd.DataFrame(columns=header_duration_curves).to_csv(full_path_duration_curves, index=False)
     pd.DataFrame(columns=header_co2_emissions).to_csv(full_path_co2_emissions, index=False)
 
@@ -497,9 +487,12 @@ async def get_data_for_sankey_diagram(project_id, request: Request, db: Session 
     return sankey_data
 
 
-@app.get("/get_data_for_energy_flows/")
-async def get_data_for_energy_flows():
-    return json.loads(pd.read_csv(full_path_energy_flows).to_json())
+@app.get("/get_data_for_energy_flows/{project_id}")
+async def get_data_for_energy_flows(project_id, request: Request, db: Session = Depends(get_db)):
+    user_id = accounts.get_user_from_cookie(request, db).id
+    df = queries.get_df(models.EnergyFlow, user_id, project_id, db)
+    df = df.reset_index(drop=True)
+    return json.loads(df.to_json())
 
 
 @app.get("/get_data_for_duration_curves/")
@@ -709,6 +702,7 @@ def demand_estimation(nodes, update_total_demand):
 def remove_rusults(user_id, project_id, db):
     inserts.remove(models.Results, user_id, project_id, db)
     inserts.remove(models.DemandCoverage, user_id, project_id, db)
+    inserts.remove(models.EnergyFlow, user_id, project_id, db)
 
 
 @app.post("/optimize_grid/{project_id}")
@@ -1171,17 +1165,15 @@ models.OptimizeEnergySystemRequest, db: Session = Depends(get_db)):
     inserts.insert_results_df(df, user_id, project_id, db)
 
     # store energy flows
-    df = pd.read_csv(full_path_energy_flows)
-    df.loc[:, "diesel_genset_production"] = ensys_opt.sequences_genset
-    df.loc[:, "pv_production"] = ensys_opt.sequences_pv
-    df.loc[:, "battery_charge"] = ensys_opt.sequences_battery_charge
-    df.loc[:, "battery_discharge"] = ensys_opt.sequences_battery_discharge
-    df.loc[:, "battery_content"] = ensys_opt.sequences_battery_content
-    df.loc[:, "demand"] = ensys_opt.sequences_demand
-    df.loc[:, "surplus"] = ensys_opt.sequences_surplus
-    df.to_csv(
-        full_path_energy_flows, index=True, index_label="time", float_format="%.3f"
-    )
+    df = pd.DataFrame()
+    df["diesel_genset_production"] = ensys_opt.sequences_genset
+    df["pv_production"] = ensys_opt.sequences_pv
+    df["battery_charge"] = ensys_opt.sequences_battery_charge
+    df["battery_discharge"] = ensys_opt.sequences_battery_discharge
+    df["battery_content"] = ensys_opt.sequences_battery_content
+    df["demand"] = ensys_opt.sequences_demand
+    df["surplus"] = ensys_opt.sequences_surplus
+    inserts.insert_df(models.EnergyFlow, df, user_id, project_id, db)
 
 
     df = pd.DataFrame()
@@ -1189,6 +1181,8 @@ models.OptimizeEnergySystemRequest, db: Session = Depends(get_db)):
     df["renewable"] = ensys_opt.sequences_inverter
     df["non_renewable"] = ensys_opt.sequences_genset
     df["surplus"] = ensys_opt.sequences_surplus
+    df.index.name = "dt"
+    df = df.reset_index()
     inserts.insert_demand_coverage_df(df, user_id, project_id, db)
 
     # store duration curves
