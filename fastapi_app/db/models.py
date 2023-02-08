@@ -231,6 +231,20 @@ class DurationCurve(Base):
     battery_discharge_duration = Column(Numeric(10, 3))
 
 
+class Emissions(Base):
+
+    @staticmethod
+    def __name__():
+        return 'Emissions'
+
+    id = Column(SMALLINT, primary_key=True, index=True)
+    project_id = Column(SMALLINT, primary_key=True, index=True)
+    h = Column(SMALLINT, primary_key=True, index=True)
+    non_renewable_electricity_production = Column(Numeric(10, 3))
+    hybrid_electricity_production = Column(Numeric(10, 3))
+    co2_savings = Column(Numeric(10, 3))
+
+
 class AddNodeRequest(BaseModel):
     latitude: float
     longitude: float

@@ -54,7 +54,6 @@ directory_parent = "fastapi_app"
 
 directory_database = os.path.join(directory_parent, "data", "database").replace("\\", "/")
 full_path_demands = os.path.join(directory_database, "demands.csv").replace("\\", "/")
-full_path_co2_emissions = os.path.join(directory_database, "co2_emissions.csv").replace("\\", "/")
 os.makedirs(directory_database, exist_ok=True)
 directory_inputs = os.path.join(directory_parent, "data", "inputs").replace("\\", "/")
 full_path_timeseries = os.path.join(directory_inputs, "timeseries.csv").replace("\\", "/")
@@ -258,11 +257,7 @@ async def database_initialization(nodes, links):
     # creating the csv files
     # - in case these files do not exist they will be created here
     # - each time the code runs from the beginning, the old csv files will be replaced with new blank ones
-
-    header_co2_emissions = ["non_renewable_electricity_production",
-                            "hybrid_electricity_production",
-                            "co2_savings", ]
-    pd.DataFrame(columns=header_co2_emissions).to_csv(full_path_co2_emissions, index=False)
+    pass
 
 
 @app.get("/database_to_js/{nodes_or_links}/{project_id}")
@@ -488,9 +483,11 @@ async def get_data_for_duration_curves(project_id, request: Request, db: Session
     return json.loads(df.to_json())
 
 
-@app.get("/get_co2_emissions_data/")
-async def get_co2_emissions_data():
-    return json.loads(pd.read_csv(full_path_co2_emissions).to_json())
+@app.get("/get_co2_emissions_data/{project_id}")
+async def get_co2_emissions_data(project_id, request: Request, db: Session = Depends(get_db)):
+    user_id = accounts.get_user_from_cookie(request, db).id
+    df = queries.get_df(models.Emissions, user_id, project_id, db)
+    return json.loads(df.to_json())
 
 
 @app.post("/database_add_remove_automatic/{add_remove}/{project_id}")
@@ -1084,18 +1081,16 @@ models.OptimizeEnergySystemRequest, db: Session = Depends(get_db)):
         co2_emission_factor = 0.699
 
     # store fuel co2 emissions (kg_CO2 per L of fuel)
-    df = pd.read_csv(full_path_co2_emissions)
-    df.loc[:, "non_renewable_electricity_production"] = (
+    df = pd.DataFrame()
+    df["non_renewable_electricity_production"] = (
             np.cumsum(ensys_opt.demand) * co2_emission_factor / 1000
     )  # tCO2 per year
-    df.loc[:, "hybrid_electricity_production"] = (
-            np.cumsum(ensys_opt.sequences_genset) * co2_emission_factor / 1000
-    )  # tCO2 per year
-    df.loc[:, "co2_savings"] = (
-            df.loc[:, "non_renewable_electricity_production"]
-            - df.loc[:, "hybrid_electricity_production"]
-    )  # tCO2 per year
-    df.to_csv(full_path_co2_emissions, index=False, float_format="%.3f")
+    df["hybrid_electricity_production"] \
+        = np.cumsum(ensys_opt.sequences_genset) * co2_emission_factor / 1000  # tCO2 per year
+    df["co2_savings"] = \
+        df.loc[:, "non_renewable_electricity_production"] - df.loc[:, "hybrid_electricity_production"]  # tCO2 per year
+    df['h'] = np.arange(1, len(ensys_opt.demand) + 1)
+    inserts.insert_df(models.Emissions, df, user_id, project_id, db)
     # TODO: -2 must actually be -1, but for some reason, the co2-emission csv file has an additional empty row
     co2_savings = df.loc[:, "co2_savings"][
         -2
@@ -1199,7 +1194,7 @@ models.OptimizeEnergySystemRequest, db: Session = Depends(get_db)):
                                           / len(ensys_opt.sequences_battery_discharge))
     df["battery_discharge_duration"] = (100 * np.sort(ensys_opt.sequences_battery_discharge)[::-1]
                                         / ensys_opt.sequences_battery_discharge.max())
-    df['h'] = len(ensys_opt.sequences_genset) - np.arange(1, len(ensys_opt.sequences_genset) + 1)
+    df['h'] = np.arange(1, len(ensys_opt.sequences_genset) + 1)
     inserts.insert_df(models.DurationCurve, df, user_id, project_id, db)
 
 

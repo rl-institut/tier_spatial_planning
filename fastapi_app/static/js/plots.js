@@ -503,7 +503,7 @@ makeplot_duration_curves();
 // DEMAND COVERAGE PLOT
 function makeplot_co2_emissions() {
   var xhr = new XMLHttpRequest();
-  url = 'get_co2_emissions_data/';
+  url = 'get_co2_emissions_data/' + project_id;
   xhr.open("GET", url, true);
   xhr.responseType = "json";
   xhr.send()
