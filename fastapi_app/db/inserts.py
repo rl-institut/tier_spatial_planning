@@ -1,8 +1,8 @@
 import os
 import pandas as pd
-from app.db import models
-from app.db.queries import get_nodes_df, get_links_df
-from app.db.database import _insert_df
+from fastapi_app.db import models
+from fastapi_app.db.queries import get_nodes_df, get_links_df
+from fastapi_app.db.database import _insert_df
 
 
 def insert_links_df(df, user_id, project_id, db):

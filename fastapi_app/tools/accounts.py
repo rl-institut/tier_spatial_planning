@@ -5,13 +5,13 @@ import logging.handlers
 from importlib import reload
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
-from app.db.models import User
+from fastapi_app.db.models import User
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import jwt, JWTError
-from app.db import config
+from fastapi_app.db import config
 from fastapi import Depends
-from app.db.database import get_db
+from fastapi_app.db.database import get_db
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.utils import get_authorization_scheme_param
 
@@ -71,7 +71,7 @@ def send_activation_link(mail, guid):
 
 
 def send_mail(to_adress, msg):
-    from app.db.config import mail_pw
+    from fastapi_app.db.config import mail_pw
     logging.shutdown()
     reload(logging)
     logging.basicConfig(level=logging.CRITICAL,

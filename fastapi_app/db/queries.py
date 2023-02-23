@@ -1,7 +1,7 @@
 import json
 import pandas as pd
 import sqlalchemy as sa
-from app.db import models
+from fastapi_app.db import models
 
 
 def get_max_project_id_of_user(user_id, db):

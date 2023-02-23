@@ -68,13 +68,13 @@ L.Control.zoomHome = L.Control.extend({
   options: {
     position: "topleft",
     // zoomInText: "+",
-    zoomInText:'<img class="leaflet-zoom-in-out" src="/app/static/assets/icons/i_zoom_in.svg"></img>',
+    zoomInText:'<img class="leaflet-zoom-in-out" src="/fastapi_app/static/assets/icons/i_zoom_in.svg"></img>',
     zoomInTitle: "Zoom in",
     // zoomOutText: "&#8722", //this is a long minus sign
-    zoomOutText:'<img class="leaflet-zoom-in-out" src="/app/static/assets/icons/i_zoom_out.svg"></img>',
+    zoomOutText:'<img class="leaflet-zoom-in-out" src="/fastapi_app/static/assets/icons/i_zoom_out.svg"></img>',
     zoomOutTitle: "Zoom out",
     zoomHomeText:
-      '<img class="leaflet-zoom-fit" src="/app/static/assets/icons/i_zoom_fit.svg"></img>',
+      '<img class="leaflet-zoom-fit" src="/fastapi_app/static/assets/icons/i_zoom_fit.svg"></img>',
     zoomHomeTitle: "Show all nodes",
   },
 
@@ -173,7 +173,7 @@ function zoomAll(mainMap) {
 
 L.easyButton(
   // '<img class="leaflet-touch" src="'+src_clear+'">',
-  '<img class="leaflet-touch" src="/app/static/assets/icons/i_clear_all.svg">',
+  '<img class="leaflet-touch" src="/fastapi_app/static/assets/icons/i_clear_all.svg">',
   function (btn, map) {
     database_initialization(nodes = true, links = true);
     database_read(nodes_or_links = 'nodes', map_or_export = 'map')
@@ -199,22 +199,22 @@ var dashedBoundaryLine = null;
 L.control.scale().addTo(mainMap);
 
 var markerConsumer = new L.Icon({
-  iconUrl: "app/static/assets/icons/i_consumer.svg",
+  iconUrl: "fastapi_app/static/assets/icons/i_consumer.svg",
   iconSize: [6, 6],
 });
 
 var markerPowerHouse = new L.Icon({
-  iconUrl: "app/static/assets/icons/i_power_house.svg",
+  iconUrl: "fastapi_app/static/assets/icons/i_power_house.svg",
   iconSize: [12, 12],
 });
 
 var markerPole = new L.Icon({
-  iconUrl: "app/static/assets/icons/i_pole.svg",
+  iconUrl: "fastapi_app/static/assets/icons/i_pole.svg",
   iconSize: [10, 10],
 });
 
 var markerShs = new L.Icon({
-  iconUrl: "app/static/images/markers/markerShs.png",
+  iconUrl: "fastapi_app/static/images/markers/markerShs.png",
   iconSize: [16, 16],
 });
 
@@ -223,12 +223,12 @@ legend.onAdd = function (map) {
   var div = L.DomUtil.create("div", "info legend"),
     description = ["Power House", "Consumer", "Pole", "SHS", "Distribution", "Connection"],
     image = [
-      "app/static/assets/icons/i_power_house.svg",
-      "app/static/assets/icons/i_consumer.svg",
-      "app/static/assets/icons/i_pole.svg",
-      "app/static/assets/icons/i_shs.svg",
-      "app/static/assets/icons/i_distribution.svg",
-      "app/static/assets/icons/i_connection.svg",
+      "fastapi_app/static/assets/icons/i_power_house.svg",
+      "fastapi_app/static/assets/icons/i_consumer.svg",
+      "fastapi_app/static/assets/icons/i_pole.svg",
+      "fastapi_app/static/assets/icons/i_shs.svg",
+      "fastapi_app/static/assets/icons/i_distribution.svg",
+      "fastapi_app/static/assets/icons/i_connection.svg",
     ];
 
   // loop through our density intervals and generate a label with a colored square for each interval
