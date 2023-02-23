@@ -52,7 +52,7 @@ def is_mail_unregistered(user, db):
 
 
 def is_valid_password(user):
-    if len(user.password) < 8:
+    if len(user.db_root_pw) < 8:
         return False
     else:
         return True
@@ -71,7 +71,7 @@ def send_activation_link(mail, guid):
 
 
 def send_mail(to_adress, msg):
-    from fastapi_app.db.config import mail_pw
+    from fastapi_app.db.config import MAIL_PW
     logging.shutdown()
     reload(logging)
     logging.basicConfig(level=logging.CRITICAL,
@@ -83,7 +83,7 @@ def send_mail(to_adress, msg):
                                                 fromaddr=config.LOGGER_FROM_ADDR,
                                                 toaddrs=[to_adress],
                                                 subject='Activate your PeopleSun-Account',
-                                                credentials=(config.LOGGER_FROM_ADDR, mail_pw),
+                                                credentials=(config.LOGGER_FROM_ADDR, MAIL_PW),
                                                 timeout=2.0,
                                                 secure=())
     mail_logger.addHandler(smtp_handler)

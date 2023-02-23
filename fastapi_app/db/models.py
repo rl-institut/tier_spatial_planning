@@ -3,9 +3,41 @@ import sqlalchemy as sa
 from sqlalchemy import Boolean, Column, Integer, VARCHAR, Numeric, String, DateTime
 from sqlalchemy.dialects.mysql import TINYINT, SMALLINT, FLOAT
 # from sqlalchemy.orm import relationship
-from fastapi_app.db.database import Base
 from typing import List, Dict, Union
 from pydantic import BaseModel, EmailStr
+import json
+import inspect
+import pandas as pd
+from typing import Any
+from sqlalchemy.ext.declarative import as_declarative, declared_attr
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from fastapi_app.db.config import db_host, db_name, db_user_name, db_root_pw, db_port
+
+
+@as_declarative()
+class Base:
+    id: Any
+    __name__: str
+
+    # generate tablename from classname
+    @declared_attr
+    def __tablename__(cls) -> str:
+        return cls.__name__.lower()
+
+    def get_df(self):
+        attr_dict = dict()
+        for (key, value) in inspect.getmembers(self):
+            if key[:1] != '_':
+                if key not in 'metadata' and not inspect.ismethod(value):
+                    attr_dict[key] = value
+        df = pd.DataFrame.from_dict(attr_dict, orient='index').T
+        return df
+
+    def get_json(self):
+        df = self.get_df().dropna(how='all', axis=0)
+        data_json = json.loads(df.to_json())
+        return data_json
 
 
 class Credentials(BaseModel):

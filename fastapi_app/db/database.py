@@ -1,44 +1,25 @@
-import json
-import inspect
+import time
 import pandas as pd
-from typing import Any
-from sqlalchemy.ext.declarative import as_declarative, declared_attr
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from fastapi_app.db.config import host, db_name, user_name, password, port
+from fastapi_app.db.config import db_host, db_name, db_user_name, db_root_pw, db_port
+from fastapi_app.db.models import Base
+from sqlalchemy.exc import SQLAlchemyError
+from mysql.connector import DatabaseError, ProgrammingError, InterfaceError
 
 
-# nodes database
-SQLALCHEMY_DATABASE_URL = 'mysql+mysqlconnector://{}:{}@{}:{}/{}'\
-    .format(user_name, password, host, port, db_name)
+SQLALCHEMY_DATABASE_URL = 'mysql+mysqlconnector://{}:{}@{}:{}/{}'.format(db_user_name, db_root_pw, db_host, db_port, db_name)
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+for i in range(40):
+    try:
+        engine = create_engine(SQLALCHEMY_DATABASE_URL)
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        Base.metadata.create_all(bind=engine)
+    except (SQLAlchemyError, DatabaseError, ProgrammingError, InterfaceError) as e:
+        time.sleep(5)
+    else:
+        break
 
-
-@as_declarative()
-class Base:
-    id: Any
-    __name__: str
-
-    # generate tablename from classname
-    @declared_attr
-    def __tablename__(cls) -> str:
-        return cls.__name__.lower()
-
-    def get_df(self):
-        attr_dict = dict()
-        for (key, value) in inspect.getmembers(self):
-            if key[:1] != '_':
-                if key not in 'metadata' and not inspect.ismethod(value):
-                    attr_dict[key] = value
-        df = pd.DataFrame.from_dict(attr_dict, orient='index').T
-        return df
-
-    def get_json(self):
-        df = self.get_df().dropna(how='all', axis=0)
-        data_json = json.loads(df.to_json())
-        return data_json
 
 
 def get_db():

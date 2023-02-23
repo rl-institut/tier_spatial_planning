@@ -887,7 +887,7 @@ async def optimize_grid(project_id, request: Request, db: Session = Depends(get_
     grid.nodes.sort_values("distance_to_load_center", ascending=False, inplace=True)
 
     # Convert the first `n_shs_consumer` nodes into candidates for SHS.
-    grid.nodes.at[grid.nodes.index[0:n_shs_consumers], "is_connected"] = False
+    grid.nodes.loc[grid.nodes.index[0:n_shs_consumers], "is_connected"] = False
 
     # Sort nodes again based on their index label. Here, since the index is
     # string, sorting the nodes without changing the type of index would result

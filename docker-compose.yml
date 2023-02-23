@@ -17,18 +17,22 @@ services:
   app:
     container_name: 'app'
     build: .
-    command: gunicorn -w 2 -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:8080 --timeout 400
+    command: gunicorn -w 2 -k uvicorn.workers.UvicornWorker fastapi_app.main:fastapi_app --bind 0.0.0.0:8080 --timeout 400
     restart: always
     platform: linux/amd64
     environment:
       - PYTHONUNBUFFERED=1
       - DB_PW_FILE=/run/secrets/db_root_password
+      - SECRET_PARS=/run/secrets/secret_pars
     ports:
       - '40000:8080'
     depends_on:
       - mysql
     secrets:
       - db_root_password
+      - secret_pars
 secrets:
   db_root_password:
-    file: ./db_root_password.txt
+    file: ./secret_db_root_pw.txt
+  secret_pars:
+    file: ./secrets/secret_py_pars.txt

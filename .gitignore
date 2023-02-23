@@ -5,7 +5,9 @@
 *.db
 run
 venv/
+.secrets/
+*secret*
 *.DS_Store
 data
 scratch.py
-fastapi_app/db/config.py
+fastapi_app/db/dev_config.py
