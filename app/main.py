@@ -1,22 +1,22 @@
-import fastapi_app.tools.boundary_identification as bi
-import fastapi_app.tools.coordinates_conversion as conv
-import fastapi_app.tools.shs_identification as shs_ident
-import fastapi_app.db.models as models
+import app.tools.boundary_identification as bi
+import app.tools.coordinates_conversion as conv
+import app.tools.shs_identification as shs_ident
+import app.db.models as models
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi_app.db.database import engine
-from fastapi_app.tools.grids import Grid
-from fastapi_app.tools.optimizer import Optimizer, GridOptimizer, EnergySystemOptimizer, po
+from app.db.database import engine
+from app.tools.grids import Grid
+from app.tools.optimizer import Optimizer, GridOptimizer, EnergySystemOptimizer, po
 from fastapi import Depends
 from sqlalchemy.orm import Session
-from fastapi_app.tools.accounts import Hasher, create_guid, is_valid_credentials, send_activation_link, activate_mail, \
+from app.tools.accounts import Hasher, create_guid, is_valid_credentials, send_activation_link, activate_mail, \
     authenticate_user, create_access_token
-from fastapi_app.tools import accounts
-from fastapi_app.db import config
-from fastapi_app.db.database import get_db
-from fastapi_app.db import queries, inserts
+from app.tools import accounts
+from app.db import config
+from app.db.database import get_db
+from app.db import queries, inserts
 import math
 import urllib.request
 import ssl
@@ -26,7 +26,6 @@ import numpy as np
 import os
 from datetime import datetime, timedelta
 
-# for debugging
 import uvicorn
 
 # for appending to the dictionary
@@ -40,17 +39,17 @@ import time
 
 app = FastAPI()
 
-app.mount("/fastapi_app/static", StaticFiles(directory="fastapi_app/static"), name="static")
+app.mount("/app/static", StaticFiles(directory="app/static"), name="static")
 
 models.Base.metadata.create_all(bind=engine)
 
-templates = Jinja2Templates(directory="fastapi_app/pages")
+templates = Jinja2Templates(directory="app/pages")
 
 # define different directories for:
 # (1) database: *.csv files for nodes and links,
 # (2) inputs: input excel files (cost data and timeseries) for offgridders + web app import and export files, and
 # (3) outputs: offgridders results
-directory_parent = "fastapi_app"
+directory_parent = "app"
 
 directory_database = os.path.join(directory_parent, "data", "database").replace("\\", "/")
 full_path_demands = os.path.join(directory_database, "demands.csv").replace("\\", "/")
@@ -75,7 +74,7 @@ import_structure = Union[json_array, json_object]
 @app.get("/favicon.ico")
 async def redirect():
     """Redirects request to location of favicon.ico logo in static folder"""
-    response = RedirectResponse(url="/fastapi_app/static/assets/favicon/favicon.ico")
+    response = RedirectResponse(url="/app/static/assets/favicon/favicon.ico")
     return response
 
 
@@ -88,11 +87,11 @@ async def redirect():
 async def export_data(generate_export_file_request: models.GenerateExportFileRequest):
     """
     Generates an Excel file from the database tables (*.csv files) and the
-    webapp settings. The file is stored in fastapi_app/import_export/temp.xlsx
+    webapp settings. The file is stored in app/import_export/temp.xlsx
 
     Parameters
     ----------
-    generate_export_file_request (fastapi_app.models.GenerateExportFileRequest):
+    generate_export_file_request (app.models.GenerateExportFileRequest):
         Basemodel request object containing the data send to the request as attributes.
     """
 
@@ -1289,14 +1288,3 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest):
         "message": "shs identified"
     }
     """
-
-
-# -------------------------- FUNCTION FOR DEBUGGING-------------------------- #
-
-
-def debugging_mode():
-    """
-    if host="0.0.0.0" and port=8000 does not work, the following can be used:
-        host="127.0.0.1", port=8080
-    """
-    uvicorn.run(app, host="0.0.0.0", port=8080)

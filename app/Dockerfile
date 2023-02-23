@@ -13,7 +13,7 @@ WORKDIR /
 
 # install requirements
 RUN python -m pip install --upgrade pip
-RUN pip install -r fastapi_app/requirements.txt
+RUN pip install -r app/requirements.txt
 RUN pip install gunicorn
 RUN ls
 

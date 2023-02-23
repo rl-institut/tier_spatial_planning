@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from fastapi_app.db.config import host, db_name, user_name, password, port
+from app.db.config import host, db_name, user_name, password, port
 
 
 # nodes database

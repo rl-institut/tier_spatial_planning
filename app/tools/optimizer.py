@@ -15,8 +15,8 @@ from scipy.optimize import linprog
 from sklearn.datasets import make_blobs
 from sklearn.metrics import precision_recall_curve
 
-from fastapi_app.tools.io import make_folder
-from fastapi_app.tools.grids import Grid
+from app.tools.io import make_folder
+from app.tools.grids import Grid
 
 import oemof.solph as solph
 from datetime import datetime, timedelta

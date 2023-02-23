@@ -3,7 +3,7 @@ import sqlalchemy as sa
 from sqlalchemy import Boolean, Column, Integer, VARCHAR, Numeric, String, DateTime
 from sqlalchemy.dialects.mysql import TINYINT, SMALLINT, FLOAT
 # from sqlalchemy.orm import relationship
-from fastapi_app.db.database import Base
+from app.db.database import Base
 from typing import List, Dict, Union
 from pydantic import BaseModel, EmailStr
 
