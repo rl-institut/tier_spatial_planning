@@ -17,3 +17,4 @@ python-jose==3.3.0
 passlib==1.7.4
 scikit-learn==1.2.1
 munkres==1.1.2
+cryptography==39.0.1

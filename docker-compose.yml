@@ -8,29 +8,25 @@ services:
     restart: always
     environment:
       - PYTHONUNBUFFERED=1
-      - DB_PW_FILE=/run/secrets/secret_db_root_pw
-      - SECRET_PARS=/run/secrets/secret_pars
+      - PW=/run/secrets/pw
     ports:
       - '40000:40000'
     #depends_on:
     links:
       - mysql
     secrets:
-      - secret_db_root_pw
-      - secret_pars
+      - pw
   mysql:
     container_name: mysql
     image: mysql
     restart: always
     environment:
       MYSQL_DATABASE: peoplesun_user_db
-      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/secret_db_root_pw
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/pw
     ports:
       - '40001:3306'
     secrets:
-      - secret_db_root_pw
+      - pw
 secrets:
-  secret_db_root_pw:
-    file: ./secrets/secret_db_root_pw.txt
-  secret_pars:
-    file: ./secrets/secret_py_pars.txt
+  pw:
+    file: ./secrets/secret.txt

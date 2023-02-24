@@ -64,7 +64,7 @@ def create_guid():
 
 
 def send_activation_link(mail, guid):
-    url = 'http://200.178.50.24:8080/activation_mail/guid={}'.format(guid)
+    url = '{}/activation_mail/guid={}'.format(config.DOMAIN, guid)
     msg = f"A PeopleSun account was created with this email.\nIf you want to activate the account follow the link:\n\n" \
           f"{url}\n\nOtherwise ignore this message."
     send_mail(mail, msg)
@@ -79,7 +79,7 @@ def send_mail(to_adress, msg):
                         datefmt='%d %b %Y %H:%M:%S')
     mail_logger = logging.getLogger("sendmail")
     mail_logger.propagate = False
-    smtp_handler = logging.handlers.SMTPHandler(mailhost=('mail.gmx.net', 587),
+    smtp_handler = logging.handlers.SMTPHandler(mailhost=(config.MAIL_HOST, config.MAIL_PORT),
                                                 fromaddr=config.MAIL_ADRESS,
                                                 toaddrs=[to_adress],
                                                 subject='Activate your PeopleSun-Account',
