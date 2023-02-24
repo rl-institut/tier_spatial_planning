@@ -12,17 +12,16 @@ if os.environ.get('PW') is not None:
     db_name = "peoplesun_user_db"
     db_user_name = "root"
     with open(os.environ['PW']) as file:
-        pw = file.read()
-        crypt = Crypt(pw)
+        PW = file.read()
+        crypt = Crypt(PW)
         SALT = crypt.decrypt(SALT)
         MAIL_ADRESS = crypt.decrypt(MAIL_ADRESS)
         MAIL_PW = crypt.decrypt(MAIL_PW)
         KEY_FOR_TOKEN = crypt.decrypt(KEY_FOR_TOKEN)
-        del pw
         del os.environ['PW']
         del crypt
 else:
-    from fastapi_app.db.dev_config import db_host, db_name, db_user_name, db_root_pw, MAIL_PW, SALT, ACCESS_TOKEN_EXPIRE_MINUTES, \
+    from fastapi_app.db.dev_config import db_host, db_name, db_user_name, PW, MAIL_PW, SALT, ACCESS_TOKEN_EXPIRE_MINUTES, \
         KEY_FOR_TOKEN, TOKEN_ALG
 db_port = 3306
 ACCESS_TOKEN_EXPIRE_MINUTES=180

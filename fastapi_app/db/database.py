@@ -2,13 +2,13 @@ import time
 import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from fastapi_app.db.config import db_host, db_name, db_user_name, db_root_pw, db_port
+from fastapi_app.db.config import db_host, db_name, db_user_name, PW, db_port
 from fastapi_app.db.models import Base
 from sqlalchemy.exc import SQLAlchemyError
 from mysql.connector import DatabaseError, ProgrammingError, InterfaceError
 
 
-SQLALCHEMY_DATABASE_URL = 'mysql+mysqlconnector://{}:{}@{}:{}/{}'.format(db_user_name, db_root_pw, db_host, db_port, db_name)
+SQLALCHEMY_DATABASE_URL = 'mysql+mysqlconnector://{}:{}@{}:{}/{}'.format(db_user_name, PW, db_host, db_port, db_name)
 
 for i in range(40):
     try:

@@ -3,8 +3,8 @@ services:
   app:
     container_name: 'app'
     build: .
-    command: gunicorn -w 2 -k uvicorn.workers.UvicornWorker fastapi_app.main:app --bind 0.0.0.0:40000 --timeout 1200
-    # command: uvicorn fastapi_app.main:app --host 0.0.0.0 --reload --port 40000
+    # command: gunicorn -w 2 -k uvicorn.workers.UvicornWorker fastapi_app.main:app --bind 0.0.0.0:40000 --timeout 1200
+    command: uvicorn fastapi_app.main:app --host 0.0.0.0 --reload --port 40000
     restart: always
     environment:
       - PYTHONUNBUFFERED=1

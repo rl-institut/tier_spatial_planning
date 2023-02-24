@@ -12,7 +12,7 @@ from typing import Any
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from fastapi_app.db.config import db_host, db_name, db_user_name, db_root_pw, db_port
+from fastapi_app.db.config import db_host, db_name, db_user_name, PW, db_port
 
 
 @as_declarative()
