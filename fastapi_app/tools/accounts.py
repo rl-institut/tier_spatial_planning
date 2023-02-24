@@ -52,7 +52,7 @@ def is_mail_unregistered(user, db):
 
 
 def is_valid_password(user):
-    if len(user.db_root_pw) < 8:
+    if len(user.password) < 8:
         return False
     else:
         return True
@@ -80,10 +80,10 @@ def send_mail(to_adress, msg):
     mail_logger = logging.getLogger("sendmail")
     mail_logger.propagate = False
     smtp_handler = logging.handlers.SMTPHandler(mailhost=('mail.gmx.net', 587),
-                                                fromaddr=config.LOGGER_FROM_ADDR,
+                                                fromaddr=config.MAIL_ADRESS,
                                                 toaddrs=[to_adress],
                                                 subject='Activate your PeopleSun-Account',
-                                                credentials=(config.LOGGER_FROM_ADDR, MAIL_PW),
+                                                credentials=(config.MAIL_ADRESS, MAIL_PW),
                                                 timeout=2.0,
                                                 secure=())
     mail_logger.addHandler(smtp_handler)
