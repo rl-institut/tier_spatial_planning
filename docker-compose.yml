@@ -1,38 +1,36 @@
 version: '3.3'
 services:
+  app:
+    container_name: 'app'
+    build: .
+    command: gunicorn -w 2 -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:40000 --timeout 400
+    restart: always
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DB_PW_FILE=/run/secrets/db_root_password
+      - DEPLOYMENT_TYPE=production
+    ports:
+      - '40000:8080'
+    #depends_on:
+    links:
+      - mysql
+    secrets:
+      - db_root_password
   mysql:
     container_name: mysql
-    image: mysql:latest
-    platform: linux/amd64
+    image: mysql
+
     restart: always
     environment:
       MYSQL_DATABASE: peoplesun_user_db
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
-    expose:
-      - '3306'
     ports:
       - '40001:3306'
-    secrets:
-      - db_root_password
-  app:
-    container_name: 'app'
-    build: .
-    command: gunicorn -w 2 -k uvicorn.workers.UvicornWorker fastapi_app.main:fastapi_app --bind 0.0.0.0:8080 --timeout 400
-    restart: always
-    platform: linux/amd64
-    environment:
-      - PYTHONUNBUFFERED=1
-      - DB_PW_FILE=/run/secrets/db_root_password
-      - SECRET_PARS=/run/secrets/secret_pars
-    ports:
-      - '40000:8080'
-    depends_on:
-      - mysql
     secrets:
       - db_root_password
       - secret_pars
 secrets:
   db_root_password:
-    file: ./secret_db_root_pw.txt
+    file: ./db_root_password.txt
   secret_pars:
     file: ./secrets/secret_py_pars.txt

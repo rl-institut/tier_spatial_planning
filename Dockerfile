@@ -1,7 +1,7 @@
 FROM continuumio/anaconda3
 WORKDIR /src
 RUN apt update
-RUN conda create -n py310 python=3.10 pip
+RUN conda create -n py39 python=3.9 pip
 RUN echo "source activate py10" > ~/.bashrc
 ENV PATH /opt/conda/envs/env/bin:$PATH
 COPY fastapi_app/requirements.txt .
