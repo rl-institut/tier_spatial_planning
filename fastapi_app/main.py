@@ -243,6 +243,23 @@ async def simulation_results(request: Request):
     return templates.TemplateResponse("simulation-results.html", {"request": request, 'project_id': project_id})
 
 
+@app.get("/calculating")
+async def calculating(request: Request, db: Session = Depends(get_db)):
+    project_id = request.query_params.get('project_id')
+    user = accounts.get_user_from_cookie(request, db)
+    try:
+        int(project_id)
+    except (TypeError, ValueError):
+        return templates.TemplateResponse("landing-page.html", {"request": request})
+    if 'anonymous' in user.email:
+        msg = 'You will be forwarded after the model calculation is completed.'
+    else:
+        msg = 'You will be forwarded after the model calculation is completed. You can also close the window and view' \
+              ' the results in your user account after the calculation is finished. You will be notified by email' \
+              ' about the completion of the calculation.'
+    return templates.TemplateResponse("calculating.html", {"request": request, 'project_id': project_id, 'msg':msg})
+
+
 @app.get("/get_demand_coverage_data/{project_id}")
 async def get_demand_coverage_data(project_id, request: Request, db: Session = Depends(get_db)):
     user_id = accounts.get_user_from_cookie(request, db).id
@@ -403,7 +420,10 @@ models.SavePreviousDataRequest, db: Session = Depends(get_db)):
         save_previous_data_request.page_setup['created_at'] = pd.Timestamp.now()
         save_previous_data_request.page_setup['updated_at'] = pd.Timestamp.now()
         save_previous_data_request.page_setup['id'] = user.id
-        project_id = int(request.query_params.get('project_id'))
+        try:
+            project_id = int(request.query_params.get('project_id'))
+        except TypeError:
+            project_id = request.query_params.get('project_id')
         # ToDo: Raise Error if project id missing redirect
         save_previous_data_request.page_setup['project_id'] = project_id
         project_setup = models.ProjectSetup(**save_previous_data_request.page_setup)

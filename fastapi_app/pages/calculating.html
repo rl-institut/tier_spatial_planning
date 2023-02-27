@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    {% set title= 'Calculting' %}
+    {% include '_head.html' %}
+      <style>
+
+.loader,
+.loader:before,
+.loader:after {
+  border-radius: 50%;
+}
+.loader {
+  color: #1F567D;
+  font-size: 11px;
+  text-indent: -99999em;
+  margin: 55px auto;
+  position: relative;
+  width: 10em;
+  height: 10em;
+  box-shadow: inset 0 0 0 1em;
+  -webkit-transform: translateZ(0);
+  -ms-transform: translateZ(0);
+  transform: translateZ(0);
+}
+.loader:before,
+.loader:after {
+  position: absolute;
+  content: '';
+}
+.loader:before {
+  width: 5.2em;
+  height: 10.2em;
+  background: #FAFAFA;
+  border-radius: 10.2em 0 0 10.2em;
+  top: -0.1em;
+  left: -0.1em;
+  -webkit-transform-origin: 5.1em 5.1em;
+  transform-origin: 5.1em 5.1em;
+  -webkit-animation: load2 2s infinite ease 1.5s;
+  animation: load2 2s infinite ease 1.5s;
+}
+.loader:after {
+  width: 5.2em;
+  height: 10.2em;
+  background: #FAFAFA;
+  border-radius: 0 10.2em 10.2em 0;
+  top: -0.1em;
+  left: 4.9em;
+  -webkit-transform-origin: 0.1em 5.1em;
+  transform-origin: 0.1em 5.1em;
+  -webkit-animation: load2 2s infinite ease;
+  animation: load2 2s infinite ease;
+}
+@-webkit-keyframes load2 {
+  0% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}
+@keyframes load2 {
+  0% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}
+
+     </style>
+  </head>
+  <body onload="redirect_if_cookie_is_missing();
+                show_user_email_in_navbar();">
+  {% include '_navbar.html' %}
+    <main>
+      <section class="dashboard" style="width: 500px; display: block;  margin-left: auto;  margin-right: auto;">
+        <div >
+          <div class="row">
+            <div class="col">
+              <div class="chart" style="border: 15px solid #FAFAFA; height: auto;">
+                <div class="chart__header">
+                  <a class="title">Model Calculation</a>
+                </div>
+                   <hr>
+                  <div class="loader" align="center"></div>
+
+
+                        <a>Status: </a>
+                        <a id="statusMsg"></a>
+                   <hr>
+                  <a>{{ msg }}</a>
+                  <p></p>
+                   <a href="{{ url_for('project_setup') }}"
+                         class="btn btn--long text-right">Abort Calculation</a>
+                  </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+  {% include '_scripts.html' %}
+</html>
