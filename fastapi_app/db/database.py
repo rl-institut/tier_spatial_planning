@@ -51,15 +51,16 @@ def get_async_db():
 
 
 def sql_str_2_db(sql, cnx=None):
-    try:
-        cnx.execute(sql)
-        cnx.commit()
-    except Exception as err:
-        if len(sql) > 500:
-            sql = "\n(...)\n".join((sql[0:min(400, int(len(sql) / 2))], sql[-100:]))
-        print("\n Something went wrong while trying to write to the database.\n\n Your query was:\n{0}".format(sql))
-        cnx.rollback()  # Revert everything that has been written so far
-        raise Exception(err)
+    with cnx() as async_session:
+        try:
+            async_session.execute(sql)
+            async_session.commit()
+        except Exception as err:
+            if len(sql) > 500:
+                sql = "\n(...)\n".join((sql[0:min(400, int(len(sql) / 2))], sql[-100:]))
+            print("\n Something went wrong while trying to write to the database.\n\n Your query was:\n{0}".format(sql))
+            async_session.rollback()  # Revert everything that has been written so far
+            raise Exception(err)
 
 
 def _insert_df(table: str, df, cnx, if_exists='update', chunk_size=None):

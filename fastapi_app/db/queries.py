@@ -46,7 +46,9 @@ async def get_nodes_df(user_id, project_id, db=None):
         res = await async_db.execute(query)
         nodes = res.scalars().fetchall()
     nodes = [node.get_dict() for node in nodes]
-    df = pd.DataFrame.from_records(nodes).drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
+    df = pd.DataFrame.from_records(nodes)
+    if not df.empty:
+        df = df.drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
     return df
 
 
@@ -62,7 +64,9 @@ async def get_links_df(user_id, project_id, db=None):
         res = await async_db.execute(query)
     links = res.scalars().all()
     links = [link.get_dict() for link in links]
-    df = pd.DataFrame.from_records(links).drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
+    df = pd.DataFrame.from_records(links)
+    if not df.empty:
+        df = df.drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
     return df
 
 
@@ -88,22 +92,42 @@ async def get_input_df(user_id, project_id, db):
     return df
 
 
-def get_results_df(user_id, project_id, db):
-    query = db.query(models.Results).filter(models.Results.id == user_id, models.Results.project_id == project_id)
-    df = pd.read_sql(query.statement, db.bind).drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
+async def get_results_df(user_id, project_id, db):
+    query = select(models.Results).where(models.Results.id == user_id, models.Results.project_id == project_id)
+    async with get_async_session_maker() as async_db:
+        res = await async_db.execute(query)
+    results = res.scalars().all()
+    results = [result.get_dict() for result in results]
+    df = pd.DataFrame.from_records(results)
+    if not df.empty:
+        df = df.drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
     return df
 
 
-def get_demand_coverage_df(user_id, project_id, db):
-    query = db.query(models.DemandCoverage).filter(models.DemandCoverage.id == user_id, models.DemandCoverage.project_id == project_id)
-    df = pd.read_sql(query.statement, db.bind).drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
-    df = df.set_index('dt')
+async def get_demand_coverage_df(user_id, project_id, db):
+    query = select(models.DemandCoverage)\
+        .where(models.DemandCoverage.id == user_id, models.DemandCoverage.project_id == project_id)
+    async with db() as async_db:
+        res = await async_db.execute(query)
+    results = res.scalars().all()
+    results = [result.get_dict() for result in results]
+    df = pd.DataFrame.from_records(results)
+    if not df.empty:
+        df = df.drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
+    if 'dt' in df.columns:
+        df = df.set_index('dt')
     return df
 
 
-def get_df(model, user_id, project_id, db):
-    query = db.query(model).filter(model.id == user_id, model.project_id == project_id)
-    df = pd.read_sql(query.statement, db.bind).drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
+async def get_df(model, user_id, project_id, db):
+    query = select(model).where(model.id == user_id, model.project_id == project_id)
+    async with get_async_session_maker() as async_db:
+        res = await async_db.execute(query)
+    results = res.scalars().all()
+    results = [result.get_dict() for result in results]
+    df = pd.DataFrame.from_records(results)
+    if not df.empty:
+        df = df.drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
     if 'dt' in df.columns:
         df = df.set_index('dt')
     return df

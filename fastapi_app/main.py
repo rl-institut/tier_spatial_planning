@@ -148,10 +148,10 @@ async def import_data(project_id, request: Request, import_files: import_structu
     links = import_files["links_to_import"]
     user_id = await accounts.get_user_from_cookie(request, db).id
     if len(nodes) > 0:
-        inserts.update_nodes_and_links(True, False, nodes, user_id, project_id, db)
+        await inserts.update_nodes_and_links(True, False, nodes, user_id, project_id, db)
 
     if len(links) > 0:
-        inserts.update_nodes_and_links(False, True, links, user_id, project_id, db)
+        await inserts.update_nodes_and_links(False, True, links, user_id, project_id, db)
 
     # ------------------------------ HANDLE REQUEST ------------------------------#
 
@@ -256,9 +256,9 @@ async def calculating(request: Request, db: Session = Depends(get_async_db)):
 
 
 @app.get("/get_demand_coverage_data/{project_id}")
-async def get_demand_coverage_data(project_id, request: Request, db: Session = Depends(get_db)):
+async def get_demand_coverage_data(project_id, request: Request, db: Session = Depends(get_async_db)):
     user = await accounts.get_user_from_cookie(request, db)
-    df = queries.get_demand_coverage_df(user.id, project_id, db)
+    df = await queries.get_demand_coverage_df(user.id, project_id, db)
     df = df.reset_index(drop=True)
     return json.loads(df.to_json())
 
@@ -278,7 +278,7 @@ async def database_read(nodes_or_links: str, project_id, request: Request, db: S
 @app.get("/load_results/{project_id}")
 async def load_results(project_id, request: Request, db: Session = Depends(get_db)):
     user = await accounts.get_user_from_cookie(request, db)
-    df = queries.get_results_df(user.id, project_id, db)
+    df = await queries.get_results_df(user.id, project_id, db)
     df["average_length_distribution_cable"] = df["length_distribution_cable"] / df["n_distribution_links"]
     df["average_length_connection_cable"] = df["length_connection_cable"] / df["n_connection_links"]
     df["time"] = df["time_grid_design"] + df["time_energy_system_design"]
@@ -434,7 +434,7 @@ def get_project_id_from_request(request: Request):
 @app.get("/get_optimal_capacities/{project_id}")
 async def get_optimal_capacities(project_id, request: Request, db: Session = Depends(get_async_db)):
     user = await accounts.get_user_from_cookie(request, db)
-    df = queries.get_results_df(user.id, project_id, db)
+    df = await queries.get_results_df(user.id, project_id, db)
     optimal_capacities = {}
     optimal_capacities["pv"] = str(df.loc[0, "pv_capacity"])
     optimal_capacities["battery"] = str(df.loc[0, "battery_capacity"])
@@ -450,7 +450,7 @@ async def get_optimal_capacities(project_id, request: Request, db: Session = Dep
 @app.get("/get_lcoe_breakdown/{project_id}")
 async def get_lcoe_breakdown(project_id, request: Request, db: Session = Depends(get_async_db)):
     user = await accounts.get_user_from_cookie(request, db)
-    df = queries.get_results_df(user.id, project_id, db)
+    df = await queries.get_results_df(user.id, project_id, db)
     lcoe_breakdown = {}
     lcoe_breakdown["renewable_assets"] = str(df.loc[0, "cost_renewable_assets"])
     lcoe_breakdown["non_renewable_assets"] = str(df.loc[0, "cost_non_renewable_assets"])
@@ -464,7 +464,7 @@ async def get_lcoe_breakdown(project_id, request: Request, db: Session = Depends
 async def get_data_for_sankey_diagram(project_id, request: Request, db: Session = Depends(get_async_db)):
     sankey_data = {}
     user = await  accounts.get_user_from_cookie(request, db)
-    df = queries.get_results_df(user.id, project_id, db)
+    df = await queries.get_results_df(user.id, project_id, db)
     sankey_data["fuel_to_diesel_genset"] = str(df.loc[0, "fuel_to_diesel_genset"])
     sankey_data["diesel_genset_to_rectifier"] = str(df.loc[0, "diesel_genset_to_rectifier"])
     sankey_data["diesel_genset_to_demand"] = str(df.loc[0, "diesel_genset_to_demand"])
@@ -482,7 +482,7 @@ async def get_data_for_sankey_diagram(project_id, request: Request, db: Session 
 @app.get("/get_data_for_energy_flows/{project_id}")
 async def get_data_for_energy_flows(project_id, request: Request, db: Session = Depends(get_async_db)):
     user = await accounts.get_user_from_cookie(request, db)
-    df = queries.get_df(models.EnergyFlow, user.id, project_id, db)
+    df = await queries.get_df(models.EnergyFlow, user.id, project_id, db)
     df = df.reset_index(drop=True)
     return json.loads(df.to_json())
 
@@ -490,14 +490,14 @@ async def get_data_for_energy_flows(project_id, request: Request, db: Session = 
 @app.get("/get_data_for_duration_curves/{project_id}")
 async def get_data_for_duration_curves(project_id, request: Request, db: Session = Depends(get_async_db)):
     user = await accounts.get_user_from_cookie(request, db)
-    df = queries.get_df(models.DurationCurve, user.id, project_id, db)
+    df = await queries.get_df(models.DurationCurve, user.id, project_id, db)
     return json.loads(df.to_json())
 
 
 @app.get("/get_co2_emissions_data/{project_id}")
 async def get_co2_emissions_data(project_id, request: Request, db: Session = Depends(get_async_db)):
-    user = await accounts.get_user_from_cookie(request, db).id
-    df = queries.get_df(models.Emissions, user.id, project_id, db)
+    user = await accounts.get_user_from_cookie(request, db)
+    df = await queries.get_df(models.Emissions, user.id, project_id, db)
     return json.loads(df.to_json())
 
 
@@ -550,20 +550,20 @@ async def database_add_remove_automatic(add_remove: str, project_id,
             # surface area is taken from the open street map
             nodes["surface_area"].append(building_area[label])
         # Add the peak demand and average annual consumption for each node
-        demand_estimation(nodes=nodes, update_total_demand=False)
+        await demand_estimation(nodes=nodes, update_total_demand=False)
         # storing the nodes in the database
-        inserts.update_nodes_and_links(True, False, nodes, user.id, project_id, db)
+        await inserts.update_nodes_and_links(True, False, nodes, user.id, project_id, db)
     else:
         # reading the existing CSV file of nodes, and then removing the corresponding row
         # df = pd.read_csv(full_path_nodes)
-        df = queries.get_nodes_df(user.id, project_id, db)
+        df = await queries.get_nodes_df(user.id, project_id, db)
         number_of_nodes = df.shape[0]
         for index in range(number_of_nodes):
             if bi.is_point_in_boundaries(point_coordinates=(df.to_dict()["latitude"][index],
                                                             df.to_dict()["longitude"][index],),
                                          boundaries=boundary_coordinates, ):
                 df.drop(labels=index, axis=0, inplace=True)
-        inserts.update_nodes_and_links(True, False, df.to_dict(), user.id, project_id, db, False)
+        await inserts.update_nodes_and_links(True, False, df.to_dict(), user.id, project_id, db, False)
 
 
 # add new manually-selected nodes to the *.csv file
@@ -572,7 +572,7 @@ async def database_add_remove_manual(add_remove: str, project_id, add_node_reque
                                      request: Request, db: Session = Depends(get_async_db)):
     user = await accounts.get_user_from_cookie(request, db)
     # headers = pd.read_csv(full_path_nodes).columns
-    df = queries.get_nodes_df(user.id, project_id, db)
+    df = await queries.get_nodes_df(user.id, project_id, db)
     headers = df.columns
     nodes = {}
     nodes[headers[0]] = [add_node_request.latitude]
@@ -596,9 +596,9 @@ async def database_add_remove_manual(add_remove: str, project_id, add_node_reque
                 df.drop(labels=index, axis=0, inplace=True)
         # storing the nodes in the database (updating the existing CSV file)
         df = df.reset_index(drop=True)
-        inserts.update_nodes_and_links(True, False, df.to_dict(), user.id, project_id, db, add=False)
+        await inserts.update_nodes_and_links(True, False, df.to_dict(), user.id, project_id, db, add=False)
     else:
-        inserts.update_nodes_and_links(True, False, nodes, user.id, project_id, db, add=True, replace=False)
+        await inserts.update_nodes_and_links(True, False, nodes, user.id, project_id, db, add=True, replace=False)
 
 
 def demand_estimation(nodes, update_total_demand):
@@ -693,29 +693,27 @@ def demand_estimation(nodes, update_total_demand):
         return nodes
 
 
-def remove_rusults(user_id, project_id, db):
-    inserts.remove(models.Results, user_id, project_id, db)
-    inserts.remove(models.DemandCoverage, user_id, project_id, db)
-    inserts.remove(models.EnergyFlow, user_id, project_id, db)
+async def remove_rusults(user_id, project_id, db):
+    await inserts.remove(models.Results, user_id, project_id, db)
+    await inserts.remove(models.DemandCoverage, user_id, project_id, db)
+    await inserts.remove(models.EnergyFlow, user_id, project_id, db)
 
 
 @app.post("/optimize_grid/{project_id}")
 async def optimize_grid(project_id, request: Request, db: Session = Depends(get_async_db)):
-    user = await accounts.get_user_from_cookie(request, get_async_db)
-    remove_rusults(user.id, project_id, db)
+    user = await accounts.get_user_from_cookie(request, db)
+    await remove_rusults(user.id, project_id, db)
     # Grab Currrent Time Before Running the Code
     start_execution_time = time.monotonic()
 
     # create GridOptimizer object
-    df = queries.get_input_df(user.id, project_id, db)
+    df = await queries.get_input_df(user.id, project_id, db)
 
-    opt = GridOptimizer(
-        start_date=df.loc[0, "start_date"],
-        n_days=df.loc[0, "n_days"],
-        project_lifetime=df.loc[0, "project_lifetime"],
-        wacc=df.loc[0, "interest_rate"] / 100,
-        tax=0,
-    )
+    opt = GridOptimizer(start_date=df.loc[0, "start_date"],
+                        n_days=df.loc[0, "n_days"],
+                        project_lifetime=df.loc[0, "project_lifetime"],
+                        wacc=df.loc[0, "interest_rate"] / 100,
+                        tax=0,)
 
     # get nodes from the database (CSV file) as a dictionary
     # then convert it again to a panda dataframe for simplicity
@@ -921,15 +919,12 @@ async def optimize_grid(project_id, request: Request, db: Session = Depends(get_
     # the constraint on the maximum distance between consumers and poles.
     while True:
         # Initial number of poles.
-        number_of_poles = opt.find_opt_number_of_poles(
-            grid=grid, min_n_clusters=min_number_of_poles
-        )
+        number_of_poles = opt.find_opt_number_of_poles(grid=grid, min_n_clusters=min_number_of_poles)
 
         # Find those connections with constraint violation.
         constraints_violation = grid.links[grid.links["link_type"] == "connection"]
         constraints_violation = constraints_violation[
-            constraints_violation["length"] > connection_cable_max_length
-            ]
+            constraints_violation["length"] > connection_cable_max_length]
 
         # Increase the number of poles if necessary.
         if constraints_violation.shape[0] > 0:
@@ -991,7 +986,7 @@ async def optimize_grid(project_id, request: Request, db: Session = Depends(get_
     )
 
     # Store the list of poles in the "node" database.
-    inserts.update_nodes_and_links(True, False, poles.to_dict(), user.id, project_id, db)
+    await inserts.update_nodes_and_links(True, False, poles.to_dict(), user.id, project_id, db)
 
     # get all links obtained by the network relaxation method
     links = grid.links.reset_index(drop=True)
@@ -1014,13 +1009,13 @@ async def optimize_grid(project_id, request: Request, db: Session = Depends(get_
     )
 
     # store the list of poles in the "node" database
-    inserts.update_nodes_and_links(False, True, links.to_dict(), user.id, project_id, db)
+    await inserts.update_nodes_and_links(False, True, links.to_dict(), user.id, project_id, db)
 
     # Grab Currrent Time After Running the Code
     end_execution_time = time.monotonic()
 
     # store data for showing in the final results
-    df = queries.get_results_df(user.id, project_id, db)
+    df = await queries.get_results_df(user.id, project_id, db)
     df.loc[0, "n_consumers"] = len(grid.consumers())
     df.loc[0, "n_shs_consumers"] = n_shs_consumers
     df.loc[0, "n_poles"] = len(grid.poles())
@@ -1056,7 +1051,7 @@ models.OptimizeEnergySystemRequest, db: Session = Depends(get_db)):
     # Grab Currrent Time Before Running the Code
     start_execution_time = time.monotonic()
 
-    df = queries.get_input_df(user.id, project_id, db)
+    df = await queries.get_input_df(user.id, project_id, db)
 
     solver = 'gurobi' if po.SolverFactory('gurobi').available() else 'cbc'
 
@@ -1105,7 +1100,7 @@ models.OptimizeEnergySystemRequest, db: Session = Depends(get_db)):
     ]  # takes the last element of the cumulative sum
 
     # store data for showing in the final results
-    df = queries.get_results_df(user.id, project_id, db)
+    df = await queries.get_results_df(user.id, project_id, db)
     df.loc[0, "cost_renewable_assets"] = ensys_opt.total_renewable
     df.loc[0, "cost_non_renewable_assets"] = ensys_opt.total_non_renewable
     df.loc[0, "cost_fuel"] = ensys_opt.total_fuel

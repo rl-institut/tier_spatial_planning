@@ -3,20 +3,21 @@ import pandas as pd
 from fastapi_app.db import models
 from fastapi_app.db.queries import get_nodes_df, get_links_df
 from fastapi_app.db.database import _insert_df
+from sqlalchemy import select, delete
 
 
-def insert_links_df(df, user_id, project_id, db):
+async def insert_links_df(df, user_id, project_id, db):
     model_class = models.Links
-    remove(model_class, user_id, project_id, db)
+    await remove(model_class, user_id, project_id, db)
     df['id'] = int(user_id)
     df['project_id'] = int(project_id)
-    _insert_df('links', df, db, if_exists='update')
+    _insert_df(table='links', df=df, cnx=db, if_exists='update')
 
 
-def insert_nodes_df(df, user_id, project_id, db, replace=True):
+async def insert_nodes_df(df, user_id, project_id, db, replace=True):
     model_class = models.Nodes
     if replace:
-        remove(model_class, user_id, project_id, db)
+        await remove(model_class, user_id, project_id, db)
     df['id'] = int(user_id)
     df['project_id'] = int(project_id)
     _insert_df('nodes', df, db, if_exists='update')
@@ -54,24 +55,20 @@ def insert_df(model_class, df, user_id, project_id, db):
         _insert_df(model_class.__name__.lower(), df, db, if_exists='update')
 
 
-def remove(model_class, user_id, project_id, db):
+async def remove(model_class, user_id, project_id, db):
     if model_class in [models.Nodes, models.Links, models.DemandCoverage]:
-        try:
-            query = db.query(model_class).filter(model_class.id == user_id, model_class.project_id == project_id)
-            query.delete()
-        except Exception as e:
-            db.rollback()
-            raise e
-        else:
-            db.commit()
+        query = delete(model_class).where(model_class.id == user_id, model_class.project_id == project_id)
+        async with db() as async_db:
+            await async_db.execute(query)
+            await async_db.commit()
 
 
-def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, project_id, db, add=True, replace=True):
+async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, project_id, db, add=True, replace=True):
     if nodes:
         nodes = inlet
         df = pd.DataFrame.from_dict(nodes).round(decimals=6)
         if add and replace:
-            df_existing = get_nodes_df(user_id, project_id, db)
+            df_existing = await get_nodes_df(user_id, project_id, db)
             if not df_existing.empty:
                 df_existing = df_existing[(df_existing["node_type"] != "pole") &
                                           (df_existing["node_type"] != "power-house")]
@@ -79,10 +76,10 @@ def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, proje
         else:
             df_total = df
         if df["node_type"].str.contains("consumer").sum() > 0:
-            df_links = get_links_df(user_id, project_id, db)
+            df_links = await get_links_df(user_id, project_id, db)
             if not df_links.empty:
                 df_links.drop(labels=df_links.index, axis=0, inplace=True)
-                insert_links_df(df_links, user_id, project_id, db)
+                await insert_links_df(df_links, user_id, project_id, db)
         df_total.latitude = df_total.latitude.map(lambda x: "%.6f" % x)
         df_total.longitude = df_total.longitude.map(lambda x: "%.6f" % x)
         df_total.surface_area = df_total.surface_area.map(lambda x: "%.2f" % x)
@@ -92,7 +89,7 @@ def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, proje
         if len(df_total.index) != 0:
             if 'parent' in df_total.columns:
                 df_total['parent'] = df_total['parent'].replace('unknown', None)
-            insert_nodes_df(df_total, user_id, project_id, db, replace=replace)
+            await insert_nodes_df(df_total, user_id, project_id, db, replace=replace)
     if links:
         links = inlet
         # defining the precision of data
@@ -103,4 +100,4 @@ def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, proje
         df.lon_to = df.lon_to.map(lambda x: "%.6f" % x)
         # adding the links to the existing csv file
         if len(df.index) != 0:
-            insert_links_df(df, user_id, project_id, db)
+            await insert_links_df(df, user_id, project_id, db)
