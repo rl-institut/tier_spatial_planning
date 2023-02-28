@@ -2,7 +2,7 @@ import time
 import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
-from sqlalchemy.ext.asyncio import create_async_engine, async_session, AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from fastapi_app.db.config import db_host, db_name, db_user_name, PW, db_port
 from fastapi_app.db.models import Base
 from sqlalchemy.exc import SQLAlchemyError
@@ -19,19 +19,23 @@ for i in range(40):
         sync_session = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
         Base.metadata.create_all(bind=sync_engine)
         async_engine = create_async_engine(ASYNC_DB_URL)
-        async_session = scoped_session(sessionmaker(bind=async_engine,
-                                                    class_=AsyncSession,
-                                                    expire_on_commit=False,
-                                                    autoflush=False, ))
+        async_sessionmaker = scoped_session(sessionmaker(bind=async_engine,
+                                                         class_=AsyncSession))
     except (SQLAlchemyError, DatabaseError, ProgrammingError, InterfaceError) as e:
         time.sleep(5)
     else:
         break
 
+def get_async_session_maker():
+    async_engine = create_async_engine(ASYNC_DB_URL)
+    async_sessionmaker = scoped_session(sessionmaker(bind=async_engine,
+                                                     class_=AsyncSession))
+    return async_sessionmaker()
+
 
 def get_db():
+    db = sync_session()
     try:
-        db = sync_session()
         yield db
     except Exception as e:
         db.rollback()
@@ -41,7 +45,7 @@ def get_db():
 
 
 def get_async_db():
-    db = async_session
+    db = async_sessionmaker
     yield db
 
 

@@ -25,12 +25,16 @@ class Base:
     def __tablename__(cls) -> str:
         return cls.__name__.lower()
 
-    def get_df(self):
+    def get_dict(self):
         attr_dict = dict()
         for (key, value) in inspect.getmembers(self):
             if key[:1] != '_':
-                if key not in 'metadata' and not inspect.ismethod(value):
+                if key not in ['metadata', 'registry'] and not inspect.ismethod(value):
                     attr_dict[key] = value
+        return attr_dict
+
+    def get_df(self):
+        attr_dict = self.get_dict()
         df = pd.DataFrame.from_dict(attr_dict, orient='index').T
         return df
 
@@ -123,7 +127,7 @@ class Nodes(Base):
 
     @staticmethod
     def __name__():
-        return 'EnergyFlow'
+        return 'Nodes'
 
     id = Column(SMALLINT, primary_key=True, index=True)
     project_id = Column(SMALLINT, primary_key=True, index=True)
@@ -146,7 +150,7 @@ class Links(Base):
 
     @staticmethod
     def __name__():
-        return 'EnergyFlow'
+        return 'Links'
 
     id = Column(SMALLINT, primary_key=True, index=True)
     project_id = Column(SMALLINT, primary_key=True, index=True)
@@ -162,7 +166,7 @@ class Results(Base):
 
     @staticmethod
     def __name__():
-        return 'EnergyFlow'
+        return 'Results'
 
     id = Column(SMALLINT, primary_key=True, index=True)
     project_id = Column(SMALLINT, primary_key=True, index=True)

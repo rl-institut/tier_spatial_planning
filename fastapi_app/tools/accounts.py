@@ -6,15 +6,14 @@ from importlib import reload
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from sqlalchemy import select
+from sqlalchemy.orm import sessionmaker, scoped_session
 from fastapi_app.db.models import User
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import jwt, JWTError
 from fastapi_app.db import config
-from fastapi import Depends
-from fastapi_app.db.database import get_db
-from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.utils import get_authorization_scheme_param
+from fastapi_app.db.database import get_async_session_maker
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -111,9 +110,8 @@ def send_email_with_activation_status(user, db):
         send_mail(user.email, msg)
 
 
-async def authenticate_user(username: str, password: str, db: Session):
-    async with db() as async_db:
-        res = await async_db.execute(select(User).where(User.email == username))
+async def authenticate_user(username: str, password: str, db):
+    res = await db.execute(select(User).where(User.email == username))
     user = res.first()[0]
     if user is None or Hasher.verify_password(password, user.hashed_password) is False:
         return False
@@ -131,20 +129,24 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 
-def _get_user_from_token(token: str = Depends(OAuth2PasswordBearer(tokenUrl="token")), db: Session = Depends(get_db)):
+async def _get_user_from_token(token, db):
     try:
         payload = jwt.decode(token, config.KEY_FOR_TOKEN, algorithms=[config.TOKEN_ALG])
         username = payload.get("sub")
     except JWTError:
-        username = None
-    user = db.query(User).filter(User.email == username).first()
+        return None
+    # if isinstance(db, scoped_session):
+    query = select(User).where(User.email == username)
+    async with get_async_session_maker() as async_db:
+        res = await async_db.execute(query)
+        user = res.scalars().first()
     return user
 
 
-def get_user_from_cookie(request, db):
+async def get_user_from_cookie(request, db=None):
     token = request.cookies.get("access_token")
     scheme, param = get_authorization_scheme_param(token)
-    user = _get_user_from_token(token=param, db=db)
+    user = await _get_user_from_token(token=param, db=db)
     return user
 
 
