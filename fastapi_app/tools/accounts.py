@@ -5,6 +5,7 @@ import logging.handlers
 from importlib import reload
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 from fastapi_app.db.models import User
 from datetime import datetime, timedelta
 from typing import Optional
@@ -110,9 +111,11 @@ def send_email_with_activation_status(user, db):
         send_mail(user.email, msg)
 
 
-def authenticate_user(username: str, password: str, db: Session):
-    user = db.query(User).filter(User.email == username).first()
-    if User is None or Hasher.verify_password(password, user.hashed_password) is False:
+async def authenticate_user(username: str, password: str, db: Session):
+    async with db() as async_db:
+        res = await async_db.execute(select(User).where(User.email == username))
+    user = res.first()[0]
+    if user is None or Hasher.verify_password(password, user.hashed_password) is False:
         return False
     return user
 

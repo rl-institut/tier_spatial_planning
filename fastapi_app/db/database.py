@@ -1,33 +1,49 @@
 import time
 import pandas as pd
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.ext.asyncio import create_async_engine, async_session, AsyncSession
 from fastapi_app.db.config import db_host, db_name, db_user_name, PW, db_port
 from fastapi_app.db.models import Base
 from sqlalchemy.exc import SQLAlchemyError
 from mysql.connector import DatabaseError, ProgrammingError, InterfaceError
 
 
-SQLALCHEMY_DATABASE_URL = 'mysql+mysqlconnector://{}:{}@{}:{}/{}'.format(db_user_name, PW, db_host, db_port, db_name)
+BASE_URL = 'mysql+package://{}:{}@{}:{}/{}'.format(db_user_name, PW, db_host, db_port, db_name)
+SYNC_DB_URL = BASE_URL.replace('package', 'mysqlconnector')
+ASYNC_DB_URL = BASE_URL.replace('package', 'aiomysql')
 
 for i in range(40):
     try:
-        engine = create_engine(SQLALCHEMY_DATABASE_URL)
-        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-        Base.metadata.create_all(bind=engine)
+        sync_engine = create_engine(SYNC_DB_URL)
+        sync_session = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
+        Base.metadata.create_all(bind=sync_engine)
+        async_engine = create_async_engine(ASYNC_DB_URL)
+        async_session = scoped_session(sessionmaker(bind=async_engine,
+                                                    class_=AsyncSession,
+                                                    expire_on_commit=False,
+                                                    autoflush=False, ))
     except (SQLAlchemyError, DatabaseError, ProgrammingError, InterfaceError) as e:
         time.sleep(5)
     else:
         break
 
 
-
 def get_db():
     try:
-        db = SessionLocal()
+        db = sync_session()
         yield db
+    except Exception as e:
+        db.rollback()
+        raise
     finally:
         db.close()
+
+
+def get_async_db():
+    db = async_session
+    yield db
+
 
 
 def sql_str_2_db(sql, cnx=None):

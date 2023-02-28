@@ -6,7 +6,6 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi_app.db.database import engine
 from fastapi_app.tools.grids import Grid
 from fastapi_app.tools.optimizer import Optimizer, GridOptimizer, EnergySystemOptimizer, po
 from fastapi import Depends
@@ -15,7 +14,7 @@ from fastapi_app.tools.accounts import Hasher, create_guid, is_valid_credentials
     authenticate_user, create_access_token
 from fastapi_app.tools import accounts
 from fastapi_app.db import config
-from fastapi_app.db.database import get_db
+from fastapi_app.db.database import get_db, get_async_db
 from fastapi_app.db import queries, inserts
 import math
 import urllib.request
@@ -40,8 +39,6 @@ import time
 app = FastAPI()
 
 app.mount("/fastapi_app/static", StaticFiles(directory="fastapi_app/static"), name="static")
-
-models.Base.metadata.create_all(bind=engine)
 
 templates = Jinja2Templates(directory="fastapi_app/pages")
 
@@ -268,14 +265,6 @@ async def get_demand_coverage_data(project_id, request: Request, db: Session = D
     return json.loads(df.to_json())
 
 
-@app.get("/database_initialization/{nodes}/{links}")
-async def database_initialization(nodes, links):
-    # creating the csv files
-    # - in case these files do not exist they will be created here
-    # - each time the code runs from the beginning, the old csv files will be replaced with new blank ones
-    pass
-
-
 @app.get("/database_to_js/{nodes_or_links}/{project_id}")
 async def database_read(nodes_or_links: str, project_id, request: Request, db: Session = Depends(get_db)):
     # importing nodes and links from the csv files to the map
@@ -363,9 +352,9 @@ async def add_user_to_db(user: models.Credentials, db: Session = Depends(get_db)
 
 
 @app.post("/set_access_token/", response_model=models.Token)
-def set_access_token(response: Response, credentials: models.Credentials, db: Session = Depends(get_db)):
+async def set_access_token(response: Response, credentials: models.Credentials, db: Session = Depends(get_db)):
     if isinstance(credentials.email, str) and len(credentials.email) > 3:
-        user = authenticate_user(credentials.email, credentials.password, db)
+        user = await authenticate_user(credentials.email, credentials.password, db)
         name = user.email
     else:
         name = 'anonymous'
@@ -377,9 +366,9 @@ def set_access_token(response: Response, credentials: models.Credentials, db: Se
 
 
 @app.post("/login/")
-def login(response: Response, credentials: models.Credentials, db: Session = Depends(get_db)):
+async def login(response: Response, credentials: models.Credentials, db: Session = Depends(get_async_db)):
     if isinstance(credentials.email, str) and len(credentials.email) > 3:
-        user = authenticate_user(credentials.email, credentials.password, db)
+        user = await authenticate_user(credentials.email, credentials.password, db)
         del credentials
         if user is not False:
             access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -602,8 +591,6 @@ async def database_add_remove_manual(add_remove: str, project_id, add_node_reque
             if (round(add_node_request.latitude, 6) == df.to_dict()["latitude"][index]) and \
                     (round(add_node_request.longitude, 6) == df.to_dict()["longitude"][index]):
                 df.drop(labels=index, axis=0, inplace=True)
-        # Remove all existing nodes and links.
-        await database_initialization(nodes=True, links=True)
         # storing the nodes in the database (updating the existing CSV file)
         df = df.reset_index(drop=True)
         inserts.update_nodes_and_links(True, False, df.to_dict(), user_id, project_id, db, add=False)
@@ -739,7 +726,6 @@ async def optimize_grid(project_id, request: Request, db: Session = Depends(get_
 
     # initialite the database (remove contents of the CSV files)
     # otherwise, when clicking on the 'optimize' button, the existing system won't be removed
-    await database_initialization(nodes=False, links=True)
 
     # create a new "grid" object from the Grid class
     epc_distribution_cable = (
