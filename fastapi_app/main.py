@@ -175,7 +175,7 @@ async def project_setup(request: Request, db: Session = Depends(get_async_db)):
     user = await accounts.get_user_from_cookie(request, db) # .id
     project_id = request.query_params.get('project_id')
     if project_id is None:
-        project_id = queries.next_project_id_of_user(user.id, db)
+        project_id = await queries.next_project_id_of_user(user.id, db)
     return templates.TemplateResponse("project-setup.html", {"request": request, 'project_id': project_id})
 
 
@@ -310,7 +310,7 @@ async def load_previous_data(page_name, request: Request, db: Session = Depends(
     project_id = request.query_params.get('project_id')
     if page_name == "project_setup":
         if project_id == 'new':
-            project_id = queries.next_project_id_of_user(user.id, db)
+            project_id = await queries.next_project_id_of_user(user.id, db)
             return models.ProjectSetup(project_id=project_id)
         try:
             project_id = int(project_id)
@@ -1035,7 +1035,7 @@ async def optimize_grid(project_id, request: Request, db: Session = Depends(get_
         grid.links[grid.links["link_type"] == "connection"].shape[0]
     )
 
-    inserts.insert_results_df(df, user.id, project_id, db)
+    await inserts.insert_results_df(df, user.id, project_id, db)
 
     grid.find_n_links_connected_to_each_pole()
 
@@ -1093,7 +1093,7 @@ models.OptimizeEnergySystemRequest, db: Session = Depends(get_db)):
     df["co2_savings"] = \
         df.loc[:, "non_renewable_electricity_production"] - df.loc[:, "hybrid_electricity_production"]  # tCO2 per year
     df['h'] = np.arange(1, len(ensys_opt.demand) + 1)
-    inserts.insert_df(models.Emissions, df, user.id, project_id, db)
+    await inserts.insert_df(models.Emissions, df, user.id, project_id, db)
     # TODO: -2 must actually be -1, but for some reason, the co2-emission csv file has an additional empty row
     co2_savings = df.loc[:, "co2_savings"][
         -2
@@ -1148,7 +1148,7 @@ models.OptimizeEnergySystemRequest, db: Session = Depends(get_db)):
     df.loc[0, "inverter_to_demand"] = ensys_opt.sequences_inverter.sum() / 1000
     df.loc[0, "time_energy_system_design"] = end_execution_time - start_execution_time
     df.loc[0, "co2_savings"] = co2_savings
-    inserts.insert_results_df(df, user.id, project_id, db)
+    await inserts.insert_results_df(df, user.id, project_id, db)
 
     # store energy flows
     df = pd.DataFrame()
@@ -1159,7 +1159,7 @@ models.OptimizeEnergySystemRequest, db: Session = Depends(get_db)):
     df["battery_content"] = ensys_opt.sequences_battery_content
     df["demand"] = ensys_opt.sequences_demand
     df["surplus"] = ensys_opt.sequences_surplus
-    inserts.insert_df(models.EnergyFlow, df, user.id, project_id, db)
+    await inserts.insert_df(models.EnergyFlow, df, user.id, project_id, db)
 
     df = pd.DataFrame()
     df["demand"] = ensys_opt.sequences_demand
@@ -1168,7 +1168,7 @@ models.OptimizeEnergySystemRequest, db: Session = Depends(get_db)):
     df["surplus"] = ensys_opt.sequences_surplus
     df.index.name = "dt"
     df = df.reset_index()
-    inserts.insert_demand_coverage_df(df, user.id, project_id, db)
+    await inserts.insert_demand_coverage_df(df, user.id, project_id, db)
 
     # store duration curves
     df = pd.DataFrame()
@@ -1198,7 +1198,7 @@ models.OptimizeEnergySystemRequest, db: Session = Depends(get_db)):
     df["battery_discharge_duration"] = (100 * np.sort(ensys_opt.sequences_battery_discharge)[::-1]
                                         / ensys_opt.sequences_battery_discharge.max())
     df['h'] = np.arange(1, len(ensys_opt.sequences_genset) + 1)
-    inserts.insert_df(models.DurationCurve, df, user.id, project_id, db)
+    await inserts.insert_df(models.DurationCurve, df, user.id, project_id, db)
 
 
 @app.post("/shs_identification/")

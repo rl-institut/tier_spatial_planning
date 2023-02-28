@@ -6,17 +6,19 @@ from fastapi_app.db import models
 from fastapi_app.db.database import get_async_session_maker
 
 
-def get_max_project_id_of_user(user_id, db):
-    subqry = db.query(sa.func.max(models.ProjectSetup.project_id)).filter(models.ProjectSetup.id == user_id)
-    qry = db.query(models.ProjectSetup).filter(models.ProjectSetup.id == user_id,
+async def get_max_project_id_of_user(user_id, db):
+    subqry = select(sa.func.max(models.ProjectSetup.project_id)).filter(models.ProjectSetup.id == user_id).as_scalar()
+    qry = select(models.ProjectSetup).filter(models.ProjectSetup.id == user_id,
                                                models.ProjectSetup.project_id == subqry)
-    res = qry.first()
+    async with db() as async_db:
+        res = await async_db.execute(qry)
+    res = res.scalars().first()
     max_project_id = res.project_id if hasattr(res, 'project_id') else None
     return max_project_id
 
 
-def next_project_id_of_user(user_id, db):
-    max_project_id = get_max_project_id_of_user(user_id, db)
+async def next_project_id_of_user(user_id, db):
+    max_project_id = await get_max_project_id_of_user(user_id, db)
     if pd.isna(max_project_id):
         next_project_id = 0
     else:
@@ -131,6 +133,3 @@ async def get_df(model, user_id, project_id, db):
     if 'dt' in df.columns:
         df = df.set_index('dt')
     return df
-
-def _read_sql(con, stmt):
-    return pd.read_sql_query(stmt, con)
