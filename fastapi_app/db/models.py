@@ -25,7 +25,7 @@ class Base:
     def __tablename__(cls) -> str:
         return cls.__name__.lower()
 
-    def get_dict(self):
+    def to_dict(self):
         attr_dict = dict()
         for (key, value) in inspect.getmembers(self):
             if key[:1] != '_':
@@ -33,13 +33,13 @@ class Base:
                     attr_dict[key] = value
         return attr_dict
 
-    def get_df(self):
-        attr_dict = self.get_dict()
+    def to_df(self):
+        attr_dict = self.to_dict()
         df = pd.DataFrame.from_dict(attr_dict, orient='index').T
         return df
 
-    def get_json(self):
-        df = self.get_df().dropna(how='all', axis=0)
+    def to_json(self):
+        df = self.to_df().dropna(how='all', axis=0)
         data_json = json.loads(df.to_json())
         return data_json
 
@@ -131,8 +131,8 @@ class Nodes(Base):
 
     id = Column(SMALLINT, primary_key=True, index=True)
     project_id = Column(SMALLINT, primary_key=True, index=True)
-    latitude = Column(Numeric(10, 5), primary_key=True)
-    longitude = Column(Numeric(10, 5), primary_key=True)
+    latitude = Column(Numeric(9, 6), primary_key=True)
+    longitude = Column(Numeric(9, 6), primary_key=True)
     node_type = Column(VARCHAR(55), primary_key=True)
     consumer_type = Column(VARCHAR(55))
     consumer_detail = Column(VARCHAR(55))
@@ -154,10 +154,10 @@ class Links(Base):
 
     id = Column(SMALLINT, primary_key=True, index=True)
     project_id = Column(SMALLINT, primary_key=True, index=True)
-    lat_from = Column(Numeric(10, 5), primary_key=True)
-    lon_from = Column(Numeric(10, 5), primary_key=True)
-    lat_to = Column(Numeric(10, 5), primary_key=True)
-    lon_to = Column(Numeric(10, 5), primary_key=True)
+    lat_from = Column(Numeric(9, 6), primary_key=True)
+    lon_from = Column(Numeric(9, 6), primary_key=True)
+    lat_to = Column(Numeric(9, 6), primary_key=True)
+    lon_to = Column(Numeric(9, 6), primary_key=True)
     link_type = Column(VARCHAR(50), primary_key=True)
     length = Column(SMALLINT(unsigned=True))
 

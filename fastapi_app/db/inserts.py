@@ -1,52 +1,58 @@
 import os
 import pandas as pd
+from sqlalchemy import select, delete, text
 from fastapi_app.db import models
+from fastapi_app.db.database import get_async_session_maker
 from fastapi_app.db.queries import get_nodes_df, get_links_df
-from fastapi_app.db.database import _insert_df
-from sqlalchemy import select, delete
+
 
 
 async def insert_links_df(df, user_id, project_id, db):
+    user_id, project_id = int(user_id), int(project_id)
     model_class = models.Links
     await remove(model_class, user_id, project_id, db)
     df['id'] = int(user_id)
     df['project_id'] = int(project_id)
-    _insert_df(table='links', df=df, cnx=db, if_exists='update')
+    await _insert_df(table='links', df=df, cnx=db, if_exists='update')
 
 
 async def insert_nodes_df(df, user_id, project_id, db, replace=True):
+    user_id, project_id = int(user_id), int(project_id)
     model_class = models.Nodes
     if replace:
         await remove(model_class, user_id, project_id, db)
     df['id'] = int(user_id)
     df['project_id'] = int(project_id)
-    _insert_df('nodes', df, db, if_exists='update')
+    await _insert_df('nodes', df, db, if_exists='update')
 
 
-def insert_results_df(df, user_id, project_id, db):
+async def insert_results_df(df, user_id, project_id, db):
+    user_id, project_id = int(user_id), int(project_id)
     df = df.dropna(how='all', axis=0)
     if not df.empty:
         model_class = models.Results
-        remove(model_class, user_id, project_id, db)
+        await remove(model_class, user_id, project_id, db)
         df['id'] = int(user_id)
         df['project_id'] = int(project_id)
-        _insert_df('results', df, db, if_exists='update')
+        await _insert_df('results', df, db, if_exists='update')
 
 
-def insert_demand_coverage_df(df, user_id, project_id, db):
+async def insert_demand_coverage_df(df, user_id, project_id, db):
+    user_id, project_id = int(user_id), int(project_id)
     df = df.dropna(how='all', axis=0)
     if not df.empty:
         model_class = models.DemandCoverage
-        remove(model_class, user_id, project_id, db)
+        await remove(model_class, user_id, project_id, db)
         df['id'] = int(user_id)
         df['project_id'] = int(project_id)
-        _insert_df('demandcoverage', df, db, if_exists='update')
+        await _insert_df('demandcoverage', df, db, if_exists='update')
 
 
-def insert_df(model_class, df, user_id, project_id, db):
+async def insert_df(model_class, df, user_id, project_id, db):
+    user_id, project_id = int(user_id), int(project_id)
     df = df.dropna(how='all', axis=0)
     if not df.empty:
-        remove(model_class, user_id, project_id, db)
+        await remove(model_class, user_id, project_id, db)
         if hasattr(model_class, 'dt') and 'dt' not in df.columns:
             df.index.name = 'dt'
             df = df.reset_index()
@@ -56,6 +62,7 @@ def insert_df(model_class, df, user_id, project_id, db):
 
 
 async def remove(model_class, user_id, project_id, db):
+    user_id, project_id = int(user_id), int(project_id)
     if model_class in [models.Nodes, models.Links, models.DemandCoverage]:
         query = delete(model_class).where(model_class.id == user_id, model_class.project_id == project_id)
         async with db() as async_db:
@@ -64,9 +71,13 @@ async def remove(model_class, user_id, project_id, db):
 
 
 async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, project_id, db, add=True, replace=True):
+    user_id, project_id = int(user_id), int(project_id)
     if nodes:
         nodes = inlet
-        df = pd.DataFrame.from_dict(nodes).round(decimals=6)
+        try:
+            df = pd.DataFrame.from_dict(nodes).round(decimals=6)
+        except ValueError:
+            df = pd.DataFrame(nodes, index=[0]).round(decimals=6)
         if add and replace:
             df_existing = await get_nodes_df(user_id, project_id, db)
             if not df_existing.empty:
@@ -101,3 +112,80 @@ async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id,
         # adding the links to the existing csv file
         if len(df.index) != 0:
             await insert_links_df(df, user_id, project_id, db)
+
+
+async def sql_str_2_db(sql, cnx=None):
+    async_session = get_async_session_maker()
+    try:
+        await async_session.execute(text(sql))
+        await async_session.commit()
+        await async_session.close()
+    except Exception as err:
+        if len(sql) > 500:
+            sql = "\n(...)\n".join((sql[0:min(400, int(len(sql) / 2))], sql[-100:]))
+        print("\n Something went wrong while trying to write to the database.\n\n Your query was:\n{0}".format(sql))
+        await async_session.rollback()  # Revert everything that has been written so far
+        raise Exception(err)
+
+
+async def _insert_df(table: str, df, cnx, if_exists='update', chunk_size=None):
+    if df.empty:
+        return
+    max_rows = int(150000 / len(df.columns))
+    if isinstance(df, pd.DataFrame) and chunk_size is None and len(df.index) < max_rows:
+        sql = df_2_sql(table, df, if_exists)
+        await sql_str_2_db(sql, cnx)
+    else:
+        if isinstance(df, pd.DataFrame):
+            n_rows = len(df.index)
+            chunk_size = chunk_size if isinstance(chunk_size, int) else max_rows
+            df_list = []
+            for first in range(0, n_rows, chunk_size):
+                last = first + chunk_size if first + chunk_size < n_rows else n_rows
+                df_list.append(df.iloc[first:last, :])
+        elif isinstance(df, list):
+            df_list = df.copy()
+            for df in df_list:
+                sql = df_2_sql(table, df, if_exists)
+                await sql_str_2_db(sql, cnx)
+
+
+def df_2_sql(table, df, if_exists):
+    if table == 'results':
+        df = df.astype(float)
+    data = df.to_numpy()
+    col_names = df.columns.to_numpy().tolist()
+    col_names = ['`{}`'.format(col) if any(char.isdigit() for char in col) else col for col in col_names]
+    del_char = ["'", "[", "]"]  # unwanted characters that occur during the column generation
+    columns = ''.join(i for i in str(col_names) if
+                      i not in del_char)  # now columns correspond to "col1,col2,col3" to database-column names
+    values = str(data.tolist()).replace("[", "(") \
+                 .replace("]", ")") \
+                 .replace("nan", "NULL") \
+                 .replace('n.a.', "NULL") \
+                 .replace("None", "NULL") \
+                 .replace("NaT", "NULL") \
+                 .replace("<NA>", "NULL") \
+                 .replace("\'NULL\'", "NULL")[1:-1]
+    sql = "INSERT INTO {0}({1}) VALUES {2};".format(table, columns, values)
+    if if_exists is not None:
+        sql = handle_duplicates(if_exists, sql, col_names)
+    return sql
+
+
+def handle_duplicates(if_exists, query, col_names):
+    """ Calling the method 'write' without specifying the argument 'if_exists' (or if_exists=None) will raise
+        an error if a primary_key already exists. If the arguments value is 'update', rows with duplicate
+        keys will be overwritten. """
+    if if_exists not in ["update", None]:
+        raise ValueError("\"{}\" is no allowed value for argument \"if_exists\" of "
+                         "function \"write\"! Allowed values are: {}"
+                         .format(if_exists, "update, None"))
+    if if_exists == "update":
+        col_rules = "".join('{} = VALUES({}), '.format(col_name, col_name) for col_name in col_names)
+        query1 = query[:-10]
+        query2 = query[-10:].replace(";", "AS alias ON DUPLICATE KEY UPDATE {};".format(col_rules.strip(", ")
+                                                                                        .replace('VALUES(', 'alias.')
+                                                                                        .replace(')', '')))
+        query = ''.join([query1, query2])
+        return query

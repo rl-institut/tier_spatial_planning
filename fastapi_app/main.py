@@ -263,10 +263,21 @@ async def get_demand_coverage_data(project_id, request: Request, db: Session = D
     return json.loads(df.to_json())
 
 
+@app.get("/clear_nodes_and_links/{project_id}")
+async def clear_nodes_and_links(project_id, request: Request, db: Session = Depends(get_async_db)):
+    user = await accounts.get_user_from_cookie(request, db)
+    if project_id == 'undefined':
+        project_id = get_project_id_from_request(request)
+    await inserts.remove(models.Nodes, user.id, project_id, db)
+    await inserts.remove(models.Links, user.id, project_id, db)
+
+
 @app.get("/database_to_js/{nodes_or_links}/{project_id}")
 async def database_read(nodes_or_links: str, project_id, request: Request, db: Session = Depends(get_async_db)):
     # importing nodes and links from the csv files to the map
     user = await accounts.get_user_from_cookie(request, db)
+    if project_id == 'undefined':
+        project_id = get_project_id_from_request(request)
     if nodes_or_links == "nodes":
         nodes_json = await queries.get_nodes_json(user.id, project_id)
         return nodes_json
@@ -550,7 +561,7 @@ async def database_add_remove_automatic(add_remove: str, project_id,
             # surface area is taken from the open street map
             nodes["surface_area"].append(building_area[label])
         # Add the peak demand and average annual consumption for each node
-        await demand_estimation(nodes=nodes, update_total_demand=False)
+        nodes = _demand_estimation(nodes=nodes, update_total_demand=False)
         # storing the nodes in the database
         await inserts.update_nodes_and_links(True, False, nodes, user.id, project_id, db)
     else:
@@ -572,23 +583,13 @@ async def database_add_remove_manual(add_remove: str, project_id, add_node_reque
                                      request: Request, db: Session = Depends(get_async_db)):
     user = await accounts.get_user_from_cookie(request, db)
     # headers = pd.read_csv(full_path_nodes).columns
-    df = await queries.get_nodes_df(user.id, project_id, db)
-    headers = df.columns
-    nodes = {}
-    nodes[headers[0]] = [add_node_request.latitude]
-    nodes[headers[1]] = [add_node_request.longitude]
-    nodes[headers[2]] = [add_node_request.node_type]
-    nodes[headers[3]] = [add_node_request.consumer_type]
-    nodes[headers[4]] = [add_node_request.consumer_detail]
-    nodes[headers[5]] = [add_node_request.surface_area]
-    nodes[headers[6]] = [add_node_request.peak_demand]
-    nodes[headers[7]] = [add_node_request.average_consumption]
-    nodes[headers[8]] = [add_node_request.is_connected]
-    nodes[headers[9]] = [add_node_request.how_added]
+
+    nodes = models.Nodes(**dict(add_node_request)).to_dict()
     if add_remove == "remove":
         # reading the existing CSV file of nodes, and then removing the corresponding row
         # Since a node is removed, the calculated positions for ALL poles and
         # the power house must be first removed.
+        df = await queries.get_nodes_df(user.id, project_id, db)
         df = df[(df["node_type"] != "pole") & (df["node_type"] != "power-house")]
         for index in df.index:
             if (round(add_node_request.latitude, 6) == df.to_dict()["latitude"][index]) and \
@@ -601,7 +602,7 @@ async def database_add_remove_manual(add_remove: str, project_id, add_node_reque
         await inserts.update_nodes_and_links(True, False, nodes, user.id, project_id, db, add=True, replace=False)
 
 
-def demand_estimation(nodes, update_total_demand):
+def _demand_estimation(nodes, update_total_demand):
     # after collecting all surface areas, based on a simple assumption, the peak demand will be obtained
     max_surface_area = max(nodes["surface_area"])
 
@@ -729,18 +730,12 @@ async def optimize_grid(project_id, request: Request, db: Session = Depends(get_
     # otherwise, when clicking on the 'optimize' button, the existing system won't be removed
 
     # create a new "grid" object from the Grid class
-    epc_distribution_cable = (
-            (
-                    opt.crf
-                    * Optimizer.capex_multi_investment(
-                opt,
-                capex_0=df.loc[0, "distribution_cable_capex"],
-                component_lifetime=df.loc[0, "distribution_cable_lifetime"],
-            )
-            )
-            * opt.n_days
-            / 365
-    )
+    epc_distribution_cable = ((opt.crf *
+                               Optimizer.capex_multi_investment(
+                                   opt,
+                                   capex_0=df.loc[0, "distribution_cable_capex"],
+                                   component_lifetime=df.loc[0, "distribution_cable_lifetime"],))
+                              * opt.n_days / 365)
 
     epc_connection_cable = (
             (
@@ -903,7 +898,7 @@ async def optimize_grid(project_id, request: Request, db: Session = Depends(get_
 
     # Create the demand profile for the energy system optimization based on the
     # number of mini-grid consumers.
-    demand_estimation(nodes=grid.nodes, update_total_demand=True)
+    _demand_estimation(nodes=grid.nodes, update_total_demand=True)
 
     # calculate the minimum number of poles based on the
     # maximum number of connectins at each pole

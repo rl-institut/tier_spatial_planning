@@ -56,13 +56,6 @@ function setVisibilityNodeBox() {
 /*                         DATABASE                         */
 /************************************************************/
 
-// remove the existing nodes and links in the *.csv files
-function database_initialization(nodes, links) {
-    var xhr = new XMLHttpRequest();
-    url = "database_initialization/" + nodes + "/" + links;
-    xhr.open("GET", url, true);
-    xhr.send()
-}
 
 // read all nodes/links stored in the *.csv files
 // then push the corresponding icon to the map
@@ -828,4 +821,10 @@ function redirect_if_cookie_is_missing(){
             type: "POST",
             contentType: "application/json",})
         .done(function (response) {if (response == false) {window.location.href = window.location.origin;}})
+}
+
+function clear_nodes_and_links(project_id){
+            $.ajax({url: "clear_nodes_and_links/" + project_id,
+            type: "GET",
+            contentType: "application/json",})
 }
