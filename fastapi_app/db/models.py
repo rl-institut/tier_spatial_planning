@@ -1,5 +1,7 @@
 import pandas as pd
 import sqlalchemy as sa
+import flatten_dict
+from flatten_dict.reducers import make_reducer
 from sqlalchemy import Boolean, Column, Integer, VARCHAR, Numeric, String, DateTime
 from sqlalchemy.dialects.mysql import TINYINT, SMALLINT, FLOAT
 # from sqlalchemy.orm import relationship
@@ -10,6 +12,7 @@ import inspect
 import pandas as pd
 from typing import Any
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
+from collections.abc import MutableMapping
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi_app.db.config import db_host, db_name, db_user_name, PW, db_port
@@ -27,10 +30,15 @@ class Base:
 
     def to_dict(self):
         attr_dict = dict()
+        nested_dict = False
         for (key, value) in inspect.getmembers(self):
             if key[:1] != '_':
-                if key not in ['metadata', 'registry'] and not inspect.ismethod(value):
+                if key.lower() not in ['metadata', 'registry', 'config'] and not inspect.ismethod(value):
                     attr_dict[key] = value
+                    if nested_dict is False and isinstance(value, dict):
+                        nested_dict = True
+        if nested_dict is True:
+            attr_dict = flatten_dict.flatten(attr_dict, reducer=make_reducer('__'))
         return attr_dict
 
     def to_df(self):
@@ -67,7 +75,7 @@ class User(Base):
 
     @staticmethod
     def __name__():
-        return 'EnergyFlow'
+        return 'User'
 
     id = Column(SMALLINT(unsigned=True), primary_key=True, index=True)
     email = Column(VARCHAR(255), nullable=False, unique=True, index=True)
@@ -82,7 +90,7 @@ class ProjectSetup(Base):
 
     @staticmethod
     def __name__():
-        return 'EnergyFlow'
+        return 'ProjectSetup'
 
     id = Column(SMALLINT(unsigned=True), primary_key=True, index=True)
     project_id = Column(SMALLINT(unsigned=True), primary_key=True, index=True)
@@ -101,7 +109,7 @@ class GridDesign(Base):
 
     @staticmethod
     def __name__():
-        return 'EnergyFlow'
+        return 'GridDesign'
 
     id = Column(SMALLINT(unsigned=True), primary_key=True, index=True)
     project_id = Column(SMALLINT(unsigned=True), primary_key=True, index=True)
@@ -122,6 +130,61 @@ class GridDesign(Base):
     shs_tier_four_capex = Column(FLOAT(precision=5, scale=1, unsigned=True))
     shs_tier_five_capex = Column(FLOAT(precision=5, scale=1, unsigned=True))
 
+class EnergySystemDesign(Base):
+
+    @staticmethod
+    def __name__():
+        return 'EnergySystemDesign'
+
+    id = Column(SMALLINT(unsigned=True), primary_key=True, index=True)
+    project_id = Column(SMALLINT(unsigned=True), primary_key=True, index=True)
+    battery__settings__is_selected = Column(Boolean(), default=False)
+    battery__settings__design = Column(Boolean(), default=False)
+    battery__parameters__nominal_capacity = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    battery__parameters__lifetime = Column(TINYINT(unsigned=True))
+    battery__parameters__capex = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    battery__parameters__opex = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    battery__parameters__soc_min = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    battery__parameters__soc_max = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    battery__parameters__c_rate_in = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    battery__parameters__c_rate_out = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    battery__parameters__efficiency = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    diesel_genset__settings__is_selected = Column(Boolean(), default=False)
+    diesel_genset__settings__design = Column(Boolean(), default=False)
+    diesel_genset__parameters__nominal_capacity = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    diesel_genset__parameters__lifetime = Column(TINYINT(unsigned=True))
+    diesel_genset__parameters__capex = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    diesel_genset__parameters__opex = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    diesel_genset__parameters__variable_cost = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    diesel_genset__parameters__fuel_cost = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    diesel_genset__parameters__fuel_lhv = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    diesel_genset__parameters__min_load = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    diesel_genset__parameters__max_efficiency = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    inverter__settings__is_selected = Column(Boolean(), default=False)
+    inverter__settings__design = Column(Boolean(), default=False)
+    inverter__parameters__nominal_capacity = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    inverter__parameters__lifetime = Column(TINYINT(unsigned=True))
+    inverter__parameters__capex = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    inverter__parameters__opex = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    inverter__parameters__efficiency = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    pv__settings__is_selected = Column(Boolean(), default=False)
+    pv__settings__design = Column(Boolean(), default=False)
+    pv__parameters__nominal_capacity = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    pv__parameters__lifetime = Column(TINYINT(unsigned=True))
+    pv__parameters__capex = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    pv__parameters__opex = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    rectifier__settings__is_selected = Column(Boolean(), default=False)
+    rectifier__settings__design = Column(Boolean(), default=False)
+    rectifier__parameters__nominal_capacity = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    rectifier__parameters__lifetime = Column(TINYINT(unsigned=True))
+    rectifier__parameters__capex = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    rectifier__parameters__opex = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    rectifier__parameters__efficiency = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    shortage__settings__is_selected = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    shortage__parameters__max_shortage_total = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    shortage__parameters__max_shortage_timestep = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    shortage__parameters__shortage_penalty_cost = Column(FLOAT(precision=5, scale=1, unsigned=True))
+
 
 class Nodes(Base):
 
@@ -141,7 +204,7 @@ class Nodes(Base):
     average_consumption = Column(Numeric(10, 5))
     is_connected = Column(Boolean)
     how_added = Column(VARCHAR(55))
-    distance_to_load_center = Column(Numeric(10, 5))
+    distance_to_load_center = Column(Numeric(10, 6))
     parent = Column(Numeric(10, 5))
     distribution_cost = Column(Numeric(10, 5))
 
@@ -215,7 +278,7 @@ class DemandCoverage(Base):
 
     @staticmethod
     def __name__():
-        return 'EnergyFlow'
+        return 'DemandCoverage'
 
     id = Column(SMALLINT, primary_key=True, index=True)
     project_id = Column(SMALLINT, primary_key=True, index=True)
@@ -297,6 +360,7 @@ class AddNodeRequest(BaseModel):
 class SavePreviousDataRequest(BaseModel):
     page_setup: Dict[str, str]
     grid_design: Dict[str, str]
+    energy_system_design: Dict[str, str]
 
 
 class OptimizeGridRequest(BaseModel):
@@ -312,6 +376,24 @@ class OptimizeEnergySystemRequest(BaseModel):
     rectifier: Dict[str, Union[Dict[str, bool], Dict[str, float]]]
     shortage: Dict[str, Union[Dict[str, bool], Dict[str, float]]]
     # path_data: str
+
+    def to_dict(self):
+        attr_dict = dict()
+        nested_dict = False
+        for (key, value) in inspect.getmembers(self):
+            if key[:1] != '_':
+                if key.lower() not in ['metadata', 'registry', 'config'] and not inspect.ismethod(value):
+                    attr_dict[key] = value
+                    if nested_dict is False and isinstance(value, dict):
+                        nested_dict = True
+        if nested_dict is True:
+            attr_dict = flatten_dict.flatten(attr_dict, reducer=make_reducer('__'))
+        return attr_dict
+
+    def to_df(self):
+        attr_dict = self.to_dict()
+        df = pd.DataFrame.from_dict(attr_dict, orient='index').T
+        return df
 
 
 class ShsIdentificationRequest(BaseModel):

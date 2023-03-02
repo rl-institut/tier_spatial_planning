@@ -19,3 +19,4 @@ scikit-learn==1.2.1
 munkres==1.1.2
 cryptography==38.0.4
 celery==5.2.7
+flatten-dict==0.4.2

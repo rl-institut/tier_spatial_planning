@@ -2,6 +2,9 @@ import json
 import pandas as pd
 import sqlalchemy as sa
 from sqlalchemy import select
+import flatten_dict
+from flatten_dict.reducers import make_reducer
+from flatten_dict.splitters import make_splitter
 from fastapi_app.db import models
 from fastapi_app.db.database import get_async_session_maker
 
@@ -35,14 +38,29 @@ async def get_project_of_user(user_id, db):
     return projects
 
 
-async def get_project_setup_of_user(user_id, project_id, db):
+async def get_project_setup_of_user(user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     query = select(models.ProjectSetup).where(models.ProjectSetup.id == user_id,
                                                          models.ProjectSetup.project_id == project_id)
-    async with db() as async_db:
+    async with get_async_session_maker() as async_db:
         res = await async_db.execute(query)
         project_setup = res.scalars().first()
     return project_setup
+
+
+async def get_energy_system_design(user_id, project_id):
+    user_id, project_id = int(user_id), int(project_id)
+    query = select(models.EnergySystemDesign).where(models.EnergySystemDesign.id == user_id,
+                                                    models.EnergySystemDesign.project_id == project_id)
+    async with get_async_session_maker() as async_db:
+        res = await async_db.execute(query)
+        model_inst = res.scalars().first()
+    df = model_inst.to_df()
+    if df.empty:
+        df = models.Nodes().to_df().iloc[0:0]
+    df = df.drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
+    energy_system_design = flatten_dict.unflatten(df.to_dict('records')[0], splitter=make_splitter('__'))
+    return energy_system_design
 
 
 async def get_nodes_df(user_id, project_id, db=None):
@@ -92,7 +110,7 @@ async def get_grid_design_of_user(user_id, project_id, db):
     user_id, project_id = int(user_id), int(project_id)
     query = select(models.GridDesign).where(models.GridDesign.id == user_id,
                                                      models.GridDesign.project_id == project_id)
-    async with db() as async_db:
+    async with get_async_session_maker() as async_db:
         res = await async_db.execute(query)
         grid_design = res.scalars().first()
     return grid_design
@@ -100,7 +118,7 @@ async def get_grid_design_of_user(user_id, project_id, db):
 
 async def get_input_df(user_id, project_id, db):
     user_id, project_id = int(user_id), int(project_id)
-    project_setup = await get_project_setup_of_user(user_id, project_id, db)
+    project_setup = await get_project_setup_of_user(user_id, project_id)
     grid_design = await get_grid_design_of_user(user_id, project_id, db)
     df = pd.concat([project_setup.to_df(), grid_design.to_df()], axis=1).drop(columns=['id', 'project_id'])
     return df

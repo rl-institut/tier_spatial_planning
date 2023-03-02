@@ -31,6 +31,7 @@
                  onclick="save_previous_data('grid_design?project_id={{ project_id }}');"
             {% elif title == 'Energy System Design' %}
                  href='calculating/?project_id={{ project_id }}'
+                 onclick="optimization({{ project_id }});"
             {% endif %}
             {% if title == 'PeopleSun' %}
                  {% set next_str='Test' %}

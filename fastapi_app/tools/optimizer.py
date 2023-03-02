@@ -822,7 +822,8 @@ class EnergySystemOptimizer(Optimizer):
         path_data="",
         solver="cbc",
         pv={
-            "settings": {"is_selected": True, "design": True},
+            "settings": {"is_selected": True,
+                         "design": True},
             "parameters": {
                 "nominal_capacity": None,
                 "capex": 1000,

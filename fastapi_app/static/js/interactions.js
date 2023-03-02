@@ -312,81 +312,75 @@ function boundary_select(mode, project_id) {
 /*                       OPTIMIZATION                       */
 /************************************************************/
 function optimization(project_id) {
-    optimize_grid(project_id);
-    optimize_energy_system(project_id);
-}
-
-function optimize_energy_system(project_id) {
-    // $("#loading").show();
-    $.ajax({
-        url: "optimize_energy_system/"  + project_id,
+        $.ajax({
+        url: "optimization/"  + project_id,
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify({
             pv: {
                 'settings': {
-                    'is_selected': selectPv.checked, 
-                     'design': pvDesign.checked, 
+                    'is_selected': selectPv.checked,
+                     'design': pvDesign.checked,
                 },
                  'parameters': {
-                    'nominal_capacity': pvNominalCapacity.value, 
-                    'lifetime': pvLifetime.value, 
-                    'capex': pvCapex.value, 
+                    'nominal_capacity': pvNominalCapacity.value,
+                    'lifetime': pvLifetime.value,
+                    'capex': pvCapex.value,
                     'opex': pvOpex.value,
                 }
             },
             diesel_genset: {
                 'settings': {
-                    'is_selected': selectDieselGenset.checked, 
-                     'design': dieselGensetDesign.checked, 
+                    'is_selected': selectDieselGenset.checked,
+                     'design': dieselGensetDesign.checked,
                 },
                 'parameters': {
                     'nominal_capacity': dieselGensetNominalCapacity.value,
-                    'lifetime': dieselGensetLifetime.value, 
-                    'capex': dieselGensetCapex.value, 
-                    'opex': dieselGensetOpex.value, 
+                    'lifetime': dieselGensetLifetime.value,
+                    'capex': dieselGensetCapex.value,
+                    'opex': dieselGensetOpex.value,
                     'variable_cost': dieselGensetVariableCost.value,
-                    'fuel_cost': dieselGensetFuelCost.value, 
-                    'fuel_lhv': dieselGensetFuelLhv.value, 
-                    'min_load': dieselGensetMinLoad.value/100, 
+                    'fuel_cost': dieselGensetFuelCost.value,
+                    'fuel_lhv': dieselGensetFuelLhv.value,
+                    'min_load': dieselGensetMinLoad.value/100,
                     'max_efficiency': dieselGensetMaxEfficiency.value/100,
                 }
             },
             battery: {
                 'settings': {
-                    'is_selected': selectBattery.checked, 
-                     'design': batteryDesign.checked, 
+                    'is_selected': selectBattery.checked,
+                     'design': batteryDesign.checked,
                 },
                 'parameters':{
                     'nominal_capacity': batteryNominalCapacity.value,
                     'lifetime': batteryLifetime.value, 'capex': batteryCapex.value, 'opex': batteryOpex.value,
-                    'soc_min': batterySocMin.value/100, 'soc_max': batterySocMax.value/100, 'c_rate_in': batteryCrateIn.value, 
+                    'soc_min': batterySocMin.value/100, 'soc_max': batterySocMax.value/100, 'c_rate_in': batteryCrateIn.value,
                     'c_rate_out': batteryCrateOut.value, 'efficiency': batteryEfficiency.value/100,
-                } 
+                }
             },
             inverter: {
                 'settings': {
-                    'is_selected': selectInverter.checked, 
-                    'design': inverterDesign.checked, 
+                    'is_selected': selectInverter.checked,
+                    'design': inverterDesign.checked,
                 },
                 'parameters': {
                     'nominal_capacity': inverterNominalCapacity.value,
-                    'lifetime': inverterLifetime.value, 
-                    'capex': inverterCapex.value, 
-                    'opex': inverterOpex.value, 
+                    'lifetime': inverterLifetime.value,
+                    'capex': inverterCapex.value,
+                    'opex': inverterOpex.value,
                     'efficiency': inverterEfficiency.value/100,
                 },
             },
             rectifier: {
                 'settings': {
-                    'is_selected': selectRectifier.checked, 
-                    'design': rectifierDesign.checked, 
+                    'is_selected': selectRectifier.checked,
+                    'design': rectifierDesign.checked,
                 },
                 'parameters': {
                     'nominal_capacity': rectifierNominalCapacity.value,
-                    'lifetime': rectifierLifetime.value, 
-                    'capex': rectifierCapex.value, 
-                    'opex': rectifierOpex.value, 
+                    'lifetime': rectifierLifetime.value,
+                    'capex': rectifierCapex.value,
+                    'opex': rectifierOpex.value,
                     'efficiency': rectifierEfficiency.value/100
                 },
             },
@@ -404,6 +398,9 @@ function optimize_energy_system(project_id) {
         dataType: "json",
     });
 }
+
+
+
 
 // TODO: start date, interest rate, lifetime and wacc that come from another page are not recognized. 
 // Either global parameters must be defined or something else.
@@ -549,7 +546,7 @@ function save_previous_data(page_name) {
                     'shs_tier_three_capex': 0,
                     'shs_tier_four_capex': 0,
                     'shs_tier_five_capex': 0,
-                }
+                },
             }
         );
     }

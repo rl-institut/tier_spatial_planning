@@ -26,6 +26,16 @@ async def insert_nodes_df(df, user_id, project_id, db, replace=True):
     await _insert_df('nodes', df, db, if_exists='update')
 
 
+async def insert_energysystemdesign_df(df, user_id, project_id, db, replace=True):
+    user_id, project_id = int(user_id), int(project_id)
+    model_class = models.EnergySystemDesign
+    if replace:
+        await remove(model_class, user_id, project_id, db)
+    df['id'] = int(user_id)
+    df['project_id'] = int(project_id)
+    await _insert_df('energysystemdesign', df, db, if_exists='update')
+
+
 async def insert_results_df(df, user_id, project_id, db):
     user_id, project_id = int(user_id), int(project_id)
     df = df.dropna(how='all', axis=0)
@@ -58,14 +68,14 @@ async def insert_df(model_class, df, user_id, project_id, db):
             df = df.reset_index()
         df['id'] = int(user_id)
         df['project_id'] = int(project_id)
-        _insert_df(model_class.__name__.lower(), df, db, if_exists='update')
+        await _insert_df(model_class.__name__.lower(), df, db, if_exists='update')
 
 
 async def remove(model_class, user_id, project_id, db):
     user_id, project_id = int(user_id), int(project_id)
     if model_class in [models.Nodes, models.Links, models.DemandCoverage]:
         query = delete(model_class).where(model_class.id == user_id, model_class.project_id == project_id)
-        async with db() as async_db:
+        async with get_async_session_maker() as async_db:
             await async_db.execute(query)
             await async_db.commit()
 
