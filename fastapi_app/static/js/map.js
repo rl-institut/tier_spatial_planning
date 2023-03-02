@@ -179,7 +179,6 @@ L.easyButton(
     project_id = urlParams.get('project_id');
   clear_nodes_and_links(project_id = project_id);
   database_read(nodes_or_links = 'nodes', map_or_export = 'map', project_id = project_id);
-  database_read(nodes_or_links = 'links', map_or_export = 'map', project_id = project_id);
     position: "topleft";
   },
   "Clear all nodes from the map"
@@ -321,7 +320,6 @@ function markerOnClick(e)
   const urlParams = new URLSearchParams(window.location.search);
   project_id = urlParams.get('project_id');
   database_read(nodes_or_links = 'nodes', map_or_export = 'map', project_id = project_id);
-  database_read(nodes_or_links = 'links', map_or_export = 'map', project_id = project_id);
 }
 
 function drawLinkOnMap(

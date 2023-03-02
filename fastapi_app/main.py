@@ -327,7 +327,7 @@ async def load_previous_data(page_name, request: Request, db: Session = Depends(
             project_id = int(project_id)
         except (ValueError, TypeError):
             return None
-        project_setup = await queries.get_project_setup_of_user(user.id, project_id, db)
+        project_setup = await queries.get_project_setup_of_user(user.id, project_id)
         if hasattr(project_setup, 'start_date'):
             project_setup.start_date = str(project_setup.start_date.date())
             return project_setup
@@ -696,10 +696,13 @@ def _demand_estimation(nodes, update_total_demand):
         return nodes
 
 
-async def remove_rusults(user_id, project_id, db):
+async def remove_results(user_id, project_id, db):
     await inserts.remove(models.Results, user_id, project_id, db)
     await inserts.remove(models.DemandCoverage, user_id, project_id, db)
     await inserts.remove(models.EnergyFlow, user_id, project_id, db)
+    await inserts.remove(models.Emissions, user_id, project_id, db)
+    await inserts.remove(models.DurationCurve, user_id, project_id, db)
+    await inserts.remove(models.Links, user_id, project_id, db)
 
 
 @app.post("/optimization/{project_id}")
@@ -707,13 +710,13 @@ async def optimization(project_id, request: Request, optimize_energy_system_requ
 models.OptimizeEnergySystemRequest, db: Session = Depends(get_db)):
     user = await accounts.get_user_from_cookie(request, db)
     df = optimize_energy_system_request.to_df()
+    await remove_results(user.id, project_id, db)
     await inserts.insert_energysystemdesign_df(df, user.id, project_id, df, db)
     await optimize_grid(user.id, project_id, request, db)
     await optimize_energy_system(user.id, project_id, db)
 
 
 async def optimize_grid(user_id, project_id, request, db):
-    await remove_rusults(user_id, project_id, db)
     # Grab Currrent Time Before Running the Code
     start_execution_time = time.monotonic()
 

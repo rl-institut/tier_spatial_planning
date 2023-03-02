@@ -445,9 +445,10 @@ function load_results() {
     };
 }
 
-function refresh_map(project_id){
+function refresh_map(project_id, hide_links){
     database_read(nodes_or_link = 'nodes', map_or_export = 'map', project_id);
-    database_read(nodes_or_link = 'links', map_or_export = 'map', project_id);
+    if(hide_links == false)
+    {database_read(nodes_or_link = 'links', map_or_export = 'map', project_id);}
 }
 
 /************************************************************/

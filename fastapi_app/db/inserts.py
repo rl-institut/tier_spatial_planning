@@ -73,7 +73,8 @@ async def insert_df(model_class, df, user_id, project_id, db):
 
 async def remove(model_class, user_id, project_id, db):
     user_id, project_id = int(user_id), int(project_id)
-    if model_class in [models.Nodes, models.Links, models.DemandCoverage]:
+    if model_class in [models.Nodes, models.Links, models.DemandCoverage, models.Emissions,
+                       models.Results, models.DurationCurve, models.EnergyFlow]:
         query = delete(model_class).where(model_class.id == user_id, model_class.project_id == project_id)
         async with get_async_session_maker() as async_db:
             await async_db.execute(query)
