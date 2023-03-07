@@ -4,74 +4,99 @@ from sqlalchemy import select, delete, text
 from fastapi_app.db import models
 from fastapi_app.db.database import get_async_session_maker
 from fastapi_app.db.queries import get_nodes_df, get_links_df
+from sqlalchemy import insert, update
+from sqlalchemy.inspection import inspect
 
 
+async def insert_model(model):
+    stmt = (insert(model.metadata.tables[model.__name__().lower()]).values(**model.to_dict()))
+    async with get_async_session_maker() as async_db:
+        await async_db.execute(stmt)
+        await async_db.commit()
 
-async def insert_links_df(df, user_id, project_id, db):
+
+async def update_model_by_user_id(model):
+    stmt = (update(model.metadata.tables[model.__name__().lower()])
+            .where(model.__mapper__.primary_key[0] == model.id).values(**model.to_dict()))
+    async with get_async_session_maker() as async_db:
+        await async_db.execute(stmt)
+        await async_db.commit()
+
+
+async def update_model_by_user_and_project_id(model):
+    stmt = (update(model.metadata.tables[model.__name__().lower()])
+            .where(model.__mapper__.primary_key[0] == model.id,
+                   model.__mapper__.primary_key[1] == model.project_id).values(**model.to_dict()))
+    async with get_async_session_maker() as async_db:
+        await async_db.execute(stmt)
+        await async_db.commit()
+
+
+async def insert_links_df(df, user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     model_class = models.Links
-    await remove(model_class, user_id, project_id, db)
+    await remove(model_class, user_id, project_id)
     df['id'] = int(user_id)
     df['project_id'] = int(project_id)
-    await _insert_df(table='links', df=df, cnx=db, if_exists='update')
+    await _insert_df(table='links', df=df, if_exists='update')
 
 
-async def insert_nodes_df(df, user_id, project_id, db, replace=True):
+async def insert_nodes_df(df, user_id, project_id, replace=True):
     user_id, project_id = int(user_id), int(project_id)
     model_class = models.Nodes
     if replace:
-        await remove(model_class, user_id, project_id, db)
+        await remove(model_class, user_id, project_id)
     df['id'] = int(user_id)
     df['project_id'] = int(project_id)
-    await _insert_df('nodes', df, db, if_exists='update')
+    await _insert_df('nodes', df, if_exists='update')
 
 
-async def insert_energysystemdesign_df(df, user_id, project_id, db, replace=True):
+async def insert_energysystemdesign_df(df, user_id, project_id, replace=True):
     user_id, project_id = int(user_id), int(project_id)
     model_class = models.EnergySystemDesign
     if replace:
-        await remove(model_class, user_id, project_id, db)
+        await remove(model_class, user_id, project_id)
     df['id'] = int(user_id)
     df['project_id'] = int(project_id)
-    await _insert_df('energysystemdesign', df, db, if_exists='update')
+    await _insert_df('energysystemdesign', df, if_exists='update')
 
 
-async def insert_results_df(df, user_id, project_id, db):
+async def insert_results_df(df, user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     df = df.dropna(how='all', axis=0)
     if not df.empty:
         model_class = models.Results
-        await remove(model_class, user_id, project_id, db)
+        await remove(model_class, user_id, project_id)
         df['id'] = int(user_id)
         df['project_id'] = int(project_id)
-        await _insert_df('results', df, db, if_exists='update')
+        await _insert_df('results', df, if_exists='update')
 
 
-async def insert_demand_coverage_df(df, user_id, project_id, db):
+async def insert_demand_coverage_df(df, user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     df = df.dropna(how='all', axis=0)
     if not df.empty:
         model_class = models.DemandCoverage
-        await remove(model_class, user_id, project_id, db)
+        await remove(model_class, user_id, project_id)
         df['id'] = int(user_id)
         df['project_id'] = int(project_id)
-        await _insert_df('demandcoverage', df, db, if_exists='update')
+        await _insert_df('demandcoverage', df, if_exists='update')
 
 
-async def insert_df(model_class, df, user_id, project_id, db):
+async def insert_df(model_class, df, user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     df = df.dropna(how='all', axis=0)
     if not df.empty:
-        await remove(model_class, user_id, project_id, db)
+        await remove(model_class, user_id, project_id)
         if hasattr(model_class, 'dt') and 'dt' not in df.columns:
             df.index.name = 'dt'
             df = df.reset_index()
         df['id'] = int(user_id)
         df['project_id'] = int(project_id)
-        await _insert_df(model_class.__name__.lower(), df, db, if_exists='update')
+        await _insert_df(model_class.__name__.lower(), df, if_exists='update')
 
 
-async def remove(model_class, user_id, project_id, db):
+async def remove(model_class, user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     if model_class in [models.Nodes, models.Links, models.DemandCoverage, models.Emissions,
                        models.Results, models.DurationCurve, models.EnergyFlow]:
@@ -81,7 +106,7 @@ async def remove(model_class, user_id, project_id, db):
             await async_db.commit()
 
 
-async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, project_id, db, add=True, replace=True):
+async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, project_id, add=True, replace=True):
     user_id, project_id = int(user_id), int(project_id)
     if nodes:
         nodes = inlet
@@ -90,7 +115,7 @@ async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id,
         except ValueError:
             df = pd.DataFrame(nodes, index=[0]).round(decimals=6)
         if add and replace:
-            df_existing = await get_nodes_df(user_id, project_id, db)
+            df_existing = await get_nodes_df(user_id, project_id)
             if not df_existing.empty:
                 df_existing = df_existing[(df_existing["node_type"] != "pole") &
                                           (df_existing["node_type"] != "power-house")]
@@ -98,10 +123,10 @@ async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id,
         else:
             df_total = df
         if df["node_type"].str.contains("consumer").sum() > 0:
-            df_links = await get_links_df(user_id, project_id, db)
+            df_links = await get_links_df(user_id, project_id)
             if not df_links.empty:
                 df_links.drop(labels=df_links.index, axis=0, inplace=True)
-                await insert_links_df(df_links, user_id, project_id, db)
+                await insert_links_df(df_links, user_id, project_id)
         df_total.latitude = df_total.latitude.map(lambda x: "%.6f" % x)
         df_total.longitude = df_total.longitude.map(lambda x: "%.6f" % x)
         df_total.surface_area = df_total.surface_area.map(lambda x: "%.2f" % x)
@@ -111,7 +136,7 @@ async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id,
         if len(df_total.index) != 0:
             if 'parent' in df_total.columns:
                 df_total['parent'] = df_total['parent'].replace('unknown', None)
-            await insert_nodes_df(df_total, user_id, project_id, db, replace=replace)
+            await insert_nodes_df(df_total, user_id, project_id, replace=replace)
     if links:
         links = inlet
         # defining the precision of data
@@ -122,10 +147,10 @@ async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id,
         df.lon_to = df.lon_to.map(lambda x: "%.6f" % x)
         # adding the links to the existing csv file
         if len(df.index) != 0:
-            await insert_links_df(df, user_id, project_id, db)
+            await insert_links_df(df, user_id, project_id)
 
 
-async def sql_str_2_db(sql, cnx=None):
+async def sql_str_2_db(sql):
     async_session = get_async_session_maker()
     try:
         await async_session.execute(text(sql))
@@ -139,13 +164,13 @@ async def sql_str_2_db(sql, cnx=None):
         raise Exception(err)
 
 
-async def _insert_df(table: str, df, cnx, if_exists='update', chunk_size=None):
+async def _insert_df(table: str, df, if_exists='update', chunk_size=None):
     if df.empty:
         return
     max_rows = int(150000 / len(df.columns))
     if isinstance(df, pd.DataFrame) and chunk_size is None and len(df.index) < max_rows:
         sql = df_2_sql(table, df, if_exists)
-        await sql_str_2_db(sql, cnx)
+        await sql_str_2_db(sql)
     else:
         if isinstance(df, pd.DataFrame):
             n_rows = len(df.index)
@@ -158,7 +183,7 @@ async def _insert_df(table: str, df, cnx, if_exists='update', chunk_size=None):
             df_list = df.copy()
             for df in df_list:
                 sql = df_2_sql(table, df, if_exists)
-                await sql_str_2_db(sql, cnx)
+                await sql_str_2_db(sql)
 
 
 def df_2_sql(table, df, if_exists):

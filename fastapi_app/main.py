@@ -14,7 +14,7 @@ from fastapi_app.tools.accounts import Hasher, create_guid, is_valid_credentials
     authenticate_user, create_access_token
 from fastapi_app.tools import accounts
 from fastapi_app.db import config
-from fastapi_app.db.database import get_db, get_async_db
+from fastapi_app.db.database import get_async_db
 from fastapi_app.db import queries, inserts
 import math
 import urllib.request
@@ -24,14 +24,9 @@ import pandas as pd
 import numpy as np
 import os
 from datetime import datetime, timedelta
-
-# for appending to the dictionary
+from celery import Celery
 from collections import defaultdict
-
-# for sending an array of data from JS to the fastAPI
 from typing import Any, Dict, List, Union
-
-# import the builtin time module
 import time
 
 app = FastAPI()
@@ -61,6 +56,10 @@ ssl._create_default_https_context = ssl._create_unverified_context
 json_object = Dict[Any, Any]
 json_array = List[Any]
 import_structure = Union[json_array, json_object]
+
+celery = Celery('worker')
+celery.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379")
+celery.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379")
 
 
 # --------------------- REDIRECT REQUEST TO FAVICON LOG ----------------------#
@@ -140,30 +139,30 @@ async def download_export_file():
 
 
 @app.post("/import_data/{project_id}")
-async def import_data(project_id, request: Request, import_files: import_structure = None,
-                      db: Session = Depends(get_async_db)):
+async def import_data(project_id, request: Request, import_files: import_structure = None):
     # add nodes from the 'nodes' sheet of the excel file to the 'nodes.csv' file
     # TODO: update the template for adding nodes
     nodes = import_files["nodes_to_import"]
     links = import_files["links_to_import"]
-    user_id = await accounts.get_user_from_cookie(request, db).id
+    user = await accounts.get_user_from_cookie(request)
+    user_id = user.id
     if len(nodes) > 0:
-        await inserts.update_nodes_and_links(True, False, nodes, user_id, project_id, db)
+        await inserts.update_nodes_and_links(True, False, nodes, user_id, project_id)
 
     if len(links) > 0:
-        await inserts.update_nodes_and_links(False, True, links, user_id, project_id, db)
+        await inserts.update_nodes_and_links(False, True, links, user_id, project_id)
 
     # ------------------------------ HANDLE REQUEST ------------------------------#
 
 
 @app.get("/")
-async def home(request: Request, db: Session = Depends(get_async_db)):
+async def home(request: Request):
     # return templates.TemplateResponse("project-setup.html", {"request": request})
-    user = await accounts.get_user_from_cookie(request, db)
+    user = await accounts.get_user_from_cookie(request)
     if user is None:
         return templates.TemplateResponse("landing-page.html", {"request": request})
     else:
-        projects = await queries.get_project_of_user(user.id, db)
+        projects = await queries.get_project_of_user(user.id)
         for project in projects:
             project.created_at = project.created_at.date()
             project.updated_at = project.updated_at.date()
@@ -171,11 +170,11 @@ async def home(request: Request, db: Session = Depends(get_async_db)):
 
 
 @app.get("/project_setup")
-async def project_setup(request: Request, db: Session = Depends(get_async_db)):
-    user = await accounts.get_user_from_cookie(request, db) # .id
+async def project_setup(request: Request):
+    user = await accounts.get_user_from_cookie(request) # .id
     project_id = request.query_params.get('project_id')
     if project_id is None:
-        project_id = await queries.next_project_id_of_user(user.id, db)
+        project_id = await queries.next_project_id_of_user(user.id)
     return templates.TemplateResponse("project-setup.html", {"request": request, 'project_id': project_id})
 
 
@@ -185,16 +184,16 @@ async def user_registration(request: Request):
 
 
 @app.get("/activation_mail/{guid}")
-async def activation_mail(request: Request, db: Session = Depends(get_db)):
+async def activation_mail(request: Request):
     guid = request.path_params.get('guid')
     if guid is not None:
-        activate_mail(guid[5:], db)
+        await activate_mail(guid[5:])
     return templates.TemplateResponse("landing-page.html", {"request": request})
 
 
 @app.get("/account_overview")
-async def account_overview(request: Request, db: Session = Depends(get_db)):
-    user = await accounts.get_user_from_cookie(request, db)
+async def account_overview(request: Request):
+    user = await accounts.get_user_from_cookie(request)
     if user is None:
         return templates.TemplateResponse("landing-page.html", {"request": request})
     else:
@@ -239,9 +238,9 @@ async def simulation_results(request: Request):
 
 
 @app.get("/calculating")
-async def calculating(request: Request, db: Session = Depends(get_async_db)):
+async def calculating(request: Request):
     project_id = request.query_params.get('project_id')
-    user = await accounts.get_user_from_cookie(request, db)
+    user = await accounts.get_user_from_cookie(request)
     try:
         int(project_id)
     except (TypeError, ValueError):
@@ -256,26 +255,26 @@ async def calculating(request: Request, db: Session = Depends(get_async_db)):
 
 
 @app.get("/get_demand_coverage_data/{project_id}")
-async def get_demand_coverage_data(project_id, request: Request, db: Session = Depends(get_async_db)):
-    user = await accounts.get_user_from_cookie(request, db)
-    df = await queries.get_demand_coverage_df(user.id, project_id, db)
+async def get_demand_coverage_data(project_id, request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    df = await queries.get_demand_coverage_df(user.id, project_id)
     df = df.reset_index(drop=True)
     return json.loads(df.to_json())
 
 
 @app.get("/clear_nodes_and_links/{project_id}")
-async def clear_nodes_and_links(project_id, request: Request, db: Session = Depends(get_async_db)):
-    user = await accounts.get_user_from_cookie(request, db)
+async def clear_nodes_and_links(project_id, request: Request):
+    user = await accounts.get_user_from_cookie(request)
     if project_id == 'undefined':
         project_id = get_project_id_from_request(request)
-    await inserts.remove(models.Nodes, user.id, project_id, db)
-    await inserts.remove(models.Links, user.id, project_id, db)
+    await inserts.remove(models.Nodes, user.id, project_id)
+    await inserts.remove(models.Links, user.id, project_id)
 
 
 @app.get("/database_to_js/{nodes_or_links}/{project_id}")
-async def database_read(nodes_or_links: str, project_id, request: Request, db: Session = Depends(get_async_db)):
+async def database_read(nodes_or_links: str, project_id, request: Request):
     # importing nodes and links from the csv files to the map
-    user = await accounts.get_user_from_cookie(request, db)
+    user = await accounts.get_user_from_cookie(request)
     if project_id == 'undefined':
         project_id = get_project_id_from_request(request)
     if nodes_or_links == "nodes":
@@ -287,9 +286,9 @@ async def database_read(nodes_or_links: str, project_id, request: Request, db: S
 
 
 @app.get("/load_results/{project_id}")
-async def load_results(project_id, request: Request, db: Session = Depends(get_db)):
-    user = await accounts.get_user_from_cookie(request, db)
-    df = await queries.get_results_df(user.id, project_id, db)
+async def load_results(project_id, request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    df = await queries.get_results_df(user.id, project_id)
     df["average_length_distribution_cable"] = df["length_distribution_cable"] / df["n_distribution_links"]
     df["average_length_connection_cable"] = df["length_connection_cable"] / df["n_connection_links"]
     df["time"] = df["time_grid_design"] + df["time_energy_system_design"]
@@ -316,12 +315,12 @@ async def load_results(project_id, request: Request, db: Session = Depends(get_d
 
 
 @app.get("/load_previous_data/{page_name}")
-async def load_previous_data(page_name, request: Request, db: Session = Depends(get_async_db)):
-    user = await accounts.get_user_from_cookie(request, db)
+async def load_previous_data(page_name, request: Request):
+    user = await accounts.get_user_from_cookie(request)
     project_id = request.query_params.get('project_id')
     if page_name == "project_setup":
         if project_id == 'new':
-            project_id = await queries.next_project_id_of_user(user.id, db)
+            project_id = await queries.next_project_id_of_user(user.id)
             return models.ProjectSetup(project_id=project_id)
         try:
             project_id = int(project_id)
@@ -338,13 +337,13 @@ async def load_previous_data(page_name, request: Request, db: Session = Depends(
             project_id = int(project_id)
         except (ValueError, TypeError):
             return None
-        grid_design = await queries.get_grid_design_of_user(user.id, project_id, db)
+        grid_design = await queries.get_grid_design_of_user(user.id, project_id)
         return grid_design
 
 
 @app.post("/add_user_to_db/")
-async def add_user_to_db(user: models.Credentials, db: Session = Depends(get_db)):
-    res = is_valid_credentials(user, db)
+async def add_user_to_db(user: models.Credentials):
+    res = is_valid_credentials(user)
     if res[0] is True:
         guid = create_guid()
         user = models.User(email=user.email,
@@ -353,17 +352,15 @@ async def add_user_to_db(user: models.Credentials, db: Session = Depends(get_db)
                            is_confirmed=False,
                            is_active=False,
                            is_superuser=False)
-        db.add(user)
-        db.commit()
-        db.refresh(user)
+        await inserts.insert_model(user)
         send_activation_link(user.email, guid)
     return models.ValidRegistration(validation=res[0], msg=res[1])
 
 
 @app.post("/set_access_token/", response_model=models.Token)
-async def set_access_token(response: Response, credentials: models.Credentials, db: Session = Depends(get_async_db)):
+async def set_access_token(response: Response, credentials: models.Credentials):
     if isinstance(credentials.email, str) and len(credentials.email) > 3:
-        user = await authenticate_user(credentials.email, credentials.password, db)
+        user = await authenticate_user(credentials.email, credentials.password)
         name = user.email
     else:
         name = 'anonymous'
@@ -375,9 +372,9 @@ async def set_access_token(response: Response, credentials: models.Credentials, 
 
 
 @app.post("/login/")
-async def login(response: Response, credentials: models.Credentials, db: Session = Depends(get_async_db)):
+async def login(response: Response, credentials: models.Credentials):
     if isinstance(credentials.email, str) and len(credentials.email) > 3:
-        user = await authenticate_user(credentials.email, credentials.password, db)
+        user = await authenticate_user(credentials.email, credentials.password)
         del credentials
         if user is not False:
             access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -393,8 +390,8 @@ async def logout(response: Response):
 
 
 @app.post("/query_account_data/")
-async def query_account_data(request: Request, db: Session = Depends(get_async_db)):
-    user = await accounts.get_user_from_cookie(request, db)
+async def query_account_data(request: Request):
+    user = await accounts.get_user_from_cookie(request)
     if user is not None:
         return models.UserOverview(email=user.email)
     else:
@@ -412,8 +409,9 @@ async def has_cookie(request: Request):
 
 @app.post("/save_previous_data/{page_name}")
 async def save_previous_data(request: Request, page_name: str, save_previous_data_request:
-models.SavePreviousDataRequest, db: Session = Depends(get_async_db)):
-    user = await accounts.get_user_from_cookie(request, db)
+models.SavePreviousDataRequest):
+    # ToDo: function is not called from js
+    user = await accounts.get_user_from_cookie(request)
     project_id = get_project_id_from_request(request)
     if "project_setup" in page_name:
         save_previous_data_request.page_setup['created_at'] = pd.Timestamp.now()
@@ -422,15 +420,13 @@ models.SavePreviousDataRequest, db: Session = Depends(get_async_db)):
         # ToDo: Raise Error if project id missing redirect
         save_previous_data_request.page_setup['project_id'] = project_id
         project_setup = models.ProjectSetup(**save_previous_data_request.page_setup)
-        await db.merge(project_setup)
-        await db.commit()
+        await inserts.update_model_by_user_and_project_id(project_setup)
     elif "grid_design" in page_name:
         save_previous_data_request.grid_design['id'] = user.id
         # ToDo: Raise Error if project id missing redirect
         save_previous_data_request.grid_design['project_id'] = project_id
         grid_design = models.GridDesign(**save_previous_data_request.grid_design)
-        await db.merge(grid_design)
-        await db.commit()
+        await inserts.update_model_by_user_and_project_id(grid_design)
 
 
 
@@ -445,9 +441,9 @@ def get_project_id_from_request(request: Request):
 
 
 @app.get("/get_optimal_capacities/{project_id}")
-async def get_optimal_capacities(project_id, request: Request, db: Session = Depends(get_async_db)):
-    user = await accounts.get_user_from_cookie(request, db)
-    df = await queries.get_results_df(user.id, project_id, db)
+async def get_optimal_capacities(project_id, request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    df = await queries.get_results_df(user.id, project_id)
     optimal_capacities = {}
     optimal_capacities["pv"] = str(df.loc[0, "pv_capacity"])
     optimal_capacities["battery"] = str(df.loc[0, "battery_capacity"])
@@ -461,9 +457,9 @@ async def get_optimal_capacities(project_id, request: Request, db: Session = Dep
 
 
 @app.get("/get_lcoe_breakdown/{project_id}")
-async def get_lcoe_breakdown(project_id, request: Request, db: Session = Depends(get_async_db)):
-    user = await accounts.get_user_from_cookie(request, db)
-    df = await queries.get_results_df(user.id, project_id, db)
+async def get_lcoe_breakdown(project_id, request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    df = await queries.get_results_df(user.id, project_id)
     lcoe_breakdown = {}
     lcoe_breakdown["renewable_assets"] = str(df.loc[0, "cost_renewable_assets"])
     lcoe_breakdown["non_renewable_assets"] = str(df.loc[0, "cost_non_renewable_assets"])
@@ -474,10 +470,10 @@ async def get_lcoe_breakdown(project_id, request: Request, db: Session = Depends
 
 
 @app.get("/get_data_for_sankey_diagram/{project_id}")
-async def get_data_for_sankey_diagram(project_id, request: Request, db: Session = Depends(get_async_db)):
+async def get_data_for_sankey_diagram(project_id, request: Request):
     sankey_data = {}
-    user = await  accounts.get_user_from_cookie(request, db)
-    df = await queries.get_results_df(user.id, project_id, db)
+    user = await  accounts.get_user_from_cookie(request)
+    df = await queries.get_results_df(user.id, project_id)
     sankey_data["fuel_to_diesel_genset"] = str(df.loc[0, "fuel_to_diesel_genset"])
     sankey_data["diesel_genset_to_rectifier"] = str(df.loc[0, "diesel_genset_to_rectifier"])
     sankey_data["diesel_genset_to_demand"] = str(df.loc[0, "diesel_genset_to_demand"])
@@ -493,32 +489,32 @@ async def get_data_for_sankey_diagram(project_id, request: Request, db: Session 
 
 
 @app.get("/get_data_for_energy_flows/{project_id}")
-async def get_data_for_energy_flows(project_id, request: Request, db: Session = Depends(get_async_db)):
-    user = await accounts.get_user_from_cookie(request, db)
-    df = await queries.get_df(models.EnergyFlow, user.id, project_id, db)
+async def get_data_for_energy_flows(project_id, request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    df = await queries.get_df(models.EnergyFlow, user.id, project_id)
     df = df.reset_index(drop=True)
     return json.loads(df.to_json())
 
 
 @app.get("/get_data_for_duration_curves/{project_id}")
-async def get_data_for_duration_curves(project_id, request: Request, db: Session = Depends(get_async_db)):
-    user = await accounts.get_user_from_cookie(request, db)
-    df = await queries.get_df(models.DurationCurve, user.id, project_id, db)
+async def get_data_for_duration_curves(project_id, request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    df = await queries.get_df(models.DurationCurve, user.id, project_id)
     return json.loads(df.to_json())
 
 
 @app.get("/get_co2_emissions_data/{project_id}")
-async def get_co2_emissions_data(project_id, request: Request, db: Session = Depends(get_async_db)):
-    user = await accounts.get_user_from_cookie(request, db)
-    df = await queries.get_df(models.Emissions, user.id, project_id, db)
+async def get_co2_emissions_data(project_id, request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    df = await queries.get_df(models.Emissions, user.id, project_id)
     return json.loads(df.to_json())
 
 
 @app.post("/database_add_remove_automatic/{add_remove}/{project_id}")
 async def database_add_remove_automatic(add_remove: str, project_id,
                                         selectBoundariesRequest: models.SelectBoundariesRequest,
-                                        request: Request, db: Session = Depends(get_async_db)):
-    user = await accounts.get_user_from_cookie(request, db)
+                                        request: Request):
+    user = await accounts.get_user_from_cookie(request)
     boundary_coordinates = selectBoundariesRequest.boundary_coordinates
     # latitudes and longitudes of all buildings in the selected boundary
     latitudes = [x[0] for x in boundary_coordinates]
@@ -565,25 +561,25 @@ async def database_add_remove_automatic(add_remove: str, project_id,
         # Add the peak demand and average annual consumption for each node
         nodes = _demand_estimation(nodes=nodes, update_total_demand=False)
         # storing the nodes in the database
-        await inserts.update_nodes_and_links(True, False, nodes, user.id, project_id, db)
+        await inserts.update_nodes_and_links(True, False, nodes, user.id, project_id)
     else:
         # reading the existing CSV file of nodes, and then removing the corresponding row
         # df = pd.read_csv(full_path_nodes)
-        df = await queries.get_nodes_df(user.id, project_id, db)
+        df = await queries.get_nodes_df(user.id, project_id)
         number_of_nodes = df.shape[0]
         for index in range(number_of_nodes):
             if bi.is_point_in_boundaries(point_coordinates=(df.to_dict()["latitude"][index],
                                                             df.to_dict()["longitude"][index],),
                                          boundaries=boundary_coordinates, ):
                 df.drop(labels=index, axis=0, inplace=True)
-        await inserts.update_nodes_and_links(True, False, df.to_dict(), user.id, project_id, db, False)
+        await inserts.update_nodes_and_links(True, False, df.to_dict(), user.id, project_id, False)
 
 
 # add new manually-selected nodes to the *.csv file
 @app.post("/database_add_remove_manual/{add_remove}/{project_id}")
 async def database_add_remove_manual(add_remove: str, project_id, add_node_request: models.AddNodeRequest,
-                                     request: Request, db: Session = Depends(get_async_db)):
-    user = await accounts.get_user_from_cookie(request, db)
+                                     request: Request):
+    user = await accounts.get_user_from_cookie(request)
     # headers = pd.read_csv(full_path_nodes).columns
 
     nodes = models.Nodes(**dict(add_node_request)).to_dict()
@@ -591,7 +587,7 @@ async def database_add_remove_manual(add_remove: str, project_id, add_node_reque
         # reading the existing CSV file of nodes, and then removing the corresponding row
         # Since a node is removed, the calculated positions for ALL poles and
         # the power house must be first removed.
-        df = await queries.get_nodes_df(user.id, project_id, db)
+        df = await queries.get_nodes_df(user.id, project_id)
         df = df[(df["node_type"] != "pole") & (df["node_type"] != "power-house")]
         for index in df.index:
             if (round(add_node_request.latitude, 6) == df.to_dict()["latitude"][index]) and \
@@ -599,9 +595,9 @@ async def database_add_remove_manual(add_remove: str, project_id, add_node_reque
                 df.drop(labels=index, axis=0, inplace=True)
         # storing the nodes in the database (updating the existing CSV file)
         df = df.reset_index(drop=True)
-        await inserts.update_nodes_and_links(True, False, df.to_dict(), user.id, project_id, db, add=False)
+        await inserts.update_nodes_and_links(True, False, df.to_dict(), user.id, project_id, add=False)
     else:
-        await inserts.update_nodes_and_links(True, False, nodes, user.id, project_id, db, add=True, replace=False)
+        await inserts.update_nodes_and_links(True, False, nodes, user.id, project_id, add=True, replace=False)
 
 
 def _demand_estimation(nodes, update_total_demand):
@@ -696,32 +692,53 @@ def _demand_estimation(nodes, update_total_demand):
         return nodes
 
 
-async def remove_results(user_id, project_id, db):
-    await inserts.remove(models.Results, user_id, project_id, db)
-    await inserts.remove(models.DemandCoverage, user_id, project_id, db)
-    await inserts.remove(models.EnergyFlow, user_id, project_id, db)
-    await inserts.remove(models.Emissions, user_id, project_id, db)
-    await inserts.remove(models.DurationCurve, user_id, project_id, db)
-    await inserts.remove(models.Links, user_id, project_id, db)
+async def remove_results(user_id, project_id):
+    await inserts.remove(models.Results, user_id, project_id)
+    await inserts.remove(models.DemandCoverage, user_id, project_id)
+    await inserts.remove(models.EnergyFlow, user_id, project_id)
+    await inserts.remove(models.Emissions, user_id, project_id)
+    await inserts.remove(models.DurationCurve, user_id, project_id)
+    await inserts.remove(models.Links, user_id, project_id)
 
+
+
+async def queued_tasks(user_id, project_id):
+    await optimize_grid(user_id, project_id)
+    await optimize_energy_system(user_id, project_id)
+
+from fastapi.responses import JSONResponse
+
+@app.get("/tasks/")
+async def tasks(request: Request,):
+    result = create_task.delay(1)
+    for i in range(10):
+        time.sleep(1)
+        print(result.state, result.result)
+        print(result.backend)
+    return JSONResponse({"task_id": result.id})
+
+
+@celery.task(queue='worker')
+def create_task(h):
+    time.sleep(int(h))
+    return True
 
 @app.post("/optimization/{project_id}")
 async def optimization(project_id, request: Request, optimize_energy_system_request:
-models.OptimizeEnergySystemRequest, db: Session = Depends(get_db)):
-    user = await accounts.get_user_from_cookie(request, db)
+models.OptimizeEnergySystemRequest):
+    user = await accounts.get_user_from_cookie(request)
     df = optimize_energy_system_request.to_df()
-    await remove_results(user.id, project_id, db)
-    await inserts.insert_energysystemdesign_df(df, user.id, project_id, df, db)
-    await optimize_grid(user.id, project_id, request, db)
-    await optimize_energy_system(user.id, project_id, db)
+    await remove_results(user.id, project_id)
+    await inserts.insert_energysystemdesign_df(df, user.id, project_id)
+    await queued_tasks(user.id, project_id)
 
 
-async def optimize_grid(user_id, project_id, request, db):
+async def optimize_grid(user_id, project_id):
     # Grab Currrent Time Before Running the Code
     start_execution_time = time.monotonic()
 
     # create GridOptimizer object
-    df = await queries.get_input_df(user_id, project_id, db)
+    df = await queries.get_input_df(user_id, project_id)
 
     opt = GridOptimizer(start_date=df.loc[0, "start_date"],
                         n_days=df.loc[0, "n_days"],
@@ -732,7 +749,10 @@ async def optimize_grid(user_id, project_id, request, db):
     # get nodes from the database (CSV file) as a dictionary
     # then convert it again to a panda dataframe for simplicity
     # TODO: check the format of nodes from the database_read()
-    nodes = await database_read(nodes_or_links="nodes", project_id=project_id, request=request, db=db)
+
+
+    nodes = await queries.get_nodes_json(user_id, project_id)
+
     nodes = pd.DataFrame.from_dict(nodes)
 
     # if there is no element in the nodes, optimization will be terminated
@@ -994,7 +1014,7 @@ async def optimize_grid(user_id, project_id, request, db):
     )
 
     # Store the list of poles in the "node" database.
-    await inserts.update_nodes_and_links(True, False, poles.to_dict(), user_id, project_id, db)
+    await inserts.update_nodes_and_links(True, False, poles.to_dict(), user_id, project_id)
 
     # get all links obtained by the network relaxation method
     links = grid.links.reset_index(drop=True)
@@ -1017,13 +1037,13 @@ async def optimize_grid(user_id, project_id, request, db):
     )
 
     # store the list of poles in the "node" database
-    await inserts.update_nodes_and_links(False, True, links.to_dict(), user_id, project_id, db)
+    await inserts.update_nodes_and_links(False, True, links.to_dict(), user_id, project_id)
 
     # Grab Currrent Time After Running the Code
     end_execution_time = time.monotonic()
 
     # store data for showing in the final results
-    df = await queries.get_results_df(user_id, project_id, db)
+    df = await queries.get_results_df(user_id, project_id)
     df.loc[0, "n_consumers"] = len(grid.consumers())
     df.loc[0, "n_shs_consumers"] = n_shs_consumers
     df.loc[0, "n_poles"] = len(grid.poles())
@@ -1043,7 +1063,7 @@ async def optimize_grid(user_id, project_id, request, db):
         grid.links[grid.links["link_type"] == "connection"].shape[0]
     )
 
-    await inserts.insert_results_df(df, user_id, project_id, db)
+    await inserts.insert_results_df(df, user_id, project_id)
 
     grid.find_n_links_connected_to_each_pole()
 
@@ -1052,11 +1072,11 @@ async def optimize_grid(user_id, project_id, request, db):
     # grid.distribute_grid_cost_among_consumers()
 
 
-async def optimize_energy_system(user_id, project_id, db):
+async def optimize_energy_system(user_id, project_id):
     # Grab Currrent Time Before Running the Code
     start_execution_time = time.monotonic()
 
-    df = await queries.get_input_df(user_id, project_id, db)
+    df = await queries.get_input_df(user_id, project_id)
     energy_system_design= await queries.get_energy_system_design(user_id, project_id)
 
 
@@ -1102,14 +1122,14 @@ async def optimize_energy_system(user_id, project_id, db):
         df.loc[:, "non_renewable_electricity_production"] - df.loc[:, "hybrid_electricity_production"]  # tCO2 per year
     df['h'] = np.arange(1, len(ensys_opt.demand) + 1)
     df = df.round(3)
-    await inserts.insert_df(models.Emissions, df, user_id, project_id, db)
+    await inserts.insert_df(models.Emissions, df, user_id, project_id)
     # TODO: -2 must actually be -1, but for some reason, the co2-emission csv file has an additional empty row
     co2_savings = df.loc[:, "co2_savings"][
         -2
     ]  # takes the last element of the cumulative sum
 
     # store data for showing in the final results
-    df = await queries.get_results_df(user_id, project_id, db)
+    df = await queries.get_results_df(user_id, project_id)
     df.loc[0, "cost_renewable_assets"] = ensys_opt.total_renewable
     df.loc[0, "cost_non_renewable_assets"] = ensys_opt.total_non_renewable
     df.loc[0, "cost_fuel"] = ensys_opt.total_fuel
@@ -1158,7 +1178,7 @@ async def optimize_energy_system(user_id, project_id, db):
     df.loc[0, "time_energy_system_design"] = end_execution_time - start_execution_time
     df.loc[0, "co2_savings"] = co2_savings
     df = df.astype(float).round(3)
-    await inserts.insert_results_df(df, user_id, project_id, db)
+    await inserts.insert_results_df(df, user_id, project_id)
 
     # store energy flows
     df = pd.DataFrame()
@@ -1170,7 +1190,7 @@ async def optimize_energy_system(user_id, project_id, db):
     df["demand"] = ensys_opt.sequences_demand
     df["surplus"] = ensys_opt.sequences_surplus
     df = df.round(3)
-    await inserts.insert_df(models.EnergyFlow, df, user_id, project_id, db)
+    await inserts.insert_df(models.EnergyFlow, df, user_id, project_id)
 
     df = pd.DataFrame()
     df["demand"] = ensys_opt.sequences_demand
@@ -1180,7 +1200,7 @@ async def optimize_energy_system(user_id, project_id, db):
     df.index.name = "dt"
     df = df.reset_index()
     df = df.round(3)
-    await inserts.insert_demand_coverage_df(df, user_id, project_id, db)
+    await inserts.insert_demand_coverage_df(df, user_id, project_id)
 
     # store duration curves
     df = pd.DataFrame()
@@ -1213,7 +1233,7 @@ async def optimize_energy_system(user_id, project_id, db):
                                         / ensys_opt.sequences_battery_discharge.max())
     df['h'] = np.arange(1, len(ensys_opt.sequences_genset) + 1)
     df = df.round(3)
-    await inserts.insert_df(models.DurationCurve, df, user_id, project_id, db)
+    await inserts.insert_df(models.DurationCurve, df, user_id, project_id)
 
 
 @app.post("/shs_identification/")

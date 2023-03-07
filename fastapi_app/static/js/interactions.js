@@ -69,6 +69,8 @@ function database_read(nodes_or_links, map_or_export, project_id, callback) {
     xhr.send();
 
     xhr.onreadystatechange = function () {
+        let url
+        url = window.location.href
         if (this.readyState == 4 && this.status == 200) {
             if (map_or_export == 'export') {
                 if (callback) callback(this.response);
@@ -95,13 +97,13 @@ function database_read(nodes_or_links, map_or_export, project_id, callback) {
                     };
                     var counter;
                     for (counter = 0; counter < number_of_nodes; counter++) {
-                        if (nodes["node_type"][counter] === "power-house") {
+                        if (nodes["node_type"][counter] === "power-house"&& !url.includes('onsumer') && !url.includes('emand')) {
                             markers.push(
                                 L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
                                     icon: markerPowerHouse,
                                 }).on('click', markerOnClick).addTo(mainMap)
                             );
-                        } else if (nodes["node_type"][counter] === "pole") {
+                        } else if (nodes["node_type"][counter] === "pole" && !url.includes('onsumer') && !url.includes('emand')) {
                             markers.push(
                                 L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
                                     icon: markerPole,
@@ -518,6 +520,7 @@ function account_overview() {
 
 
 function save_previous_data(page_name) {
+
     if (page_name.includes("project_setup")) {
         transfer_data = JSON.stringify(
             {
@@ -584,14 +587,15 @@ function save_previous_data(page_name) {
             }
         );
     }
+    window.alert(page_name)
     $.ajax({
-        url: "save_previous_data/" + page_name,
+        url: "save_previous_data/project_setup",
         type: "POST",
         contentType: "application/json",
         data: transfer_data,
         dataType: "json",
-    });
-}
+    })
+    ;}
 
 function load_previous_data(page_name){
     var xhr = new XMLHttpRequest();
@@ -826,3 +830,4 @@ function clear_nodes_and_links(project_id){
             type: "GET",
             contentType: "application/json",})
 }
+

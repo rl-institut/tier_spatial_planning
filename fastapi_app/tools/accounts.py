@@ -14,6 +14,7 @@ from jose import jwt, JWTError
 from fastapi_app.db import config
 from fastapi.security.utils import get_authorization_scheme_param
 from fastapi_app.db.database import get_async_session_maker
+from fastapi_app.db import queries, inserts
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -29,10 +30,10 @@ class Hasher:
         return pwd_context.hash(password)
 
 
-def is_valid_credentials(user, db):
+def is_valid_credentials(user):
     if not is_valid_email(user):
         return False, 'Please enter a valid email address'
-    if not is_mail_unregistered(user, db):
+    if not is_mail_unregistered(user):
         return (False, "Mail already registered")
     if not is_valid_password(user):
         return False, 'The password needs to be at least 8 characters long'
@@ -44,8 +45,8 @@ def is_valid_email(user):
     return re.match(regex, user.email)
 
 
-def is_mail_unregistered(user, db):
-    if db.query(User).filter_by(email=user.email).first() is None:
+def is_mail_unregistered(user):
+    if queries.get_user_by_username(user.email) is None:
         return True
     else:
         return False
@@ -90,31 +91,30 @@ def send_mail(to_adress, msg):
     mail_logger.critical(msg)
 
 
-def activate_mail(guid, db):
-    user = db.query(User).filter_by(guid=guid).first()
+async def activate_mail(guid):
+    user = await queries.get_user_by_guid(guid)
     if user is not None:
         user.is_confirmed = True
         user.guid = ''
-        db.commit()
-        db.refresh(user)
-        send_email_with_activation_status(user, db)
+        await inserts.update_model_by_user_id(user)
+        send_email_with_activation_status(user)
 
 
-def send_email_with_activation_status(user, db):
-    user = db.query(User).filter_by(email=user.email).first()
+def send_email_with_activation_status(user):
     if user is not None:
         if user.is_confirmed:
             msg = 'Your PeopleSun-Account ist activated'
         else:
-            msg = 'Something went wrong with your PepleSun account activation'
+            msg = 'Something went wrong with your PeopleSuN account activation'
         send_mail(user.email, msg)
 
 
-async def authenticate_user(username: str, password: str, db):
-    res = await db.execute(select(User).where(User.email == username))
-    user = res.first()[0]
+async def authenticate_user(username: str, password: str):
+    user = await queries.get_user_by_username(username)
     if user is None or Hasher.verify_password(password, user.hashed_password) is False:
+        del password
         return False
+    del password
     return user
 
 
@@ -129,7 +129,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 
-async def _get_user_from_token(token, db):
+async def _get_user_from_token(token):
     try:
         payload = jwt.decode(token, config.KEY_FOR_TOKEN, algorithms=[config.TOKEN_ALG])
         username = payload.get("sub")
@@ -143,10 +143,10 @@ async def _get_user_from_token(token, db):
     return user
 
 
-async def get_user_from_cookie(request, db=None):
+async def get_user_from_cookie(request):
     token = request.cookies.get("access_token")
     scheme, param = get_authorization_scheme_param(token)
-    user = await _get_user_from_token(token=param, db=db)
+    user = await _get_user_from_token(token=param)
     return user
 
 

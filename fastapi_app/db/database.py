@@ -13,6 +13,7 @@ BASE_URL = 'mysql+package://{}:{}@{}:{}/{}'.format(db_user_name, PW, db_host, db
 SYNC_DB_URL = BASE_URL.replace('package', 'mysqlconnector')
 ASYNC_DB_URL = BASE_URL.replace('package', 'aiomysql')
 
+
 for i in range(40):
     try:
         sync_engine = create_engine(SYNC_DB_URL)
@@ -26,22 +27,12 @@ for i in range(40):
     else:
         break
 
+
 def get_async_session_maker():
     async_engine = create_async_engine(ASYNC_DB_URL, pool_size=10, )
     async_sessionmaker = scoped_session(sessionmaker(bind=async_engine,
                                                      class_=AsyncSession))
     return async_sessionmaker()
-
-
-def get_db():
-    db = sync_session()
-    try:
-        yield db
-    except Exception as e:
-        db.rollback()
-        raise
-    finally:
-        db.close()
 
 
 def get_async_db():
