@@ -357,10 +357,12 @@ class AddNodeRequest(BaseModel):
     how_added: str
 
 
-class SavePreviousDataRequest(BaseModel):
+class SaveProjectSetup(BaseModel):
     page_setup: Dict[str, str]
+
+
+class SaveGridDesign(BaseModel):
     grid_design: Dict[str, str]
-    energy_system_design: Dict[str, str]
 
 
 class OptimizeGridRequest(BaseModel):

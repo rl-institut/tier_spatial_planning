@@ -519,10 +519,12 @@ function account_overview() {
 }
 
 
-function save_previous_data(page_name) {
-
-    if (page_name.includes("project_setup")) {
-        transfer_data = JSON.stringify(
+function save_project_setup() {
+    $.ajax({
+        url: "save_project_setup/",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(
             {
                 page_setup: {
                     'project_name': projectName.value,
@@ -532,40 +534,18 @@ function save_previous_data(page_name) {
                     'start_date': startDate.value,
                     'temporal_resolution': temporalResolution.value,
                     'n_days': nDays.value,
-                },
-                grid_design: {
-                    'distribution_cable_lifetime': 0,
-                    'distribution_cable_capex': 0,
-                    'distribution_cable_max_length': 0,
-                    'connection_cable_lifetime': 0,
-                    'connection_cable_capex': 0,
-                    'connection_cable_max_length': 0,
-                    'pole_lifetime': 0,
-                    'pole_capex': 0,
-                    'pole_max_n_connections': 0,
-                    'mg_connection_cost': 0,
-                    'shs_lifetime': 0,
-                    'shs_tier_one_capex': 0,
-                    'shs_tier_two_capex': 0,
-                    'shs_tier_three_capex': 0,
-                    'shs_tier_four_capex': 0,
-                    'shs_tier_five_capex': 0,
-                },
-            }
-        );
-    }
-    else if (page_name.includes("grid_design")) {
-        transfer_data = JSON.stringify(
+                }
+            }),
+        dataType: "json",});}
+
+
+function save_grid_design() {
+    $.ajax({
+        url: "save_grid_design/",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(
             {
-                page_setup: {
-                    'project_name': '',
-                    'project_description': '',
-                    'interest_rate': '',
-                    'project_lifetime': '',
-                    'start_date': '',
-                    'temporal_resolution': '',
-                    'n_days': '',
-                },
                 grid_design: {
                     'distribution_cable_lifetime': distributionCableLifetime.value,
                     'distribution_cable_capex': distributionCableCapex.value,
@@ -584,68 +564,9 @@ function save_previous_data(page_name) {
                     'shs_tier_four_capex': shsTierFourCapex.value,
                     'shs_tier_five_capex': shsTierFiveCapex.value,
                 }
-            }
-        );
-    }
-    window.alert(page_name)
-    $.ajax({
-        url: "save_previous_data/project_setup",
-        type: "POST",
-        contentType: "application/json",
-        data: transfer_data,
-        dataType: "json",
-    })
-    ;}
+            }),
+        dataType: "json",});}
 
-function load_previous_data(page_name){
-    var xhr = new XMLHttpRequest();
-    url = "load_previous_data/" + page_name;
-    xhr.open("GET", url, true);
-    xhr.responseType = "json";
-    xhr.send();
-    if (page_name.includes("project_setup")) {
-        xhr.onreadystatechange = function () {
-            if (this.readyState == 4 && this.status == 200) {
-                // push nodes to the map
-                results = this.response;
-                if (Object.keys(results).length > 1){
-                    document.getElementById("projectName").value = results['project_name'];
-                    document.getElementById("projectDescription").value = results['project_description'];
-                    document.getElementById("interestRate").value = results['interest_rate'];
-                    document.getElementById("projectLifetime").value = results['project_lifetime'];
-                    document.getElementById("startDate").value = results['start_date'];
-                    document.getElementById("temporalResolution").value = results['temporal_resolution'];
-                    document.getElementById("nDays").value = results['n_days'];
-                }
-            }
-        };
-    } else if (page_name.includes("grid_design")) {
-        xhr.onreadystatechange = function () {
-            if (this.readyState == 4 && this.status == 200) {
-                // push nodes to the map                
-                results = this.response;
-                if (Object.keys(results).length > 1) {
-                    document.getElementById("distributionCableLifetime").value = results['distribution_cable_lifetime'];
-                    document.getElementById("distributionCableCapex").value = results['distribution_cable_capex'];
-                    document.getElementById("distributionCableMaxLength").value = results['distribution_cable_max_length'];
-                    document.getElementById("connectionCableLifetime").value = results['connection_cable_lifetime'];
-                    document.getElementById("connectionCableCapex").value = results['connection_cable_capex'];
-                    document.getElementById("connectionCableMaxLength").value = results['connection_cable_max_length'];
-                    document.getElementById("poleLifetime").value = results['pole_lifetime'];
-                    document.getElementById("poleCapex").value = results['pole_capex'];
-                    document.getElementById("poleMaxNumberOfConnections").value = results['pole_max_n_connections'];
-                    document.getElementById("mgConnectionCost").value = results['mg_connection_cost'];
-                    document.getElementById("shsLifetime").value = results['shs_lifetime'];
-                    document.getElementById("shsTierOneCapex").value = results['shs_tier_one_capex'];
-                    document.getElementById("shsTierTwoCapex").value = results['shs_tier_two_capex'];
-                    document.getElementById("shsTierThreeCapex").value = results['shs_tier_three_capex'];
-                    document.getElementById("shsTierFourCapex").value = results['shs_tier_four_capex'];
-                    document.getElementById("shsTierFiveCapex").value = results['shs_tier_five_capex'];
-                }
-            }
-        };
-    }
-}
 
 /************************************************************/
 /*                   EXPORT DATA AS XLSX                    */

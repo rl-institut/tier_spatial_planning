@@ -407,28 +407,26 @@ async def has_cookie(request: Request):
         return False
 
 
-@app.post("/save_previous_data/{page_name}")
-async def save_previous_data(request: Request, page_name: str, save_previous_data_request:
-models.SavePreviousDataRequest):
-    # ToDo: function is not called from js
+@app.post("/save_grid_design/")
+async def save_grid_design(request: Request, data: models.SaveGridDesign):
     user = await accounts.get_user_from_cookie(request)
     project_id = get_project_id_from_request(request)
-    if "project_setup" in page_name:
-        save_previous_data_request.page_setup['created_at'] = pd.Timestamp.now()
-        save_previous_data_request.page_setup['updated_at'] = pd.Timestamp.now()
-        save_previous_data_request.page_setup['id'] = user.id
-        # ToDo: Raise Error if project id missing redirect
-        save_previous_data_request.page_setup['project_id'] = project_id
-        project_setup = models.ProjectSetup(**save_previous_data_request.page_setup)
-        await inserts.update_model_by_user_and_project_id(project_setup)
-    elif "grid_design" in page_name:
-        save_previous_data_request.grid_design['id'] = user.id
-        # ToDo: Raise Error if project id missing redirect
-        save_previous_data_request.grid_design['project_id'] = project_id
-        grid_design = models.GridDesign(**save_previous_data_request.grid_design)
-        await inserts.update_model_by_user_and_project_id(grid_design)
+    data.grid_design['id'] = user.id
+    data.grid_design['project_id'] = project_id
+    grid_design = models.GridDesign(**data.grid_design)
+    await inserts.update_model_by_user_and_project_id(grid_design)
 
 
+@app.post("/save_project_setup/")
+async def save_project_setup(request: Request, data: models.SaveProjectSetup):
+    user = await accounts.get_user_from_cookie(request)
+    project_id = get_project_id_from_request(request)
+    data.page_setup['created_at'] = pd.Timestamp.now()
+    data.page_setup['updated_at'] = pd.Timestamp.now()
+    data.page_setup['id'] = user.id
+    data.page_setup['project_id'] = project_id
+    project_setup = models.ProjectSetup(**data.page_setup)
+    await inserts.update_model_by_user_and_project_id(project_setup)
 
 
 def get_project_id_from_request(request: Request):
