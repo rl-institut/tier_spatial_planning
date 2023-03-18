@@ -34,6 +34,7 @@
                     <th>Last Update</th>
                       <th></th>
                   </tr>
+                {% if projects|length > 0 %}
                     {% for project in projects %}
                     <TR>
                        <TD>{{ project.project_name }}</TD>
@@ -45,6 +46,14 @@
                        </a></span></TD>
                     </TR>
                     {% endfor %}
+                {% else %}
+                    <TR>
+                     <TD>You do not yet have any saved projects</TD>
+                     <TD></TD>
+                     <TD> </TD>
+                     <TD> </TD>
+                    </TR>
+                {% endif %}
                 </table>
                   <span class="subtitle"></span>
                     </div>
