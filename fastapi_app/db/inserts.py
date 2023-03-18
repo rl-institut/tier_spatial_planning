@@ -8,27 +8,9 @@ from sqlalchemy import insert, update
 from sqlalchemy.inspection import inspect
 
 
-async def insert_model(model):
-    stmt = (insert(model.metadata.tables[model.__name__().lower()]).values(**model.to_dict()))
+async def merge_model(model):
     async with get_async_session_maker() as async_db:
-        await async_db.execute(stmt)
-        await async_db.commit()
-
-
-async def update_model_by_user_id(model):
-    stmt = (update(model.metadata.tables[model.__name__().lower()])
-            .where(model.__mapper__.primary_key[0] == model.id).values(**model.to_dict()))
-    async with get_async_session_maker() as async_db:
-        await async_db.execute(stmt)
-        await async_db.commit()
-
-
-async def update_model_by_user_and_project_id(model):
-    stmt = (update(model.metadata.tables[model.__name__().lower()])
-            .where(model.__mapper__.primary_key[0] == model.id,
-                   model.__mapper__.primary_key[1] == model.project_id).values(**model.to_dict()))
-    async with get_async_session_maker() as async_db:
-        await async_db.execute(stmt)
+        await async_db.merge(model)
         await async_db.commit()
 
 

@@ -30,11 +30,11 @@ class Hasher:
         return pwd_context.hash(password)
 
 
-def is_valid_credentials(user):
+async def is_valid_credentials(user):
     if not is_valid_email(user):
         return False, 'Please enter a valid email address'
-    if not is_mail_unregistered(user):
-        return (False, "Mail already registered")
+    if not await is_mail_unregistered(user):
+        return False, "Mail already registered"
     if not is_valid_password(user):
         return False, 'The password needs to be at least 8 characters long'
     return True, 'Please click the activation link we sent to your email'
@@ -45,8 +45,8 @@ def is_valid_email(user):
     return re.match(regex, user.email)
 
 
-def is_mail_unregistered(user):
-    if queries.get_user_by_username(user.email) is None:
+async def is_mail_unregistered(user):
+    if await queries.get_user_by_username(user.email) is None:
         return True
     else:
         return False
@@ -96,7 +96,7 @@ async def activate_mail(guid):
     if user is not None:
         user.is_confirmed = True
         user.guid = ''
-        await inserts.update_model_by_user_id(user)
+        await inserts.merge_model(user)
         send_email_with_activation_status(user)
 
 

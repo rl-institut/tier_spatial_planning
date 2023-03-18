@@ -22,7 +22,7 @@ if os.environ.get('PW') is not None:
         del crypt
 else:
     from fastapi_app.db.dev_config import db_host, db_name, db_user_name, PW, MAIL_PW, SALT, ACCESS_TOKEN_EXPIRE_MINUTES, \
-        KEY_FOR_TOKEN, TOKEN_ALG
+        KEY_FOR_TOKEN, TOKEN_ALG, MAIL_ADRESS
 db_port = 3306
 ACCESS_TOKEN_EXPIRE_MINUTES=180
 DOMAIN='https://peoplesun.energietechnik.tu-berlin.de'

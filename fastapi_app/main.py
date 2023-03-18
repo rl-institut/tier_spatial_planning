@@ -28,6 +28,7 @@ from celery import Celery
 from collections import defaultdict
 from typing import Any, Dict, List, Union
 import time
+import socket
 
 app = FastAPI()
 
@@ -57,11 +58,20 @@ json_object = Dict[Any, Any]
 json_array = List[Any]
 import_structure = Union[json_array, json_object]
 
-celery = Celery('worker')
-celery.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379")
-celery.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379")
+CELERY_BROKER_URL = (os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379"),)
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379")
 
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
 
+celery = Celery("celery_worker", broker=CELERY_BROKER_URL, backend=CELERY_RESULT_BACKEND)
+celery.conf.update({'CELERY_TASK_TRACK_STARTED': True,
+                    'CELERY_ACCEPT_CONTENT': ['application/json'],
+                    'CELERY_RESULT_SERIALIZER': 'json',
+                    'CELERY_TASK_SERIALIZER': 'json',
+                    'CELERY_IGNORE_RESULT': True,
+                    'CELERY_TASK_IGNORE_RESULT': True,
+                    'CELERY_TRACK_STARTED': True})
 # --------------------- REDIRECT REQUEST TO FAVICON LOG ----------------------#
 
 
@@ -343,7 +353,7 @@ async def load_previous_data(page_name, request: Request):
 
 @app.post("/add_user_to_db/")
 async def add_user_to_db(user: models.Credentials):
-    res = is_valid_credentials(user)
+    res = await is_valid_credentials(user)
     if res[0] is True:
         guid = create_guid()
         user = models.User(email=user.email,
@@ -352,7 +362,7 @@ async def add_user_to_db(user: models.Credentials):
                            is_confirmed=False,
                            is_active=False,
                            is_superuser=False)
-        await inserts.insert_model(user)
+        await inserts.merge_model(user)
         send_activation_link(user.email, guid)
     return models.ValidRegistration(validation=res[0], msg=res[1])
 
@@ -379,6 +389,10 @@ async def login(response: Response, credentials: models.Credentials):
         if user is not False:
             access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
             access_token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
+            response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
+        else:
+            access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
+            access_token = create_access_token(data={"sub": 'anonymous'}, expires_delta=access_token_expires)
             response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
         return {"access_token": access_token, "token_type": "bearer"}
 
@@ -414,7 +428,7 @@ async def save_grid_design(request: Request, data: models.SaveGridDesign):
     data.grid_design['id'] = user.id
     data.grid_design['project_id'] = project_id
     grid_design = models.GridDesign(**data.grid_design)
-    await inserts.update_model_by_user_and_project_id(grid_design)
+    await inserts.merge_model(grid_design)
 
 
 @app.post("/save_project_setup/")
@@ -426,14 +440,17 @@ async def save_project_setup(request: Request, data: models.SaveProjectSetup):
     data.page_setup['id'] = user.id
     data.page_setup['project_id'] = project_id
     project_setup = models.ProjectSetup(**data.page_setup)
-    await inserts.update_model_by_user_and_project_id(project_setup)
+    await inserts.merge_model(project_setup)
 
 
 def get_project_id_from_request(request: Request):
     project_id = request.query_params.get('project_id')
     if project_id is None:
-        project_id = [tup[1].decode() for tup in request.scope['headers']
-                      if 'project_id' in tup[1].decode()][0].split('=')[-1]
+        try:
+            project_id = [tup[1].decode() for tup in request.scope['headers']
+                          if 'project_id' in tup[1].decode()][0].split('=')[-1]
+        except IndexError:
+            print(request.scope['headers'])
     project_id = int(project_id)
     return project_id
 
@@ -700,26 +717,16 @@ async def remove_results(user_id, project_id):
 
 
 
-async def queued_tasks(user_id, project_id):
+async def run_opt(user_id, project_id):
     await optimize_grid(user_id, project_id)
     await optimize_energy_system(user_id, project_id)
 
-from fastapi.responses import JSONResponse
 
-@app.get("/tasks/")
-async def tasks(request: Request,):
-    result = create_task.delay(1)
-    for i in range(10):
-        time.sleep(1)
-        print(result.state, result.result)
-        print(result.backend)
-    return JSONResponse({"task_id": result.id})
+@celery.task(queue="celery_worker")
+def queue_opt(user_id, project_id):
+    optimize_grid(user_id, project_id)
+    optimize_energy_system(user_id, project_id)
 
-
-@celery.task(queue='worker')
-def create_task(h):
-    time.sleep(int(h))
-    return True
 
 @app.post("/optimization/{project_id}")
 async def optimization(project_id, request: Request, optimize_energy_system_request:
@@ -728,7 +735,11 @@ models.OptimizeEnergySystemRequest):
     df = optimize_energy_system_request.to_df()
     await remove_results(user.id, project_id)
     await inserts.insert_energysystemdesign_df(df, user.id, project_id)
-    await queued_tasks(user.id, project_id)
+    if socket.gethostname() == 'nbb':
+        await run_opt(user.id, project_id)
+    else:
+        result = queue_opt.delay(user.id, project_id)
+        print('queded')
 
 
 async def optimize_grid(user_id, project_id):
