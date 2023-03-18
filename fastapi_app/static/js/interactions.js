@@ -519,9 +519,9 @@ function account_overview() {
 }
 
 
-function save_project_setup() {
+function save_project_setup(project_id) {
     $.ajax({
-        url: "save_project_setup/",
+        url: "save_project_setup/" + project_id,
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify(

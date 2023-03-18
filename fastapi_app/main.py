@@ -431,10 +431,10 @@ async def save_grid_design(request: Request, data: models.SaveGridDesign):
     await inserts.merge_model(grid_design)
 
 
-@app.post("/save_project_setup/")
-async def save_project_setup(request: Request, data: models.SaveProjectSetup):
+@app.post("/save_project_setup/{project_id}")
+async def save_project_setup(project_id, request: Request, data: models.SaveProjectSetup):
     user = await accounts.get_user_from_cookie(request)
-    project_id = get_project_id_from_request(request)
+    #project_id = get_project_id_from_request(request)
     data.page_setup['created_at'] = pd.Timestamp.now()
     data.page_setup['updated_at'] = pd.Timestamp.now()
     data.page_setup['id'] = user.id
