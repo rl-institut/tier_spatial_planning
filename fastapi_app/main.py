@@ -30,6 +30,9 @@ from collections import defaultdict
 from typing import Any, Dict, List, Union
 import time
 import socket
+import pyutilib.subprocess.GlobalData
+pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
+# avoids error when running pyomo with celery worker
 
 app = FastAPI()
 
@@ -1086,8 +1089,7 @@ async def optimize_energy_system(user_id, project_id):
 
 
     solver = 'gurobi' if po.SolverFactory('gurobi').available() else 'cbc'
-    if po.SolverFactory(solver).available():
-        print('No Solver available')
+
 
     ensys_opt = EnergySystemOptimizer(
         start_date=df.loc[0, "start_date"],
