@@ -6,7 +6,7 @@ import flatten_dict
 from flatten_dict.reducers import make_reducer
 from flatten_dict.splitters import make_splitter
 from fastapi_app.db import models
-from fastapi_app.db.database import get_async_session_maker
+from fastapi_app.db.database import get_async_session_maker, get_sync_session_maker
 
 
 async def get_user_by_username(username):
@@ -57,7 +57,7 @@ async def get_project_of_user(user_id):
 async def get_project_setup_of_user(user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     query = select(models.ProjectSetup).where(models.ProjectSetup.id == user_id,
-                                                         models.ProjectSetup.project_id == project_id)
+                                              models.ProjectSetup.project_id == project_id)
     async with get_async_session_maker() as async_db:
         res = await async_db.execute(query)
         project_setup = res.scalars().first()

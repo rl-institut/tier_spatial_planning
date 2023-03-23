@@ -16,6 +16,9 @@ services:
       - mysql
     secrets:
       - pw
+    depends_on:
+      - redis
+      - mysql
   mysql:
     container_name: mysql
     image: mysql
@@ -25,6 +28,43 @@ services:
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/pw
     ports:
       - '40001:3306'
+    secrets:
+      - pw
+  redis:
+    image: redis
+    restart: always
+    ports:
+    - '6379:6379'
+  worker:
+    build: .
+    ports:
+      - '5555:5555'
+    command: celery -A celery_worker.worker worker --loglevel=INFO -P threads
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - FLOWER_PORT=5555
+      - PW=/run/secrets/pw
+    depends_on:
+      - app
+      - redis
+      - mysql
+    secrets:
+      - pw
+  flower:
+    build: .
+    command: celery -A celery_worker.worker flower --port=5555
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - FLOWER_PORT=5555
+      - PW=/run/secrets/pw
+    ports:
+      - '40002:5555'
+    depends_on:
+      - redis
+      - worker
+      - app
     secrets:
       - pw
 secrets:

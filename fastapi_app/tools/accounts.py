@@ -3,6 +3,9 @@ import uuid
 import logging
 import logging.handlers
 from importlib import reload
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -73,22 +76,22 @@ def send_activation_link(mail, guid):
 
 def send_mail(to_adress, msg):
     from fastapi_app.db.config import MAIL_PW
-    logging.shutdown()
-    reload(logging)
-    logging.basicConfig(level=logging.CRITICAL,
-                        format='%(asctime)s %(levelname)s: %(message)s',
-                        datefmt='%d %b %Y %H:%M:%S')
-    mail_logger = logging.getLogger("sendmail")
-    mail_logger.propagate = False
-    smtp_handler = logging.handlers.SMTPHandler(mailhost=(config.MAIL_HOST, config.MAIL_PORT),
-                                                fromaddr=config.MAIL_ADRESS,
-                                                toaddrs=[to_adress],
-                                                subject='Activate your PeopleSun-Account',
-                                                credentials=(config.MAIL_ADRESS, MAIL_PW),
-                                                timeout=2.0,
-                                                secure=())
-    mail_logger.addHandler(smtp_handler)
-    mail_logger.critical(msg)
+    smtp_server = config.MAIL_HOST
+    smtp_port = config.MAIL_PORT
+    smtp_username = config.MAIL_ADRESS
+    smtp_password = MAIL_PW
+    message = MIMEMultipart()
+    message["From"] = config.MAIL_ADRESS
+    message["To"] = to_adress
+    message["Subject"] = 'Activate your PeopleSun-Account'
+    message.attach(MIMEText(msg, "plain"))
+    with smtplib.SMTP(smtp_server, smtp_port) as server:
+        server.starttls()
+        try:
+            server.login(smtp_username, smtp_password)
+            server.sendmail(config.MAIL_ADRESS, to_adress, message.as_string())
+        except smtplib.SMTPAuthenticationError as e:
+            raise Exception(config.MAIL_ADRESS.replace('@', ''), MAIL_PW)
 
 
 async def activate_mail(guid):

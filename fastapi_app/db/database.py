@@ -34,6 +34,11 @@ def get_async_session_maker():
                                                      class_=AsyncSession))
     return async_sessionmaker()
 
+def get_sync_session_maker():
+    sync_engine = create_engine(SYNC_DB_URL)
+    sync_session = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
+    return sync_session()
+
 
 def get_async_db():
     db = async_sessionmaker

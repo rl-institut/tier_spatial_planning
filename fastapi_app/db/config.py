@@ -15,12 +15,13 @@ if os.environ.get('PW') is not None:
         PW = file.read()
         crypt = Crypt(PW)
         SALT = crypt.decrypt(SALT)
-        MAIL_ADRESS = crypt.decrypt(MAIL_ADRESS)
+        MAIL_ADRESS = crypt.decrypt(MAIL_ADRESS).replace(' ', '')
         MAIL_PW = crypt.decrypt(MAIL_PW)
         KEY_FOR_TOKEN = crypt.decrypt(KEY_FOR_TOKEN)
         del os.environ['PW']
         del crypt
 else:
+    print('WARNING: no password provided')
     from fastapi_app.db.dev_config import db_host, db_name, db_user_name, PW, MAIL_PW, SALT, ACCESS_TOKEN_EXPIRE_MINUTES, \
         KEY_FOR_TOKEN, TOKEN_ALG, MAIL_ADRESS
 db_port = 3306
@@ -29,3 +30,8 @@ DOMAIN='https://peoplesun.energietechnik.tu-berlin.de'
 MAIL_HOST='mail.gmx.net'
 MAIL_PORT=587
 TOKEN_ALG = 'HS256'
+directory_parent = "fastapi_app"
+directory_database = os.path.join(directory_parent, "data", "database").replace("\\", "/")
+full_path_demands = os.path.join(directory_database, "demands.csv").replace("\\", "/")
+directory_inputs = os.path.join(directory_parent, "data", "inputs").replace("\\", "/")
+full_path_timeseries = os.path.join(directory_inputs, "timeseries.csv").replace("\\", "/")

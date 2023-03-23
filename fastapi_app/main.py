@@ -14,17 +14,18 @@ from fastapi_app.tools.accounts import Hasher, create_guid, is_valid_credentials
     authenticate_user, create_access_token
 from fastapi_app.tools import accounts
 from fastapi_app.db import config
-from fastapi_app.db.database import get_async_db
+from asgiref.sync import async_to_sync
 from fastapi_app.db import queries, inserts
+import asyncio
 import math
 import urllib.request
 import ssl
 import json
 import pandas as pd
 import numpy as np
+from celery_worker import worker
 import os
 from datetime import datetime, timedelta
-from celery import Celery
 from collections import defaultdict
 from typing import Any, Dict, List, Union
 import time
@@ -36,18 +37,14 @@ app.mount("/fastapi_app/static", StaticFiles(directory="fastapi_app/static"), na
 
 templates = Jinja2Templates(directory="fastapi_app/pages")
 
+
+
 # define different directories for:
 # (1) database: *.csv files for nodes and links,
 # (2) inputs: input excel files (cost data and timeseries) for offgridders + web app import and export files, and
 # (3) outputs: offgridders results
-directory_parent = "fastapi_app"
 
-directory_database = os.path.join(directory_parent, "data", "database").replace("\\", "/")
-full_path_demands = os.path.join(directory_database, "demands.csv").replace("\\", "/")
-os.makedirs(directory_database, exist_ok=True)
-directory_inputs = os.path.join(directory_parent, "data", "inputs").replace("\\", "/")
-full_path_timeseries = os.path.join(directory_inputs, "timeseries.csv").replace("\\", "/")
-os.makedirs(directory_inputs, exist_ok=True)
+
 
 # this is to avoid problems in "urllib" by not authenticating SSL certificate, otherwise following error occurs:
 # urllib.error.URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1131)>
@@ -58,20 +55,6 @@ json_object = Dict[Any, Any]
 json_array = List[Any]
 import_structure = Union[json_array, json_object]
 
-CELERY_BROKER_URL = (os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379"),)
-CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379")
-
-CELERY_BROKER_URL = "redis://localhost:6379/0"
-CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
-
-celery = Celery("celery_worker", broker=CELERY_BROKER_URL, backend=CELERY_RESULT_BACKEND)
-celery.conf.update({'CELERY_TASK_TRACK_STARTED': True,
-                    'CELERY_ACCEPT_CONTENT': ['application/json'],
-                    'CELERY_RESULT_SERIALIZER': 'json',
-                    'CELERY_TASK_SERIALIZER': 'json',
-                    'CELERY_IGNORE_RESULT': True,
-                    'CELERY_TASK_IGNORE_RESULT': True,
-                    'CELERY_TRACK_STARTED': True})
 # --------------------- REDIRECT REQUEST TO FAVICON LOG ----------------------#
 
 
@@ -113,9 +96,7 @@ async def export_data(generate_export_file_request: models.GenerateExportFileReq
     ).set_index("Setting")
 
     # create the *.xlsx file with sheets for nodes, links and settings
-    with pd.ExcelWriter(
-            full_path_import_export
-    ) as writer:  # pylint: disable=abstract-class-instantiated
+    with pd.ExcelWriter(full_path_import_export) as writer:  # pylint: disable=abstract-class-instantiated
         nodes_df.to_excel(
             excel_writer=writer,
             sheet_name="nodes",
@@ -139,7 +120,7 @@ async def export_data(generate_export_file_request: models.GenerateExportFileReq
 async def download_export_file():
     file_name = "temp.xlsx"
     # Download xlsx file
-    file_path = os.path.join(directory_parent, f"import_export/{file_name}")
+    file_path = os.path.join(config.directory_parent, f"import_export/{file_name}")
     if os.path.exists(file_path):
         return FileResponse(path=file_path,
                             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -198,7 +179,7 @@ async def activation_mail(request: Request):
     guid = request.path_params.get('guid')
     if guid is not None:
         await activate_mail(guid[5:])
-    return templates.TemplateResponse("landing-page.html", {"request": request})
+    return RedirectResponse(config.DOMAIN)
 
 
 @app.get("/account_overview")
@@ -620,7 +601,7 @@ def _demand_estimation(nodes, update_total_demand):
     max_surface_area = max(nodes["surface_area"])
 
     # normalized demands is a CSV file with 5 columns representing the very low to very high demand profiles
-    normalized_demands = pd.read_csv(full_path_demands, delimiter=";", header=None)
+    normalized_demands = pd.read_csv(config.full_path_demands, delimiter=";", header=None)
 
     if update_total_demand:
         # calculate the total peak demand for each of the five demand profiles to make the final demand profile
@@ -652,11 +633,11 @@ def _demand_estimation(nodes, update_total_demand):
         )
 
         # load timeseries data
-        timeseries = pd.read_csv(full_path_timeseries)
+        timeseries = pd.read_csv(config.full_path_timeseries)
         # replace the demand column in the timeseries file with the total demand calculated here
         timeseries["Demand"] = total_demand
         # update the CSV file
-        timeseries.to_csv(full_path_timeseries, index=False)
+        timeseries.to_csv(config.full_path_timeseries, index=False)
     else:
         for area in nodes["surface_area"]:
             if area <= 0.2 * max_surface_area:
@@ -722,10 +703,17 @@ async def run_opt(user_id, project_id):
     await optimize_energy_system(user_id, project_id)
 
 
-@celery.task(queue="celery_worker")
+
+@worker.task(name='queue_opt', force=True, track_started=True)
 def queue_opt(user_id, project_id):
-    optimize_grid(user_id, project_id)
-    optimize_energy_system(user_id, project_id)
+    # async_to_sync(optimize_grid)(user_id, project_id)
+    # async_to_sync(optimize_energy_system)(user_id, project_id)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(optimize_grid(user_id, project_id))
+    loop.run_until_complete(optimize_energy_system(user_id, project_id))
+    # asyncio.run(optimize_grid(user_id, project_id))
+    # asyncio.run(optimize_energy_system(user_id, project_id))
 
 
 @app.post("/optimization/{project_id}")
@@ -739,7 +727,14 @@ models.OptimizeEnergySystemRequest):
         await run_opt(user.id, project_id)
     else:
         result = queue_opt.delay(user.id, project_id)
-        print('queded')
+
+        print(result.status)
+        print(result.backend)
+        for i in range(10):
+
+            time.sleep(1)
+            result.get()
+            print(result.status)
 
 
 async def optimize_grid(user_id, project_id):
@@ -831,7 +826,7 @@ async def optimize_grid(user_id, project_id):
     end_datetime = start_datetime + timedelta(days=int(opt.n_days))
 
     # First, the demand for the entire year is read from the CSV file.
-    demand_full_year = pd.read_csv(filepath_or_buffer=full_path_timeseries)
+    demand_full_year = pd.read_csv(filepath_or_buffer=config.full_path_timeseries)
     demand_full_year.index = pd.date_range(
         start=start_datetime, periods=len(demand_full_year), freq="H"
     )
@@ -1091,6 +1086,8 @@ async def optimize_energy_system(user_id, project_id):
 
 
     solver = 'gurobi' if po.SolverFactory('gurobi').available() else 'cbc'
+    if po.SolverFactory(solver).available():
+        print('No Solver available')
 
     ensys_opt = EnergySystemOptimizer(
         start_date=df.loc[0, "start_date"],
@@ -1098,7 +1095,7 @@ async def optimize_energy_system(user_id, project_id):
         project_lifetime=df.loc[0, "project_lifetime"],
         wacc=df.loc[0, "interest_rate"] / 100,
         tax=0,
-        path_data=full_path_timeseries,
+        path_data=config.full_path_timeseries,
         solver=solver,
         pv=energy_system_design['pv'],
         diesel_genset=energy_system_design['diesel_genset'],
