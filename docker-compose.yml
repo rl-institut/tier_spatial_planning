@@ -32,10 +32,12 @@ services:
       - pw
   redis:
     image: redis
+    container_name: 'redis'
     restart: always
     ports:
     - '6379:6379'
   worker:
+    container_name: 'celery'
     build: .
     ports:
       - '5555:5555'
@@ -52,6 +54,7 @@ services:
     secrets:
       - pw
   flower:
+    container_name: 'flower'
     build: .
     command: celery -A celery_worker.worker flower --port=5555
     environment:

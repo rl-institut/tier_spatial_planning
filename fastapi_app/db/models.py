@@ -426,5 +426,10 @@ class ImportFileRequest(BaseModel):
     longitude: float
 
 
+class TaskInfo(BaseModel):
+    project_id: str
+    task_id: str
+
+
 class ImportFileRequestList(BaseModel):
     data: List[ImportFileRequest]

@@ -76,7 +76,8 @@
      </style>
   </head>
   <body onload="redirect_if_cookie_is_missing();
-                show_user_email_in_navbar();">
+                show_user_email_in_navbar();
+                wait_for_results('{{ project_id }}', '{{ task_id }}');">
   {% include '_navbar.html' %}
     <main>
       <section class="dashboard" style="width: 500px; display: block;  margin-left: auto;  margin-right: auto;">
@@ -115,12 +116,12 @@
   </body>
   {% include '_scripts.html' %}
 <script>
-function test2() {
-    $.ajax({
-        url: "tasks/",
-        type: "get",
-        contentType: "application/json",
-    });
-}
+    function wait_for_results(project_id, task_id)
+    {    $.ajax({url: "waiting_for_results/",
+            type: "POST",
+            data: JSON.stringify({'project_id': project_id, 'task_id': task_id}),
+            contentType: "application/json",})
+            .done(function (res) {
+        {window.location.href = window.location.origin + '/simulation_results/?project_id=' + project_id;}})}
 </script>
 </html>

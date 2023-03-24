@@ -1,9 +1,12 @@
+import celery
+
 import fastapi_app.tools.boundary_identification as bi
 import fastapi_app.tools.coordinates_conversion as conv
 import fastapi_app.tools.shs_identification as shs_ident
 import fastapi_app.db.models as models
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import RedirectResponse, FileResponse
+from fastapi.responses import RedirectResponse, FileResponse, JSONResponse
+from fastapi.encoders import jsonable_encoder
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi_app.tools.grids import Grid
@@ -151,7 +154,6 @@ async def import_data(project_id, request: Request, import_files: import_structu
 
 @app.get("/")
 async def home(request: Request):
-    # return templates.TemplateResponse("project-setup.html", {"request": request})
     user = await accounts.get_user_from_cookie(request)
     if user is None:
         return templates.TemplateResponse("landing-page.html", {"request": request})
@@ -238,6 +240,7 @@ async def calculating(request: Request):
     try:
         int(project_id)
     except (TypeError, ValueError):
+        # ToDo: If user is logged in, redirect to the project overview page
         return templates.TemplateResponse("landing-page.html", {"request": request})
     if 'anonymous' in user.email:
         msg = 'You will be forwarded after the model calculation is completed.'
@@ -245,7 +248,11 @@ async def calculating(request: Request):
         msg = 'You will be forwarded after the model calculation is completed. You can also close the window and view' \
               ' the results in your user account after the calculation is finished. You will be notified by email' \
               ' about the completion of the calculation.'
-    return templates.TemplateResponse("calculating.html", {"request": request, 'project_id': project_id, 'msg':msg})
+    task_id = await optimization(user.id, project_id)
+    return templates.TemplateResponse("calculating.html", {"request": request,
+                                                           'project_id': project_id,
+                                                           'msg': msg,
+                                                           'task_id': task_id})
 
 
 @app.get("/get_demand_coverage_data/{project_id}")
@@ -425,6 +432,14 @@ async def save_project_setup(project_id, request: Request, data: models.SaveProj
     data.page_setup['project_id'] = project_id
     project_setup = models.ProjectSetup(**data.page_setup)
     await inserts.merge_model(project_setup)
+
+
+@app.post("/save_energy_system_design/{project_id}")
+async def save_energy_system_design(project_id, request: Request, data: models.OptimizeEnergySystemRequest):
+    user = await accounts.get_user_from_cookie(request)
+    df = data.to_df()
+    await remove_results(user.id, project_id)
+    await inserts.insert_energysystemdesign_df(df, user.id, project_id)
 
 
 def get_project_id_from_request(request: Request):
@@ -700,44 +715,39 @@ async def remove_results(user_id, project_id):
     await inserts.remove(models.Links, user_id, project_id)
 
 
-
-async def run_opt(user_id, project_id):
+async def run_opt_task(user_id, project_id):
     await optimize_grid(user_id, project_id)
     await optimize_energy_system(user_id, project_id)
 
 
-
 @worker.task(name='queue_opt', force=True, track_started=True)
-def queue_opt(user_id, project_id):
-    # async_to_sync(optimize_grid)(user_id, project_id)
-    # async_to_sync(optimize_energy_system)(user_id, project_id)
+def queue_opt_task(user_id, project_id):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(optimize_grid(user_id, project_id))
     loop.run_until_complete(optimize_energy_system(user_id, project_id))
-    # asyncio.run(optimize_grid(user_id, project_id))
-    # asyncio.run(optimize_energy_system(user_id, project_id))
 
 
-@app.post("/optimization/{project_id}")
-async def optimization(project_id, request: Request, optimize_energy_system_request:
-models.OptimizeEnergySystemRequest):
-    user = await accounts.get_user_from_cookie(request)
-    df = optimize_energy_system_request.to_df()
-    await remove_results(user.id, project_id)
-    await inserts.insert_energysystemdesign_df(df, user.id, project_id)
+async def optimization(user_id, project_id):
     if socket.gethostname() == 'nbb':
-        await run_opt(user.id, project_id)
+        await run_opt_task(user_id, project_id)
+        return 'no_celery_id'
     else:
-        result = queue_opt.delay(user.id, project_id)
+        task = queue_opt_task.delay(user_id, project_id)
+        return task.id
 
-        print(result.status)
-        print(result.backend)
-        for i in range(10):
 
-            time.sleep(1)
-            result.get()
-            print(result.status)
+@app.post('/waiting_for_results/')
+async def waiting_for_results(request: Request, data: models.TaskInfo):
+    time = 0
+    max_time = 3600 * 24
+    t_wait = 10
+    if len(data.task_id) > 12:
+        while True and max_time > time:
+            time += t_wait
+            await asyncio.sleep(t_wait)
+            if worker.AsyncResult(data.task_id).status.lower() == 'success':
+                break
 
 
 async def optimize_grid(user_id, project_id):

@@ -9,6 +9,4 @@ worker.conf.update({'CELERY_TASK_TRACK_STARTED': True,
                     'CELERY_ACCEPT_CONTENT': ['application/json'],
                     'CELERY_RESULT_SERIALIZER': 'json',
                     'CELERY_TASK_SERIALIZER': 'json',
-                    'CELERY_IGNORE_RESULT': True,
-                    'CELERY_TASK_IGNORE_RESULT': True,
                     'CELERY_TRACK_STARTED': True})

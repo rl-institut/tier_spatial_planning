@@ -313,9 +313,11 @@ function boundary_select(mode, project_id) {
 /************************************************************/
 /*                       OPTIMIZATION                       */
 /************************************************************/
-function optimization(project_id) {
+
+
+function save_energy_system_design(project_id) {
         $.ajax({
-        url: "optimization/"  + project_id,
+        url: "save_energy_system_design/"  + project_id,
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify({
@@ -398,9 +400,9 @@ function optimization(project_id) {
             },
         }),
         dataType: "json",
-    });
+    }
+    );
 }
-
 
 
 

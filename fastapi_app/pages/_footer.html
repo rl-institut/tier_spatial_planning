@@ -7,13 +7,13 @@
              {% if title == 'Project Setup' %}
                  href="/"
              {% elif title == 'Consumer Selection' %}
-                 href="project_setup/?project_id={{ project_id }}"
+                 href="project_setup?project_id={{ project_id }}"
              {% elif title == 'Grid Design' %}
-                 href="consumer_selection/?project_id={{ project_id }}"
+                 href="consumer_selection?project_id={{ project_id }}"
             {% elif title == 'Energy System Design' %}
-                 href="grid_design/?project_id={{ project_id }}"
+                 href="grid_design?project_id={{ project_id }}"
             {% elif title == 'Simulation Results' %}
-                 href="energy_system_design/?project_id={{ project_id }}"
+                 href="energy_system_design?project_id={{ project_id }}"
              {% endif %}
           >Previous</a>
         {% endif %}
@@ -22,16 +22,16 @@
             {% if title == 'PeopleSun' %}
                  href="{{ url_for('project_setup')}}"
             {% elif title == 'Project Setup' %}
-                 href='consumer_selection/?project_id={{ project_id }}'
+                 href='consumer_selection?project_id={{ project_id }}'
                  onclick="save_project_setup({{ project_id }});"
             {% elif title == 'Consumer Selection' %}
                  href='grid_design/?project_id={{ project_id }}'
             {% elif title == 'Grid Design' %}
-                 href="energy_system_design/?project_id={{ project_id }}"
+                 href="energy_system_design?project_id={{ project_id }}"
                  onclick="save_grid_design();"
             {% elif title == 'Energy System Design' %}
-                 href='calculating/?project_id={{ project_id }}'
-                 onclick="optimization({{ project_id }});"
+                 href="calculating?project_id={{ project_id }}"
+                 onclick="save_energy_system_design({{ project_id }});"
             {% endif %}
             {% if title == 'PeopleSun' %}
                  {% set next_str='Test' %}
