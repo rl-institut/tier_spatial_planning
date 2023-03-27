@@ -3,15 +3,14 @@ services:
   app:
     container_name: 'app'
     build: .
-    # command: gunicorn -w 2 -k uvicorn.workers.UvicornWorker fastapi_app.main:app --bind 0.0.0.0:40000 --timeout 1200
-    command: uvicorn fastapi_app.main:app --host 0.0.0.0 --reload --port 40000
+    # command: gunicorn -worker 2 -k uvicorn.workers.UvicornWorker fastapi_app.main:app --bind 0.0.0.0:40000 --timeout 1200
+    command: uvicorn fastapi_app.main:app --host 0.0.0.0 --reload --port 40000 --forwarded-allow-ips='*' --proxy-headers
     restart: always
     environment:
       - PYTHONUNBUFFERED=1
       - PW=/run/secrets/pw
     ports:
       - '40000:40000'
-    #depends_on:
     links:
       - mysql
     secrets:
@@ -39,6 +38,7 @@ services:
   worker:
     container_name: 'celery'
     build: .
+    restart: always
     ports:
       - '5555:5555'
     command: celery -A celery_worker.worker worker --loglevel=INFO -P threads
@@ -56,6 +56,7 @@ services:
   flower:
     container_name: 'flower'
     build: .
+    restart: always
     command: celery -A celery_worker.worker flower --port=5555
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0

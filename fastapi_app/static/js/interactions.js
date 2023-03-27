@@ -315,9 +315,9 @@ function boundary_select(mode, project_id) {
 /************************************************************/
 
 
-function save_energy_system_design(project_id) {
+function save_energy_system_design() {
         $.ajax({
-        url: "save_energy_system_design/"  + project_id,
+        url: "save_energy_system_design/",
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify({

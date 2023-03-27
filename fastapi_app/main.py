@@ -1,5 +1,4 @@
 import celery
-
 import fastapi_app.tools.boundary_identification as bi
 import fastapi_app.tools.coordinates_conversion as conv
 import fastapi_app.tools.shs_identification as shs_ident
@@ -22,7 +21,7 @@ from fastapi_app.db import queries, inserts
 import asyncio
 import math
 import urllib.request
-import ssl
+#import ssl
 import json
 import pandas as pd
 import numpy as np
@@ -40,9 +39,8 @@ pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 app = FastAPI()
 
 app.mount("/fastapi_app/static", StaticFiles(directory="fastapi_app/static"), name="static")
-
+#app.config["PREFERRED_URL_SCHEME"] = "https"
 templates = Jinja2Templates(directory="fastapi_app/pages")
-
 
 
 # define different directories for:
@@ -54,7 +52,7 @@ templates = Jinja2Templates(directory="fastapi_app/pages")
 
 # this is to avoid problems in "urllib" by not authenticating SSL certificate, otherwise following error occurs:
 # urllib.error.URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1131)>
-ssl._create_default_https_context = ssl._create_unverified_context
+#ssl._create_default_https_context = ssl._create_unverified_context
 
 # define the template for importing json data in the form of arrays from js to python
 json_object = Dict[Any, Any]
@@ -434,9 +432,10 @@ async def save_project_setup(project_id, request: Request, data: models.SaveProj
     await inserts.merge_model(project_setup)
 
 
-@app.post("/save_energy_system_design/{project_id}")
-async def save_energy_system_design(project_id, request: Request, data: models.OptimizeEnergySystemRequest):
+@app.post("/save_energy_system_design/")
+async def save_energy_system_design(request: Request, data: models.OptimizeEnergySystemRequest):
     user = await accounts.get_user_from_cookie(request)
+    project_id = get_project_id_from_request(request)
     df = data.to_df()
     await remove_results(user.id, project_id)
     await inserts.insert_energysystemdesign_df(df, user.id, project_id)
@@ -742,6 +741,7 @@ async def waiting_for_results(request: Request, data: models.TaskInfo):
     time = 0
     max_time = 3600 * 24
     t_wait = 10
+    # ToDo: set the time limit based on number of queued tasks and size of the model
     if len(data.task_id) > 12:
         while True and max_time > time:
             time += t_wait

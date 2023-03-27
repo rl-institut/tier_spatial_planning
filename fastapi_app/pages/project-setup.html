@@ -115,7 +115,7 @@
                     class="form-control"
                     id="startDate"
                     name="project-start"
-                    value="2022-01-01"
+
                     min="2020-01-01"
                     max="2050-12-31"
                     required
@@ -177,5 +177,12 @@
     </main>
   {% include '_footer.html' %}
   </body>
-  {% include '_scripts.html' %}
+    {% include '_scripts.html' %}
+      <script>
+      var currentDate = new Date();
+      var lastYear = currentDate.getFullYear() - 1;
+      var firstDayLastYear = new Date(Date.UTC(lastYear, 1, 1));
+      var startDateInput = document.getElementById("startDate");
+      startDateInput.value = firstDayLastYear.toISOString().slice(0,10);
+    </script>
 </html>
