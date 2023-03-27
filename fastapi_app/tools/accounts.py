@@ -114,11 +114,17 @@ def send_email_with_activation_status(user):
 
 async def authenticate_user(username: str, password: str):
     user = await queries.get_user_by_username(username)
+    if user is None:
+        del password
+        return False, 'Incorrect username or password'
+    if user.is_confirmed is False:
+        del password
+        return False, 'Email not confirmed'
     if user is None or Hasher.verify_password(password, user.hashed_password) is False:
         del password
-        return False
+        return False, 'Incorrect username or password'
     del password
-    return user
+    return True, user
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):

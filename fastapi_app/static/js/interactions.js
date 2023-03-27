@@ -485,10 +485,17 @@ function login() {
             data: JSON.stringify({email: userEmail.value,
                                        password: userPassword.value,}),
             dataType: "json",})
-        .done(function () {document.getElementById("userPassword").value = '';
-                           document.getElementById("userEmail").value = '';
-                           window.location.href=window.location.href;});
-}
+        .done(function (response) {
+            if (response.validation === true)
+                {   document.getElementById("userPassword").value = '';
+                    document.getElementById("userEmail").value = '';
+                    window.location.href=window.location.href;}
+            else
+                {
+                    document.getElementById("userPassword").value = '';
+                    document.getElementById("responseMsg").innerHTML = response.msg;
+                    document.getElementById("responseMsg").style.color = 'red';};
+            });}
 
 
 function set_access_token() {
