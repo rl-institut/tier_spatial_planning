@@ -486,7 +486,7 @@ function login() {
                                        password: userPassword.value, remember_me: isEnabled.value}),
             dataType: "json",})
         .done(function (response) {
-            ocument.getElementById("userPassword").value = '';
+            document.getElementById("userPassword").value = '';
             if (response.validation === true)
                 {   document.getElementById("userEmail").value = '';
                     window.location.href=window.location.href;}
@@ -779,14 +779,6 @@ function identify_shs(project_id) {
         },
     });
 }
-
-
-function activate_wizard_element() {
-    let current = location.pathname.split('/').pop();
-    $('#wiz li').each(function(){
-        let $this = $(this);
-        let text = $this[0].getElementsByTagName('a')[0].href.split('/')[3]
-        if(text.indexOf(current) !== -1){$this.addClass('active');}})}
 
 
 function show_user_email_in_navbar() {
