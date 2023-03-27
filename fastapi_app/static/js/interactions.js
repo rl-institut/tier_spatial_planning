@@ -465,7 +465,7 @@ function add_user_to_db() {
             type: "POST",
             contentType: "application/json",
             data: JSON.stringify({email: userEmail.value,
-                                       password: userPassword.value,}),
+                                       password: userPassword.value, remember_me: false}),
             dataType: "json",})
         .done(function (response) {
             document.getElementById("responseMsg").innerHTML = response.msg;
@@ -483,17 +483,15 @@ function login() {
             type: "POST",
             contentType: "application/json",
             data: JSON.stringify({email: userEmail.value,
-                                       password: userPassword.value,}),
+                                       password: userPassword.value, remember_me: isEnabled.value}),
             dataType: "json",})
         .done(function (response) {
+            ocument.getElementById("userPassword").value = '';
             if (response.validation === true)
-                {   document.getElementById("userPassword").value = '';
-                    document.getElementById("userEmail").value = '';
+                {   document.getElementById("userEmail").value = '';
                     window.location.href=window.location.href;}
             else
-                {
-                    document.getElementById("userPassword").value = '';
-                    document.getElementById("responseMsg").innerHTML = response.msg;
+                {   document.getElementById("responseMsg").innerHTML = response.msg;
                     document.getElementById("responseMsg").style.color = 'red';};
             });}
 

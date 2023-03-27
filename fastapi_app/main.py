@@ -378,13 +378,17 @@ async def set_access_token(response: Response, credentials: models.Credentials):
 async def login(response: Response, credentials: models.Credentials):
     if isinstance(credentials.email, str) and len(credentials.email) > 3:
         is_valid, res = await authenticate_user(credentials.email, credentials.password)
-        del credentials
         if is_valid:
-            access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
+            if credentials.remember_me:
+                access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES_EXTENDED)
+            else:
+                access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
+            del credentials
             access_token = create_access_token(data={"sub": res.email}, expires_delta=access_token_expires)
             response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
             return models.ValidRegistration(validation=True, msg="")
         else:
+            del credentials
             return models.ValidRegistration(validation=False, msg=res)
 
 

@@ -55,6 +55,7 @@ class Base:
 class Credentials(BaseModel):
     email: str
     password: str
+    remember_me: bool
 
 
 class ValidRegistration(BaseModel):

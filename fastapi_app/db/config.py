@@ -26,6 +26,7 @@ else:
         KEY_FOR_TOKEN, TOKEN_ALG, MAIL_ADRESS
 db_port = 3306
 ACCESS_TOKEN_EXPIRE_MINUTES=180
+ACCESS_TOKEN_EXPIRE_MINUTES_EXTENDED=60*24*2
 DOMAIN='https://peoplesun.energietechnik.tu-berlin.de'
 MAIL_HOST='mail.gmx.net'
 MAIL_PORT=587
