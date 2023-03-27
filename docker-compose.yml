@@ -9,6 +9,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - PW=/run/secrets/pw
+      - MAX_DAYS
     ports:
       - '40000:40000'
     links:

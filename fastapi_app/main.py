@@ -1,4 +1,5 @@
 import celery
+import os
 import fastapi_app.tools.boundary_identification as bi
 import fastapi_app.tools.coordinates_conversion as conv
 import fastapi_app.tools.shs_identification as shs_ident
@@ -169,7 +170,10 @@ async def project_setup(request: Request):
     project_id = request.query_params.get('project_id')
     if project_id is None:
         project_id = await queries.next_project_id_of_user(user.id)
-    return templates.TemplateResponse("project-setup.html", {"request": request, 'project_id': project_id})
+    max_days = os.environ.get('MAX_DAYS', 365)
+    return templates.TemplateResponse("project-setup.html", {"request": request,
+                                                             'project_id': project_id,
+                                                              'max_days': max_days})
 
 
 @app.get("/user_registration")
@@ -1103,7 +1107,7 @@ async def optimize_energy_system(user_id, project_id):
 
     ensys_opt = EnergySystemOptimizer(
         start_date=df.loc[0, "start_date"],
-        n_days=df.loc[0, "n_days"],
+        n_days=min(df.loc[0, "n_days"], os.environ.get('MAX_DAYS', 365)),
         project_lifetime=df.loc[0, "project_lifetime"],
         wacc=df.loc[0, "interest_rate"] / 100,
         tax=0,
