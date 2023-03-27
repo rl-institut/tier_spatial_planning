@@ -214,6 +214,14 @@ async def grid_design(request: Request):
     return templates.TemplateResponse("grid-design.html", {"request": request, 'project_id': project_id})
 
 
+@app.post("/remove_project/{project_id}")
+async def remove_project(project_id, request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    if hasattr(user, 'id'):
+        await inserts.remove_project(user.id, project_id)
+
+
+
 @app.get("/demand_estimation")
 async def demand_estimation(request: Request):
     return templates.TemplateResponse("demand_estimation.html", {"request": request})
@@ -443,7 +451,6 @@ async def save_energy_system_design(request: Request, data: models.OptimizeEnerg
     user = await accounts.get_user_from_cookie(request)
     project_id = get_project_id_from_request(request)
     df = data.to_df()
-    await remove_results(user.id, project_id)
     await inserts.insert_energysystemdesign_df(df, user.id, project_id)
 
 
@@ -734,6 +741,7 @@ def queue_opt_task(user_id, project_id):
 
 
 async def optimization(user_id, project_id):
+    await remove_results(user_id, project_id)
     if socket.gethostname() == 'nbb':
         await run_opt_task(user_id, project_id)
         return 'no_celery_id'
@@ -752,7 +760,7 @@ async def waiting_for_results(request: Request, data: models.TaskInfo):
         while True and max_time > time:
             time += t_wait
             await asyncio.sleep(t_wait)
-            if worker.AsyncResult(data.task_id).status.lower() == 'success':
+            if worker.AsyncResult(data.task_id).status.lower() in ['success', 'failure', 'revoked']:
                 break
 
 

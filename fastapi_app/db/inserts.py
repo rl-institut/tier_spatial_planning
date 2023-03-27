@@ -80,12 +80,17 @@ async def insert_df(model_class, df, user_id, project_id):
 
 async def remove(model_class, user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
-    if model_class in [models.Nodes, models.Links, models.DemandCoverage, models.Emissions,
-                       models.Results, models.DurationCurve, models.EnergyFlow]:
-        query = delete(model_class).where(model_class.id == user_id, model_class.project_id == project_id)
-        async with get_async_session_maker() as async_db:
-            await async_db.execute(query)
-            await async_db.commit()
+    query = delete(model_class).where(model_class.id == user_id, model_class.project_id == project_id)
+    async with get_async_session_maker() as async_db:
+        await async_db.execute(query)
+        await async_db.commit()
+
+
+async def remove_project(user_id, project_id):
+    for model_class in [models.Nodes, models.Links, models.Results, models.DemandCoverage, models.EnergyFlow,
+                        models.Emissions, models.DurationCurve, models.ProjectSetup, models.EnergySystemDesign,
+                        models.GridDesign]:
+        await remove(model_class, user_id, project_id)
 
 
 async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, project_id, add=True, replace=True):
