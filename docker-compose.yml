@@ -9,7 +9,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - PW=/run/secrets/pw
-      - MAX_DAYS
+      - MAX_DAYS=14
     ports:
       - '40000:40000'
     links:
@@ -30,6 +30,8 @@ services:
       - '40001:3306'
     secrets:
       - pw
+    volumes:
+      - ./db_data/user_db:/var/lib/mysql
   redis:
     image: redis
     container_name: 'redis'
