@@ -1,28 +1,21 @@
-import celery
-import os
 import fastapi_app.tools.boundary_identification as bi
 import fastapi_app.tools.coordinates_conversion as conv
 import fastapi_app.tools.shs_identification as shs_ident
 import fastapi_app.db.models as models
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import RedirectResponse, FileResponse, JSONResponse
-from fastapi.encoders import jsonable_encoder
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi_app.tools.grids import Grid
 from fastapi_app.tools.optimizer import Optimizer, GridOptimizer, EnergySystemOptimizer, po
-from fastapi import Depends
-from sqlalchemy.orm import Session
 from fastapi_app.tools.accounts import Hasher, create_guid, is_valid_credentials, send_activation_link, activate_mail, \
     authenticate_user, create_access_token
 from fastapi_app.tools import accounts
 from fastapi_app.db import config
-from asgiref.sync import async_to_sync
 from fastapi_app.db import queries, inserts
 import asyncio
 import math
 import urllib.request
-#import ssl
 import json
 import pandas as pd
 import numpy as np
@@ -43,17 +36,6 @@ app.mount("/fastapi_app/static", StaticFiles(directory="fastapi_app/static"), na
 #app.config["PREFERRED_URL_SCHEME"] = "https"
 templates = Jinja2Templates(directory="fastapi_app/pages")
 
-
-# define different directories for:
-# (1) database: *.csv files for nodes and links,
-# (2) inputs: input excel files (cost data and timeseries) for offgridders + web app import and export files, and
-# (3) outputs: offgridders results
-
-
-
-# this is to avoid problems in "urllib" by not authenticating SSL certificate, otherwise following error occurs:
-# urllib.error.URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1131)>
-#ssl._create_default_https_context = ssl._create_unverified_context
 
 # define the template for importing json data in the form of arrays from js to python
 json_object = Dict[Any, Any]
@@ -262,7 +244,8 @@ async def calculating(request: Request):
     return templates.TemplateResponse("calculating.html", {"request": request,
                                                            'project_id': project_id,
                                                            'msg': msg,
-                                                           'task_id': task_id})
+                                                           'task_id': task_id,
+                                                           'time': 0})
 
 
 @app.get("/get_demand_coverage_data/{project_id}")
@@ -752,16 +735,30 @@ async def optimization(user_id, project_id):
 
 @app.post('/waiting_for_results/')
 async def waiting_for_results(request: Request, data: models.TaskInfo):
-    time = 0
-    max_time = 3600 * 24
-    t_wait = 10
+    max_time = 3600 * 24 * 7
+    t_wait = 5
+    if data.time == 10:
+        t_wait *= 2
+    elif data.time == 60:
+        t_wait *= 2
     # ToDo: set the time limit based on number of queued tasks and size of the model
-    if len(data.task_id) > 12:
-        while True and max_time > time:
-            time += t_wait
+    res = {'time': int(data.time) + t_wait, 'status': ''}
+    if len(data.task_id) > 12 and max_time > res['time']:
+        if not data.time == 0:
             await asyncio.sleep(t_wait)
-            if worker.AsyncResult(data.task_id).status.lower() in ['success', 'failure', 'revoked']:
-                break
+        status = worker.AsyncResult(data.task_id).status.lower()
+        if status in ['success', 'failure', 'revoked']:
+            res['finished'] = True
+        else:
+            res['finished'] = False
+            if status in ['pending', 'received', 'retry']:
+                res['status'] = "task queued, waiting for processing..."
+            else:
+                res['status'] = "calculation is running..."
+    else:
+        res['finished'] = True
+    print(res)
+    return JSONResponse(res)
 
 
 async def optimize_grid(user_id, project_id):

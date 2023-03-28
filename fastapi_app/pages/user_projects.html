@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en-us">
   <head>
-    {% set title= 'Projects' %}
-    {% include '_head.html' %}
-    {% include '_style_msg_box.html' %}
+{% set title= 'Projects' %}
+{% include '_head.html' %}
+{% include '_style_msg_box.html' %}
   </head>
   <body onload="redirect_if_cookie_is_missing();
                 show_user_email_in_navbar();">
-  {% include '_navbar.html' %}
+{% include '_navbar.html' %}
     <main>
       <section class="dashboard">
         <div>
@@ -87,5 +87,5 @@
         {% endif %}
     </main>
   </body>
-  {% include '_scripts.html' %}
+{% include '_scripts.html' %}
 </html>

@@ -807,3 +807,21 @@ function remove_project(project_id) {
             type: "POST",
             contentType: "application/json",})
         .done(function () {window.location.href = window.location.origin;})}
+
+function wait_for_results(project_id, task_id, time)
+{   $.ajax({
+        url: "waiting_for_results/",
+        type: "POST",
+        data: JSON.stringify({'project_id': project_id, 'task_id': task_id, 'time': time}),
+        contentType: "application/json",
+    })
+    .done(function (res) {
+        if (res.finished === true) {
+            window.location.href = window.location.origin + '/simulation_results/?project_id=' + project_id;
+        } else {
+            window.alert(res.status)
+            document.querySelector("#statusMsg").innerHTML = res.status;
+            wait_for_results(project_id, task_id, res.time);
+        }
+    });
+}

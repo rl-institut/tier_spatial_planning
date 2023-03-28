@@ -77,7 +77,7 @@
   </head>
   <body onload="redirect_if_cookie_is_missing();
                 show_user_email_in_navbar();
-                wait_for_results('{{ project_id }}', '{{ task_id }}');">
+                wait_for_results('{{ project_id }}', '{{ task_id }}', {{ time }});">
   {% include '_navbar.html' %}
     <main>
       <section class="dashboard" style="width: 500px; display: block;  margin-left: auto;  margin-right: auto;">
@@ -91,19 +91,15 @@
                    <hr>
                   <div class="loader" align="center"></div>
                         <a>Status: </a>
-                        <a id="statusMsg"></a>
+                        <a id="statusMsg">'task status is retrieved...'</a>
                    <hr>
                   <a>{{ msg }}</a>
                   <p></p>
-                   <a
+                   <a href='energy_system_design/?project_id={{ project_id }}'
                       class="btn btn--long text-right"
                       onclick="test2();"
                    >Abort Calculation
                    </a>
-                   <p></p>
-                   <a href='simulation_results/?project_id={{ project_id }}'
-                      class="btn btn--long text-right"
-                   >Optimize</a>
                     </div>
                   </div>
                 </div>
@@ -115,13 +111,4 @@
     </main>
   </body>
   {% include '_scripts.html' %}
-<script>
-    function wait_for_results(project_id, task_id)
-    {    $.ajax({url: "waiting_for_results/",
-            type: "POST",
-            data: JSON.stringify({'project_id': project_id, 'task_id': task_id}),
-            contentType: "application/json",})
-            .done(function (res) {
-        {window.location.href = window.location.origin + '/simulation_results/?project_id=' + project_id;}})}
-</script>
 </html>

@@ -430,6 +430,7 @@ class ImportFileRequest(BaseModel):
 class TaskInfo(BaseModel):
     project_id: str
     task_id: str
+    time: int
 
 
 class ImportFileRequestList(BaseModel):
