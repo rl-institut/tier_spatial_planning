@@ -26,6 +26,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Union
 import time
 import socket
+import celery
 import pyutilib.subprocess.GlobalData
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 # avoids error when running pyomo with celery worker
@@ -757,8 +758,15 @@ async def waiting_for_results(request: Request, data: models.TaskInfo):
                 res['status'] = "calculation is running..."
     else:
         res['finished'] = True
-    print(res)
     return JSONResponse(res)
+
+
+@app.post('/revoke_task/')
+async def revoke_task(request: Request, data: models.TaskID):
+    celery_task = worker.AsyncResult(data.task_id)
+    celery_task.revoke(terminate=True, signal='SIGKILL')
+    user = await accounts.get_user_from_cookie(request)
+    await remove_results(user.id, data.project_id)
 
 
 async def optimize_grid(user_id, project_id):

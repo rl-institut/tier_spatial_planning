@@ -819,9 +819,13 @@ function wait_for_results(project_id, task_id, time)
         if (res.finished === true) {
             window.location.href = window.location.origin + '/simulation_results/?project_id=' + project_id;
         } else {
-            window.alert(res.status)
             document.querySelector("#statusMsg").innerHTML = res.status;
             wait_for_results(project_id, task_id, res.time);
         }
     });
 }
+
+function revoke_task(project_id, task_id) {
+    $.ajax({url: "revoke_task/", type: "POST", data: JSON.stringify({'project_id': project_id, 'task_id': task_id}), contentType: "application/json"})
+        .done(function () {window.location.href = window.location.origin +
+            '/energy_system_design/?project_id=' + project_id;})}
