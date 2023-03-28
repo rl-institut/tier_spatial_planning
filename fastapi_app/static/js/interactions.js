@@ -802,3 +802,8 @@ function clear_nodes_and_links(project_id){
             contentType: "application/json",})
 }
 
+function remove_project(project_id) {
+        $.ajax({url: "remove_project/" + project_id,
+            type: "POST",
+            contentType: "application/json",})
+        .done(function () {window.location.href = window.location.origin;})}
