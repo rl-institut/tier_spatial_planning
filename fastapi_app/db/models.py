@@ -85,6 +85,7 @@ class User(Base):
     is_confirmed = Column(Boolean(), default=False)
     is_active = Column(Boolean(), default=False)
     is_superuser = Column(Boolean(), default=False)
+    task_id = Column(VARCHAR(80))
 
 
 class ProjectSetup(Base):
@@ -437,6 +438,9 @@ class TaskID(BaseModel):
     task_id: str
     project_id: str
 
+
+class ProjectID(BaseModel):
+    project_id: str
 
 class ImportFileRequestList(BaseModel):
     data: List[ImportFileRequest]

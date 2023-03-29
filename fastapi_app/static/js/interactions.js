@@ -825,7 +825,33 @@ function wait_for_results(project_id, task_id, time)
     });
 }
 
-function revoke_task(project_id, task_id) {
-    $.ajax({url: "revoke_task/", type: "POST", data: JSON.stringify({'project_id': project_id, 'task_id': task_id}), contentType: "application/json"})
-        .done(function () {window.location.href = window.location.origin +
-            '/energy_system_design/?project_id=' + project_id;})}
+function forward_if_no_task_is_pending(project_id) {
+        $.ajax({
+            url: "forward_if_no_task_is_pending/",
+            type: "POST",
+            contentType: "application/json",})
+        .done(function (res) {
+        if (res.forward === true) {
+            window.location.href = window.location.origin + '/calculating/?project_id=' + project_id;
+        } else {
+            document.getElementById('pendingTask').style.display='block'
+        }})}
+
+function revoke_users_task() {
+    $.ajax({
+        url: "revoke_users_task/",
+        type: "POST",
+        contentType: "application/json"})
+        .done(function () {document.getElementById('pendingTask').style.display='none';
+        })}
+
+function start_calculation(project_id)
+    {   $.ajax({
+            url: "start_calculation/" + project_id,
+            type: "POST",
+            contentType: "application/json",
+        })
+        .done(function (res) {
+            wait_for_results(project_id, res.task_id, 0);
+        });
+    }

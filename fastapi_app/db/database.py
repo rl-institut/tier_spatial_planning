@@ -1,5 +1,4 @@
 import time
-import sqlalchemy
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -14,7 +13,7 @@ SYNC_DB_URL = BASE_URL.replace('package', 'mysqlconnector')
 ASYNC_DB_URL = BASE_URL.replace('package', 'aiomysql')
 
 
-for i in range(40):
+for i in range(400):
     try:
         sync_engine = create_engine(SYNC_DB_URL)
         sync_session = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
@@ -43,6 +42,3 @@ def get_sync_session_maker():
 def get_async_db():
     db = async_sessionmaker
     yield db
-
-
-

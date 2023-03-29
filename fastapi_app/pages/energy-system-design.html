@@ -3,6 +3,7 @@
   <head>
     {% set title='Energy System Design' %}
     {% include '_head.html' %}
+    {% include '_style_msg_box.html' %}
   </head>
   <body onload="redirect_if_cookie_is_missing();
                 refreshBlocksOnDiagramOnLoad();
@@ -1201,37 +1202,33 @@
                     >
                   </div>
                 </div>
-                <!-- <div class="row">
-                  <div class="col-2">
-                    <div class="form-switch">
-                      <input
-                        class="form-check-input"
-                        type="checkbox"
-                        id="constraintsMinResCheckbox"
-                      />
-                    </div>
-                  </div>
-                  <div class="col-10">
-                    <div class="input-group">
-                      <span class="input-group-text"
-                        >Max. Surplus Electricity</span
-                      >
-                      <input
-                        type="number"
-                        class="form-control"
-                        id="constraintsMinRes"
-                        value="50"
-                        required
-                      />
-                      <span class="input-group-text">%</span>
-                    </div>
-                  </div>
-                </div> -->
               </div>
             </div>
           </div>
         </div>
       </section>
+    <div id=pendingTask class="modal">
+        <span  class="close" title="Close Modal">&times;</span>
+        <form class="modal-content" action="/action_page.php">
+            <div class="container">
+                <h1>Revoke pending calculation?</h1>
+                <p>You have a calculation in progress that has not yet been completed. Therefore, you cannot start
+                    another calculation. You can either revoke the pending calculation or wait for it to be finished</p>
+                <div class="clearfix">
+                    <button onclick="revoke_users_task();"
+                            type="button"
+                            class="deletebtn"
+                    >Revoke
+                    </button>
+                    <button onclick="document.getElementById('pendingTask').style.display='none';"
+                            type="button"
+                            class="cancelbtn"
+                    >Wait
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
     </main>
   {% include '_footer.html' %}
   </body>

@@ -30,8 +30,7 @@
                  href="energy_system_design?project_id={{ project_id }}"
                  onclick="save_grid_design();"
             {% elif title == 'Energy System Design' %}
-                 href="calculating?project_id={{ project_id }}"
-                 onclick="save_energy_system_design();"
+                 onclick="save_energy_system_design(); forward_if_no_task_is_pending({{ project_id }});"
             {% endif %}
             {% if title == 'PeopleSun' %}
                  {% set next_str='Test' %}

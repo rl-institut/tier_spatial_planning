@@ -237,16 +237,22 @@ async def calculating(request: Request):
         return templates.TemplateResponse("landing-page.html", {"request": request})
     if 'anonymous' in user.email:
         msg = 'You will be forwarded after the model calculation is completed.'
+    elif user.task_id is not None and len(user.task_id) > 20 and not task_is_finished(user.task_id):
+        msg = 'CAUTION: You have a calculation in progress that has not yet been completed. Therefore you cannot' \
+              ' start another calculation. You can cancel the already running calculation by clicking on the' \
+              ' following button:'
+        return templates.TemplateResponse("calculating.html", {"request": request,
+                                                               'project_id': project_id,
+                                                               'msg': msg,
+                                                               'task_id': user.task_id,
+                                                               'time': 0})
     else:
         msg = 'You will be forwarded after the model calculation is completed. You can also close the window and view' \
               ' the results in your user account after the calculation is finished. You will be notified by email' \
               ' about the completion of the calculation.'
-    task_id = await optimization(user.id, project_id)
     return templates.TemplateResponse("calculating.html", {"request": request,
-                                                           'project_id': project_id,
-                                                           'msg': msg,
-                                                           'task_id': task_id,
-                                                           'time': 0})
+                                                               'project_id': project_id,
+                                                               'msg': msg})
 
 
 @app.get("/get_demand_coverage_data/{project_id}")
@@ -725,13 +731,59 @@ def queue_opt_task(user_id, project_id):
 
 
 async def optimization(user_id, project_id):
+    print(5)
     await remove_results(user_id, project_id)
+    print(6)
     if socket.gethostname() == 'nbb':
         await run_opt_task(user_id, project_id)
         return 'no_celery_id'
     else:
+        print(7)
         task = queue_opt_task.delay(user_id, project_id)
+        print(task)
+        print(task.id)
         return task.id
+
+
+def get_status_of_task(task_id):
+    status = worker.AsyncResult(task_id).status.lower()
+    return status
+
+def task_is_finished(task_id):
+    status = get_status_of_task(task_id)
+    if status in ['success', 'failure','revoked']:
+        return True
+    else:
+        return False
+
+
+@app.post("/forward_if_no_task_is_pending")
+async def forward_if_no_task_is_pending(request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    if user.task_id is not None and len(user.task_id) > 20 and not task_is_finished(user.task_id):
+        res = {'forward': False, 'task_id': user.task_id}
+    else:
+        res = {'forward': True, 'task_id': ''}
+    return JSONResponse(res)
+
+
+@app.post("/start_calculation/{project_id}")
+async def start_calculation(project_id, request: Request):
+    print(0)
+    if project_id is None:
+        print('is none')
+        project_id = request.query_params.get('project_id')
+    user = await accounts.get_user_from_cookie(request)
+    print(1)
+    int(project_id)
+    print(2)
+    task_id = await optimization(user.id, project_id)
+    print(3)
+    user.task_id = task_id
+    await inserts.update_model_by_user_id(user)
+    print(task_id)
+    print(4)
+    return JSONResponse({'task_id': task_id})
 
 
 @app.post('/waiting_for_results/')
@@ -747,7 +799,7 @@ async def waiting_for_results(request: Request, data: models.TaskInfo):
     if len(data.task_id) > 12 and max_time > res['time']:
         if not data.time == 0:
             await asyncio.sleep(t_wait)
-        status = worker.AsyncResult(data.task_id).status.lower()
+        status = get_status_of_task(data.task_id)
         if status in ['success', 'failure', 'revoked']:
             res['finished'] = True
         else:
@@ -758,6 +810,10 @@ async def waiting_for_results(request: Request, data: models.TaskInfo):
                 res['status'] = "calculation is running..."
     else:
         res['finished'] = True
+    if res['finished'] is True:
+        user = await accounts.get_user_from_cookie(request)
+        user.task_id = ''
+        await inserts.update_model_by_user_id(user)
     return JSONResponse(res)
 
 
@@ -767,6 +823,17 @@ async def revoke_task(request: Request, data: models.TaskID):
     celery_task.revoke(terminate=True, signal='SIGKILL')
     user = await accounts.get_user_from_cookie(request)
     await remove_results(user.id, data.project_id)
+
+
+
+@app.post('/revoke_users_task/')
+async def revoke_users_task(request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    celery_task = worker.AsyncResult(user.task_id)
+    celery_task.revoke(terminate=True, signal='SIGKILL')
+    user = await accounts.get_user_from_cookie(request)
+    user.task_id = ''
+    await inserts.update_model_by_user_id(user)
 
 
 async def optimize_grid(user_id, project_id):

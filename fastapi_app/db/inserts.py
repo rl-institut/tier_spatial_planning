@@ -14,6 +14,14 @@ async def merge_model(model):
         await async_db.commit()
 
 
+async def update_model_by_user_id(model):
+    stmt = (update(model.metadata.tables[model.__name__().lower()])
+            .where(model.__mapper__.primary_key[0] == model.id).values(**model.to_dict()))
+    async with get_async_session_maker() as async_db:
+        await async_db.execute(stmt)
+        await async_db.commit()
+
+
 async def insert_links_df(df, user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     model_class = models.Links

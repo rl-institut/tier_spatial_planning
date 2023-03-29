@@ -77,7 +77,7 @@
   </head>
   <body onload="redirect_if_cookie_is_missing();
                 show_user_email_in_navbar();
-                wait_for_results('{{ project_id }}', '{{ task_id }}', {{ time }});">
+                start_calculation('{{ project_id }}');">
   {% include '_navbar.html' %}
     <main>
       <section class="dashboard" style="width: 500px; display: block;  margin-left: auto;  margin-right: auto;">
@@ -91,15 +91,14 @@
                    <hr>
                   <div class="loader" align="center"></div>
                         <a>Status: </a>
-                        <a id="statusMsg">'task status is retrieved...'</a>
+                        <a id="statusMsg">task status is retrieved...</a>
                    <hr>
                   <a>{{ msg }}</a>
                   <p></p>
                    <a href='energy_system_design/?project_id={{ project_id }}'
                       class="btn btn--long text-right"
-                      onclick="revoke_task('{{ project_id }}', '{{ task_id }}');"
-                   >Abort Calculation
-                   </a>
+                      onclick="revoke_users_task();"
+                   >Abort Calculation</a>
                     </div>
                   </div>
                 </div>
