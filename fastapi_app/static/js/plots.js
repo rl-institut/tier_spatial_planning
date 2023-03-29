@@ -1,5 +1,6 @@
 // BAR DIAGRAM FOR OPTIMAL CAPACITY OF COMPONENTS
 // get optimal capacities from energy system optimizer
+function plot_all() {
 const urlParams = new URLSearchParams(window.location.search);
 project_id = urlParams.get('project_id');
 var yValue = [0, 0, 0, 0, 0, 0, 0];
@@ -572,4 +573,4 @@ function makeplot_co2_emissions() {
   };
 
 };
-makeplot_co2_emissions();
+makeplot_co2_emissions();}

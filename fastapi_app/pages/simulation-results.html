@@ -3,13 +3,13 @@
   <head>
     {% set title= 'Simulation Results' %}
     {% include '_head.html' %}
+    {% include '_style_msg_box.html' %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.css" />
   </head>
   <body onload="redirect_if_cookie_is_missing();
-                refresh_map({{ project_id }}, false);
-                load_results();
+                load_results({{ project_id }});
                 show_user_email_in_navbar();">
   {% include '_navbar.html' %}
   {% include '_wizard.html' %}
@@ -402,6 +402,17 @@
           </div>
         </div>
       </section>
+    <div id=noResults class="modal">
+        <span  class="close" title="Close Modal">&times;</span>
+        <form class="modal-content" action="/action_page.php">
+            <div class="container">
+                <h1>No results</h1>
+                <p id="pendingTaskMSG"></p>
+                <a href="/" class="btn btn--long text-right">Back to projects overview</a>
+
+            </div>
+        </form>
+    </div>
     </main>
     {% include '_footer.html' %}
   </body>

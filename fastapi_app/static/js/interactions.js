@@ -418,9 +418,7 @@ function optimize_grid(project_id) {
     // window.open("{{ url_for('simulation_results')}}");
 }
 
-function load_results() {
-    const urlParams = new URLSearchParams(window.location.search);
-    project_id = urlParams.get('project_id');
+function load_results(project_id) {
     var xhr = new XMLHttpRequest();
     url = "load_results/" + project_id;
     xhr.open("GET", url, true);
@@ -431,6 +429,8 @@ function load_results() {
         if (this.readyState == 4 && this.status == 200) {
             // push nodes to the map
             results = this.response;
+            let lenght = Object.keys(results).length;
+            if (lenght > 0) {
             document.getElementById("nConsumers").innerText = results['n_consumers'];
             document.getElementById("nShsConsumers").innerText = results['n_shs_consumers'];
             document.getElementById("nPoles").innerText = results['n_poles'];
@@ -445,9 +445,32 @@ function load_results() {
             document.getElementById("co2Savings").innerText = results['co2_savings'];
             document.getElementById("lcoe").innerText = results['lcoe'];
             document.getElementById("time").innerText = results['time'];
-        }
+            document.getElementById('pendingTask').style.display='none';
+            show_map();
+            refresh_map(project_id, false);
+            plot_all();
+        }}
+        else {
+            document.getElementById('noResults').style.display='block';
+            $.ajax({
+            url: "has_pending_task/" + project_id,
+            type: "POST",
+            contentType: "application/json",
+            })
+            .done(function (res) {
+                if (res.has_pending_task === true)
+                {
+                    document.getElementById("pendingTaskMSG").innerText = 'Calculation is still running.';
+                }
+                else
+                {
+                    document.getElementById("pendingTaskMSG").innerText = 'There is no ongoing calculation.' +
+                        ' If you want to run the optimization for this project, go to projects overview and click on ' +
+                        '\"Edit Project\"';
+                }
+            });
     };
-}
+}}
 
 function refresh_map(project_id, hide_links){
     database_read(nodes_or_link = 'nodes', map_or_export = 'map', project_id);

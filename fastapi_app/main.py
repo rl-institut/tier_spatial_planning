@@ -221,8 +221,8 @@ async def simulation_results(request: Request):
     project_id = request.query_params.get('project_id')
     try:
         int(project_id)
-    except (TypeError, ValueError):
-        return templates.TemplateResponse("landing-page.html", {"request": request})
+    except (TypeError, ValueError) as e:
+        raise e
     return templates.TemplateResponse("simulation-results.html", {"request": request, 'project_id': project_id})
 
 
@@ -290,6 +290,8 @@ async def database_read(nodes_or_links: str, project_id, request: Request):
 async def load_results(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
     df = await queries.get_results_df(user.id, project_id)
+    if df.empty:
+        return {}
     df["average_length_distribution_cable"] = df["length_distribution_cable"] / df["n_distribution_links"]
     df["average_length_connection_cable"] = df["length_connection_cable"] / df["n_connection_links"]
     df["time"] = df["time_grid_design"] + df["time_energy_system_design"]
@@ -731,17 +733,12 @@ def queue_opt_task(user_id, project_id):
 
 
 async def optimization(user_id, project_id):
-    print(5)
     await remove_results(user_id, project_id)
-    print(6)
     if socket.gethostname() == 'nbb':
         await run_opt_task(user_id, project_id)
         return 'no_celery_id'
     else:
-        print(7)
         task = queue_opt_task.delay(user_id, project_id)
-        print(task)
-        print(task.id)
         return task.id
 
 
@@ -769,20 +766,13 @@ async def forward_if_no_task_is_pending(request: Request):
 
 @app.post("/start_calculation/{project_id}")
 async def start_calculation(project_id, request: Request):
-    print(0)
     if project_id is None:
-        print('is none')
         project_id = request.query_params.get('project_id')
     user = await accounts.get_user_from_cookie(request)
-    print(1)
-    int(project_id)
-    print(2)
     task_id = await optimization(user.id, project_id)
-    print(3)
     user.task_id = task_id
+    user.project_id = int(project_id)
     await inserts.update_model_by_user_id(user)
-    print(task_id)
-    print(4)
     return JSONResponse({'task_id': task_id})
 
 
@@ -813,8 +803,21 @@ async def waiting_for_results(request: Request, data: models.TaskInfo):
     if res['finished'] is True:
         user = await accounts.get_user_from_cookie(request)
         user.task_id = ''
+        user.project_id = None
         await inserts.update_model_by_user_id(user)
     return JSONResponse(res)
+
+
+@app.post('/has_pending_task/{project_id}')
+async def has_pending_task(project_id, request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    if user.task_id is not None \
+            and len(user.task_id) > 20 \
+            and not task_is_finished(user.task_id) \
+            and user.project_id == int(project_id):
+        return JSONResponse({'has_pending_task': True})
+    else:
+        return JSONResponse({'has_pending_task': False})
 
 
 @app.post('/revoke_task/')
@@ -833,6 +836,7 @@ async def revoke_users_task(request: Request):
     celery_task.revoke(terminate=True, signal='SIGKILL')
     user = await accounts.get_user_from_cookie(request)
     user.task_id = ''
+    user.project_id = None
     await inserts.update_model_by_user_id(user)
 
 

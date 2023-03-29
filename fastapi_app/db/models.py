@@ -86,6 +86,7 @@ class User(Base):
     is_active = Column(Boolean(), default=False)
     is_superuser = Column(Boolean(), default=False)
     task_id = Column(VARCHAR(80))
+    project_id = Column(SMALLINT(unsigned=True), default=False, nullable=True)
 
 
 class ProjectSetup(Base):
