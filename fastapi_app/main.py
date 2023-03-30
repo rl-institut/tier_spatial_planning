@@ -378,9 +378,10 @@ async def anonymous_login(response: Response):
     access_token = create_access_token(data={"sub": name}, expires_delta=access_token_expires)
     response.set_cookie(key="access_token", value=f"Bearer {access_token}",
                         httponly=True)  # set HttpOnly cookie in response
-    minutes = config.ACCESS_TOKEN_EXPIRE_MINUTES_ANONYMOUS + 60
-    eta = datetime.utcnow() + timedelta(minutes=minutes)
-    queue_remove_anonymous_users.apply_async((user.email, user.id,), eta=eta)
+    if socket.gethostname() != 'nbb':
+        minutes = config.ACCESS_TOKEN_EXPIRE_MINUTES_ANONYMOUS + 60
+        eta = datetime.utcnow() + timedelta(minutes=minutes)
+        queue_remove_anonymous_users.apply_async((user.email, user.id,), eta=eta)
     return {"access_token": access_token, "token_type": "bearer"}
 
 

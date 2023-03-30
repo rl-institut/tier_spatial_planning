@@ -446,7 +446,9 @@ function load_results(project_id) {
             document.getElementById("lcoe").innerText = results['lcoe'];
             document.getElementById("time").innerText = results['time'];
             refresh_map(project_id, false);
-            plot()
+            window.alert('NULL');
+            plot();
+            window.alert('Eins');
             document.getElementById('section').style.display = 'block';
         }
         else {
@@ -525,7 +527,7 @@ function anonymous_login () {
             type: "POST",
             contentType: "application/json",
             dataType: "json",})
-        .done(function () {window.location.href=window.location.origin + '/project_setup';});}
+        .done(function () {window.location.href=window.location.origin;});}
 
 
 function logout()  {
