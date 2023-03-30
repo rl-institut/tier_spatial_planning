@@ -3,6 +3,7 @@
   <head>
     {% set title='PeopleSun' %}
     {% include '_head.html' %}
+    {% include '_style_msg_box.html' %}
     <title>PeopleSun</title>
   </head>
   <body onload="show_user_email_in_navbar();">
@@ -28,7 +29,7 @@
                     <button
                           class="btn btn--long text-right"
                           type="button"
-                          onclick="anonymous_login();"
+                          onclick="document.getElementById('msgBox').style.display='block'"
                         >
                           Test it (without an account)
                     </button>
@@ -85,6 +86,23 @@
               </div>
           </div>
       </section>
+             <div id="msgBox" class="modal">
+              <span  class="close" title="Close Modal">&times;</span>
+              <form class="modal-content" action="/action_page.php">
+                <div class="container">
+                  <h1 style="text-align:left;">Using the planing tool without registration</h1>
+                  <p style="text-align:left;">To test the planning tool, you do not need to register an account, a temporary account will be created automatically. However, if you use the planning tool without registering, please note:</p>
+                    <p style="text-align:left;"> &bull; Your data will be automatically deleted after three hours</p>
+                    <p style="text-align:left;"> &bull; If you log out, you lose access to your data</p>
+                    <p style="text-align:left;"> &bull; The modeling time is limited to 14 days</p>
+                   <p style="text-align:left;"> &bull; The calculation time of your optimization model is limited to 5 minutes</p>
+                  <div class="clearfix">
+                      <button onclick="anonymous_login();" type="button" class="deletebtn">Continue</button>
+                    <button onclick="document.getElementById('msgBox').style.display='none'" type="button" class="cancelbtn">Chancel</button>
+                  </div>
+                </div>
+              </form>
+            </div>
     </main>
   </body>
 {% include '_scripts.html' %}

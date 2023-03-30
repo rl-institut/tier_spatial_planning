@@ -424,7 +424,6 @@ function load_results(project_id) {
     xhr.open("GET", url, true);
     xhr.responseType = "json";
     xhr.send();
-    
     xhr.onreadystatechange = function () {
         if (this.readyState == 4 && this.status == 200) {
             // push nodes to the map
@@ -446,13 +445,11 @@ function load_results(project_id) {
             document.getElementById("lcoe").innerText = results['lcoe'];
             document.getElementById("time").innerText = results['time'];
             refresh_map(project_id, false);
-            window.alert('NULL');
             plot();
-            window.alert('Eins');
             document.getElementById('section').style.display = 'block';
         }
         else {
-            document.getElementById('section').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'none';
             document.getElementById('leafletMap').style.display = 'none';
             document.getElementById('noResults').style.display='block';
             $.ajax({
