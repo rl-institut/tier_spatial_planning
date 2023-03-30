@@ -178,7 +178,7 @@ L.easyButton(
     const urlParams = new URLSearchParams(window.location.search);
     project_id = urlParams.get('project_id');
   clear_nodes_and_links(project_id = project_id);
-  database_read(nodes_or_links = 'nodes', map_or_export = 'map', project_id = project_id);
+  remove_marker_from_map();
     position: "topleft";
   },
   "Clear all nodes from the map"
@@ -293,6 +293,10 @@ mainMap.on("click", function (e) {
 // --------------------FUNCTIONS DECLARATION----------------------//
 
 // INTERACTION WITH LEAFLET MAP
+
+function remove_marker_from_map() {
+  for (marker of markers)
+  {mainMap.removeLayer(marker);}}
 
 function drawMarker(latitude, longitude, type) {
   if (type === "consumer") {

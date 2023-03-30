@@ -447,8 +447,10 @@ function load_results(project_id) {
             document.getElementById("time").innerText = results['time'];
             refresh_map(project_id, false);
             plot()
+            document.getElementById('section').style.display = 'block';
         }
         else {
+            document.getElementById('section').style.display = 'none';
             document.getElementById('leafletMap').style.display = 'none';
             document.getElementById('noResults').style.display='block';
             $.ajax({
@@ -887,5 +889,7 @@ function forward_if_consumer_selection_exists(project_id) {
         if (res.forward === true) {
             window.location.href = window.location.origin + '/grid_design/?project_id=' + project_id;
         } else {
+            document.getElementById('leafletMap').style.display = 'none';
+            document.getElementById('section').style.display = 'none';
             document.getElementById('noSelection').style.display='block'
         }})}
