@@ -764,6 +764,17 @@ async def forward_if_no_task_is_pending(request: Request):
     return JSONResponse(res)
 
 
+@app.post("/forward_if_consumer_selection_exists/{project_id}")
+async def forward_if_consumer_selection_exists(project_id, request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    nodes_json = await queries.get_nodes_json(user.id, project_id)
+    if len(nodes_json['consumer_type']) > 0:
+        res = {'forward': True}
+    else:
+        res = {'forward': False}
+    return JSONResponse(res)
+
+
 @app.post("/start_calculation/{project_id}")
 async def start_calculation(project_id, request: Request):
     if project_id is None:

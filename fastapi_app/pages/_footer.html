@@ -25,7 +25,7 @@
                  href='consumer_selection?project_id={{ project_id }}'
                  onclick="save_project_setup({{ project_id }});"
             {% elif title == 'Consumer Selection' %}
-                 href='grid_design/?project_id={{ project_id }}'
+                 onclick="forward_if_consumer_selection_exists({{ project_id }})"
             {% elif title == 'Grid Design' %}
                  href="energy_system_design?project_id={{ project_id }}"
                  onclick="save_grid_design();"

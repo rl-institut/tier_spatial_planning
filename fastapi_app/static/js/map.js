@@ -1,5 +1,5 @@
 // --------------------VARIABLES DECLARATION----------------------//
-function show_map() {
+
 var markers = [];
 var lines = [];
 
@@ -366,5 +366,4 @@ function removeBoundaries() {
   siteBoundaries.length = 0;
   siteBoundaryLines.length = 0;
   dashedBoundaryLine = null;
-}
 }

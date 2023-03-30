@@ -429,8 +429,8 @@ function load_results(project_id) {
         if (this.readyState == 4 && this.status == 200) {
             // push nodes to the map
             results = this.response;
-            let lenght = Object.keys(results).length;
-            if (lenght > 0) {
+            if (results['n_consumers'] > 0) {
+            document.getElementById('noResults').style.display='none';
             document.getElementById("nConsumers").innerText = results['n_consumers'];
             document.getElementById("nShsConsumers").innerText = results['n_shs_consumers'];
             document.getElementById("nPoles").innerText = results['n_poles'];
@@ -445,12 +445,11 @@ function load_results(project_id) {
             document.getElementById("co2Savings").innerText = results['co2_savings'];
             document.getElementById("lcoe").innerText = results['lcoe'];
             document.getElementById("time").innerText = results['time'];
-            document.getElementById('pendingTask').style.display='none';
-            show_map();
             refresh_map(project_id, false);
-            plot_all();
-        }}
+            plot()
+        }
         else {
+            document.getElementById('leafletMap').style.display = 'none';
             document.getElementById('noResults').style.display='block';
             $.ajax({
             url: "has_pending_task/" + project_id,
@@ -469,7 +468,7 @@ function load_results(project_id) {
                         '\"Edit Project\"';
                 }
             });
-    };
+    }}
 }}
 
 function refresh_map(project_id, hide_links){
@@ -878,3 +877,15 @@ function start_calculation(project_id)
             wait_for_results(project_id, res.task_id, 0);
         });
     }
+
+function forward_if_consumer_selection_exists(project_id) {
+    $.ajax({
+        url: "forward_if_consumer_selection_exists/" + project_id,
+        type: "POST",
+        contentType: "application/json",})
+            .done(function (res) {
+        if (res.forward === true) {
+            window.location.href = window.location.origin + '/grid_design/?project_id=' + project_id;
+        } else {
+            document.getElementById('noSelection').style.display='block'
+        }})}

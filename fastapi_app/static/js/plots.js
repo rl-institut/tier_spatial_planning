@@ -1,6 +1,6 @@
+function makeplot_bar_chart(){
 // BAR DIAGRAM FOR OPTIMAL CAPACITY OF COMPONENTS
 // get optimal capacities from energy system optimizer
-function plot_all() {
 const urlParams = new URLSearchParams(window.location.search);
 project_id = urlParams.get('project_id');
 var yValue = [0, 0, 0, 0, 0, 0, 0];
@@ -64,8 +64,9 @@ xhr.onreadystatechange = function () {
       
         Plotly.newPlot(optimalSizes, data, layout);
       }
-};
+};}
 
+function makeplot_lcoe_pie() {
 // PIE DIAGRAM FOR BREAKDOWN OF LCOE
 lcoeBreakdown = document.getElementById('lcoeBreakdown');
 var xhr = new XMLHttpRequest();
@@ -110,8 +111,9 @@ xhr.onreadystatechange = function () {
       }
       Plotly.newPlot(lcoeBreakdown, data, layout)
   }
-};
+};}
 
+function makeplot_sankey() {
 // SANKEY DIAGRAM
 sankeyDiagram = document.getElementById('sankeyDiagram');
 var xhr = new XMLHttpRequest();
@@ -193,7 +195,7 @@ xhr.onreadystatechange = function () {
       
     Plotly.react(sankeyDiagram, data, layout)
   }
-};
+};}
 
 // ENERGY FLOWS PLOT
 function makeplot_energy_flows() {
@@ -306,8 +308,8 @@ function makeplot_energy_flows() {
       }
   };
 
-};
-makeplot_energy_flows();
+}
+
 
 // DEMAND COVERAGE PLOT
 function makeplot_demand_coverage() {
@@ -393,9 +395,8 @@ function makeplot_demand_coverage() {
           Plotly.newPlot(demandCoverage, data, layout);
       }
   };
+}
 
-};
-makeplot_demand_coverage();
 
 
 // DURATION CURVES
@@ -499,7 +500,7 @@ function makeplot_duration_curves() {
   };
 
 };
-makeplot_duration_curves();
+
 
 // DEMAND COVERAGE PLOT
 function makeplot_co2_emissions() {
@@ -572,5 +573,13 @@ function makeplot_co2_emissions() {
       }
   };
 
-};
-makeplot_co2_emissions();}
+}
+
+function plot() {
+    makeplot_bar_chart();
+    makeplot_lcoe_pie();
+    makeplot_sankey();
+    makeplot_duration_curves();
+    makeplot_co2_emissions();
+    makeplot_energy_flows();
+    makeplot_demand_coverage();}

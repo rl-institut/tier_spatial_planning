@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.css" />
   </head>
   <body onload="redirect_if_cookie_is_missing();
-                show_map();
                 refresh_map({{ project_id }}, true);
                 show_user_email_in_navbar();">
   {% include '_navbar.html' %}
@@ -165,10 +164,6 @@
   {% include '_footer.html' %}
   </body>
     {% include '_scripts.html' %}
-  <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"></script>
-  <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=Promise"></script>
-  <script src="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.js"></script>
-  <script src="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.umd.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="{{ url_for('static', path='js/map.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    {% include '_map_scripts.html' %}
 </html>
