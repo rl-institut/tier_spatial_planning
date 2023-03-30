@@ -1,3 +1,17 @@
+import uuid
+import asyncio
+import math
+import urllib.request
+import json
+import pandas as pd
+import numpy as np
+from celery_worker import worker
+import os
+from datetime import datetime, timedelta
+from collections import defaultdict
+from typing import Any, Dict, List, Union
+import time
+import socket
 import fastapi_app.tools.boundary_identification as bi
 import fastapi_app.tools.coordinates_conversion as conv
 import fastapi_app.tools.shs_identification as shs_ident
@@ -13,20 +27,6 @@ from fastapi_app.tools.accounts import Hasher, create_guid, is_valid_credentials
 from fastapi_app.tools import accounts
 from fastapi_app.db import config
 from fastapi_app.db import queries, inserts
-import asyncio
-import math
-import urllib.request
-import json
-import pandas as pd
-import numpy as np
-from celery_worker import worker
-import os
-from datetime import datetime, timedelta
-from collections import defaultdict
-from typing import Any, Dict, List, Union
-import time
-import socket
-import celery
 import pyutilib.subprocess.GlobalData
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 # avoids error when running pyomo with celery worker
@@ -149,7 +149,7 @@ async def home(request: Request):
 
 @app.get("/project_setup")
 async def project_setup(request: Request):
-    user = await accounts.get_user_from_cookie(request) # .id
+    user = await accounts.get_user_from_cookie(request)
     project_id = request.query_params.get('project_id')
     if project_id is None:
         project_id = await queries.next_project_id_of_user(user.id)
@@ -360,17 +360,27 @@ async def add_user_to_db(user: models.Credentials):
     return models.ValidRegistration(validation=res[0], msg=res[1])
 
 
-@app.post("/set_access_token/", response_model=models.Token)
-async def set_access_token(response: Response, credentials: models.Credentials):
-    if isinstance(credentials.email, str) and len(credentials.email) > 3:
-        user = await authenticate_user(credentials.email, credentials.password)
-        name = user.email
-    else:
-        name = 'anonymous'
-    access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
+@app.post("/anonymous_login/")
+async def anonymous_login(response: Response):
+    guid = str(uuid.uuid4())
+    name = 'anonymous__' + guid
+    user = models.User(email=name,
+                       hashed_password='',
+                       guid='',
+                       is_confirmed=True,
+                       is_active=True,
+                       is_superuser=False,
+                       task_id='',
+                       project_id=0)
+    await inserts.merge_model(user)
+    user = await queries.get_user_by_username(name)
+    access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES_ANONYMOUS)
     access_token = create_access_token(data={"sub": name}, expires_delta=access_token_expires)
     response.set_cookie(key="access_token", value=f"Bearer {access_token}",
                         httponly=True)  # set HttpOnly cookie in response
+    minutes = config.ACCESS_TOKEN_EXPIRE_MINUTES_ANONYMOUS + 60
+    eta = datetime.utcnow() + timedelta(minutes=minutes)
+    queue_remove_anonymous_users.apply_async((user.email, user.id,), eta=eta)
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -402,7 +412,10 @@ async def logout(response: Response):
 async def query_account_data(request: Request):
     user = await accounts.get_user_from_cookie(request)
     if user is not None:
-        return models.UserOverview(email=user.email)
+        name = user.email
+        if 'anonymous__' in name:
+            name = name.split('__')[0]
+        return models.UserOverview(email=name)
     else:
         return models.UserOverview(email="")
 
@@ -730,6 +743,13 @@ def queue_opt_task(user_id, project_id):
     asyncio.set_event_loop(loop)
     loop.run_until_complete(optimize_grid(user_id, project_id))
     loop.run_until_complete(optimize_energy_system(user_id, project_id))
+
+
+@worker.task(name='queue_remove_anonymous_users', force=True, track_started=True)
+def queue_remove_anonymous_users(user_email, user_id):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(inserts.remove_account(user_email, user_id))
 
 
 async def optimization(user_id, project_id):

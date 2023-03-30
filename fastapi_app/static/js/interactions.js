@@ -520,14 +520,12 @@ function login() {
             });}
 
 
-function set_access_token() {
-    $.ajax({url: "set_access_token/",
+function anonymous_login () {
+    $.ajax({url: "anonymous_login/",
             type: "POST",
             contentType: "application/json",
-            data: JSON.stringify({email: email.value,
-                                       password: password.value,}),
             dataType: "json",})
-}
+        .done(function () {window.location.href=window.location.origin + '/project_setup';});}
 
 
 function logout()  {
