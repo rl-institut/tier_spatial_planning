@@ -28,6 +28,7 @@
                     <th>Project Name</th>
                     <th>Creation Date</th>
                     <th>Last Update</th>
+                    <th>Model Status</th>
                     <th></th>
                     <th></th>
                     <th></th>
@@ -39,6 +40,7 @@
                        <TD>{{ project.project_name }}</TD>
                        <TD>{{ project.created_at }}</TD>
                        <TD>{{ project.updated_at }}</TD>
+                        <TD>{{ project.status }}</TD>
                        <TD><span style="float:right;"><a>&nbsp;
                        <a onclick="document.getElementById('projectID{{ project.project_id }}').style.display='block'"
                           class="grey_button" style="color:white"

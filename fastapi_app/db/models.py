@@ -106,7 +106,7 @@ class ProjectSetup(Base):
     start_date = Column(DateTime, nullable=False, default=pd.to_datetime(str(pd.Timestamp.now().year - 1)))
     temporal_resolution = Column(SMALLINT(unsigned=True), nullable=False, server_default="1")
     n_days = Column(SMALLINT(unsigned=True), nullable=False, server_default="365")
-
+    status = Column(VARCHAR(25), default="not yet started")
 
 class GridDesign(Base):
 

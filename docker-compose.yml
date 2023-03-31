@@ -10,6 +10,8 @@ services:
       - PYTHONUNBUFFERED=1
       - PW=/run/secrets/pw
       - MAX_DAYS=14
+      - MAX_CONSUMER=2000
+      - MAX_CONSUMER_ANONYMOUS=150
     ports:
       - '40000:40000'
     links:

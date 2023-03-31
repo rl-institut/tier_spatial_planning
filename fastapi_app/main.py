@@ -37,6 +37,10 @@ app.mount("/fastapi_app/static", StaticFiles(directory="fastapi_app/static"), na
 templates = Jinja2Templates(directory="fastapi_app/pages")
 
 
+# define the template for importing json data in the form of arrays from js to python
+json_object = Dict[Any, Any]
+json_array = List[Any]
+import_structure = Union[json_array, json_object]
 
 # --------------------- REDIRECT REQUEST TO FAVICON LOG ----------------------#
 
@@ -750,6 +754,9 @@ def queue_remove_anonymous_users(user_email, user_id):
 
 async def optimization(user_id, project_id):
     await remove_results(user_id, project_id)
+    project_setup = await queries.get_project_setup_of_user(user_id, project_id)
+    project_setup.status = "queued"
+    await inserts.merge_model(project_setup)
     if socket.gethostname() == 'nbb':
         await run_opt_task(user_id, project_id)
         return 'no_celery_id'
@@ -869,6 +876,9 @@ async def revoke_users_task(request: Request):
 
 async def optimize_grid(user_id, project_id):
     # Grab Currrent Time Before Running the Code
+    project_setup = await queries.get_project_setup_of_user(user_id, project_id)
+    project_setup.status = "in progress"
+    await inserts.merge_model(project_setup)
     start_execution_time = time.monotonic()
 
     # create GridOptimizer object
@@ -1209,15 +1219,9 @@ async def optimize_grid(user_id, project_id):
 async def optimize_energy_system(user_id, project_id):
     # Grab Currrent Time Before Running the Code
     start_execution_time = time.monotonic()
-
     df = await queries.get_input_df(user_id, project_id)
     energy_system_design= await queries.get_energy_system_design(user_id, project_id)
-
-
-
     solver = 'gurobi' if po.SolverFactory('gurobi').available() else 'cbc'
-
-
     ensys_opt = EnergySystemOptimizer(
         start_date=df.loc[0, "start_date"],
         n_days=min(df.loc[0, "n_days"], os.environ.get('MAX_DAYS', 365)),
@@ -1231,13 +1235,10 @@ async def optimize_energy_system(user_id, project_id):
         battery=energy_system_design['battery'],
         inverter=energy_system_design['inverter'],
         rectifier=energy_system_design['rectifier'],
-        shortage=energy_system_design['shortage'],
-    )
+        shortage=energy_system_design['shortage'],)
     ensys_opt.optimize_energy_system()
-
     # Grab Currrent Time After Running the Code
     end_execution_time = time.monotonic()
-
     # unit for co2_emission_factor is kgCO2 per kWh of produced electricity
     if ensys_opt.capacity_genset < 60:
         co2_emission_factor = 1.580
@@ -1245,7 +1246,6 @@ async def optimize_energy_system(user_id, project_id):
         co2_emission_factor = 0.883
     else:
         co2_emission_factor = 0.699
-
     # store fuel co2 emissions (kg_CO2 per L of fuel)
     df = pd.DataFrame()
     df["non_renewable_electricity_production"] = (
@@ -1259,20 +1259,14 @@ async def optimize_energy_system(user_id, project_id):
     df = df.round(3)
     await inserts.insert_df(models.Emissions, df, user_id, project_id)
     # TODO: -2 must actually be -1, but for some reason, the co2-emission csv file has an additional empty row
-    co2_savings = df.loc[:, "co2_savings"][
-        -2
-    ]  # takes the last element of the cumulative sum
-
+    co2_savings = df.loc[:, "co2_savings"][-2]  # takes the last element of the cumulative sum
     # store data for showing in the final results
     df = await queries.get_results_df(user_id, project_id)
     df.loc[0, "cost_renewable_assets"] = ensys_opt.total_renewable
     df.loc[0, "cost_non_renewable_assets"] = ensys_opt.total_non_renewable
     df.loc[0, "cost_fuel"] = ensys_opt.total_fuel
-    df.loc[0, "lcoe"] = (
-            100
-            * (ensys_opt.total_revenue + df.loc[0, "cost_grid"] + df.loc[0, "cost_shs"])
-            / ensys_opt.total_demand
-    )
+    df.loc[0, "lcoe"] = (100 * (ensys_opt.total_revenue + df.loc[0, "cost_grid"]
+                                + df.loc[0, "cost_shs"]) / ensys_opt.total_demand)
     df.loc[0, "res"] = ensys_opt.res
     df.loc[0, "shortage_total"] = ensys_opt.shortage
     df.loc[0, "surplus_rate"] = ensys_opt.surplus_rate
@@ -1284,30 +1278,18 @@ async def optimize_energy_system(user_id, project_id):
     df.loc[0, "peak_demand"] = ensys_opt.demand_peak
     df.loc[0, "surplus"] = ensys_opt.sequences_surplus.max()
     # data for sankey diagram - all in MWh
-    df.loc[0, "fuel_to_diesel_genset"] = (
-            ensys_opt.sequences_fuel_consumption.sum()
-            * 0.846
-            * ensys_opt.diesel_genset["parameters"]["fuel_lhv"]
-            / 1000
-    )
-    df.loc[0, "diesel_genset_to_rectifier"] = (
-            ensys_opt.sequences_rectifier.sum()
-            / ensys_opt.rectifier["parameters"]["efficiency"]
-            / 1000
-    )
-    df.loc[0, "diesel_genset_to_demand"] = (
-            ensys_opt.sequences_genset.sum() / 1000
-            - df.loc[0, "diesel_genset_to_rectifier"]
-    )
+    df.loc[0, "fuel_to_diesel_genset"] = (ensys_opt.sequences_fuel_consumption.sum() * 0.846 *
+                                          ensys_opt.diesel_genset["parameters"]["fuel_lhv"] / 1000)
+    df.loc[0, "diesel_genset_to_rectifier"] = (ensys_opt.sequences_rectifier.sum() /
+                                               ensys_opt.rectifier["parameters"]["efficiency"] / 1000)
+    df.loc[0, "diesel_genset_to_demand"] = ( ensys_opt.sequences_genset.sum() / 1000
+                                             - df.loc[0, "diesel_genset_to_rectifier"])
     df.loc[0, "rectifier_to_dc_bus"] = ensys_opt.sequences_rectifier.sum() / 1000
     df.loc[0, "pv_to_dc_bus"] = ensys_opt.sequences_pv.sum() / 1000
     df.loc[0, "battery_to_dc_bus"] = ensys_opt.sequences_battery_discharge.sum() / 1000
     df.loc[0, "dc_bus_to_battery"] = ensys_opt.sequences_battery_charge.sum() / 1000
-    df.loc[0, "dc_bus_to_inverter"] = (
-            ensys_opt.sequences_inverter.sum()
-            / ensys_opt.inverter["parameters"]["efficiency"]
-            / 1000
-    )
+    df.loc[0, "dc_bus_to_inverter"] = (ensys_opt.sequences_inverter.sum() /
+                                       ensys_opt.inverter["parameters"]["efficiency"] / 1000)
     df.loc[0, "dc_bus_to_surplus"] = ensys_opt.sequences_surplus.sum() / 1000
     df.loc[0, "inverter_to_demand"] = ensys_opt.sequences_inverter.sum() / 1000
     df.loc[0, "time_energy_system_design"] = end_execution_time - start_execution_time
@@ -1369,6 +1351,9 @@ async def optimize_energy_system(user_id, project_id):
     df['h'] = np.arange(1, len(ensys_opt.sequences_genset) + 1)
     df = df.round(3)
     await inserts.insert_df(models.DurationCurve, df, user_id, project_id)
+    project_setup = await queries.get_project_setup_of_user(user_id, project_id)
+    project_setup.status = "finished"
+    await inserts.merge_model(project_setup)
 
 
 @app.post("/shs_identification/")

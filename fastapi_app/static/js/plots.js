@@ -576,7 +576,6 @@ function makeplot_co2_emissions() {
 }
 
 function plot() {
-    window.alert(0)
     makeplot_bar_chart();
     makeplot_lcoe_pie();
     makeplot_sankey();
