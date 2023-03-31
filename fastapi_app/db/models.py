@@ -204,7 +204,7 @@ class Nodes(Base):
     consumer_detail = Column(VARCHAR(55))
     surface_area = Column(Numeric(10, 5))
     peak_demand = Column(Numeric(10, 5))
-    average_consumption = Column(Numeric(10, 5))
+    average_consumption = Column(Numeric(11, 3))
     is_connected = Column(Boolean)
     how_added = Column(VARCHAR(55))
     distance_to_load_center = Column(Numeric(10, 6))

@@ -194,6 +194,7 @@ function database_add_remove_automatic(
     { add_remove = "add",
         project_id,
         boundariesCoordinates } = {},) {
+    $("*").css("cursor", "wait");
     $.ajax({
         url: "/database_add_remove_automatic/" + add_remove + '/' + project_id,
         type: "POST",
@@ -203,13 +204,15 @@ function database_add_remove_automatic(
         }),
         dataType: "json",
     }).done(function (res) {
+        $("*").css('cursor','auto');
         document.getElementById("responseMsg").innerHTML = res.msg;
         if (res.executed === false)
             {document.getElementById("responseMsg").style.color = 'red';}
         else
             {document.getElementById("responseMsg").innerHTML = '';
              database_read(nodes_or_links = 'nodes', map_or_export = 'map', project_id);
-             database_read(nodes_or_links = 'links', map_or_export = 'map', project_id);}})}
+             database_read(nodes_or_links = 'links', map_or_export = 'map', project_id);}})
+    }
 
 
 
