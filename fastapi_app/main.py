@@ -546,6 +546,7 @@ async def database_add_remove_automatic(add_remove: str, project_id,
                                         selectBoundariesRequest: models.SelectBoundariesRequest,
                                         request: Request):
     user = await accounts.get_user_from_cookie(request)
+
     boundary_coordinates = selectBoundariesRequest.boundary_coordinates
     # latitudes and longitudes of all buildings in the selected boundary
     latitudes = [x[0] for x in boundary_coordinates]
@@ -557,12 +558,24 @@ async def database_add_remove_automatic(add_remove: str, project_id,
         min_longitude = min(longitudes)
         max_latitude = max(latitudes)
         max_longitude = max(longitudes)
+        if max_latitude - min_latitude > os.environ.get("MAX_LAT_LON_DIST", 0.15):
+            return JSONResponse({'executed': False,
+                                 'msg': 'The maximum latitude distance selected is too large. '
+                                        'Please select a smaller area.'})
+        elif max_longitude - min_longitude > os.environ.get("MAX_LAT_LON_DIST", 0.15):
+            return JSONResponse({'executed': False,
+                                 'msg': 'The maximum longitude distance selected is too large. '
+                                        'Please select a smaller area.'})
         url = f'https://www.overpass-api.de/api/interpreter?data=[out:json][timeout:2500]' \
               f'[bbox:{min_latitude},{min_longitude},{max_latitude},{max_longitude}];' \
               f'(way["building"="yes"];relation["building"];);out body;>;out skel qt;'
         url_formated = url.replace(" ", "+")
         with urllib.request.urlopen(url_formated) as url:
             data = json.loads(url.read().decode())
+        if user.email.split('__')[0] == 'anonymous':
+            max_consumer = os.environ.get("MAX_CONSUMER_ANONNYMOUS", 150)
+        else:
+            max_consumer = os.environ.get("MAX_CONSUMER", 1000)
 
         # first converting the json file, which is delievered by overpass to geojson,
         # then obtaining coordinates and surface areas of all buildings inside the
@@ -590,6 +603,11 @@ async def database_add_remove_automatic(add_remove: str, project_id,
             # surface area is taken from the open street map
             nodes["surface_area"].append(building_area[label])
         # Add the peak demand and average annual consumption for each node
+        if len(nodes['node_type']) > max_consumer:
+            return JSONResponse({'executed': False,
+                                 'msg': 'You have selected {} users. You can select a maximum of {} users. '
+                                        'Reduce the number of users by selecting a small area, for example.'
+                                . format(len(data['elements']), max_consumer)})
         nodes = _demand_estimation(nodes=nodes, update_total_demand=False)
         # storing the nodes in the database
         await inserts.update_nodes_and_links(True, False, nodes, user.id, project_id)
@@ -604,7 +622,7 @@ async def database_add_remove_automatic(add_remove: str, project_id,
                                          boundaries=boundary_coordinates, ):
                 df.drop(labels=index, axis=0, inplace=True)
         await inserts.update_nodes_and_links(True, False, df.to_dict(), user.id, project_id, False)
-
+    return JSONResponse({'executed': True, 'msg': ''})
 
 # add new manually-selected nodes to the *.csv file
 @app.post("/database_add_remove_manual/{add_remove}/{project_id}")

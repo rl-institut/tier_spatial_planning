@@ -148,14 +148,10 @@
                     </button>
                   </div>
                 </div>
-                <!-- <input
-                        type="file"
-                        id="import"
-                        style="display: none"
-                        accept=".xls, .xlsx"
-                      /> -->
               </div>
+               <p id="responseMsg"></p>
             </form>
+
             <div class="map" style="min-height: 700px;">
                <div id="leafletMap"></div>
             </div>
@@ -178,10 +174,4 @@
     {% include '_scripts.html' %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     {% include '_map_scripts.html' %}
-    <script>
-        function hide_no_selection_prompt() {
-            document.getElementById('leafletMap').style.display = 'block';
-            document.getElementById('section').style.display = 'block';
-            document.getElementById('noSelection').style.display='none';}
-    </script>
 </html>

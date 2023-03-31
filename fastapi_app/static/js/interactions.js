@@ -193,9 +193,7 @@ function database_add_remove_manual(
 function database_add_remove_automatic(
     { add_remove = "add",
         project_id,
-        boundariesCoordinates } = {},
-
-) {
+        boundariesCoordinates } = {},) {
     $.ajax({
         url: "/database_add_remove_automatic/" + add_remove + '/' + project_id,
         type: "POST",
@@ -204,14 +202,16 @@ function database_add_remove_automatic(
             boundary_coordinates: boundariesCoordinates,
         }),
         dataType: "json",
-        statusCode: {
-            200: function () {
-                database_read(nodes_or_links = 'nodes', map_or_export = 'map', project_id);
-                database_read(nodes_or_links = 'links', map_or_export = 'map', project_id);
-            },
-        },
-    });
-}
+    }).done(function (res) {
+        document.getElementById("responseMsg").innerHTML = res.msg;
+        if (res.executed === false)
+            {document.getElementById("responseMsg").style.color = 'red';}
+        else
+            {document.getElementById("responseMsg").innerHTML = '';
+             database_read(nodes_or_links = 'nodes', map_or_export = 'map', project_id);
+             database_read(nodes_or_links = 'links', map_or_export = 'map', project_id);}})}
+
+
 
 /************************************************************/
 /*                   SWITCHING HTML PAGES                   */
@@ -890,3 +890,8 @@ function forward_if_consumer_selection_exists(project_id) {
             document.getElementById('section').style.display = 'none';
             document.getElementById('noSelection').style.display='block'
         }})}
+
+function hide_no_selection_prompt() {
+    document.getElementById('leafletMap').style.display = 'block';
+    document.getElementById('section').style.display = 'block';
+    document.getElementById('noSelection').style.display='none';}
