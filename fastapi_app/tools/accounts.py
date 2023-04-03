@@ -74,7 +74,7 @@ def send_activation_link(mail, guid):
     send_mail(mail, msg)
 
 
-def send_mail(to_adress, msg):
+def send_mail(to_adress, msg, subject='Activate your PeopleSun-Account'):
     from fastapi_app.db.config import MAIL_PW
     smtp_server = config.MAIL_HOST
     smtp_port = config.MAIL_PORT
@@ -83,7 +83,7 @@ def send_mail(to_adress, msg):
     message = MIMEMultipart()
     message["From"] = config.MAIL_ADRESS
     message["To"] = to_adress
-    message["Subject"] = 'Activate your PeopleSun-Account'
+    message["Subject"] = subject
     message.attach(MIMEText(msg, "plain"))
     with smtplib.SMTP(smtp_server, smtp_port) as server:
         server.starttls()

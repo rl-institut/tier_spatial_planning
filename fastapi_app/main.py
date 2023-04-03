@@ -16,14 +16,14 @@ import fastapi_app.tools.boundary_identification as bi
 import fastapi_app.tools.coordinates_conversion as conv
 import fastapi_app.tools.shs_identification as shs_ident
 import fastapi_app.db.models as models
-from fastapi import FastAPI, Request, Response
-from fastapi.responses import RedirectResponse, FileResponse, JSONResponse
+from fastapi import FastAPI, Request, Response, BackgroundTasks
+from fastapi.responses import RedirectResponse, FileResponse, JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi_app.tools.grids import Grid
 from fastapi_app.tools.optimizer import Optimizer, GridOptimizer, EnergySystemOptimizer, po
 from fastapi_app.tools.accounts import Hasher, create_guid, is_valid_credentials, send_activation_link, activate_mail, \
-    authenticate_user, create_access_token
+    authenticate_user, create_access_token, send_mail
 from fastapi_app.tools import accounts
 from fastapi_app.db import config
 from fastapi_app.db import queries, inserts
@@ -133,11 +133,14 @@ async def import_data(project_id, request: Request, import_files: import_structu
     # ------------------------------ HANDLE REQUEST ------------------------------#
 
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     user = await accounts.get_user_from_cookie(request)
     if user is None:
-        return templates.TemplateResponse("landing-page.html", {"request": request})
+        return templates.TemplateResponse("landing-page.html",
+                                          {"request": request,
+                                           'MAX_DAYS': os.environ.get('MAX_DAYS', 14),
+                                           'MAX_CONSUMER_ANONYMOUS': os.environ.get('MAX_CONSUMER_ANONYMOUS', 150)})
     else:
         projects = await queries.get_project_of_user(user.id)
         for project in projects:
@@ -146,7 +149,7 @@ async def home(request: Request):
         return templates.TemplateResponse("user_projects.html", {"request": request, 'projects': projects})
 
 
-@app.get("/project_setup")
+@app.get("/project_setup", response_class=HTMLResponse)
 async def project_setup(request: Request):
     user = await accounts.get_user_from_cookie(request)
     project_id = request.query_params.get('project_id')
@@ -158,7 +161,7 @@ async def project_setup(request: Request):
                                                               'max_days': max_days})
 
 
-@app.get("/user_registration")
+@app.get("/user_registration", response_class=HTMLResponse)
 async def user_registration(request: Request):
     return templates.TemplateResponse("user-registration.html", {"request": request})
 
@@ -171,7 +174,7 @@ async def activation_mail(request: Request):
     return RedirectResponse(config.DOMAIN)
 
 
-@app.get("/account_overview")
+@app.get("/account_overview", response_class=HTMLResponse)
 async def account_overview(request: Request):
     user = await accounts.get_user_from_cookie(request)
     if user is None:
@@ -180,7 +183,7 @@ async def account_overview(request: Request):
         return templates.TemplateResponse("account_overview.html", {"request": request})
 
 
-@app.get("/consumer_selection")
+@app.get("/consumer_selection", response_class=HTMLResponse)
 async def consumer_selection(request: Request):
     project_id = request.query_params.get('project_id')
     try:
@@ -190,7 +193,7 @@ async def consumer_selection(request: Request):
     return templates.TemplateResponse("consumer-selection.html", {"request": request, 'project_id': project_id})
 
 
-@app.get("/grid_design")
+@app.get("/grid_design", response_class=HTMLResponse)
 async def grid_design(request: Request):
     project_id = request.query_params.get('project_id')
     return templates.TemplateResponse("grid-design.html", {"request": request, 'project_id': project_id})
@@ -204,18 +207,18 @@ async def remove_project(project_id, request: Request):
 
 
 
-@app.get("/demand_estimation")
+@app.get("/demand_estimation", response_class=HTMLResponse)
 async def demand_estimation(request: Request):
     return templates.TemplateResponse("demand_estimation.html", {"request": request})
 
 
-@app.get("/energy_system_design")
+@app.get("/energy_system_design", response_class=HTMLResponse)
 async def energy_system_design(request: Request):
     project_id = request.query_params.get('project_id')
     return templates.TemplateResponse("energy-system-design.html", {"request": request, 'project_id': project_id})
 
 
-@app.get("/simulation_results")
+@app.get("/simulation_results", response_class=HTMLResponse)
 async def simulation_results(request: Request):
     project_id = request.query_params.get('project_id')
     try:
@@ -225,7 +228,7 @@ async def simulation_results(request: Request):
     return templates.TemplateResponse("simulation-results.html", {"request": request, 'project_id': project_id})
 
 
-@app.get("/calculating")
+@app.get("/calculating", response_class=HTMLResponse)
 async def calculating(request: Request):
     project_id = request.query_params.get('project_id')
     user = await accounts.get_user_from_cookie(request)
@@ -236,6 +239,7 @@ async def calculating(request: Request):
         return templates.TemplateResponse("landing-page.html", {"request": request})
     if 'anonymous' in user.email:
         msg = 'You will be forwarded after the model calculation is completed.'
+        email_opt = False
     elif user.task_id is not None and len(user.task_id) > 20 and not task_is_finished(user.task_id):
         msg = 'CAUTION: You have a calculation in progress that has not yet been completed. Therefore you cannot' \
               ' start another calculation. You can cancel the already running calculation by clicking on the' \
@@ -244,14 +248,24 @@ async def calculating(request: Request):
                                                                'project_id': project_id,
                                                                'msg': msg,
                                                                'task_id': user.task_id,
-                                                               'time': 0})
+                                                               'time': 0,
+                                                               'email_opt': True})
     else:
         msg = 'You will be forwarded after the model calculation is completed. You can also close the window and view' \
-              ' the results in your user account after the calculation is finished. You will be notified by email' \
-              ' about the completion of the calculation.'
+              ' the results in your user account after the calculation is finished.'
+        email_opt = True
     return templates.TemplateResponse("calculating.html", {"request": request,
                                                                'project_id': project_id,
-                                                               'msg': msg})
+                                                               'msg': msg,
+                                                               'email_opt': email_opt})
+
+
+@app.post("/set_email_notification/{project_id}/{is_active}")
+async def set_email_notification(project_id: int, is_active: bool, request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    project_setup = await queries.get_project_setup_of_user(user.id, project_id)
+    project_setup.email_notification = is_active
+    await inserts.merge_model(project_setup)
 
 
 @app.get("/get_demand_coverage_data/{project_id}")
@@ -1371,7 +1385,15 @@ async def optimize_energy_system(user_id, project_id):
     await inserts.insert_df(models.DurationCurve, df, user_id, project_id)
     project_setup = await queries.get_project_setup_of_user(user_id, project_id)
     project_setup.status = "finished"
+    if project_setup.email_notification is True:
+        user = await queries.get_user_by_id(user_id)
+        subject = "PeopleSun: Model Calculation finished"
+        msg = "The calculation of your optimization model is finished. You can view the results at: " \
+              "\n\n{}/simulation_results?project_id={}\n".format(config.DOMAIN, project_id)
+        send_mail(user.email, msg, subject=subject)
+    project_setup.email_notification = False
     await inserts.merge_model(project_setup)
+
 
 
 @app.post("/shs_identification/")

@@ -94,7 +94,8 @@
                   <p style="text-align:left;">To test the planning tool, you do not need to register an account, a temporary account will be created automatically. However, if you use the planning tool without registering, please note:</p>
                     <p style="text-align:left;"> &bull; Your data will be automatically deleted after three hours</p>
                     <p style="text-align:left;"> &bull; If you log out, you lose access to your data</p>
-                    <p style="text-align:left;"> &bull; The modeling time is limited to 14 days</p>
+                    <p style="text-align:left;"> &bull; The modeling time is limited to {{ MAX_DAYS }} days</p>
+                    <p style="text-align:left;"> &bull; The number of allowed users is limited to {{ MAX_CONSUMER_ANONYMOUS }}</p>
                    <p style="text-align:left;"> &bull; The calculation time of your optimization model is limited to 5 minutes</p>
                   <div class="clearfix">
                       <button onclick="anonymous_login();" type="button" class="deletebtn">Continue</button>

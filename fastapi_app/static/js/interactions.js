@@ -898,3 +898,12 @@ function hide_no_selection_prompt() {
     document.getElementById('leafletMap').style.display = 'block';
     document.getElementById('section').style.display = 'block';
     document.getElementById('noSelection').style.display='none';}
+
+
+function send_email_notification(project_id, is_active) {
+    $.ajax({
+        url: "/set_email_notification/" + project_id + '/' + is_active,
+        type: "POST",
+        contentType: "application/json",
+    });
+}

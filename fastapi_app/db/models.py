@@ -107,6 +107,7 @@ class ProjectSetup(Base):
     temporal_resolution = Column(SMALLINT(unsigned=True), nullable=False, server_default="1")
     n_days = Column(SMALLINT(unsigned=True), nullable=False, server_default="365")
     status = Column(VARCHAR(25), default="not yet started")
+    email_notification = Column(Boolean(), default=False)
 
 class GridDesign(Base):
 

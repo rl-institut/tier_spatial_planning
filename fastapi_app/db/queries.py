@@ -16,6 +16,13 @@ async def get_user_by_username(username):
         user = res.scalars().first()
     return user
 
+async def get_user_by_id(user_id):
+    query =select(models.User).where(models.User.id == user_id)
+    async with get_async_session_maker() as async_db:
+        res = await async_db.execute(query)
+        user = res.scalars().first()
+    return user
+
 
 async def get_user_by_guid(guid):
     query =select(models.User).where(models.User.guid == guid)

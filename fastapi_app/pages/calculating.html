@@ -5,6 +5,8 @@
     {% include '_head.html' %}
       <style>
 
+{% include '_toggle.html' %}
+
 .loader,
 .loader:before,
 .loader:after {
@@ -93,6 +95,14 @@
                         <a>Status: </a>
                         <a id="statusMsg">task status is retrieved...</a>
                    <hr>
+                  {% if email_opt == true %}
+                      <label class="switch">
+                      <input type="checkbox" id="toggleswitch">
+                      <span class="slider round"></span>
+                      </label>
+                      <a>&nbsp;&nbsp;Send email when calculation is finished.</a>
+                      <p></p>
+                  {% endif %}
                   <a>{{ msg }}</a>
                   <p></p>
                    <a href='energy_system_design/?project_id={{ project_id }}'
@@ -110,4 +120,18 @@
     </main>
   </body>
   {% include '_scripts.html' %}
+  {% if email_opt == true %}
+    <script>
+        let input = document.getElementById('toggleswitch');
+        let is_active = false;
+        input.addEventListener('change',function(){
+            if(this.checked) {
+                is_active = true;
+            } else {
+                is_active = false;
+            }
+            send_email_notification({{ project_id }}, is_active)
+        });
+    </script>
+{% endif %}
 </html>
