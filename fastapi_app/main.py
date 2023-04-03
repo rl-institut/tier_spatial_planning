@@ -180,7 +180,8 @@ async def account_overview(request: Request):
     if user is None:
         return templates.TemplateResponse("landing-page.html", {"request": request})
     else:
-        return templates.TemplateResponse("account_overview.html", {"request": request})
+        return templates.TemplateResponse("account_overview.html", {"request": request,
+                                                                    'email': user.email})
 
 
 @app.get("/consumer_selection", response_class=HTMLResponse)
@@ -416,22 +417,28 @@ async def login(response: Response, credentials: models.Credentials):
             return models.ValidRegistration(validation=False, msg=res)
 
 
+@app.post("/change_email/")
+async def change_email(request: Request, credentials: models.Credentials):
+    if isinstance(credentials.email, str) and len(credentials.email) > 3:
+        user = await accounts.get_user_from_cookie(request)
+        is_valid, res = await authenticate_user(user.email, credentials.password)
+        if is_valid:
+            user.email = credentials.email
+            user.is_confirmed = False
+            user.guid = create_guid()
+            await inserts.merge_model(user)
+            send_activation_link(credentials.email, user.guid)
+            msg = 'Please click the activation link we sent to your email.'
+            return models.ValidRegistration(validation=True, msg=msg)
+        else:
+            del credentials
+            return models.ValidRegistration(validation=False, msg=res)
+
+
 @app.post("/logout/")
 async def logout(response: Response):
     response.delete_cookie("access_token")
     return {"status": "success"}
-
-
-@app.post("/query_account_data/")
-async def query_account_data(request: Request):
-    user = await accounts.get_user_from_cookie(request)
-    if user is not None:
-        name = user.email
-        if 'anonymous__' in name:
-            name = name.split('__')[0]
-        return models.UserOverview(email=name)
-    else:
-        return models.UserOverview(email="")
 
 
 @app.post("/has_cookie/")

@@ -2,7 +2,7 @@
       <div>
         <div class="step-footer__left"></div>
         <div class="step-footer__center">
-        {% if title != 'PeopleSun' %}
+        {% if ((title != 'PeopleSun') and (title != 'Simulation Results')) %}
           <a class="btn btn--medium btn--hollow btn--previous"
              {% if title == 'Project Setup' %}
                  href="/"
@@ -17,7 +17,6 @@
              {% endif %}
           >Previous</a>
         {% endif %}
-        {% if title != 'Simulation Results' %}
               <a class="btn btn--medium" style="color: #fff"
             {% if title == 'PeopleSun' %}
                  href="{{ url_for('project_setup')}}"
@@ -36,11 +35,13 @@
             {% endif %}
             {% if title == 'Energy System Design' %}
                  {% set next_str='Simulate' %}
+            {% elif title == 'Simulation Results' %}
+                {% set next_str='Projects Overview' %}
+                href="/"
             {% else %}
                  {% set next_str='Next' %}
             {% endif %}
             >{{ next_str }}</a>
-        {% endif %}
         </div>
         <div class="step-footer__right"></div>
       </div>

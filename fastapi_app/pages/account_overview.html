@@ -2,24 +2,105 @@
 <html lang="en-us">
   <head>
     {% include '_head.html' %}
+    {% include '_style_msg_box.html' %}
     <title>Account</title>
   </head>
-  <body onload="account_overview();show_user_email_in_navbar();">
+  <body onload=show_user_email_in_navbar();>
       {% include '_navbar.html' %}
     <main>
-        <p id="userEmail">Tausche diesen Text aus</p>
-    </main>
-    <footer class="step-footer">
-      <div>
-        <div class="step-footer__left"></div>
-        <div class="step-footer__center">
-          <a class="btn btn--medium btn--hollow btn--previous"
-             href="/"
-            >Main Page</a>
+     <section class="dashboard" style="width: 500px; display: block;  margin-left: auto;  margin-right: auto;">
+        <div >
+          <div class="row">
+            <div class="col">
+              <div class="chart" style="border: 15px solid #FAFAFA; height: auto;">
+                <div class="chart__header">
+                  <a class="title">Account: {{ email }}</a>
+                </div>
+                  <hr>
+                   <a href='#'
+                      onclick="document.getElementById('changeEmail').style.display='block'"
+                      class="btn btn--long text-right"
+                      style="background-color: grey"
+                   >Change Email
+                   </a>
+                  <p></p>
+                   <a href='#'
+                      class="btn btn--long text-right"
+                      style="background-color: grey"
+                   >Change Password
+                   </a>
+                  <p></p>
+                   <a href='#'
+                      class="btn btn--long text-right"
+                      style="background-color: grey"
+                   >Delete Account
+                   </a>
+                  <p></p>
+                   <a href='/'
+                      class="btn btn--long text-right"
+                   >Projects Overview
+                   </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="step-footer__left"></div>
-      </div>
-    </footer>
+      </section>
+            <div id=changeEmail class="modal">
+              <form class="modal-content" action="/action_page.php">
+                <div class="container">
+                  <h1>Change Email</h1>
+                                <form>
+              <div class="input-item" style="text-align: left">
+                <p style="display:inline">
+                  Enter the new email-adress
+                </p>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="userEmail1"
+                  placeholder="Enter your new mail address"
+                  value=""
+                  required
+                />
+              </div>
+              <div class="input-item" style="text-align: left">
+                <p style="display:inline">
+                  Repeat the new email-adress
+                </p>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="userEmail2"
+                  placeholder="Enter your new mail address"
+                  value=""
+                  required
+                />
+              </div>
+                <div class="input-item" style="text-align: left">
+                <p style="display:inline">
+                  Enter your valid password
+                </p>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="userPassword"
+                  placeholder="Enter your password"
+                  value=""
+                  required
+                />
+              </div>
+            </form>
+                    <p id="responseMsg"></p>
+                    <button onclick="change_email()" type="button" class="deletebtn">Change Email</button>
+                    <button onclick="document.getElementById('changeEmail').style.display='none'" type="button" class="cancelbtn">Cancel</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+    </main>
   </body>
 {% include '_scripts.html' %}
 </html>

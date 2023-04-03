@@ -504,6 +504,38 @@ function add_user_to_db() {
 }
 
 
+function change_email() {
+    if (userEmail1.value != userEmail2.value) {
+        window.alert(1)
+        document.getElementById("responseMsg").innerHTML = 'The emails do not match';
+        document.getElementById("responseMsg").style.color = 'red';
+    }
+    else {
+    $.ajax({url: "change_email/",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({email: userEmail1.value,
+                                        password: userPassword.value,
+                                        remember_me: false}),
+            dataType: "json",})
+        .done(async function (response) {
+
+            document.getElementById("responseMsg").innerHTML = response.msg;
+            let fontcolor;
+            if (response.validation === true)
+                {fontcolor = 'green';}
+            else
+                {fontcolor = 'red';};
+            document.getElementById("responseMsg").style.color = fontcolor;
+            await new Promise(r => setTimeout(r, 4000))
+            logout()
+        });
+
+    }
+
+}
+
+
 function login() {
     $.ajax({url: "login/",
             type: "POST",
@@ -537,16 +569,6 @@ function logout()  {
             dataType: "json"})
         .done(function () {window.location.href=window.location.origin;});
 
-}
-
-
-function account_overview() {
-    $.ajax({url: "query_account_data/",
-            type: "POST",
-            contentType: "application/json",
-            dataType: "json",})
-        .done(function (response) {
-            document.getElementById("userEmail").innerHTML = response.email;});
 }
 
 

@@ -106,9 +106,9 @@ async def activate_mail(guid):
 def send_email_with_activation_status(user):
     if user is not None:
         if user.is_confirmed:
-            msg = 'Your PeopleSun-Account ist activated'
+            msg = 'Your PeopleSun-Account is activated.'
         else:
-            msg = 'Something went wrong with your PeopleSuN account activation'
+            msg = 'Something went wrong with your PeopleSuN account activation.'
         send_mail(user.email, msg)
 
 

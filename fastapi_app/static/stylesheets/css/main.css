@@ -888,7 +888,7 @@ footer button.btn--transparent:active,
 footer button.btn--action:hover,
 footer button.btn--action:focus,
 footer button.btn--action:active {
-  background-color: #fff !important;
+  background-color: #828181 !important;
 }
 
 a.btn--hollow,
@@ -1739,6 +1739,7 @@ nav.navbar .navbar-brand img {
 nav.navbar .dropdown-menu[data-bs-popper] {
   left: auto;
   right: 0;
+  background-color: var(--bcc)
 }
 
 nav.navbar .dropdown-item:focus,
@@ -3452,13 +3453,13 @@ nav.navbar .dropdown-menu li {
 .project__details .actions .btn--hollow {
   font-weight: 700;
   padding: 0.25rem 0.5rem;
-  color: #fff;
+  color: #ccc;
 }
 
 .project__details .actions .btn--hollow:hover,
 .project__details .actions .btn--hollow:focus,
 .project__details .actions .btn--hollow:active {
-  color: #fff !important;
+  color: #ccc !important;
 }
 
 .project__details .actions a.btn--action {
