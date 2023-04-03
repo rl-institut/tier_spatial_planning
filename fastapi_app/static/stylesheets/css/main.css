@@ -785,7 +785,6 @@ footer button.btn--hollow,
 footer button.btn--transparent,
 footer button.btn--action {
   background-color: transparent;
-  color: #1F567D;
 }
 
 a.btn--hollow:link,

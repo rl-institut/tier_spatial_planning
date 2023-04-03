@@ -18,23 +18,23 @@
           >Previous</a>
         {% endif %}
         {% if title != 'Simulation Results' %}
-              <a class="btn btn--medium"
+              <a class="btn btn--medium" style="color: #fff"
             {% if title == 'PeopleSun' %}
                  href="{{ url_for('project_setup')}}"
             {% elif title == 'Project Setup' %}
                  href='consumer_selection?project_id={{ project_id }}'
                  onclick="save_project_setup({{ project_id }});"
             {% elif title == 'Consumer Selection' %}
+                 href="#"
                  onclick="forward_if_consumer_selection_exists({{ project_id }})"
             {% elif title == 'Grid Design' %}
                  href="energy_system_design?project_id={{ project_id }}"
                  onclick="save_grid_design();"
             {% elif title == 'Energy System Design' %}
+                 href="#"
                  onclick="save_energy_system_design(); forward_if_no_task_is_pending({{ project_id }});"
             {% endif %}
-            {% if title == 'PeopleSun' %}
-                 {% set next_str='Test' %}
-            {% elif title == 'Energy System Design' %}
+            {% if title == 'Energy System Design' %}
                  {% set next_str='Simulate' %}
             {% else %}
                  {% set next_str='Next' %}
