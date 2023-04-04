@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.css" />
   </head>
-  <body onload="redirect_if_cookie_is_missing();
+  <body onload="redirect_if_cookie_is_missing(true, true);
                 load_results({{ project_id }});
                 show_user_email_in_navbar();">
   {% include '_navbar.html' %}

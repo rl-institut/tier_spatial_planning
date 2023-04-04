@@ -1277,6 +1277,8 @@ a.dropdown-item:active {
 
 .step-footer__right a {
   float: right;
+  
+  padding: 10px;
 }
 
 .simulation-footer {

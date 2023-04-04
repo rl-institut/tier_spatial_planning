@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.css" />
   </head>
-  <body onload="redirect_if_cookie_is_missing();
+  <body onload="redirect_if_cookie_is_missing(true, true);
                 refresh_map({{ project_id }}, true);
                 show_user_email_in_navbar();">
   {% include '_navbar.html' %}
@@ -163,7 +163,7 @@
                 <h1>No Selection</h1>
                 <p>No consumers are selected. You must select the geolocation of the consumers before you go
                     to the next page.</p>
-                <a class="btn btn--long text-right" onclick="hide_no_selection_prompt();">OK</a>
+                <a class="btn btn--long text-right" href="#" onclick="hide_no_selection_prompt();">OK</a>
 
             </div>
         </form>

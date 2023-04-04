@@ -453,5 +453,11 @@ class TaskID(BaseModel):
 class ProjectID(BaseModel):
     project_id: str
 
+
 class ImportFileRequestList(BaseModel):
     data: List[ImportFileRequest]
+
+
+class HasCookies(BaseModel):
+    access_token: bool
+    consent_cookie: bool

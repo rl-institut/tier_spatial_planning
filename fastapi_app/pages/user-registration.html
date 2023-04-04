@@ -4,7 +4,7 @@
     {% include '_head.html' %}
     <title>User Registration</title>
   </head>
-  <body>
+  <body onload="redirect_if_cookie_is_missing(false, true);">
       {% include '_navbar.html' %}
     <main>
       <section class="project-setup two-columns">

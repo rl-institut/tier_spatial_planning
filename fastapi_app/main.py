@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 from celery_worker import worker
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 from typing import Any, Dict, List, Union
 import time
@@ -136,7 +136,8 @@ async def import_data(project_id, request: Request, import_files: import_structu
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     user = await accounts.get_user_from_cookie(request)
-    if user is None:
+    consent = request.cookies.get("consent_cookie")
+    if user is None or consent is None:
         return templates.TemplateResponse("landing-page.html",
                                           {"request": request,
                                            'MAX_DAYS': os.environ.get('MAX_DAYS', 14),
@@ -392,7 +393,7 @@ async def anonymous_login(response: Response):
     access_token = create_access_token(data={"sub": name}, expires_delta=access_token_expires)
     response.set_cookie(key="access_token", value=f"Bearer {access_token}",
                         httponly=True)  # set HttpOnly cookie in response
-    if socket.gethostname() != 'nbb':
+    if socket.gethostname() not in ['nbb', 'DESKTOP-U9MVH5M']:
         minutes = config.ACCESS_TOKEN_EXPIRE_MINUTES_ANONYMOUS + 60
         eta = datetime.utcnow() + timedelta(minutes=minutes)
         queue_remove_anonymous_users.apply_async((user.email, user.id,), eta=eta)
@@ -415,6 +416,14 @@ async def login(response: Response, credentials: models.Credentials):
         else:
             del credentials
             return models.ValidRegistration(validation=False, msg=res)
+
+
+@app.post("/consent_cookie/")
+async def consent_cookie(response: Response):
+    expire_date = datetime.utcnow()
+    expire_date = expire_date + timedelta(days=365)
+    expire_date = expire_date.replace(tzinfo=timezone.utc)
+    response.set_cookie(key="consent_cookie", value='true', httponly=True, expires=expire_date)
 
 
 @app.post("/change_email/")
@@ -477,13 +486,29 @@ async def logout(response: Response):
     return {"status": "success"}
 
 
-@app.post("/has_cookie/")
-async def has_cookie(request: Request):
-    token = request.cookies.get("access_token")
-    if token is not None:
-        return True
+@app.post("/query_account_data/")
+async def query_account_data(request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    if user is not None:
+        name = user.email
+        if 'anonymous__' in name:
+            name = name.split('__')[0]
+        return models.UserOverview(email=name)
     else:
-        return False
+        return models.UserOverview(email="")
+
+
+@app.post("/has_cookie/")
+async def has_cookie(request: Request, has_cookies: models.HasCookies):
+    if has_cookies.access_token:
+        token = request.cookies.get("access_token")
+        if token is None:
+            return False
+    if has_cookies.consent_cookie:
+        consent = request.cookies.get("consent_cookie")
+        if consent is None:
+            return False
+    return True
 
 
 @app.post("/save_grid_design/")
@@ -832,7 +857,8 @@ async def optimization(user_id, project_id):
     project_setup = await queries.get_project_setup_of_user(user_id, project_id)
     project_setup.status = "queued"
     await inserts.merge_model(project_setup)
-    if socket.gethostname() == 'nbb':
+    # ToDo: Remove known machines
+    if socket.gethostname() in ['nbb', 'DESKTOP-U9MVH5M']:
         await run_opt_task(user_id, project_id)
         return 'no_celery_id'
     else:

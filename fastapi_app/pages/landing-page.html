@@ -6,7 +6,7 @@
     {% include '_style_msg_box.html' %}
     <title>PeopleSun</title>
   </head>
-  <body onload="show_user_email_in_navbar();">
+  <body onload="show_cookie_consent(); show_user_email_in_navbar();">
   {% include '_navbar.html' %}
     <main>
       <section class="project-setup two-columns">
@@ -87,7 +87,6 @@
           </div>
       </section>
              <div id="msgBox" class="modal">
-              <span  class="close" title="Close Modal">&times;</span>
               <form class="modal-content" action="/action_page.php">
                 <div class="container">
                   <h1 style="text-align:left;">Using the planing tool without registration</h1>
@@ -104,7 +103,36 @@
                 </div>
               </form>
             </div>
+            <div id="consentCookie" class="modal" style="background-color: rgba(0,0,0,0.5)">
+              <form class="modal-content">
+                <div class="container">
+                  <h1 style="text-align:left;">Cookies</h1>
+                  <p style="text-align:left;">This website uses cookies. These are strictly necessary to allow core
+                      website functionality such as user login and account management. The website cannot be used
+                      without them.</p>
+                  <div class="clearfix">
+                      <button onclick="consent_cookie(); document.getElementById('consentCookie').style.display='none';"
+                              type="button"
+                              class="deletebtn"
+                      >Accept
+                      </button>
+                    <button onclick="document.getElementById('consentCookie').style.display='none'"
+                            type="button" class="cancelbtn">Decline</button>
+                  </div>
+                </div>
+              </form>
+            </div>
     </main>
+  <footer class="step-footer">
+      <div>
+        <div class="step-footer__left"></div>
+        <div class="step-footer__center"></div>
+        <div class="step-footer__right">
+            <a style="text-align: right", href="/impressum">Impressum&nbsp;&nbsp;&nbsp;</a>
+            <a style="text-align: right", href="/privacy">Privacy/Datenschutz&nbsp;&nbsp;&nbsp;</a>
+        </div>
+      </div>
+</footer>
   </body>
 {% include '_scripts.html' %}
 </html>

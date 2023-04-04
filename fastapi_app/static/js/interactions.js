@@ -610,6 +610,14 @@ function login() {
             });}
 
 
+function consent_cookie() {
+    $.ajax({url: "consent_cookie/",
+            type: "POST",
+            contentType: "application/json",
+            dataType: "json",})
+        .done(function () {document.getElementById('consentCookie').style.display='none'});}
+
+
 function anonymous_login () {
     $.ajax({url: "anonymous_login/",
             type: "POST",
@@ -891,12 +899,20 @@ function show_user_email_in_navbar() {
 }
 
 
-function redirect_if_cookie_is_missing(){
+function redirect_if_cookie_is_missing(access_token, consent_cookie){
+        let has_access_token = (access_token === true || access_token === 'true');
+        let has_consent_cookie = (consent_cookie === true || consent_cookie === 'true');
         $.ajax({url: "has_cookie/",
             type: "POST",
+            data: JSON.stringify({'access_token': has_access_token, 'consent_cookie': has_consent_cookie}),
             contentType: "application/json",})
-        .done(function (response) {if (response == false) {window.location.href = window.location.origin;}})
+        .done(function (response) {
+            if (response == false)
+            {   logout();
+                window.location.href = window.location.origin;}
+        })
 }
+
 
 function clear_nodes_and_links(project_id){
             $.ajax({url: "clear_nodes_and_links/" + project_id,
@@ -984,4 +1000,18 @@ function send_email_notification(project_id, is_active) {
         type: "POST",
         contentType: "application/json",
     });
+}
+
+function show_cookie_consent(){
+        $.ajax({url: "has_cookie/",
+            type: "POST",
+            data: JSON.stringify({'access_token': false, 'consent_cookie': true}),
+            contentType: "application/json",})
+        .done(function (response) {
+            if (response == false)
+            {
+                document.getElementById('consentCookie').style.display='block'}
+            else
+            {document.getElementById('consentCookie').style.display='none'}
+        })
 }
