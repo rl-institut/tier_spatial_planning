@@ -95,22 +95,21 @@ async def remove(model_class, user_id, project_id):
 
 
 async def remove_account(user_email, user_id):
-    if 'anonymous' in user_email and '@' not in user_email:
-        async with get_async_session_maker() as async_db:
-            for model_class in [models.User,
-                                models.ProjectSetup,
-                                models.GridDesign,
-                                models.EnergySystemDesign,
-                                models.Nodes,
-                                models.Links,
-                                models.Results,
-                                models.DemandCoverage,
-                                models.EnergyFlow,
-                                models.Emissions,
-                                models.DurationCurve]:
-                query = delete(model_class).where(model_class.id == user_id)
-                await async_db.execute(query)
-                await async_db.commit()
+    async with get_async_session_maker() as async_db:
+        for model_class in [models.User,
+                            models.ProjectSetup,
+                            models.GridDesign,
+                            models.EnergySystemDesign,
+                            models.Nodes,
+                            models.Links,
+                            models.Results,
+                            models.DemandCoverage,
+                            models.EnergyFlow,
+                            models.Emissions,
+                            models.DurationCurve]:
+            query = delete(model_class).where(model_class.id == user_id)
+            await async_db.execute(query)
+            await async_db.commit()
 
 
 async def remove_project(user_id, project_id):

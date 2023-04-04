@@ -152,6 +152,31 @@
                   </div>
               </form>
             </div>
+              <div id=deleteAccount class="modal">
+              <form class="modal-content" action="/action_page.php">
+                <div class="container">
+                  <h1>Remove Account</h1>
+                                <form>
+              <div class="input-item" style="text-align: left">
+                <p style="display:inline">
+                  Enter your password
+                </p>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="Password"
+                  placeholder="Enter your password"
+                  value=""
+                  required
+                />
+              </div>
+            </form>
+                    <p id="responseMsg3"></p>
+                    <button onclick="delete_account()" type="button" class="deletebtn">Remove Account</button>
+                    <button onclick="document.getElementById('deleteAccount').style.display='none'" type="button" class="cancelbtn">Cancel</button>
+                  </div>
+              </form>
+            </div>
     </main>
   </body>
 {% include '_scripts.html' %}

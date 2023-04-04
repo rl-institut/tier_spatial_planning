@@ -457,6 +457,20 @@ async def change_pw(request: Request, passwords: models.ChangePW):
     return models.ValidRegistration(validation=validation, msg=res)
 
 
+
+@app.post("/delete_account/")
+async def change_pw(response: Response, request: Request, form_data: models.Password):
+    user = await accounts.get_user_from_cookie(request)
+    is_valid, res = await authenticate_user(user.email, form_data.password)
+    validation = False
+    if is_valid:
+        await inserts.remove_account(user.email, user.id)
+        response.delete_cookie("access_token")
+        res = 'Account removed'
+        validation = True
+    return models.ValidRegistration(validation=validation, msg=res)
+
+
 @app.post("/logout/")
 async def logout(response: Response):
     response.delete_cookie("access_token")

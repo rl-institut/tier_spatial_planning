@@ -527,7 +527,7 @@ function change_email() {
             document.getElementById("responseMsg1").style.color = fontcolor;
             if (response.validation === true)
             {
-            await new Promise(r => setTimeout(r, 4000))
+            await new Promise(r => setTimeout(r, 3000))
             logout()
             }
         });
@@ -560,13 +560,35 @@ function change_pw() {
             document.getElementById("responseMsg2").style.color = fontcolor;
             if (response.validation === true)
             {
-            await new Promise(r => setTimeout(r, 4000))
+            await new Promise(r => setTimeout(r, 3000))
             logout()
             }
         });
 
     }
+}
 
+
+function delete_account() {
+    $.ajax({url: "delete_account/",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({password: Password.value}),
+            dataType: "json",})
+        .done(async function (response) {
+            document.getElementById("responseMsg3").innerHTML = response.msg;
+            let fontcolor;
+            if (response.validation === true)
+                {fontcolor = 'green';}
+            else
+                {fontcolor = 'red';};
+            document.getElementById("responseMsg3").style.color = fontcolor;
+            if (response.validation === true)
+            {
+            await new Promise(r => setTimeout(r, 3000))
+            logout()
+            }
+        });
 }
 
 

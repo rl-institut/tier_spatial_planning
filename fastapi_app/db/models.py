@@ -68,6 +68,10 @@ class ValidRegistration(BaseModel):
     msg: str
 
 
+class Password(BaseModel):
+    password: str
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str
