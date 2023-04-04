@@ -422,17 +422,39 @@ async def change_email(request: Request, credentials: models.Credentials):
     if isinstance(credentials.email, str) and len(credentials.email) > 3:
         user = await accounts.get_user_from_cookie(request)
         is_valid, res = await authenticate_user(user.email, credentials.password)
+        validation = False
         if is_valid:
             user.email = credentials.email
-            user.is_confirmed = False
-            user.guid = create_guid()
-            await inserts.merge_model(user)
-            send_activation_link(credentials.email, user.guid)
-            msg = 'Please click the activation link we sent to your email.'
-            return models.ValidRegistration(validation=True, msg=msg)
+            if accounts.is_valid_email(user):
+                user.is_confirmed = False
+                user.guid = create_guid()
+                await inserts.merge_model(user)
+                send_activation_link(credentials.email, user.guid)
+                res = 'Please click the activation link we sent to your email.'
+                validation = True
+            else:
+                res = 'Please enter a valid email address.'
         else:
             del credentials
-            return models.ValidRegistration(validation=False, msg=res)
+        return models.ValidRegistration(validation=validation, msg=res)
+
+
+@app.post("/change_pw/")
+async def change_pw(request: Request, passwords: models.ChangePW):
+    user = await accounts.get_user_from_cookie(request)
+    is_valid, res = await authenticate_user(user.email, passwords.old_password)
+    validation = False
+    if is_valid:
+        if accounts.is_valid_password(passwords.new_password):
+            user.hashed_password = Hasher.get_password_hash(passwords.new_password)
+            await inserts.merge_model(user)
+            res = 'Password changed successfully.'
+            validation = True
+        else:
+            res = 'The password needs to be at least 8 characters long'
+    else:
+        del passwords
+    return models.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/logout/")

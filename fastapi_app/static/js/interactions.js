@@ -506,9 +506,8 @@ function add_user_to_db() {
 
 function change_email() {
     if (userEmail1.value != userEmail2.value) {
-        window.alert(1)
-        document.getElementById("responseMsg").innerHTML = 'The emails do not match';
-        document.getElementById("responseMsg").style.color = 'red';
+        document.getElementById("responseMsg1").innerHTML = 'The emails do not match';
+        document.getElementById("responseMsg1").style.color = 'red';
     }
     else {
     $.ajax({url: "change_email/",
@@ -519,16 +518,51 @@ function change_email() {
                                         remember_me: false}),
             dataType: "json",})
         .done(async function (response) {
-
-            document.getElementById("responseMsg").innerHTML = response.msg;
+            document.getElementById("responseMsg1").innerHTML = response.msg;
             let fontcolor;
             if (response.validation === true)
                 {fontcolor = 'green';}
             else
                 {fontcolor = 'red';};
-            document.getElementById("responseMsg").style.color = fontcolor;
+            document.getElementById("responseMsg1").style.color = fontcolor;
+            if (response.validation === true)
+            {
             await new Promise(r => setTimeout(r, 4000))
             logout()
+            }
+        });
+
+    }
+
+}
+
+
+function change_pw() {
+    if (newUserPassword1.value != newUserPassword2.value) {
+        document.getElementById("responseMsg2").innerHTML = 'The passwords do not match';
+        document.getElementById("responseMsg2").style.color = 'red';
+    }
+    else {
+    $.ajax({url: "change_pw/",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({new_password: newUserPassword1.value,
+                                        old_password: oldUserPassword.value}),
+            dataType: "json",})
+        .done(async function (response) {
+
+            document.getElementById("responseMsg2").innerHTML = response.msg;
+            let fontcolor;
+            if (response.validation === true)
+                {fontcolor = 'green';}
+            else
+                {fontcolor = 'red';};
+            document.getElementById("responseMsg2").style.color = fontcolor;
+            if (response.validation === true)
+            {
+            await new Promise(r => setTimeout(r, 4000))
+            logout()
+            }
         });
 
     }

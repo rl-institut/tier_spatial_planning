@@ -55,8 +55,10 @@ async def is_mail_unregistered(user):
         return False
 
 
-def is_valid_password(user):
-    if len(user.password) < 8:
+def is_valid_password(user_or_password):
+    if hasattr(user_or_password, 'password') and len(user_or_password.password) <= 8:
+        return False
+    if isinstance(user_or_password, str) and len(user_or_password) < 8:
         return False
     else:
         return True

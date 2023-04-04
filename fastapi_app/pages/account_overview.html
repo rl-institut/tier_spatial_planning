@@ -25,12 +25,14 @@
                    </a>
                   <p></p>
                    <a href='#'
+                      onclick="document.getElementById('changePW').style.display='block'"
                       class="btn btn--long text-right"
                       style="background-color: grey"
                    >Change Password
                    </a>
                   <p></p>
                    <a href='#'
+                      onclick="document.getElementById('deleteAccount').style.display='block'"
                       class="btn btn--long text-right"
                       style="background-color: grey"
                    >Delete Account
@@ -93,11 +95,61 @@
                 />
               </div>
             </form>
-                    <p id="responseMsg"></p>
+                    <p id="responseMsg1"></p>
                     <button onclick="change_email()" type="button" class="deletebtn">Change Email</button>
                     <button onclick="document.getElementById('changeEmail').style.display='none'" type="button" class="cancelbtn">Cancel</button>
                   </div>
-                </div>
+              </form>
+            </div>
+            <div id=changePW class="modal">
+              <form class="modal-content" action="/action_page.php">
+                <div class="container">
+                  <h1>Change Password</h1>
+                                <form>
+              <div class="input-item" style="text-align: left">
+                <p style="display:inline">
+                  Enter your old password
+                </p>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="oldUserPassword"
+                  placeholder="Enter your old password"
+                  value=""
+                  required
+                />
+              </div>
+              <div class="input-item" style="text-align: left">
+                <p style="display:inline">
+                  Enter your new password
+                </p>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="newUserPassword1"
+                  placeholder="Enter your new password"
+                  value=""
+                  required
+                />
+              </div>
+                <div class="input-item" style="text-align: left">
+                <p style="display:inline">
+                  Repeat you new password
+                </p>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="newUserPassword2"
+                  placeholder="Enter your new password"
+                  value=""
+                  required
+                />
+              </div>
+            </form>
+                    <p id="responseMsg2"></p>
+                    <button onclick="change_pw()" type="button" class="deletebtn">Change Password</button>
+                    <button onclick="document.getElementById('changePW').style.display='none'" type="button" class="cancelbtn">Cancel</button>
+                  </div>
               </form>
             </div>
     </main>

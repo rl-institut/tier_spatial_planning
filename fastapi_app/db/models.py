@@ -58,6 +58,11 @@ class Credentials(BaseModel):
     remember_me: bool
 
 
+class ChangePW(BaseModel):
+    new_password: str
+    old_password: str
+
+
 class ValidRegistration(BaseModel):
     validation: bool
     msg: str
