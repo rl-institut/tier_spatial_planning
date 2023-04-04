@@ -935,7 +935,7 @@ function wait_for_results(project_id, task_id, time)
     })
     .done(function (res) {
         if (res.finished === true) {
-            window.location.href = window.location.origin + '/simulation_results/?project_id=' + project_id;
+            window.location.href = window.location.origin + '/simulation_results?project_id=' + project_id;
         } else {
             document.querySelector("#statusMsg").innerHTML = res.status;
             wait_for_results(project_id, task_id, res.time);
@@ -950,7 +950,7 @@ function forward_if_no_task_is_pending(project_id) {
             contentType: "application/json",})
         .done(function (res) {
         if (res.forward === true) {
-            window.location.href = window.location.origin + '/calculating/?project_id=' + project_id;
+            window.location.href = window.location.origin + '/calculating?project_id=' + project_id;
         } else {
             document.getElementById('pendingTask').style.display='block'
         }})}
@@ -981,7 +981,7 @@ function forward_if_consumer_selection_exists(project_id) {
         contentType: "application/json",})
             .done(function (res) {
         if (res.forward === true) {
-            window.location.href = window.location.origin + '/grid_design/?project_id=' + project_id;
+            window.location.href = window.location.origin + '/grid_design?project_id=' + project_id;
         } else {
             document.getElementById('leafletMap').style.display = 'none';
             document.getElementById('section').style.display = 'none';

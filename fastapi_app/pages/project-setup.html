@@ -5,7 +5,7 @@
     {% include '_head.html' %}
   </head>
   <body onload="redirect_if_cookie_is_missing(true, true);
-                load_previous_data('project_setup/?project_id={{ project_id }}');
+                load_previous_data('project_setup?project_id={{ project_id }}');
                 show_user_email_in_navbar();">
   {% include '_navbar.html' %}
   {% include '_wizard.html' %}

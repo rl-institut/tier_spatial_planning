@@ -42,14 +42,11 @@ json_object = Dict[Any, Any]
 json_array = List[Any]
 import_structure = Union[json_array, json_object]
 
-# --------------------- REDIRECT REQUEST TO FAVICON LOG ----------------------#
 
-
-@app.get("/favicon.ico")
-async def redirect():
-    """Redirects request to location of favicon.ico logo in static folder"""
-    response = RedirectResponse(url="/fastapi_app/static/assets/favicon/favicon.ico")
-    return response
+@app.get('/favicon.ico', include_in_schema=False)
+async def favicon():
+    path = "fastapi_app/static/assets/favicon/favicon.ico"
+    return FileResponse(path)
 
 
 # ************************************************************/
