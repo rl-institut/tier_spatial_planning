@@ -1028,3 +1028,56 @@ function show_cookie_consent(){
             {document.getElementById('consentCookie').style.display='none'}
         })
 }
+
+function send_reset_password_email(){
+        $.ajax({url: "send_reset_password_email/",
+            type: "POST",
+            data: JSON.stringify({'email': userEmail4.value}),
+            contentType: "application/json",})
+        .done(async function (response) {
+            document.getElementById("responseMsg4").innerHTML = response.msg;
+            let fontcolor;
+            if (response.validation === true)
+                {fontcolor = 'green';}
+            else
+                {fontcolor = 'red';};
+            document.getElementById("responseMsg4").style.color = fontcolor;
+            if (response.validation === true)
+            {
+            await new Promise(r => setTimeout(r, 3000))
+            document.getElementById('forgotPassword').style.display='none'
+            }
+        });
+}
+
+function reset_pw(guid) {
+    window.alert(0)
+    if (newUserPassword1.value !== newUserPassword2.value) {
+        window.alert(1)
+        document.getElementById("responseMsg2").innerHTML = 'The passwords do not match';
+        document.getElementById("responseMsg2").style.color = 'red';
+    }
+    else {
+        window.alert(2)
+    $.ajax({url: "reset_password",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({guid: guid, password: newUserPassword1.value}),
+            dataType: "json",})
+        .done(async function (response) {
+
+            document.getElementById("responseMsg2").innerHTML = response.msg;
+            let fontcolor;
+            if (response.validation === true)
+                {fontcolor = 'green';}
+            else
+                {fontcolor = 'red';};
+            document.getElementById("responseMsg2").style.color = fontcolor;
+            if (response.validation === true)
+            {
+            await new Promise(r => setTimeout(r, 3000))
+            window.location.href=window.location.origin;
+            }
+        });
+    }
+}

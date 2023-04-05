@@ -5,6 +5,7 @@ import urllib.request
 import json
 import pandas as pd
 import numpy as np
+from types import SimpleNamespace
 from celery_worker import worker
 import os
 from datetime import datetime, timedelta, timezone
@@ -163,12 +164,39 @@ async def user_registration(request: Request):
     return templates.TemplateResponse("user-registration.html", {"request": request})
 
 
-@app.get("/activation_mail/{guid}")
+@app.get("/activation_mail")
 async def activation_mail(request: Request):
     guid = request.path_params.get('guid')
     if guid is not None:
         await activate_mail(guid[5:])
     return RedirectResponse(config.DOMAIN)
+
+
+@app.get("/reset_password", response_class=HTMLResponse)
+async def reset_password(guid, request: Request):
+    if guid is not None:
+        user = await queries.get_user_by_guid(guid)
+        if user is not None:
+            return templates.TemplateResponse("reset_password.html", {"request": request, 'guid': guid})
+    return templates.TemplateResponse("landing-page.html", {"request": request})
+
+
+@app.post("/reset_password")
+async def reset_password(request: Request, form_data: Dict[str, str]):
+    guid = form_data.get('guid')
+    password = form_data.get('password')
+    if guid is not None:
+        user = await queries.get_user_by_guid(guid)
+        if user is not None:
+            if accounts.is_valid_password(password):
+                user.hashed_password = Hasher.get_password_hash(password)
+                await inserts.merge_model(user)
+                res = 'Password changed successfully.'
+                validation = True
+            else:
+                validation = False
+                res = 'The password needs to be at least 8 characters long'
+            return models.ValidRegistration(validation=validation, msg=res)
 
 
 @app.get("/account_overview", response_class=HTMLResponse)
@@ -461,6 +489,22 @@ async def change_pw(request: Request, passwords: models.ChangePW):
         del passwords
     return models.ValidRegistration(validation=validation, msg=res)
 
+
+@app.post("/send_reset_password_email/")
+async def send_reset_password_email(email: models.Email):
+    user = await queries.get_user_by_username(email.email)
+    if user is None:
+        validation, res = False, 'Email adress is not registered'
+    else:
+        guid = str(uuid.uuid4()).replace('-', '')[:24]
+        user.guid = guid
+        await inserts.merge_model(user)
+        msg = 'For your PeopleSuN-Account a password reset was requested. If you did not request a password reset, ' \
+              'please ignore this email. Otherwise, please click the following link:\n\n{}/reset_password?guid={}'\
+            .format(config.DOMAIN, guid)
+        send_mail(email.email, msg, 'PeopleSuN-Account: Reset your password')
+        validation, res = True, 'Please click the link we sent to your email.'
+    return models.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/delete_account/")

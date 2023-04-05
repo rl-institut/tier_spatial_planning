@@ -1,15 +1,10 @@
 import re
 import uuid
-import logging
-import logging.handlers
-from importlib import reload
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from passlib.context import CryptContext
-from sqlalchemy.orm import Session
 from sqlalchemy import select
-from sqlalchemy.orm import sessionmaker, scoped_session
 from fastapi_app.db.models import User
 from datetime import datetime, timedelta
 from typing import Optional
@@ -65,13 +60,13 @@ def is_valid_password(user_or_password):
 
 
 def create_guid():
-    guid = str(uuid.uuid4()).replace('-', '')[0:12]
+    guid = str(uuid.uuid4()).replace('-', '')[:12]
     return guid
 
 
 def send_activation_link(mail, guid):
-    url = '{}/activation_mail/guid={}'.format(config.DOMAIN, guid)
-    msg = f"A PeopleSun account was created with this email.\nIf you want to activate the account follow the link:\n\n" \
+    url = '{}/activation_mail?guid={}'.format(config.DOMAIN, guid)
+    msg = f"A PeopleSun account was created with this email.\nIf you want to activate the account follow the link:\n\n"\
           f"{url}\n\nOtherwise ignore this message."
     send_mail(mail, msg)
 

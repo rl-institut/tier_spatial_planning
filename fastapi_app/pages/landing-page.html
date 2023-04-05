@@ -68,9 +68,13 @@
                     <label for="isEnabled" > <span>&nbsp;Remember me</span></label>
                     <p></p>
                     <p style="text-align:left;">&nbsp;Don't have an account yet?
-                        <a href="#" onclick="document.getElementById('registration').style.display='block'">Register here</a>
+                        <a href="#"
+                           onclick="document.getElementById('registration').style.display='block'"
+                        >Register here</a>
                         <span style="float:right;">
-                            <a href="{{url_for('user_registration')}} ">&nbsp;Forgot your password?</a>
+                            <a href="#"
+                               onclick="document.getElementById('forgotPassword').style.display='block'"
+                            >&nbsp;Forgot your password?</a>
                         </span>
                     </p>
                     <button
@@ -179,6 +183,45 @@
                 </div>
               </form>
             </div>
+
+
+
+            <div id="forgotPassword" class="modal" style="background-color: rgba(0,0,0,0.5)">
+              <form class="modal-content">
+                <div class="container">
+                  <h1 style="text-align:left;">Reset Password</h1>
+                    <p style="text-align: left">If you have forgotten your password, a link can be sent to your registered email address that
+                        will allow you to reset your password.</p>
+                  <div class="clearfix">
+              <div class="input-item" style="text-align: left">
+                <p style="display:inline">
+                  Email
+                </p>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="userEmail4"
+                  placeholder="Enter your mail address"
+                  value=""
+                  required
+                />
+              </div>
+              <p id="responseMsg4"></p>
+                      <button onclick="send_reset_password_email();"
+                              type="button"
+                              class="deletebtn"
+                      >Send Mail
+                      </button>
+                    <button onclick="document.getElementById('forgotPassword').style.display='none'"
+                            type="button" class="cancelbtn">
+                        Close
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+
     </main>
     {% include '_footer.html' %}
   </body>

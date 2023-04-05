@@ -88,9 +88,9 @@ class User(Base):
         return 'User'
 
     id = Column(SMALLINT(unsigned=True), primary_key=True, index=True)
-    email = Column(VARCHAR(255), nullable=False, unique=True, index=True)
+    email = Column(VARCHAR(100), nullable=False, unique=True, index=True)
     hashed_password = Column(VARCHAR(255), nullable=False)
-    guid = Column(VARCHAR(12), nullable=False)
+    guid = Column(VARCHAR(45), nullable=False)
     is_confirmed = Column(Boolean(), default=False)
     is_active = Column(Boolean(), default=False)
     is_superuser = Column(Boolean(), default=False)
@@ -461,3 +461,6 @@ class ImportFileRequestList(BaseModel):
 class HasCookies(BaseModel):
     access_token: bool
     consent_cookie: bool
+
+class Email(BaseModel):
+    email: str
