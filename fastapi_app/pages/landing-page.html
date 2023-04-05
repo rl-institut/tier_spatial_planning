@@ -68,7 +68,7 @@
                     <label for="isEnabled" > <span>&nbsp;Remember me</span></label>
                     <p></p>
                     <p style="text-align:left;">&nbsp;Don't have an account yet?
-                        <a href="{{url_for('user_registration')}}">Register here</a>
+                        <a href="#" onclick="document.getElementById('registration').style.display='block'">Register here</a>
                         <span style="float:right;">
                             <a href="{{url_for('user_registration')}} ">&nbsp;Forgot your password?</a>
                         </span>
@@ -85,7 +85,7 @@
               </div>
           </div>
       </section>
-             <div id="msgBox" class="modal">
+             <div id="msgBox" class="modal" style="background-color: rgba(0,0,0,0.5)">
               <form class="modal-content" action="/action_page.php">
                 <div class="container">
                   <h1 style="text-align:left;">Using the planing tool without registration</h1>
@@ -93,7 +93,7 @@
                     <p style="text-align:left;"> &bull; Your data will be automatically deleted after three hours</p>
                     <p style="text-align:left;"> &bull; If you log out, you lose access to your data</p>
                     <p style="text-align:left;"> &bull; The modeling time is limited to {{ MAX_DAYS }} days</p>
-                    <p style="text-align:left;"> &bull; The number of allowed users is limited to {{ MAX_CONSUMER_ANONYMOUS }}</p>
+                    <p style="text-align:left;"> &bull; The number of allowed consumers is limited to {{ MAX_CONSUMER_ANONYMOUS }}</p>
                    <p style="text-align:left;"> &bull; The calculation time of your optimization model is limited to 5 minutes</p>
                   <div class="clearfix">
                       <button onclick="anonymous_login();" type="button" class="deletebtn">Continue</button>
@@ -117,6 +117,64 @@
                       </button>
                     <button onclick="document.getElementById('consentCookie').style.display='none'"
                             type="button" class="cancelbtn">Decline</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+            <div id="registration" class="modal" style="background-color: rgba(0,0,0,0.5)">
+              <form class="modal-content">
+                <div class="container">
+                  <h1 style="text-align:left;">Registration</h1>
+                  <div class="clearfix">
+              <div class="input-item" style="text-align: left">
+                <p style="display:inline">
+                  Email
+                </p>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="userEmail2"
+                  placeholder="Enter your mail address"
+                  value=""
+                  required
+                />
+              </div>
+                <div class="input-item" style="text-align: left">
+                <p style="display:inline">
+                  Password
+                </p>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="userPassword2"
+                  placeholder="Enter your password"
+                  value=""
+                  required
+                />
+              </div>
+                <div class="input-item" style="text-align: left">
+                <p style="display:inline">
+                  Repeat Password
+                </p>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="userPassword3"
+                  placeholder="Enter your password"
+                  value=""
+                  required
+                />
+              </div>
+              <p id="responseMsg2"></p>
+                      <button onclick="add_user_to_db();"
+                              type="button"
+                              class="deletebtn"
+                      >Register
+                      </button>
+                    <button onclick="document.getElementById('registration').style.display='none'"
+                            type="button" class="cancelbtn">
+                        Close
+                    </button>
                   </div>
                 </div>
               </form>

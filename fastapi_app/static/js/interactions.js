@@ -486,26 +486,35 @@ function refresh_map(project_id, hide_links){
 /************************************************************/
 
 
-function add_user_to_db() {
+function add_user_to_db()
+{
+    if (userPassword2.value !== userPassword3.value)
+    {
+        document.getElementById("responseMsg2").innerHTML = 'The passwords do not match';
+        document.getElementById("responseMsg2").style.color = 'red';
+    }
+    else
+    {
     $.ajax({url: "add_user_to_db/",
             type: "POST",
             contentType: "application/json",
-            data: JSON.stringify({email: userEmail.value,
-                                       password: userPassword.value, remember_me: false}),
+            data: JSON.stringify({email: userEmail2.value,
+                                       password: userPassword2.value, remember_me: false}),
             dataType: "json",})
         .done(function (response) {
-            document.getElementById("responseMsg").innerHTML = response.msg;
+            document.getElementById("responseMsg2").innerHTML = response.msg;
             let fontcolor;
             if (response.validation === true)
                 {fontcolor = 'green';}
             else
                 {fontcolor = 'red';};
-            document.getElementById("responseMsg").style.color = fontcolor;});
+            document.getElementById("responseMsg2").style.color = fontcolor;});
+    }
 }
 
 
 function change_email() {
-    if (userEmail1.value != userEmail2.value) {
+    if (userEmail1.value !== userEmail2.value) {
         document.getElementById("responseMsg1").innerHTML = 'The emails do not match';
         document.getElementById("responseMsg1").style.color = 'red';
     }
@@ -602,11 +611,15 @@ function login() {
         .done(function (response) {
             document.getElementById("userPassword").value = '';
             if (response.validation === true)
-                {   document.getElementById("userEmail").value = '';
-                    window.location.href=window.location.href;}
+                {
+                    document.getElementById("userEmail").value = '';
+                    location.reload();
+                }
             else
-                {   document.getElementById("responseMsg").innerHTML = response.msg;
-                    document.getElementById("responseMsg").style.color = 'red';};
+                {
+                    document.getElementById("responseMsg").innerHTML = response.msg;
+                    document.getElementById("responseMsg").style.color = 'red';
+                }
             });}
 
 
