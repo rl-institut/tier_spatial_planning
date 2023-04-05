@@ -4,7 +4,6 @@
     {% set title='PeopleSun' %}
     {% include '_head.html' %}
     {% include '_style_msg_box.html' %}
-    <title>PeopleSun</title>
   </head>
   <body onload="show_cookie_consent(); show_user_email_in_navbar();">
   {% include '_navbar.html' %}
@@ -123,16 +122,7 @@
               </form>
             </div>
     </main>
-  <footer class="step-footer">
-      <div>
-        <div class="step-footer__left"></div>
-        <div class="step-footer__center"></div>
-        <div class="step-footer__right">
-            <a style="text-align: right", href="/impressum">Impressum&nbsp;&nbsp;&nbsp;</a>
-            <a style="text-align: right", href="/privacy">Privacy/Datenschutz&nbsp;&nbsp;&nbsp;</a>
-        </div>
-      </div>
-</footer>
+    {% include '_footer.html' %}
   </body>
 {% include '_scripts.html' %}
 </html>

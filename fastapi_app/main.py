@@ -29,7 +29,6 @@ from fastapi_app.db import config
 from fastapi_app.db import queries, inserts
 import pyutilib.subprocess.GlobalData
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
-# avoids error when running pyomo with celery worker
 
 app = FastAPI()
 

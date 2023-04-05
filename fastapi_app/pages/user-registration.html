@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en-us">
   <head>
+    {% set title= 'Registration' %}
     {% include '_head.html' %}
-    <title>User Registration</title>
   </head>
   <body onload="redirect_if_cookie_is_missing(false, true);">
       {% include '_navbar.html' %}
@@ -49,19 +49,7 @@
           </div>
       </section>
     </main>
-    <footer class="step-footer">
-      <div>
-        <div class="step-footer__left"></div>
-        <div class="step-footer__center">
-          <a
-            class="btn btn--medium btn--hollow btn--previous"
-            href="/"
-            >Main Page
-          </a>
-        </div>
-        <div class="step-footer__left"></div>
-      </div>
-    </footer>
+{% include '_footer.html' %}
   </body>
 {% include '_scripts.html' %}
 </html>

@@ -2,51 +2,43 @@
       <div>
         <div class="step-footer__left"></div>
         <div class="step-footer__center">
-        {% if ((title != 'PeopleSun') and (title != 'Simulation Results')) %}
-          <a class="btn btn--medium btn--hollow btn--previous"
              {% if title == 'Project Setup' %}
-                 href="/"
-             {% elif title == 'Consumer Selection' %}
-                 href="project_setup?project_id={{ project_id }}"
-             {% elif title == 'Grid Design' %}
-                 href="consumer_selection?project_id={{ project_id }}"
-            {% elif title == 'Energy System Design' %}
-                 href="grid_design?project_id={{ project_id }}"
-            {% elif title == 'Simulation Results' %}
-                 href="energy_system_design?project_id={{ project_id }}"
-             {% endif %}
-          >Previous</a>
-        {% endif %}
-              <a class="btn btn--medium" style="color: #fff"
-            {% if title == 'PeopleSun' %}
-                 href="{{ url_for('project_setup')}}"
-            {% elif title == 'Project Setup' %}
+                 <a class="btn btn--medium btn--hollow btn--previous"
+                 href="/">Previous</a>
+                 <a class="btn btn--medium" style="color: #fff"
                  href='consumer_selection?project_id={{ project_id }}'
                  onclick="save_project_setup({{ project_id }});"
-            {% elif title == 'Consumer Selection' %}
+                >Next</a>
+             {% elif title == 'Consumer Selection' %}
+                 <a class="btn btn--medium btn--hollow btn--previous"
+                 href="project_setup?project_id={{ project_id }}">Previous</a>
+                 <a class="btn btn--medium" style="color: #fff"
                  href="#"
-                 onclick="forward_if_consumer_selection_exists({{ project_id }})"
-            {% elif title == 'Grid Design' %}
+                 onclick="forward_if_consumer_selection_exists({{ project_id }})">
+                     Next</a>
+             {% elif title == 'Grid Design' %}
+                 <a class="btn btn--medium btn--hollow btn--previous"
+                 href="consumer_selection?project_id={{ project_id }}">
+                     Previous</a>
+                 <a class="btn btn--medium" style="color: #fff"
                  href="energy_system_design?project_id={{ project_id }}"
-                 onclick="save_grid_design();"
+                 onclick="save_grid_design();">Next</a>
             {% elif title == 'Energy System Design' %}
+                 <a class="btn btn--medium btn--hollow btn--previous"
+                 href="grid_design?project_id={{ project_id }}">
+                     Previous</a>
+                 <a class="btn btn--medium" style="color: #fff"
                  href="#"
-                 onclick="save_energy_system_design(); forward_if_no_task_is_pending({{ project_id }});"
-            {% endif %}
-            {% if title == 'Energy System Design' %}
-                 {% set next_str='Simulate' %}
+                 onclick="save_energy_system_design(); forward_if_no_task_is_pending({{ project_id }});">
+                     Optimize</a>
             {% elif title == 'Simulation Results' %}
-                {% set next_str='Projects Overview' %}
-                href="/"
-            {% else %}
-                 {% set next_str='Next' %}
-            {% endif %}
-            >{{ next_str }}</a>
+                 <a class="btn btn--medium" style="color: #fff"
+                 href="/">Projects Overview</a>
+             {% endif %}
         </div>
         <div class="step-footer__right">
              <a href="/privacy">Privacy/Datenschutz&nbsp;&nbsp;&nbsp;</a>
             <a  href="/impressum">Impressum&nbsp;&nbsp;&nbsp;</a>
-
         </div>
       </div>
       </div>

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en-us">
   <head>
+    {% set title= 'Account' %}
     {% include '_head.html' %}
     {% include '_style_msg_box.html' %}
-    <title>Account</title>
   </head>
   <body onload=" redirect_if_cookie_is_missing(true, true); show_user_email_in_navbar();">
       {% include '_navbar.html' %}
@@ -178,6 +178,7 @@
               </form>
             </div>
     </main>
+  {% include '_footer.html' %}
   </body>
 {% include '_scripts.html' %}
 </html>
