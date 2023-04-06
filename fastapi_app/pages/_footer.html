@@ -34,7 +34,9 @@
             {% elif title == 'Simulation Results' %}
                  <a class="btn btn--medium" style="color: #fff"
                  href="/">Projects Overview</a>
-             {% endif %}
+             {% elif title in  ['Imprint', 'Impressum', 'Data Privacy Protection', 'Datenschutz'] %}
+                         <a class="btn btn--medium" style="color: #fff"  href="/">Main</a>
+              {% endif %}
         </div>
         <div class="step-footer__right">
              <a href="/privacy?lang=en">Data Privacy Protection/Datenschutz&nbsp;&nbsp;&nbsp;</a>
