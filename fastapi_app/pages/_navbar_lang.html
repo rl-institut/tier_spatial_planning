@@ -38,10 +38,10 @@
                    <li>
 
                   {% if language == 'de_DE' %}
-                      <a class="dropdown-item" href="/legal_notes?lang=en">
+                      <a class="dropdown-item" href="/{{ page }}?lang=en">
                       <img src="{{ url_for('static', path='assets/flags/gb.svg') }}" alt="en" />
                   {% else %}
-                      <a class="dropdown-item" href="/legal_notes?lang=de">
+                      <a class="dropdown-item" href="/{{ page }}?lang=de">
                       <img src="{{ url_for('static', path='assets/flags/de.svg') }}" alt="de" />
                   {% endif %}</a>
                 </li>

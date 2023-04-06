@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang={{ language }}>
+  <head>
+    {% if page == 'imprint' %}
+        {% if language == 'de_DE' %}
+          {% set title='Impressum' %}
+        {% else %}
+          {% set title='Imprint' %}
+        {% endif %}
+    {% else %}
+        {% if language == 'de_DE' %}
+          {% set title='Datenschutz' %}
+        {% else %}
+          {% set title='Data Privacy Protection' %}
+        {% endif %}
+    {% endif %}
+    {% include '_head.html' %}
+    {% include '_style_msg_box.html' %}
+  </head>
+  {% include '_navbar_lang.html' %}
+  <body>
+      <main>
+      <section class="dashboard">
+        <div style="text-align: left">
+        {% if page == 'imprint' %}
+            {% if language == 'de_DE' %}
+              {% include '_imprint_de.html' %}
+            {% else %}
+              {% include '_imprint_en.html' %}
+            {% endif %}
+        {% else %}
+            {% if language == 'de_DE' %}
+              {% include '_privacy_de.html' %}
+            {% else %}
+              {% include '_privacy_en.html' %}
+            {% endif %}
+        {% endif %}
+        </div>>
+      </section>
+    </main>
+    {% include '_footer.html' %}
+  </body>
+{% include '_scripts.html' %}
+</html>

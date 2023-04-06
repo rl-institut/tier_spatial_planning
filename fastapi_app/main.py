@@ -163,14 +163,26 @@ async def user_registration(request: Request):
     return templates.TemplateResponse("user-registration.html", {"request": request})
 
 
-@app.get("/legal_notes", response_class=HTMLResponse)
-async def legal_notes(lang: str, request: Request):
+@app.get("/imprint", response_class=HTMLResponse)
+async def imprint(lang: str, request: Request):
     if lang == "en":
         lang = 'en_US'
     else:
         lang = 'de_DE'
-    return templates.TemplateResponse("imprint.html", {"request": request,
-                                                       "language": lang})
+    return templates.TemplateResponse("legal_notes.html", {"request": request,
+                                                           "language": lang,
+                                                           "page": 'imprint'})
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy(lang: str, request: Request):
+    if lang == "en":
+        lang = 'en_US'
+    else:
+        lang = 'de_DE'
+    return templates.TemplateResponse("legal_notes.html", {"request": request,
+                                                           "language": lang,
+                                                           "page": 'privacy'})
 
 
 @app.get("/activation_mail")
