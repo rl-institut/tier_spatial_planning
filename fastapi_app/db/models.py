@@ -1,10 +1,8 @@
-import pandas as pd
 import sqlalchemy as sa
 import flatten_dict
 from flatten_dict.reducers import make_reducer
 from sqlalchemy import Boolean, Column, Integer, VARCHAR, Numeric, String, DateTime
 from sqlalchemy.dialects.mysql import TINYINT, SMALLINT, FLOAT
-# from sqlalchemy.orm import relationship
 from typing import List, Dict, Union
 from pydantic import BaseModel, EmailStr
 import json
@@ -12,10 +10,7 @@ import inspect
 import pandas as pd
 from typing import Any
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
-from collections.abc import MutableMapping
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from fastapi_app.db.config import db_host, db_name, db_user_name, PW, db_port
+
 
 
 @as_declarative()

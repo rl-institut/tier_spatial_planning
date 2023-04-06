@@ -28,24 +28,27 @@
                 data-bs-toggle="dropdown"
                 aria-expanded="false"
               >
-                <img src="{{ url_for('static', path='assets/icons/i_profile.svg') }}" alt="Profile icon" />
+                {% if language == 'de_DE' %}
+                  <img src="{{ url_for('static', path='assets/flags/de.svg') }}" alt="de" />
+                  {% else %}
+                  <img src="{{ url_for('static', path='assets/flags/gb.svg') }}" alt="gb" />
+                  {% endif %}
               </a>
-              <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                <li><a class="dropdown-item" href="/">Projects</a></li>
-                                  <li>
-                  <a class="dropdown-item" href="#">Guidlines</a>
+              <ul class="dropdown-menu" aria-labelledby="navbarDropdown"  style="width: 30px">
+                   <li>
+
+                  {% if language == 'de_DE' %}
+                      <a class="dropdown-item" href="/legal_notes?lang=en">
+                      <img src="{{ url_for('static', path='assets/flags/gb.svg') }}" alt="en" />
+                  {% else %}
+                      <a class="dropdown-item" href="/legal_notes?lang=de">
+                      <img src="{{ url_for('static', path='assets/flags/de.svg') }}" alt="de" />
+                  {% endif %}</a>
                 </li>
                 <li>
-                  <a class="dropdown-item" href="{{ url_for('account_overview') }}">Account</a>
-                </li>
-                <li><hr class="dropdown-divider" /></li>
-                <li>
-                  <a class="dropdown-item" onclick="logout();">Log out</a>
-                </li>
               </ul>
             </li>
           </ul>
-
         </div>
       </div>
     </nav>

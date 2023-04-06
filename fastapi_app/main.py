@@ -5,7 +5,6 @@ import urllib.request
 import json
 import pandas as pd
 import numpy as np
-from types import SimpleNamespace
 from celery_worker import worker
 import os
 from datetime import datetime, timedelta, timezone
@@ -164,6 +163,16 @@ async def user_registration(request: Request):
     return templates.TemplateResponse("user-registration.html", {"request": request})
 
 
+@app.get("/legal_notes", response_class=HTMLResponse)
+async def legal_notes(lang: str, request: Request):
+    if lang == "en":
+        lang = 'en_US'
+    else:
+        lang = 'de_DE'
+    return templates.TemplateResponse("imprint.html", {"request": request,
+                                                       "language": lang})
+
+
 @app.get("/activation_mail")
 async def activation_mail(request: Request):
     guid = request.path_params.get('guid')
@@ -178,7 +187,7 @@ async def reset_password(guid, request: Request):
         user = await queries.get_user_by_guid(guid)
         if user is not None:
             return templates.TemplateResponse("reset_password.html", {"request": request, 'guid': guid})
-    return templates.TemplateResponse("landing-page.html", {"request": request})
+    return RedirectResponse('/')
 
 
 @app.post("/reset_password")
@@ -190,6 +199,7 @@ async def reset_password(request: Request, form_data: Dict[str, str]):
         if user is not None:
             if accounts.is_valid_password(password):
                 user.hashed_password = Hasher.get_password_hash(password)
+                user.guid = ''
                 await inserts.merge_model(user)
                 res = 'Password changed successfully.'
                 validation = True
@@ -199,23 +209,23 @@ async def reset_password(request: Request, form_data: Dict[str, str]):
             return models.ValidRegistration(validation=validation, msg=res)
 
 
-@app.get("/account_overview", response_class=HTMLResponse)
+@app.get("/account_overview")
 async def account_overview(request: Request):
     user = await accounts.get_user_from_cookie(request)
     if user is None:
-        return templates.TemplateResponse("landing-page.html", {"request": request})
+        return RedirectResponse('/')
     else:
         return templates.TemplateResponse("account_overview.html", {"request": request,
                                                                     'email': user.email})
 
 
-@app.get("/consumer_selection", response_class=HTMLResponse)
+@app.get("/consumer_selection")
 async def consumer_selection(request: Request):
     project_id = request.query_params.get('project_id')
     try:
         int(project_id)
     except (TypeError, ValueError):
-        return templates.TemplateResponse("landing-page.html", {"request": request})
+        RedirectResponse('/')
     return templates.TemplateResponse("consumer-selection.html", {"request": request, 'project_id': project_id})
 
 
@@ -254,7 +264,8 @@ async def simulation_results(request: Request):
     return templates.TemplateResponse("simulation-results.html", {"request": request, 'project_id': project_id})
 
 
-@app.get("/calculating", response_class=HTMLResponse)
+@app.get("/calculating"
+         )
 async def calculating(request: Request):
     project_id = request.query_params.get('project_id')
     user = await accounts.get_user_from_cookie(request)
@@ -262,7 +273,7 @@ async def calculating(request: Request):
         int(project_id)
     except (TypeError, ValueError):
         # ToDo: If user is logged in, redirect to the project overview page
-        return templates.TemplateResponse("landing-page.html", {"request": request})
+        return RedirectResponse('/')
     if 'anonymous' in user.email:
         msg = 'You will be forwarded after the model calculation is completed.'
         email_opt = False
