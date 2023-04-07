@@ -77,6 +77,20 @@ services:
       - app
     secrets:
       - pw
+  adminer:
+    container_name: 'adminer'
+    image: adminer
+    restart: always
+    ports:
+      - '40003:8080'
+    depends_on:
+      - mysql
+    environment:
+      - ADMINER_DEFAULT_SERVER=mysql
+      - ADMINER_DEFAULT_USERNAME=root
+      - ADMINER_DEFAULT_PASSWORD_FILE=/run/secrets/pw
+    secrets:
+      - pw
 secrets:
   pw:
     file: ./secrets/secret.txt
