@@ -296,14 +296,6 @@ function boundary_select(mode, project_id) {
         btnAddRemove.classList.remove(button_class)
     }
 
-    // add a line to the polyline object in the map
-    siteBoundaryLines.push(
-        L.polyline([siteBoundaries[0], siteBoundaries.slice(-1)[0]], {
-            color: 'black',
-        })
-    );
-    siteBoundaryLines[siteBoundaryLines.length - 1].addTo(mainMap);
-
     // only when a boundary is drawn, the next steps will be executed
     if (siteBoundaryLines.length > 0) {
         database_add_remove_automatic({ add_remove: mode,

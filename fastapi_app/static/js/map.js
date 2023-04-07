@@ -269,12 +269,12 @@ mainMap.on("click", function (e) {
     (document.getElementById("btnDrawBoundariesAdd").innerText === 'Draw Lines' ||
       document.getElementById("btnDrawBoundariesRemove").innerText === 'Draw Lines')
   ) {
+
+    let polylineBounds = new L.LatLngBounds([poplocation.lat, poplocation.lng]);
     siteBoundaries.push([poplocation.lat, poplocation.lng]);
-
     // adding the new solid line to siteBoundaryLines and draw it on the map
-    siteBoundaryLines.push(L.polyline(siteBoundaries, { color: "black" }));
+    siteBoundaryLines.push(L.polyline(siteBoundaries, { color: "black" , bounds: polylineBounds}));
     siteBoundaryLines[siteBoundaryLines.length - 1].addTo(mainMap);
-
     // removing the dashed line
     if (dashedBoundaryLine) {
       mainMap.removeLayer(dashedBoundaryLine);
@@ -290,6 +290,8 @@ mainMap.on("click", function (e) {
     dashedBoundaryLine.addTo(mainMap);
   };
 });
+
+
 
 // --------------------FUNCTIONS DECLARATION----------------------//
 
