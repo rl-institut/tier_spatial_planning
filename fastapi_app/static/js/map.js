@@ -179,6 +179,7 @@ L.easyButton(
     project_id = urlParams.get('project_id');
   clear_nodes_and_links(project_id = project_id);
   remove_marker_from_map();
+  removeBoundaries();
     position: "topleft";
   },
   "Clear all nodes from the map"

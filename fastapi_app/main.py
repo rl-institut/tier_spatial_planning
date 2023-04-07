@@ -276,8 +276,7 @@ async def simulation_results(request: Request):
     return templates.TemplateResponse("simulation-results.html", {"request": request, 'project_id': project_id})
 
 
-@app.get("/calculating"
-         )
+@app.get("/calculating")
 async def calculating(request: Request):
     project_id = request.query_params.get('project_id')
     user = await accounts.get_user_from_cookie(request)
