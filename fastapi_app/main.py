@@ -136,13 +136,28 @@ async def home(request: Request):
     if user is None or consent is None:
         return templates.TemplateResponse("landing-page.html",
                                           {"request": request,
-                                           'MAX_DAYS': os.environ.get('MAX_DAYS', 14),
-                                           'MAX_CONSUMER_ANONYMOUS': os.environ.get('MAX_CONSUMER_ANONYMOUS', 150)})
+                                           'MAX_DAYS': int(os.environ.get('MAX_DAYS', 14)),
+                                           'MAX_CONSUMER_ANONYMOUS': int(os.environ.get('MAX_CONSUMER_ANONYMOUS', 150))})
     else:
         projects = await queries.get_project_of_user(user.id)
         for project in projects:
             project.created_at = project.created_at.date()
             project.updated_at = project.updated_at.date()
+            if user.task_id is not None and project.project_id == user.project_id:
+                status = worker.AsyncResult(user.task_id).status.lower()
+                if status in ['success', 'failure', 'revoked']:
+                    project_setup = await queries.get_project_setup_of_user(user.id, user.project_id)
+                    user.task_id = ''
+                    user.project_id = None
+                    await inserts.update_model_by_user_id(user)
+                    if status == 'success':
+                        project_setup.status = "finished"
+                    else:
+                        project_setup.status = status
+                    await inserts.merge_model(project_setup)
+                    user.task_id = ''
+                    user.project_id = None
+                    await inserts.update_model_by_user_id(user)
         return templates.TemplateResponse("user_projects.html", {"request": request, 'projects': projects})
 
 
@@ -152,7 +167,7 @@ async def project_setup(request: Request):
     project_id = request.query_params.get('project_id')
     if project_id is None:
         project_id = await queries.next_project_id_of_user(user.id)
-    max_days = os.environ.get('MAX_DAYS', 365)
+    max_days = int(os.environ.get('MAX_DAYS', 365))
     return templates.TemplateResponse("project-setup.html", {"request": request,
                                                              'project_id': project_id,
                                                               'max_days': max_days})
@@ -702,11 +717,11 @@ async def database_add_remove_automatic(add_remove: str, project_id,
         min_longitude = min(longitudes)
         max_latitude = max(latitudes)
         max_longitude = max(longitudes)
-        if max_latitude - min_latitude > os.environ.get("MAX_LAT_LON_DIST", 0.15):
+        if max_latitude - min_latitude > float(os.environ.get("MAX_LAT_LON_DIST", 0.15)):
             return JSONResponse({'executed': False,
                                  'msg': 'The maximum latitude distance selected is too large. '
                                         'Please select a smaller area.'})
-        elif max_longitude - min_longitude > os.environ.get("MAX_LAT_LON_DIST", 0.15):
+        elif max_longitude - min_longitude > float(os.environ.get("MAX_LAT_LON_DIST", 0.15)):
             return JSONResponse({'executed': False,
                                  'msg': 'The maximum longitude distance selected is too large. '
                                         'Please select a smaller area.'})
@@ -717,9 +732,9 @@ async def database_add_remove_automatic(add_remove: str, project_id,
         with urllib.request.urlopen(url_formated) as url:
             data = json.loads(url.read().decode())
         if user.email.split('__')[0] == 'anonymous':
-            max_consumer = os.environ.get("MAX_CONSUMER_ANONNYMOUS", 150)
+            max_consumer = int(os.environ.get("MAX_CONSUMER_ANONNYMOUS", 150))
         else:
-            max_consumer = os.environ.get("MAX_CONSUMER", 1000)
+            max_consumer = int(os.environ.get("MAX_CONSUMER", 1000))
 
         # first converting the json file, which is delievered by overpass to geojson,
         # then obtaining coordinates and surface areas of all buildings inside the
@@ -932,9 +947,10 @@ def get_status_of_task(task_id):
     status = worker.AsyncResult(task_id).status.lower()
     return status
 
+
 def task_is_finished(task_id):
     status = get_status_of_task(task_id)
-    if status in ['success', 'failure','revoked']:
+    if status in ['success', 'failure', 'revoked']:
         return True
     else:
         return False
@@ -999,9 +1015,19 @@ async def waiting_for_results(request: Request, data: models.TaskInfo):
         res['finished'] = True
     if res['finished'] is True:
         user = await accounts.get_user_from_cookie(request)
-        user.task_id = ''
-        user.project_id = None
-        await inserts.update_model_by_user_id(user)
+        project_setup = await queries.get_project_setup_of_user(user.id, user.project_id)
+        if project_setup is not None:
+            if 'status' in locals():
+                if status == 'success':
+                    project_setup.status = "finished"
+                else:
+                    project_setup.status = status
+            else:
+                project_setup.status = "finished"
+            await inserts.merge_model(project_setup)
+            user.task_id = ''
+            user.project_id = None
+            await inserts.update_model_by_user_id(user)
     return JSONResponse(res)
 
 
@@ -1387,7 +1413,7 @@ async def optimize_energy_system(user_id, project_id):
     solver = 'gurobi' if po.SolverFactory('gurobi').available() else 'cbc'
     ensys_opt = EnergySystemOptimizer(
         start_date=df.loc[0, "start_date"],
-        n_days=min(df.loc[0, "n_days"], os.environ.get('MAX_DAYS', 365)),
+        n_days=min(df.loc[0, "n_days"], int(os.environ.get('MAX_DAYS', 365))),
         project_lifetime=df.loc[0, "project_lifetime"],
         wacc=df.loc[0, "interest_rate"] / 100,
         tax=0,
