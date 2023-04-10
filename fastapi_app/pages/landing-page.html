@@ -102,8 +102,8 @@
               </div>
           </div>
       </section>
-             <div id="msgBox" class="modal" style="background-color: rgba(0,0,0,0.5)">
-              <form class="modal-content" action="/action_page.php">
+             <div id="msgBox" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999;">
+              <form class="modal-content" action="/action_page.php" style="max-width: 40rem">
                 <div class="container">
                   <h1 style="text-align:left;">Using the planing tool without registration</h1>
                   <p style="text-align:left;">To test the planning tool, you do not need to register an account, a temporary account will be created automatically. However, if you use the planning tool without registering, please note:</p>
@@ -112,6 +112,29 @@
                     <p style="text-align:left;"> &bull; The modeling time is limited to {{ MAX_DAYS }} days</p>
                     <p style="text-align:left;"> &bull; The number of allowed consumers is limited to {{ MAX_CONSUMER_ANONYMOUS }}</p>
                    <p style="text-align:left;"> &bull; The calculation time of your optimization model is limited to 5 minutes</p>
+                    <p style="text-align:left;"> Please enter the letters shown below</p>
+                    <div style="display: flex; align-items: center;">
+                    <img id="captcha_img3" style="margin-right: 1rem;">
+                    <a style="font-family: Lucida Sans Unicode; font-weight: 900; font-size: 2rem"
+                       type="button"
+                       onclick="get_captcha();"
+                    >&#x21bb;</a>
+                </div>
+                  <div style="text-align: left;">
+                  <p style="display:inline; text-align:left;"
+                  >Captcha <i>(Hint: capital letters only)</i>
+                </p>
+                </div>
+                <input
+                  type="text"
+                  class="form-control"
+                  style="max-width: 20rem"
+                  id="captcha_input3"
+                  placeholder="Enter the capital letters shown above"
+                  value=""
+                  required
+                />
+                    <p id="responseMsg3"></p>
                   <div class="clearfix">
                       <button onclick="anonymous_login();" type="button" class="deletebtn">Continue</button>
                     <button onclick="document.getElementById('msgBox').style.display='none'" type="button" class="cancelbtn">Chancel</button>
@@ -119,8 +142,8 @@
                 </div>
               </form>
             </div>
-            <div id="consentCookie" class="modal" style="background-color: rgba(0,0,0,0.5)">
-              <form class="modal-content">
+            <div id="consentCookie" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999;">
+              <form class="modal-content"  style="max-width: 40rem">
                 <div class="container">
                   <h1 style="text-align:left;">Cookies</h1>
                   <p style="text-align:left;">This website uses cookies. These are strictly necessary to allow core
@@ -138,12 +161,31 @@
                 </div>
               </form>
             </div>
-            <div id="registration" class="modal" style="background-color: rgba(0,0,0,0.5)">
-              <form class="modal-content">
+            <div id="registration" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999;">
+              <form class="modal-content" style="max-width: 20rem">
                 <div class="container">
                   <h1 style="text-align:left;">Registration</h1>
                   <div class="clearfix">
               <div class="input-item" style="text-align: left">
+                <div style="display: flex; align-items: center;">
+                    <img id="captcha_img2" style="margin-right: 1rem;">
+                    <a style="font-family: Lucida Sans Unicode; font-weight: 900; font-size: 2rem"
+                       type="button"
+                       onclick="get_captcha();"
+                    >&#x21bb;
+                    </a>
+                </div>
+                  <p style="display:inline; text-align: left">
+                      Captcha <i>(Hint: capital letters only)</i>
+                </p>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="captcha_input2"
+                  placeholder="Please enter the capital letters shown above"
+                  value=""
+                  required
+                />
                 <p style="display:inline">
                   Email
                 </p>
@@ -196,11 +238,8 @@
                 </div>
               </form>
             </div>
-
-
-
-            <div id="forgotPassword" class="modal" style="background-color: rgba(0,0,0,0.5)">
-              <form class="modal-content">
+            <div id="forgotPassword" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999;">
+              <form class="modal-content" style="max-width: 20rem">
                 <div class="container">
                   <h1 style="text-align:left;">Reset Password</h1>
                     <p style="text-align: left">If you have forgotten your password, a link can be sent to your registered email address that
@@ -208,6 +247,27 @@
                   <div class="clearfix">
               <div class="input-item" style="text-align: left">
                 <p style="display:inline">
+                </p>
+                <div style="display: flex; align-items: center;">
+                    <img id="captcha_img" style="margin-right: 1rem;">
+                    <a style="font-family: Lucida Sans Unicode; font-weight: 900; font-size: 2rem"
+                       type="button"
+                       onclick="get_captcha();"
+                    >&#x21bb;
+                    </a>
+                </div>
+                  <p style="display:inline; text-align: left">
+                      Captcha <i>(Hint: capital letters only)</i>
+                </p>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="captcha_input"
+                  placeholder="Please enter the capital letters shown above"
+                  value=""
+                  required
+                />
+               <p style="display:inline">
                   Email
                 </p>
                 <input
@@ -233,10 +293,24 @@
                 </div>
               </form>
             </div>
-
-
     </main>
     {% include '_footer.html' %}
   </body>
 {% include '_scripts.html' %}
+<script>
+const img = document.getElementById("captcha_img");
+const img2 = document.getElementById("captcha_img2");
+const img3 = document.getElementById("captcha_img3");
+let hashedCaptcha;
+function get_captcha(){
+fetch("/get_captcha")
+  .then(response => response.json())
+  .then(data => {
+    img.src = "data:image/jpeg;base64," + data.img;
+    img2.src = "data:image/jpeg;base64," + data.img;
+    img3.src = "data:image/jpeg;base64," + data.img;
+    hashedCaptcha = data.hashed_captcha;
+  });}
+get_captcha();
+</script>
 </html>

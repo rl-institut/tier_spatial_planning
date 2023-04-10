@@ -1233,6 +1233,8 @@ a.dropdown-item:active {
 .step-footer {
   background-color: var(--bcc);
   height: 4rem;
+  bottom: 0;
+  width: 100%;
   border-top: 2px solid #F4F7F9;
   display: -webkit-box;
   display: -ms-flexbox;

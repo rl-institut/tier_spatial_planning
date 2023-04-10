@@ -3,13 +3,16 @@ import asyncio
 import math
 import urllib.request
 import json
+import base64
+import random
+from captcha.image import ImageCaptcha
 import pandas as pd
 import numpy as np
 from celery_worker import worker
 import os
 from datetime import datetime, timedelta, timezone
 from collections import defaultdict
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Tuple
 import time
 import socket
 import fastapi_app.tools.boundary_identification as bi
@@ -19,6 +22,7 @@ import fastapi_app.db.models as models
 from fastapi import FastAPI, Request, Response, BackgroundTasks
 from fastapi.responses import RedirectResponse, FileResponse, JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
+from passlib.context import CryptContext
 from fastapi.staticfiles import StaticFiles
 from fastapi_app.tools.grids import Grid
 from fastapi_app.tools.optimizer import Optimizer, GridOptimizer, EnergySystemOptimizer, po
@@ -48,85 +52,28 @@ async def favicon():
     return FileResponse(path)
 
 
-# ************************************************************/
-# *                     IMPORT / EXPORT                      */
-# ************************************************************/
+captcha_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-@app.post("/export_data/")
-async def export_data(generate_export_file_request: models.GenerateExportFileRequest):
-    """
-    Generates an Excel file from the database tables (*.csv files) and the
-    webapp settings. The file is stored in fastapi_app/import_export/temp.xlsx
+class Hasher:
+    @staticmethod
+    def verify_password(plain_password, hashed_password):
+        return captcha_context.verify(plain_password, hashed_password)
 
-    Parameters
-    ----------
-    generate_export_file_request (fastapi_app.models.GenerateExportFileRequest):
-        Basemodel request object containing the data send to the request as attributes.
-    """
-
-    # read nodes and links from *.csv files
-    # then convert their type from dictionary to data frame
-    nodes = await database_read(nodes_or_links="nodes")
-    links = await database_read(nodes_or_links="links")
-    nodes_df = pd.DataFrame(nodes)
-    links_df = pd.DataFrame(links)
-
-    # get all settings defined in the web app
-    settings = [element for element in generate_export_file_request]
-    settings_df = pd.DataFrame(
-        {"Setting": [x[0] for x in settings], "value": [x[1] for x in settings]}
-    ).set_index("Setting")
-
-    # create the *.xlsx file with sheets for nodes, links and settings
-    with pd.ExcelWriter(full_path_import_export) as writer:  # pylint: disable=abstract-class-instantiated
-        nodes_df.to_excel(
-            excel_writer=writer,
-            sheet_name="nodes",
-            header=nodes_df.columns,
-            index=False,
-        )
-        links_df.to_excel(
-            excel_writer=writer,
-            sheet_name="links",
-            header=links_df.columns,
-            index=False,
-        )
-        settings_df.to_excel(excel_writer=writer, sheet_name="settings")
-
-    # TO DO: formatting of the excel file
+    @staticmethod
+    def get_password_hash(password):
+        return captcha_context.hash(password)
 
 
-@app.get("/download_export_file",
-         responses={200: {"description": "xlsx file containing the information about the configuration.",
-                          "content": {"static/io/test_excel_node.xlsx": {"example": "No example available."}}, }}, )
-async def download_export_file():
-    file_name = "temp.xlsx"
-    # Download xlsx file
-    file_path = os.path.join(config.directory_parent, f"import_export/{file_name}")
-    if os.path.exists(file_path):
-        return FileResponse(path=file_path,
-                            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                            filename="backup.xlsx", )
-    else:
-        return {"error": "File not found!"}
-
-
-@app.post("/import_data/{project_id}")
-async def import_data(project_id, request: Request, import_files: import_structure = None):
-    # add nodes from the 'nodes' sheet of the excel file to the 'nodes.csv' file
-    # TODO: update the template for adding nodes
-    nodes = import_files["nodes_to_import"]
-    links = import_files["links_to_import"]
-    user = await accounts.get_user_from_cookie(request)
-    user_id = user.id
-    if len(nodes) > 0:
-        await inserts.update_nodes_and_links(True, False, nodes, user_id, project_id)
-
-    if len(links) > 0:
-        await inserts.update_nodes_and_links(False, True, links, user_id, project_id)
-
-    # ------------------------------ HANDLE REQUEST ------------------------------#
+@app.get('/get_captcha')
+async def captcha(request: Request):
+    captcha_text = ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ', k=4))
+    captcha = ImageCaptcha()
+    loop = asyncio.get_running_loop()
+    captcha_data = await loop.run_in_executor(None, captcha.generate, captcha_text)
+    base64_image = base64.b64encode(captcha_data.getvalue()).decode('utf-8')
+    hashed_captcha = captcha_context.hash(captcha_text)
+    return JSONResponse({'img': base64_image, 'hashed_captcha': hashed_captcha})
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -421,44 +368,62 @@ async def load_previous_data(page_name, request: Request):
 
 
 @app.post("/add_user_to_db/")
-async def add_user_to_db(user: models.Credentials):
+async def add_user_to_db(data: Dict[str, str]):
+    email = data.get('email')
+    password = data.get('password')
+    class User:
+        def __init__(self, email: str, password: str):
+            self.email = email
+            self.password = password
+    user = User(email=email, password=password)
+    captcha_input = data.get('captcha_input')
+    hashed_captcha = data.get('hashed_captcha')
     res = await is_valid_credentials(user)
     if res[0] is True:
-        guid = create_guid()
-        user = models.User(email=user.email,
-                           hashed_password=Hasher.get_password_hash(user.password),
-                           guid=guid,
-                           is_confirmed=False,
-                           is_active=False,
-                           is_superuser=False)
-        await inserts.merge_model(user)
-        send_activation_link(user.email, guid)
+        if captcha_context.verify(captcha_input, hashed_captcha):
+            guid = create_guid()
+            user = models.User(email=email,
+                               hashed_password=Hasher.get_password_hash(password),
+                               guid=guid,
+                               is_confirmed=False,
+                               is_active=False,
+                               is_superuser=False)
+            await inserts.merge_model(user)
+            send_activation_link(user.email, guid)
+        else:
+            res = [False, 'Please enter a valid captcha']
     return models.ValidRegistration(validation=res[0], msg=res[1])
 
 
 @app.post("/anonymous_login/")
-async def anonymous_login(response: Response):
-    guid = str(uuid.uuid4())
-    name = 'anonymous__' + guid
-    user = models.User(email=name,
-                       hashed_password='',
-                       guid='',
-                       is_confirmed=True,
-                       is_active=True,
-                       is_superuser=False,
-                       task_id='',
-                       project_id=0)
-    await inserts.merge_model(user)
-    user = await queries.get_user_by_username(name)
-    access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES_ANONYMOUS)
-    access_token = create_access_token(data={"sub": name}, expires_delta=access_token_expires)
-    response.set_cookie(key="access_token", value=f"Bearer {access_token}",
-                        httponly=True)  # set HttpOnly cookie in response
-    if socket.gethostname() not in ['nbb', 'DESKTOP-U9MVH5M']:
-        minutes = config.ACCESS_TOKEN_EXPIRE_MINUTES_ANONYMOUS + 60
-        eta = datetime.utcnow() + timedelta(minutes=minutes)
-        queue_remove_anonymous_users.apply_async((user.email, user.id,), eta=eta)
-    return {"access_token": access_token, "token_type": "bearer"}
+async def anonymous_login(data: Dict[str, str], response: Response):
+    captcha_input = data.get('captcha_input')
+    hashed_captcha = data.get('hashed_captcha')
+    if captcha_context.verify(captcha_input, hashed_captcha):
+        guid = str(uuid.uuid4())
+        name = 'anonymous__' + guid
+        user = models.User(email=name,
+                           hashed_password='',
+                           guid='',
+                           is_confirmed=True,
+                           is_active=True,
+                           is_superuser=False,
+                           task_id='',
+                           project_id=0)
+        await inserts.merge_model(user)
+        user = await queries.get_user_by_username(name)
+        access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES_ANONYMOUS)
+        access_token = create_access_token(data={"sub": name}, expires_delta=access_token_expires)
+        response.set_cookie(key="access_token", value=f"Bearer {access_token}",
+                            httponly=True)  # set HttpOnly cookie in response
+        if socket.gethostname() not in ['nbb', 'DESKTOP-U9MVH5M']:
+            minutes = config.ACCESS_TOKEN_EXPIRE_MINUTES_ANONYMOUS + 60
+            eta = datetime.utcnow() + timedelta(minutes=minutes)
+            queue_remove_anonymous_users.apply_async((user.email, user.id,), eta=eta)
+        validation, res = True, ''
+    else:
+        validation, res = False, 'Please enter a valid captcha'
+    return models.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/login/")
@@ -528,19 +493,25 @@ async def change_pw(request: Request, passwords: models.ChangePW):
 
 
 @app.post("/send_reset_password_email/")
-async def send_reset_password_email(email: models.Email):
-    user = await queries.get_user_by_username(email.email)
+async def send_reset_password_email(data: Dict[str, str], request: Request):
+    email = data.get('email')
+    captcha_input = data.get('captcha_input')
+    hashed_captcha = data.get('hashed_captcha')
+    user = await queries.get_user_by_username(email)
     if user is None:
-        validation, res = False, 'Email adress is not registered'
+        validation, res = False, 'Email address is not registered'
     else:
-        guid = str(uuid.uuid4()).replace('-', '')[:24]
-        user.guid = guid
-        await inserts.merge_model(user)
-        msg = 'For your PeopleSuN-Account a password reset was requested. If you did not request a password reset, ' \
-              'please ignore this email. Otherwise, please click the following link:\n\n{}/reset_password?guid={}'\
-            .format(config.DOMAIN, guid)
-        send_mail(email.email, msg, 'PeopleSuN-Account: Reset your password')
-        validation, res = True, 'Please click the link we sent to your email.'
+        if captcha_context.verify(captcha_input, hashed_captcha):
+            guid = str(uuid.uuid4()).replace('-', '')[:24]
+            user.guid = guid
+            await inserts.merge_model(user)
+            msg = 'For your PeopleSuN-Account a password reset was requested. If you did not request a password reset, ' \
+                  'please ignore this email. Otherwise, please click the following link:\n\n{}/reset_password?guid={}'\
+                .format(config.DOMAIN, guid)
+            send_mail(email, msg, 'PeopleSuN-Account: Reset your password')
+            validation, res = True, 'Please click the link we sent to your email.'
+        else:
+            validation, res = False, 'Please enter a valid captcha'
     return models.ValidRegistration(validation=validation, msg=res)
 
 
@@ -1644,3 +1615,82 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest):
         "message": "shs identified"
     }
     """
+
+
+# ************************************************************/
+# *                     IMPORT / EXPORT                      */
+# ************************************************************/
+
+
+@app.post("/export_data/")
+async def export_data(generate_export_file_request: models.GenerateExportFileRequest):
+    """
+    Generates an Excel file from the database tables (*.csv files) and the
+    webapp settings. The file is stored in fastapi_app/import_export/temp.xlsx
+
+    Parameters
+    ----------
+    generate_export_file_request (fastapi_app.models.GenerateExportFileRequest):
+        Basemodel request object containing the data send to the request as attributes.
+    """
+
+    # read nodes and links from *.csv files
+    # then convert their type from dictionary to data frame
+    nodes = await database_read(nodes_or_links="nodes")
+    links = await database_read(nodes_or_links="links")
+    nodes_df = pd.DataFrame(nodes)
+    links_df = pd.DataFrame(links)
+
+    # get all settings defined in the web app
+    settings = [element for element in generate_export_file_request]
+    settings_df = pd.DataFrame(
+        {"Setting": [x[0] for x in settings], "value": [x[1] for x in settings]}
+    ).set_index("Setting")
+
+    # create the *.xlsx file with sheets for nodes, links and settings
+    with pd.ExcelWriter(full_path_import_export) as writer:  # pylint: disable=abstract-class-instantiated
+        nodes_df.to_excel(
+            excel_writer=writer,
+            sheet_name="nodes",
+            header=nodes_df.columns,
+            index=False,
+        )
+        links_df.to_excel(
+            excel_writer=writer,
+            sheet_name="links",
+            header=links_df.columns,
+            index=False,
+        )
+        settings_df.to_excel(excel_writer=writer, sheet_name="settings")
+
+    # TO DO: formatting of the excel file
+
+
+@app.get("/download_export_file",
+         responses={200: {"description": "xlsx file containing the information about the configuration.",
+                          "content": {"static/io/test_excel_node.xlsx": {"example": "No example available."}}, }}, )
+async def download_export_file():
+    file_name = "temp.xlsx"
+    # Download xlsx file
+    file_path = os.path.join(config.directory_parent, f"import_export/{file_name}")
+    if os.path.exists(file_path):
+        return FileResponse(path=file_path,
+                            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            filename="backup.xlsx", )
+    else:
+        return {"error": "File not found!"}
+
+
+@app.post("/import_data/{project_id}")
+async def import_data(project_id, request: Request, import_files: import_structure = None):
+    # add nodes from the 'nodes' sheet of the excel file to the 'nodes.csv' file
+    # TODO: update the template for adding nodes
+    nodes = import_files["nodes_to_import"]
+    links = import_files["links_to_import"]
+    user = await accounts.get_user_from_cookie(request)
+    user_id = user.id
+    if len(nodes) > 0:
+        await inserts.update_nodes_and_links(True, False, nodes, user_id, project_id)
+
+    if len(links) > 0:
+        await inserts.update_nodes_and_links(False, True, links, user_id, project_id)

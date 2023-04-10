@@ -1,6 +1,11 @@
 import re
 import uuid
 import smtplib
+import asyncio
+import base64
+import random
+from typing import Tuple
+from captcha.image import ImageCaptcha
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from passlib.context import CryptContext
@@ -154,6 +159,15 @@ async def get_user_from_cookie(request):
     scheme, param = get_authorization_scheme_param(token)
     user = await _get_user_from_token(token=param)
     return user
+
+
+async def generate_captcha_image() -> Tuple[str, str]:
+    captcha_text = ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ', k=6))
+    captcha = ImageCaptcha()
+    loop = asyncio.get_running_loop()
+    captcha_data = await loop.run_in_executor(None, captcha.generate, captcha_text)
+    base64_image = base64.b64encode(captcha_data.getvalue()).decode('utf-8')
+    return captcha_text, base64_image
 
 
 if __name__ == '__main__':

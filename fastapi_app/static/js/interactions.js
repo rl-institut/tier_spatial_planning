@@ -296,6 +296,7 @@ function boundary_select(mode, project_id) {
         btnAddRemove.classList.remove(button_class)
     }
 
+
     // only when a boundary is drawn, the next steps will be executed
     if (siteBoundaryLines.length > 0) {
         database_add_remove_automatic({ add_remove: mode,
@@ -490,8 +491,10 @@ function add_user_to_db()
     $.ajax({url: "add_user_to_db/",
             type: "POST",
             contentType: "application/json",
-            data: JSON.stringify({email: userEmail2.value,
-                                       password: userPassword2.value, remember_me: false}),
+            data: JSON.stringify({'email': userEmail2.value,
+                                       'password': userPassword2.value,
+                                         'captcha_input': captcha_input2.value,
+                                       'hashed_captcha': hashedCaptcha}),
             dataType: "json",})
         .done(function (response) {
             document.getElementById("responseMsg2").innerHTML = response.msg;
@@ -626,9 +629,20 @@ function consent_cookie() {
 function anonymous_login () {
     $.ajax({url: "anonymous_login/",
             type: "POST",
+            data: JSON.stringify({'captcha_input': captcha_input3.value,
+                                  'hashed_captcha': hashedCaptcha}),
             contentType: "application/json",
             dataType: "json",})
-        .done(function () {window.location.href=window.location.origin;});}
+        .done(async function (response) {
+            document.getElementById("responseMsg3").innerHTML = response.msg;
+            if (response.validation === true)
+            {window.location.href=window.location.origin;}
+            else
+            {
+             document.getElementById("responseMsg3").style.color = 'red';
+            }
+        });
+}
 
 
 function logout()  {
@@ -1024,7 +1038,9 @@ function show_cookie_consent(){
 function send_reset_password_email(){
         $.ajax({url: "send_reset_password_email/",
             type: "POST",
-            data: JSON.stringify({'email': userEmail4.value}),
+            data: JSON.stringify({'email': userEmail4.value,
+                                        'captcha_input': captcha_input.value,
+                                        'hashed_captcha': hashedCaptcha}),
             contentType: "application/json",})
         .done(async function (response) {
             document.getElementById("responseMsg4").innerHTML = response.msg;
@@ -1043,14 +1059,11 @@ function send_reset_password_email(){
 }
 
 function reset_pw(guid) {
-    window.alert(0)
     if (newUserPassword1.value !== newUserPassword2.value) {
-        window.alert(1)
         document.getElementById("responseMsg2").innerHTML = 'The passwords do not match';
         document.getElementById("responseMsg2").style.color = 'red';
     }
     else {
-        window.alert(2)
     $.ajax({url: "reset_password",
             type: "POST",
             contentType: "application/json",

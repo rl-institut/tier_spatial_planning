@@ -56,6 +56,8 @@ class Credentials(BaseModel):
 class ChangePW(BaseModel):
     new_password: str
     old_password: str
+    captcha_input: str
+    captcha_hash: str
 
 
 class ValidRegistration(BaseModel):
