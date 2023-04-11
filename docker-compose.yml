@@ -91,6 +91,26 @@ services:
       - ADMINER_DEFAULT_PASSWORD_FILE=/run/secrets/pw
     secrets:
       - pw
+  ackee:
+    container_name: 'ackee'
+    image: electerious/ackee
+    restart: always
+    ports:
+      - "40004:3000"
+    environment:
+      - ACKEE_MONGODB=mongodb://mongo:27017/ackee
+      - ACKEE_USERNAME=root
+      - ACKEE_PASSWORD=example_password
+    depends_on:
+      - mongo
+  mongo:
+    container_name: 'mongo'
+    image: mongo:latest
+    restart: always
+    environment:
+      - MONGO_INITDB_DATABASE=ackee
+    ports:
+      - "27017:27017"
 secrets:
   pw:
     file: ./secrets/secret.txt
