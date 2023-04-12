@@ -8,7 +8,7 @@ from fastapi_app.db.models import Base
 from sqlalchemy.exc import SQLAlchemyError
 from mysql.connector import DatabaseError, ProgrammingError, InterfaceError
 from pymongo import MongoClient
-from pymongo.errors import PyMongoError
+from pymongo.errors import PyMongoError, ServerSelectionTimeoutError, ConfigurationError, ConnectionFailure
 
 
 BASE_URL = 'mysql+package://{}:{}@{}:{}/{}'.format(db_user_name, PW, db_host, db_port, db_name)
@@ -29,7 +29,7 @@ for i in range(400):
     else:
         break
 
-
+"""
 for i in range(4):
     try:
         client = MongoClient('mongodb://localhost:27017')
@@ -41,11 +41,11 @@ for i in range(4):
                   'updated': datetime.datetime.now()}
         query_filter = {"id": document["id"]}
         result = domains_collection.update_one(query_filter, {"$setOnInsert": document}, upsert=True)
-    except PyMongoError as e:
+    except (PyMongoError, ServerSelectionTimeoutError, ConfigurationError, ConnectionFailure) as e:
         time.sleep(5)
     else:
         break
-
+"""
 
 def get_async_session_maker():
     async_engine = create_async_engine(ASYNC_DB_URL, pool_size=10, )

@@ -148,10 +148,11 @@ async def privacy(lang: str, request: Request):
 
 
 @app.get("/activation_mail")
-async def activation_mail(request: Request):
-    guid = request.path_params.get('guid')
+async def activation_mail(guid: str, request: Request):
+    if not isinstance(guid, str):
+        guid = request.path_params.get('guid')
     if guid is not None:
-        await activate_mail(guid[5:])
+        await activate_mail(guid)
     return RedirectResponse(config.DOMAIN)
 
 
