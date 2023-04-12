@@ -32,13 +32,13 @@ from fastapi_app.tools import accounts
 from fastapi_app.db import config
 from fastapi_app.db import queries, inserts
 import pyutilib.subprocess.GlobalData
+
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 
 app = FastAPI()
 
 app.mount("/fastapi_app/static", StaticFiles(directory="fastapi_app/static"), name="static")
 templates = Jinja2Templates(directory="fastapi_app/pages")
-
 
 # define the template for importing json data in the form of arrays from js to python
 json_object = Dict[Any, Any]
@@ -74,7 +74,8 @@ async def home(request: Request):
         return templates.TemplateResponse("landing-page.html",
                                           {"request": request,
                                            'MAX_DAYS': int(os.environ.get('MAX_DAYS', 14)),
-                                           'MAX_CONSUMER_ANONYMOUS': int(os.environ.get('MAX_CONSUMER_ANONYMOUS', 150))})
+                                           'MAX_CONSUMER_ANONYMOUS': int(
+                                               os.environ.get('MAX_CONSUMER_ANONYMOUS', 150))})
     else:
         projects = await queries.get_project_of_user(user.id)
         for project in projects:
@@ -95,7 +96,8 @@ async def home(request: Request):
                     user.task_id = ''
                     user.project_id = None
                     await inserts.update_model_by_user_id(user)
-        return templates.TemplateResponse("user_projects.html", {"request": request, 'projects': projects})
+        return templates.TemplateResponse("user_projects.html", {"request": request,
+                                                                 'projects': projects})
 
 
 @app.get("/project_setup", response_class=HTMLResponse)
@@ -107,7 +109,7 @@ async def project_setup(request: Request):
     max_days = int(os.environ.get('MAX_DAYS', 365))
     return templates.TemplateResponse("project-setup.html", {"request": request,
                                                              'project_id': project_id,
-                                                              'max_days': max_days})
+                                                             'max_days': max_days})
 
 
 @app.get("/user_registration", response_class=HTMLResponse)
@@ -177,7 +179,7 @@ async def reset_password(request: Request, form_data: Dict[str, str]):
 @app.get("/account_overview")
 async def account_overview(request: Request):
     user = await accounts.get_user_from_cookie(request)
-    if user is None:
+    if user is None or 'anonymous__' in user.email:
         return RedirectResponse('/')
     else:
         return templates.TemplateResponse("account_overview.html", {"request": request,
@@ -205,7 +207,6 @@ async def remove_project(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
     if hasattr(user, 'id'):
         await inserts.remove_project(user.id, project_id)
-
 
 
 @app.get("/demand_estimation", response_class=HTMLResponse)
@@ -256,9 +257,9 @@ async def calculating(request: Request):
               ' the results in your user account after the calculation is finished.'
         email_opt = True
     return templates.TemplateResponse("calculating.html", {"request": request,
-                                                               'project_id': project_id,
-                                                               'msg': msg,
-                                                               'email_opt': email_opt})
+                                                           'project_id': project_id,
+                                                           'msg': msg,
+                                                           'email_opt': email_opt})
 
 
 @app.post("/set_email_notification/{project_id}/{is_active}")
@@ -362,10 +363,12 @@ async def load_previous_data(page_name, request: Request):
 async def add_user_to_db(data: Dict[str, str]):
     email = data.get('email')
     password = data.get('password')
+
     class User:
         def __init__(self, email: str, password: str):
             self.email = email
             self.password = password
+
     user = User(email=email, password=password)
     captcha_input = data.get('captcha_input')
     hashed_captcha = data.get('hashed_captcha')
@@ -497,7 +500,7 @@ async def send_reset_password_email(data: Dict[str, str], request: Request):
             user.guid = guid
             await inserts.merge_model(user)
             msg = 'For your PeopleSuN-Account a password reset was requested. If you did not request a password reset, ' \
-                  'please ignore this email. Otherwise, please click the following link:\n\n{}/reset_password?guid={}'\
+                  'please ignore this email. Otherwise, please click the following link:\n\n{}/reset_password?guid={}' \
                 .format(config.DOMAIN, guid)
             send_mail(email, msg, 'PeopleSuN-Account: Reset your password')
             validation, res = True, 'Please click the link we sent to your email.'
@@ -563,7 +566,7 @@ async def save_grid_design(request: Request, data: models.SaveGridDesign):
 @app.post("/save_project_setup/{project_id}")
 async def save_project_setup(project_id, request: Request, data: models.SaveProjectSetup):
     user = await accounts.get_user_from_cookie(request)
-    #project_id = get_project_id_from_request(request)
+    # project_id = get_project_id_from_request(request)
     data.page_setup['created_at'] = pd.Timestamp.now()
     data.page_setup['updated_at'] = pd.Timestamp.now()
     data.page_setup['id'] = user.id
@@ -728,7 +731,7 @@ async def database_add_remove_automatic(add_remove: str, project_id,
             return JSONResponse({'executed': False,
                                  'msg': 'You have selected {} users. You can select a maximum of {} users. '
                                         'Reduce the number of users by selecting a small area, for example.'
-                                . format(len(data['elements']), max_consumer)})
+                                .format(len(data['elements']), max_consumer)})
         nodes = _demand_estimation(nodes=nodes, update_total_demand=False)
         # storing the nodes in the database
         await inserts.update_nodes_and_links(True, False, nodes, user.id, project_id)
@@ -744,6 +747,7 @@ async def database_add_remove_automatic(add_remove: str, project_id,
                 df.drop(labels=index, axis=0, inplace=True)
         await inserts.update_nodes_and_links(True, False, df.to_dict(), user.id, project_id, False)
     return JSONResponse({'executed': True, 'msg': ''})
+
 
 # add new manually-selected nodes to the *.csv file
 @app.post("/database_add_remove_manual/{add_remove}/{project_id}")
@@ -1013,7 +1017,6 @@ async def revoke_task(request: Request, data: models.TaskID):
     await remove_results(user.id, data.project_id)
 
 
-
 @app.post('/revoke_users_task/')
 async def revoke_users_task(request: Request):
     user = await accounts.get_user_from_cookie(request)
@@ -1039,12 +1042,11 @@ async def optimize_grid(user_id, project_id):
                         n_days=df.loc[0, "n_days"],
                         project_lifetime=df.loc[0, "project_lifetime"],
                         wacc=df.loc[0, "interest_rate"] / 100,
-                        tax=0,)
+                        tax=0, )
 
     # get nodes from the database (CSV file) as a dictionary
     # then convert it again to a panda dataframe for simplicity
     # TODO: check the format of nodes from the database_read()
-
 
     nodes = await queries.get_nodes_json(user_id, project_id)
 
@@ -1062,7 +1064,7 @@ async def optimize_grid(user_id, project_id):
                                Optimizer.capex_multi_investment(
                                    opt,
                                    capex_0=df.loc[0, "distribution_cable_capex"],
-                                   component_lifetime=df.loc[0, "distribution_cable_lifetime"],))
+                                   component_lifetime=df.loc[0, "distribution_cable_lifetime"], ))
                               * opt.n_days / 365)
 
     epc_connection_cable = (
@@ -1371,7 +1373,7 @@ async def optimize_energy_system(user_id, project_id):
     # Grab Currrent Time Before Running the Code
     start_execution_time = time.monotonic()
     df = await queries.get_input_df(user_id, project_id)
-    energy_system_design= await queries.get_energy_system_design(user_id, project_id)
+    energy_system_design = await queries.get_energy_system_design(user_id, project_id)
     solver = 'gurobi' if po.SolverFactory('gurobi').available() else 'cbc'
     ensys_opt = EnergySystemOptimizer(
         start_date=df.loc[0, "start_date"],
@@ -1386,7 +1388,7 @@ async def optimize_energy_system(user_id, project_id):
         battery=energy_system_design['battery'],
         inverter=energy_system_design['inverter'],
         rectifier=energy_system_design['rectifier'],
-        shortage=energy_system_design['shortage'],)
+        shortage=energy_system_design['shortage'], )
     ensys_opt.optimize_energy_system()
     # Grab Currrent Time After Running the Code
     end_execution_time = time.monotonic()
@@ -1433,8 +1435,8 @@ async def optimize_energy_system(user_id, project_id):
                                           ensys_opt.diesel_genset["parameters"]["fuel_lhv"] / 1000)
     df.loc[0, "diesel_genset_to_rectifier"] = (ensys_opt.sequences_rectifier.sum() /
                                                ensys_opt.rectifier["parameters"]["efficiency"] / 1000)
-    df.loc[0, "diesel_genset_to_demand"] = ( ensys_opt.sequences_genset.sum() / 1000
-                                             - df.loc[0, "diesel_genset_to_rectifier"])
+    df.loc[0, "diesel_genset_to_demand"] = (ensys_opt.sequences_genset.sum() / 1000
+                                            - df.loc[0, "diesel_genset_to_rectifier"])
     df.loc[0, "rectifier_to_dc_bus"] = ensys_opt.sequences_rectifier.sum() / 1000
     df.loc[0, "pv_to_dc_bus"] = ensys_opt.sequences_pv.sum() / 1000
     df.loc[0, "battery_to_dc_bus"] = ensys_opt.sequences_battery_discharge.sum() / 1000
@@ -1512,7 +1514,6 @@ async def optimize_energy_system(user_id, project_id):
         send_mail(user.email, msg, subject=subject)
     project_setup.email_notification = False
     await inserts.merge_model(project_setup)
-
 
 
 @app.post("/shs_identification/")
