@@ -28,7 +28,7 @@ for i in range(400):
     else:
         break
 
-if not bool(os.environ.get('DOCKERIZED')):
+if bool(os.environ.get('DOCKERIZED')):
     for i in range(4):
         try:
             client = MongoClient('mongodb://localhost:27017')

@@ -410,7 +410,7 @@ async def anonymous_login(data: Dict[str, str], response: Response):
         access_token = create_access_token(data={"sub": name}, expires_delta=access_token_expires)
         response.set_cookie(key="access_token", value=f"Bearer {access_token}",
                             httponly=True)  # set HttpOnly cookie in response
-        if not bool(os.environ.get('DOCKERIZED')):
+        if bool(os.environ.get('DOCKERIZED')):
             minutes = config.ACCESS_TOKEN_EXPIRE_MINUTES_ANONYMOUS + 60
             eta = datetime.utcnow() + timedelta(minutes=minutes)
             queue_remove_anonymous_users.apply_async((user.email, user.id,), eta=eta)
@@ -901,12 +901,12 @@ async def optimization(user_id, project_id):
     project_setup.status = "queued"
     await inserts.merge_model(project_setup)
     # ToDo: Remove known machines
-    if not bool(os.environ.get('DOCKERIZED')):
-        await run_opt_task(user_id, project_id)
-        return 'no_celery_id'
-    else:
+    if bool(os.environ.get('DOCKERIZED')):
         task = queue_opt_task.delay(user_id, project_id)
         return task.id
+    else:
+        await run_opt_task(user_id, project_id)
+        return 'no_celery_id'
 
 
 def get_status_of_task(task_id):
