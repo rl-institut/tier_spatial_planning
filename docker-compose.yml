@@ -22,6 +22,7 @@ services:
     depends_on:
       - redis
       - mysql
+      - ackee
   mysql:
     container_name: mysql
     image: mysql
@@ -99,10 +100,12 @@ services:
       - "40004:3000"
     environment:
       - ACKEE_MONGODB=mongodb://mongo:27017/ackee
-      - ACKEE_USERNAME=root
-      - ACKEE_PASSWORD=example_password
+      - ACKEE_USERNAME=ackee_user
+      - ACKEE_PASSWORD=/run/secrets/pw
     depends_on:
       - mongo
+    secrets:
+      - pw
   mongo:
     container_name: 'mongo'
     image: mongo:latest
@@ -111,6 +114,8 @@ services:
       - MONGO_INITDB_DATABASE=ackee
     ports:
       - "27017:27017"
+    volumes:
+      - ./db_data/mongo:/data/db
 secrets:
   pw:
     file: ./secrets/secret.txt
