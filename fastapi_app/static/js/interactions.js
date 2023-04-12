@@ -479,8 +479,11 @@ function refresh_map(project_id, hide_links){
 /************************************************************/
 
 
-function add_user_to_db()
-{
+async function add_user_to_db()
+{    $("*").css('cursor','wait');
+     const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+     await sleep(3000); // Pause for 3 seconds (3000 milliseconds)
+
     if (userPassword2.value !== userPassword3.value)
     {
         document.getElementById("responseMsg2").innerHTML = 'The passwords do not match';
@@ -505,15 +508,17 @@ function add_user_to_db()
                 {fontcolor = 'red';};
             document.getElementById("responseMsg2").style.color = fontcolor;});
     }
+    $("*").css('cursor','auto');
 }
 
 
-function change_email() {
+async function change_email() {
     if (userEmail1.value !== userEmail2.value) {
         document.getElementById("responseMsg1").innerHTML = 'The emails do not match';
         document.getElementById("responseMsg1").style.color = 'red';
     }
     else {
+    $("*").css("cursor", "wait");
     $.ajax({url: "change_email/",
             type: "POST",
             contentType: "application/json",
@@ -535,18 +540,19 @@ function change_email() {
             logout()
             }
         });
-
+    $("*").css("cursor", "auto");
     }
 
 }
 
 
-function change_pw() {
+async function change_pw() {
     if (newUserPassword1.value != newUserPassword2.value) {
         document.getElementById("responseMsg2").innerHTML = 'The passwords do not match';
         document.getElementById("responseMsg2").style.color = 'red';
     }
     else {
+    $("*").css("cursor", "wait");
     $.ajax({url: "change_pw/",
             type: "POST",
             contentType: "application/json",
@@ -568,12 +574,13 @@ function change_pw() {
             logout()
             }
         });
-
+    $("*").css("cursor", "auto");
     }
 }
 
 
 function delete_account() {
+    $("*").css("cursor", "wait");
     $.ajax({url: "delete_account/",
             type: "POST",
             contentType: "application/json",
@@ -593,6 +600,7 @@ function delete_account() {
             logout()
             }
         });
+    $("*").css("cursor", "auto");
 }
 
 
