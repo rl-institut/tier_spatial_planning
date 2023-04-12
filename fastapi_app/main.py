@@ -55,16 +55,6 @@ async def favicon():
 captcha_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-class Hasher:
-    @staticmethod
-    def verify_password(plain_password, hashed_password):
-        return captcha_context.verify(plain_password, hashed_password)
-
-    @staticmethod
-    def get_password_hash(password):
-        return captcha_context.hash(password)
-
-
 @app.get('/get_captcha')
 async def captcha(request: Request):
     captcha_text = ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ', k=4))
