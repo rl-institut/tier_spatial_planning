@@ -13,6 +13,7 @@ services:
       - MAX_CONSUMER=2000
       - MAX_CONSUMER_ANONYMOUS=150
       - MAX_LAT_LON_DIST=0.15
+      - DOCKERIZED=1
     ports:
       - '40000:40000'
     links:

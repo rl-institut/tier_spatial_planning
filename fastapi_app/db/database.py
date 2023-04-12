@@ -1,3 +1,4 @@
+import os
 import time
 import datetime
 from sqlalchemy import create_engine
@@ -10,11 +11,9 @@ from mysql.connector import DatabaseError, ProgrammingError, InterfaceError
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError, ServerSelectionTimeoutError, ConfigurationError, ConnectionFailure
 
-
 BASE_URL = 'mysql+package://{}:{}@{}:{}/{}'.format(db_user_name, PW, db_host, db_port, db_name)
 SYNC_DB_URL = BASE_URL.replace('package', 'mysqlconnector')
 ASYNC_DB_URL = BASE_URL.replace('package', 'aiomysql')
-
 
 for i in range(400):
     try:
@@ -29,29 +28,30 @@ for i in range(400):
     else:
         break
 
-"""
-for i in range(4):
-    try:
-        client = MongoClient('mongodb://localhost:27017')
-        db = client['ackee']
-        domains_collection = db['domains']
-        document = {'title': 'peoplesun.energietechnik.tu-berlin.de',
-                  'id': 'e6b4dbf9-7401-4172-8212-f6a13cd5f962',
-                  'created': datetime.datetime.now(),
-                  'updated': datetime.datetime.now()}
-        query_filter = {"id": document["id"]}
-        result = domains_collection.update_one(query_filter, {"$setOnInsert": document}, upsert=True)
-    except (PyMongoError, ServerSelectionTimeoutError, ConfigurationError, ConnectionFailure) as e:
-        time.sleep(5)
-    else:
-        break
-"""
+if not bool(os.environ.get('DOCKERIZED')):
+    for i in range(4):
+        try:
+            client = MongoClient('mongodb://localhost:27017')
+            db = client['ackee']
+            domains_collection = db['domains']
+            document = {'title': 'peoplesun.energietechnik.tu-berlin.de',
+                        'id': 'e6b4dbf9-7401-4172-8212-f6a13cd5f962',
+                        'created': datetime.datetime.now(),
+                        'updated': datetime.datetime.now()}
+            query_filter = {"id": document["id"]}
+            result = domains_collection.update_one(query_filter, {"$setOnInsert": document}, upsert=True)
+        except (PyMongoError, ServerSelectionTimeoutError, ConfigurationError, ConnectionFailure) as e:
+            time.sleep(5)
+        else:
+            break
+
 
 def get_async_session_maker():
     async_engine = create_async_engine(ASYNC_DB_URL, pool_size=10, )
     async_sessionmaker = scoped_session(sessionmaker(bind=async_engine,
                                                      class_=AsyncSession))
     return async_sessionmaker()
+
 
 def get_sync_session_maker():
     sync_engine = create_engine(SYNC_DB_URL)
