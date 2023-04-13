@@ -14,6 +14,8 @@ services:
       - MAX_CONSUMER_ANONYMOUS=150
       - MAX_LAT_LON_DIST=0.15
       - DOCKERIZED=1
+      - MONGO_USER=ackee_user
+      - MONGO_PORT=27017
     ports:
       - '40000:40000'
     links:
@@ -23,7 +25,7 @@ services:
     depends_on:
       - redis
       - mysql
-      - ackee
+      - mongo
   mysql:
     container_name: mysql
     image: mysql
@@ -112,6 +114,7 @@ services:
           - ./ackee_config.js:/srv/app/src/utils/config.js
     depends_on:
       - mongo
+      - app
   mongo:
     container_name: 'mongo'
     image: mongo:latest

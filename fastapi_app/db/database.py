@@ -29,10 +29,13 @@ for i in range(400):
         break
 
 if bool(os.environ.get('DOCKERIZED')):
-    for i in range(4):
+    for i in range(10):
         try:
-            client = MongoClient('mongodb://localhost:27017')
-            db = client['ackee']
+            mongo_uri = 'mongodb://{}:{}@mongo:{}'.format(os.environ.get('MONGO_USER'),
+                                                                          PW,
+                                                                          os.environ.get('MONGO_PORT'))
+            client = MongoClient(mongo_uri)
+            db = client['admin']
             domains_collection = db['domains']
             document = {'title': 'peoplesun.energietechnik.tu-berlin.de',
                         'id': 'e6b4dbf9-7401-4172-8212-f6a13cd5f962',
