@@ -1,35 +1,40 @@
 
 
 function db_links_to_js(project_id) {
-    var xhr = new XMLHttpRequest();
-    url = "db_links_to_js/" + project_id;
-    xhr.open("GET", url, true);
-    xhr.responseType = "json";
-    xhr.send();
+  const url = "db_links_to_js/" + project_id;
 
-    xhr.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-                    // push links to the map
-                    links = this.response;
-                    removeLinksFromMap(mainMap);
-                    for (let index = 0; index < Object.keys(links.link_type).length; index++) {
-                        var color = links.link_type[index] === "distribution" ? "rgb(255, 99, 71)" : "rgb(0, 165, 114)";
-                        var weight = links.link_type[index] === "distribution" ? 3 : 2;
-                        var opacity = links.link_type[index] === "distribution" ? 1 : 1;
-                        drawLinkOnMap(
-                            links.lat_from[index],
-                            links.lon_from[index],
-                            links.lat_to[index],
-                            links.lon_to[index],
-                            color,
-                            mainMap,
-                            weight,
-                            opacity
-                        );
-                    }
-                }
-        }
-    }
+  fetch(url)
+    .then((response) => {
+      if (response.ok) {
+        return response.json();
+      } else {
+        throw new Error("Failed to fetch data");
+      }
+    })
+    .then((links) => {
+      // push links to the map
+      removeLinksFromMap(mainMap);
+      for (let index = 0; index < Object.keys(links.link_type).length; index++) {
+        var color = links.link_type[index] === "distribution" ? "rgb(255, 99, 71)" : "rgb(0, 165, 114)";
+        var weight = links.link_type[index] === "distribution" ? 3 : 2;
+        var opacity = links.link_type[index] === "distribution" ? 1 : 1;
+        drawLinkOnMap(
+          links.lat_from[index],
+          links.lon_from[index],
+          links.lat_to[index],
+          links.lon_to[index],
+          color,
+          mainMap,
+          weight,
+          opacity
+        );
+      }
+    })
+    .catch((error) => {
+      console.error("Error fetching data:", error);
+    });
+}
+
 
 
 async function db_nodes_to_js(project_id, markers_only) {
