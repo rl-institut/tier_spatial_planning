@@ -64,28 +64,41 @@ async function consumer_to_db(project_id) {
 }
 
 
-function add_buildings_inside_boundary(
-    {   boundariesCoordinates } = {},) {
-    $("*").css("cursor", "wait");
-    $.ajax({
-        url: "/add_buildings_inside_boundary",
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify({
-            boundary_coordinates: boundariesCoordinates,
-        }),
-        dataType: "json",
-    }).done(function (res) {
-        $("*").css('cursor','auto');
-        document.getElementById("responseMsg").innerHTML = res.msg;
-        if (res.executed === false)
-            {document.getElementById("responseMsg").style.color = 'red';}
-        else
-            {document.getElementById("responseMsg").innerHTML = '';
-            Array.prototype.push.apply(map_elements, res.new_consumers);
-            put_markers_on_map(res.new_consumers, true)
-            }})
-    }
+function add_buildings_inside_boundary({ boundariesCoordinates } = {}) {
+  document.body.style.cursor = "wait";
+
+  fetch("/add_buildings_inside_boundary", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      boundary_coordinates: boundariesCoordinates,
+    }),
+  })
+    .then((response) => {
+      if (response.ok) {
+        return response.json();
+      } else {
+        throw new Error("Failed to fetch data");
+      }
+    })
+    .then((res) => {
+      document.body.style.cursor = "auto";
+      const responseMsg = document.getElementById("responseMsg");
+      responseMsg.innerHTML = res.msg;
+      if (res.executed === false) {
+        responseMsg.style.color = "red";
+      } else {
+        responseMsg.innerHTML = "";
+        Array.prototype.push.apply(map_elements, res.new_consumers);
+        put_markers_on_map(res.new_consumers, true);
+      }
+    })
+    .catch((error) => {
+      console.error("Error fetching data:", error);
+    });
+}
 
 
 function remove_buildings_inside_boundary(
