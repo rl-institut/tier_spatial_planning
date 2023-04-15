@@ -278,27 +278,65 @@ async def get_demand_coverage_data(project_id, request: Request):
     return json.loads(df.to_json())
 
 
-@app.get("/clear_nodes_and_links/{project_id}")
-async def clear_nodes_and_links(project_id, request: Request):
+@app.get("/db_links_to_js/{project_id}")
+async def db_links_to_js(project_id, request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    links_json = await queries.get_links_json(user.id, project_id)
+    return links_json
+
+
+@app.get("/db_nodes_to_js/{project_id}/{markers_only}")
+async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
     user = await accounts.get_user_from_cookie(request)
     if project_id == 'undefined':
         project_id = get_project_id_from_request(request)
-    await inserts.remove(models.Nodes, user.id, project_id)
-    await inserts.remove(models.Links, user.id, project_id)
-
-
-@app.get("/database_to_js/{nodes_or_links}/{project_id}")
-async def database_read(nodes_or_links: str, project_id, request: Request):
-    # importing nodes and links from the csv files to the map
-    user = await accounts.get_user_from_cookie(request)
-    if project_id == 'undefined':
-        project_id = get_project_id_from_request(request)
-    if nodes_or_links == "nodes":
-        nodes_json = await queries.get_nodes_json(user.id, project_id)
-        return nodes_json
+    df = await queries.get_nodes_df(user.id, project_id)
+    if not df.empty:
+        df = df[['latitude', 'longitude', 'how_added', 'node_type', 'surface_area']]
+        if markers_only is True:
+            df = df[df['node_type'] == 'consumer']
+        df['latitude'] = df['latitude'].astype(float)
+        df['longitude'] = df['longitude'].astype(float)
+        nodes_list = df.to_dict('records')
+        return nodes_list
     else:
-        links_json = await queries.get_links_json(user.id, project_id)
-        return links_json
+        return None
+
+
+@app.post("/consumer_to_db/{project_id}")
+async def consumer_to_db(project_id: str, map_elements: models.MapDataRequest, request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    df = pd.DataFrame.from_records(map_elements.map_elements)
+    if df.empty:
+        await inserts.remove(models.Nodes, user.id, project_id)
+        return
+    df = df[df['node_type'] == 'consumer']
+    if df.empty:
+        await inserts.remove(models.Nodes, user.id, project_id)
+        return
+    df = df[['latitude', 'longitude', 'how_added', 'node_type', 'surface_area']]
+    df['surface_area'] = df['surface_area'].fillna(0)
+    df['consumer_type'] = 'household'
+    df['consumer_detail'] = 'default'
+    df['is_connected'] = True
+    df['peak_demand'] = 0
+    df['average_consumption'] = 0
+    known_surface_df = df[df['surface_area'] > 0]
+    unknown_surface_df = df[df['surface_area'] == 0]
+    known_surface_df = demand_estimation2(known_surface_df)
+    df = pd.concat([known_surface_df, unknown_surface_df])
+    df = df.round(decimals=6)
+    if df.empty:
+        await inserts.remove(models.Nodes, user.id, project_id)
+        return
+    df["node_type"] = df["node_type"].astype(str)
+    df['surface_area'] = df.surface_area.map(lambda x: "%.2f" % x)
+    df['peak_demand'] = df.peak_demand.map(lambda x: "%.3f" % x)
+    df['average_consumption'] = df.average_consumption.map(lambda x: "%.3f" % x)
+    if len(df.index) != 0:
+        if 'parent' in df.columns:
+            df['parent'] = df['parent'].replace('unknown', None)
+    await inserts.insert_nodes_df(df, user.id, project_id)
 
 
 @app.get("/load_results/{project_id}")
@@ -665,88 +703,78 @@ async def get_co2_emissions_data(project_id, request: Request):
     return json.loads(df.to_json())
 
 
-@app.post("/database_add_remove_automatic/{add_remove}/{project_id}")
-async def database_add_remove_automatic(add_remove: str, project_id,
-                                        selectBoundariesRequest: models.SelectBoundariesRequest,
+@app.post("/add_buildings_inside_boundary")
+async def add_buildings_inside_boundary(selectBoundariesRequest: models.SelectBoundariesRequest,
                                         request: Request):
     user = await accounts.get_user_from_cookie(request)
-
     boundary_coordinates = selectBoundariesRequest.boundary_coordinates
     # latitudes and longitudes of all buildings in the selected boundary
     latitudes = [x[0] for x in boundary_coordinates]
     longitudes = [x[1] for x in boundary_coordinates]
-    if add_remove == "add":
-        # min and max of latitudes and longitudes are sent to the overpass to get
-        # a large rectangle including (maybe) more buildings than selected
-        min_latitude = min(latitudes)
-        min_longitude = min(longitudes)
-        max_latitude = max(latitudes)
-        max_longitude = max(longitudes)
-        if max_latitude - min_latitude > float(os.environ.get("MAX_LAT_LON_DIST", 0.15)):
-            return JSONResponse({'executed': False,
-                                 'msg': 'The maximum latitude distance selected is too large. '
-                                        'Please select a smaller area.'})
-        elif max_longitude - min_longitude > float(os.environ.get("MAX_LAT_LON_DIST", 0.15)):
-            return JSONResponse({'executed': False,
-                                 'msg': 'The maximum longitude distance selected is too large. '
-                                        'Please select a smaller area.'})
-        url = f'https://www.overpass-api.de/api/interpreter?data=[out:json][timeout:2500]' \
-              f'[bbox:{min_latitude},{min_longitude},{max_latitude},{max_longitude}];' \
-              f'(way["building"="yes"];relation["building"];);out body;>;out skel qt;'
-        url_formated = url.replace(" ", "+")
-        with urllib.request.urlopen(url_formated) as url:
-            data = json.loads(url.read().decode())
-        if user.email.split('__')[0] == 'anonymous':
-            max_consumer = int(os.environ.get("MAX_CONSUMER_ANONNYMOUS", 150))
-        else:
-            max_consumer = int(os.environ.get("MAX_CONSUMER", 1000))
-
-        # first converting the json file, which is delievered by overpass to geojson,
-        # then obtaining coordinates and surface areas of all buildings inside the
-        # 'big' rectangle.
-        formated_geojson = bi.convert_overpass_json_to_geojson(data)
-        (building_coord, building_area,) = bi.obtain_areas_and_mean_coordinates_from_geojson(formated_geojson)
-        # excluding the buildings which are outside the drawn boundary
-        features = formated_geojson["features"]
-        mask_building_within_boundaries = {key: bi.is_point_in_boundaries(value, boundary_coordinates)
-                                           for key, value in building_coord.items()}
-        filtered_features = \
-            [feature for feature in features if mask_building_within_boundaries[feature["property"]["@id"]]]
-        formated_geojson["features"] = filtered_features
-        building_coordidates_within_boundaries = \
-            {key: value for key, value in building_coord.items() if mask_building_within_boundaries[key]}
-        # creating a dictionary from the given nodes and sending this dictionary
-        # to the 'database_add' function to store nodes properties in the database
-        nodes = defaultdict(list)
-        for label, coordinates in building_coordidates_within_boundaries.items():
-            nodes["latitude"].append(coordinates[0])
-            nodes["longitude"].append(coordinates[1])
-            nodes["node_type"].append("consumer")
-            nodes["consumer_type"].append("household")
-            nodes["consumer_detail"].append("default")
-            # surface area is taken from the open street map
-            nodes["surface_area"].append(building_area[label])
-        # Add the peak demand and average annual consumption for each node
-        if len(nodes['node_type']) > max_consumer:
-            return JSONResponse({'executed': False,
-                                 'msg': 'You have selected {} users. You can select a maximum of {} users. '
-                                        'Reduce the number of users by selecting a small area, for example.'
-                                .format(len(data['elements']), max_consumer)})
-        nodes = _demand_estimation(nodes=nodes, update_total_demand=False)
-        # storing the nodes in the database
-        await inserts.update_nodes_and_links(True, False, nodes, user.id, project_id)
+    # min and max of latitudes and longitudes are sent to the overpass to get
+    # a large rectangle including (maybe) more buildings than selected
+    min_latitude = min(latitudes)
+    min_longitude = min(longitudes)
+    max_latitude = max(latitudes)
+    max_longitude = max(longitudes)
+    if max_latitude - min_latitude > float(os.environ.get("MAX_LAT_LON_DIST", 0.15)):
+        return JSONResponse({'executed': False,
+                             'msg': 'The maximum latitude distance selected is too large. '
+                                    'Please select a smaller area.'})
+    elif max_longitude - min_longitude > float(os.environ.get("MAX_LAT_LON_DIST", 0.15)):
+        return JSONResponse({'executed': False,
+                             'msg': 'The maximum longitude distance selected is too large. '
+                                    'Please select a smaller area.'})
+    url = f'https://www.overpass-api.de/api/interpreter?data=[out:json][timeout:2500]' \
+          f'[bbox:{min_latitude},{min_longitude},{max_latitude},{max_longitude}];' \
+          f'(way["building"="yes"];relation["building"];);out body;>;out skel qt;'
+    url_formated = url.replace(" ", "+")
+    with urllib.request.urlopen(url_formated) as url:
+        data = json.loads(url.read().decode())
+    if user.email.split('__')[0] == 'anonymous':
+        max_consumer = int(os.environ.get("MAX_CONSUMER_ANONNYMOUS", 150))
     else:
-        # reading the existing CSV file of nodes, and then removing the corresponding row
-        # df = pd.read_csv(full_path_nodes)
-        df = await queries.get_nodes_df(user.id, project_id)
-        number_of_nodes = df.shape[0]
-        for index in range(number_of_nodes):
-            if bi.is_point_in_boundaries(point_coordinates=(df.to_dict()["latitude"][index],
-                                                            df.to_dict()["longitude"][index],),
-                                         boundaries=boundary_coordinates, ):
-                df.drop(labels=index, axis=0, inplace=True)
-        await inserts.update_nodes_and_links(True, False, df.to_dict(), user.id, project_id, False)
-    return JSONResponse({'executed': True, 'msg': ''})
+        max_consumer = int(os.environ.get("MAX_CONSUMER", 1000))
+
+    # first converting the json file, which is delievered by overpass to geojson,
+    # then obtaining coordinates and surface areas of all buildings inside the
+    # 'big' rectangle.
+    formated_geojson = bi.convert_overpass_json_to_geojson(data)
+    (building_coord, building_area,) = bi.obtain_areas_and_mean_coordinates_from_geojson(formated_geojson)
+    # excluding the buildings which are outside the drawn boundary
+    features = formated_geojson["features"]
+    mask_building_within_boundaries = {key: bi.is_point_in_boundaries(value, boundary_coordinates)
+                                       for key, value in building_coord.items()}
+    filtered_features = \
+        [feature for feature in features if mask_building_within_boundaries[feature["property"]["@id"]]]
+    formated_geojson["features"] = filtered_features
+    building_coordidates_within_boundaries = \
+        {key: value for key, value in building_coord.items() if mask_building_within_boundaries[key]}
+    nodes = defaultdict(list)
+    for label, coordinates in building_coordidates_within_boundaries.items():
+        nodes["latitude"].append(coordinates[0])
+        nodes["longitude"].append(coordinates[1])
+        nodes["how_added"].append("automatic")
+        nodes["node_type"].append("consumer")
+        nodes["surface_area"].append(building_area[label])
+
+    if len(nodes['latitude']) > max_consumer:
+        return JSONResponse({'executed': False,
+                             'msg': 'You have selected {} users. You can select a maximum of {} users. '
+                                    'Reduce the number of users by selecting a small area, for example.'
+                            .format(len(data['elements']), max_consumer)})
+    df = pd.DataFrame.from_dict(nodes)
+    nodes_list = df.to_dict('records')
+    return JSONResponse({'executed': True, 'msg': '', 'new_consumers': nodes_list})
+
+
+@app.post("/remove_buildings_inside_boundary")
+async def remove_buildings_inside_boundary(data: models.MapData):
+    df = pd.DataFrame.from_records(data.map_elements)
+    df['inside_boundary'] = bi.are_points_in_boundaries(df, boundaries=data.boundary_coordinates, )
+    df = df[df['inside_boundary'] == False]
+    df = df.drop(columns=['inside_boundary'])
+    return JSONResponse({'map_elements': df.to_dict('records')})
 
 
 # add new manually-selected nodes to the *.csv file
@@ -819,51 +847,48 @@ def _demand_estimation(nodes, update_total_demand):
     else:
         for area in nodes["surface_area"]:
             if area <= 0.2 * max_surface_area:
-                nodes["peak_demand"].append(0.01 * area)
+                nodes["peak_demand"] = 0.01 * area
             elif area < 0.4 * max_surface_area:
-                nodes["peak_demand"].append(0.02 * area)
+                nodes["peak_demand"] = 0.02 * area
             elif area < 0.6 * max_surface_area:
-                nodes["peak_demand"].append(0.03 * area)
+                nodes["peak_demand"] = 0.03 * area
             elif area < 0.8 * max_surface_area:
-                nodes["peak_demand"].append(0.04 * area)
+                nodes["peak_demand"] = 0.04 * area
             else:
-                nodes["peak_demand"].append(0.05 * area)
-
+                nodes["peak_demand"] = 0.05 * area
         max_peak_demand = max(nodes["peak_demand"])
         counter = 0
         for peak_demand in nodes["peak_demand"]:
             if peak_demand <= 0.2 * max_peak_demand:
-                nodes["average_consumption"].append(
-                    normalized_demands.iloc[:, 0].sum() * nodes["peak_demand"][counter]
-                )
+                nodes["average_consumption"] = normalized_demands.iloc[:, 0].sum() * nodes["peak_demand"][counter]
             elif peak_demand < 0.4 * max_peak_demand:
-                nodes["average_consumption"].append(
-                    normalized_demands.iloc[:, 1].sum() * nodes["peak_demand"][counter]
-                )
+                nodes["average_consumption"] = normalized_demands.iloc[:, 1].sum() * nodes["peak_demand"][counter]
             elif peak_demand < 0.6 * max_peak_demand:
-                nodes["average_consumption"].append(
-                    normalized_demands.iloc[:, 2].sum() * nodes["peak_demand"][counter]
-                )
+                nodes["average_consumption"] = normalized_demands.iloc[:, 2].sum() * nodes["peak_demand"][counter]
             elif peak_demand < 0.8 * max_peak_demand:
-                nodes["average_consumption"].append(
-                    normalized_demands.iloc[:, 3].sum() * nodes["peak_demand"][counter]
-                )
+                nodes["average_consumption"] = normalized_demands.iloc[:, 3].sum() * nodes["peak_demand"][counter]
             else:
-                nodes["average_consumption"].append(
-                    normalized_demands.iloc[:, 4].sum() * nodes["peak_demand"][counter]
-                )
-
+                nodes["average_consumption"] = normalized_demands.iloc[:, 4].sum() * nodes["peak_demand"][counter]
             counter += 1
-
-            # it is assumed that all nodes are parts of the mini-grid
-            # later, when the shs candidates are obtained, the corresponding
-            # values will be changed to 'False'
-            nodes["is_connected"].append(True)
-
-            # the node is selected automatically after drawing boundaries
-            nodes["how_added"].append("automatic")
-
         return nodes
+
+def demand_estimation2(df):
+    max_surface_area = df["surface_area"].max()
+
+    for factor in [0.2, 0.4, 0.6, 0.8]:
+        df.loc[df['surface_area'].between((factor - 0.2) * max_surface_area,
+                                          factor * max_surface_area), 'peak_demand'] = 0.05 * df['surface_area']
+    df.loc[df['surface_area'] >= factor * 0.8 * max_surface_area, 'peak_demand'] = factor / 20 * df['surface_area']
+    normalized_demands = pd.read_csv(config.full_path_demands, delimiter=";", header=None)
+    max_peak_demand = df["peak_demand"].max()
+    for i, factor in enumerate([0.2, 0.4, 0.6, 0.8]):
+        df.loc[df['peak_demand'].between((factor - 0.2) * max_peak_demand,
+                                          factor * max_surface_area), 'average_consumption'] \
+            = normalized_demands.iloc[:, i].sum() * df["peak_demand"]
+
+    df.loc[df['peak_demand'] >= 0.8 * max_peak_demand, 'average_consumption'] \
+        = normalized_demands.iloc[:, 4].sum() * df["peak_demand"]
+    return df
 
 
 async def remove_results(user_id, project_id):

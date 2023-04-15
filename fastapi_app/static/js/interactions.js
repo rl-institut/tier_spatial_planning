@@ -1,131 +1,14 @@
 
 
-// SET FUNCTIONS
-function setVisibilityNodeBox() {
-    if (document.getElementById("radio_button_nodes_manually").checked) {
-        $(document.getElementById("button_draw_boundaries_add")).attr(
-            "disabled",
-            true
-        );
-        $(document.getElementById("button_draw_boundaries_remove")).attr(
-            "disabled",
-            true
-        );
-        $(document.getElementById("radio_button_node_high_demand")).attr(
-            "disabled",
-            false
-        );
-        $(document.getElementById("radio_button_node_medium_demand")).attr(
-            "disabled",
-            false
-        );
-        $(document.getElementById("radio_button_node_low_demand")).attr(
-            "disabled",
-            false
-        );
-        $(document.getElementById("radio_button_node_pole")).attr(
-            "disabled",
-            false
-        );
-    } else if (document.getElementById("radio_button_nodes_boundaries").checked) {
-        $(document.getElementById("button_draw_boundaries_add")).attr(
-            "disabled",
-            false
-        );
-        $(document.getElementById("button_draw_boundaries_remove")).attr(
-            "disabled",
-            false
-        );
-        $(document.getElementById("radio_button_node_high_demand")).attr(
-            "disabled",
-            true
-        );
-        $(document.getElementById("radio_button_node_medium_demand")).attr(
-            "disabled",
-            true
-        );
-        $(document.getElementById("radio_button_node_low_demand")).attr(
-            "disabled",
-            true
-        );
-        $(document.getElementById("radio_button_node_pole")).attr("disabled", true);
-    }
-}
-
-/************************************************************/
-/*                         DATABASE                         */
-/************************************************************/
-
-
-// read all nodes/links stored in the *.csv files
-// then push the corresponding icon to the map
-// or return their correcponding json files for exporting the excel file
-// note: both "nodes" and "links" cannot be called simultaneously
-function database_read(nodes_or_links, map_or_export, project_id, callback) {
+function db_links_to_js(project_id) {
     var xhr = new XMLHttpRequest();
-    url = "database_to_js/" + nodes_or_links + '/' + project_id;
+    url = "db_links_to_js/" + project_id;
     xhr.open("GET", url, true);
     xhr.responseType = "json";
     xhr.send();
 
     xhr.onreadystatechange = function () {
-        let url
-        url = window.location.href
         if (this.readyState == 4 && this.status == 200) {
-            if (map_or_export == 'export') {
-                if (callback) callback(this.response);
-            }
-            else {
-                if (nodes_or_links == 'nodes') {
-                    // push nodes to the map
-                    nodes = this.response;
-                    for (marker of markers) {
-                        mainMap.removeLayer(marker);
-                    }
-                    markers.length = 0;
-                    number_of_nodes = Object.keys(nodes["node_type"]).length;
-                    // As soon as there are nodes in the database, the download option will be activated
-                    // otherwise, it will be disables. This only happens in the `consumer-selection` page.
-                    if (document.getElementById('btnDownloadLocations')) {
-                        if (number_of_nodes > 0) {
-                            document.getElementById('btnDownloadLocations').classList.remove('disabled');
-                            document.getElementById('lblDownloadLocations').classList.remove('disabled');
-                        } else {
-                            document.getElementById('btnDownloadLocations').classList.add('disabled');
-                            document.getElementById('lblDownloadLocations').classList.add('disabled');
-                        }
-                    };
-                    var counter;
-                    for (counter = 0; counter < number_of_nodes; counter++) {
-                        if (nodes["node_type"][counter] === "power-house"&& !url.includes('onsumer') && !url.includes('emand')) {
-                            markers.push(
-                                L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                                    icon: markerPowerHouse,
-                                }).on('click', markerOnClick).addTo(mainMap)
-                            );
-                        } else if (nodes["node_type"][counter] === "pole" && !url.includes('onsumer') && !url.includes('emand')) {
-                            markers.push(
-                                L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                                    icon: markerPole,
-                                }).on('click', markerOnClick).addTo(mainMap)
-                            );
-                        } else if (nodes["is_connected"][counter] === false) {
-                            // if the node is not connected to the grid, it will be a SHS consumer
-                            markers.push(
-                                L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                                    icon: markerShs,
-                                }).on('click', markerOnClick).addTo(mainMap)
-                            );
-                        } else {
-                            markers.push(
-                                L.marker([nodes["latitude"][counter], nodes["longitude"][counter]], {
-                                    icon: markerConsumer,
-                                }).on('click', markerOnClick).addTo(mainMap)
-                            );
-                        }
-                    }
-                    zoomAll(mainMap);
-                } else {
                     // push links to the map
                     links = this.response;
                     removeLinksFromMap(mainMap);
@@ -145,58 +28,42 @@ function database_read(nodes_or_links, map_or_export, project_id, callback) {
                         );
                     }
                 }
-            }
         }
-    };
+    }
+
+
+async function db_nodes_to_js(project_id, markers_only) {
+    fetch("/db_nodes_to_js/" + project_id + '/' + markers_only)
+  .then(response => response.json())
+  .then(data => {
+    map_elements = data
+    if (map_elements !== null) {
+        console.log(map_elements);
+        console.log(map_elements.length);
+        put_markers_on_map(map_elements, markers_only);
+        }
+    else {
+        map_elements = [];
+    }
+  })
+}
+
+async function consumer_to_db(project_id) {
+  const url = "/consumer_to_db/" + project_id;
+  await fetch(url, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({map_elements: map_elements})
+  });
+  forward_if_consumer_selection_exists(project_id);
 }
 
 
-// In case of removing, only `add_remove`, `latitude`, and `longitude` are used.
-function database_add_remove_manual(
-    { add_remove = "add",
-        latitude,
-        longitude,
-        node_type = 'consumer',
-        consumer_type = 'household',
-        consumer_detail = 'default',
-        surface_area = 0,
-        peak_demand = 0,
-        average_consumption = 0,
-        is_connected = true,
-        how_added = 'manual' } = {},
-
-) { const urlParams = new URLSearchParams(window.location.search);
-    project_id = urlParams.get('project_id');
-    $.ajax({
-        url: "/database_add_remove_manual/" + add_remove + '/' + project_id,
-        type: "POST",
-        dataType: "json",
-        contentType: "application/json",
-        data: JSON.stringify({
-            add_remove: add_remove,
-            latitude: latitude,
-            longitude: longitude,
-            node_type: node_type,
-            consumer_type: consumer_type,
-            consumer_detail: consumer_detail,
-            surface_area: surface_area,
-            peak_demand: peak_demand,
-            average_consumption: average_consumption,
-            is_connected: is_connected,
-            how_added: how_added,
-        }),
-    });
-}
-
-
-// add/remove nodes automatically from a given boundary
-function database_add_remove_automatic(
-    { add_remove = "add",
-        project_id,
-        boundariesCoordinates } = {},) {
+function add_buildings_inside_boundary(
+    {   boundariesCoordinates } = {},) {
     $("*").css("cursor", "wait");
     $.ajax({
-        url: "/database_add_remove_automatic/" + add_remove + '/' + project_id,
+        url: "/add_buildings_inside_boundary",
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify({
@@ -210,26 +77,30 @@ function database_add_remove_automatic(
             {document.getElementById("responseMsg").style.color = 'red';}
         else
             {document.getElementById("responseMsg").innerHTML = '';
-             database_read(nodes_or_links = 'nodes', map_or_export = 'map', project_id);
-             database_read(nodes_or_links = 'links', map_or_export = 'map', project_id);}})
+            Array.prototype.push.apply(map_elements, res.new_consumers);
+            put_markers_on_map(res.new_consumers, true)
+            }})
     }
 
 
+function remove_buildings_inside_boundary(
+    {   boundariesCoordinates } = {},) {
+    $("*").css("cursor", "wait");
+    $.ajax({
+        url: "/remove_buildings_inside_boundary",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({
+            boundary_coordinates: boundariesCoordinates,
+            map_elements: map_elements,
+        }),
+        dataType: "json",
+    }).done(function (res) {
+        $("*").css('cursor','auto');
+        map_elements = res.map_elements;
+        remove_marker_from_map()
+        put_markers_on_map(map_elements, true)})}
 
-/************************************************************/
-/*                   SWITCHING HTML PAGES                   */
-/************************************************************/
-// function consumer_selection() {
-//     $.ajax({
-//         url: "/consumer_selection",
-//         type: "POST",
-//         dataType: "json",
-//         contentType: "application/json",
-//         data: JSON.stringify({
-            
-//         }),
-//     });
-// }
 
 /************************************************************/
 /*                ACTIVATION / INACTIVATION                 */
@@ -273,37 +144,7 @@ function enable_disable_shs() {
         document.getElementById('shsCapexUnit').classList.add('disabled');
     }
 }
-/************************************************************/
-/*                    BOUNDARY SELECTION                    */
-/************************************************************/
-// selecting boundaries of the site for adding new nodes
-function boundary_select(mode, project_id) {
-    button_text = 'Start'
-    if (mode == 'add') {
-        button_class = 'btn--success'
-        var btnAddRemove = document.getElementById("btnDrawBoundariesAdd");
-    } else {
-        var btnAddRemove = document.getElementById("btnDrawBoundariesRemove");
-        button_class = 'btn--error'
-    }
 
-    // changing the label of the button
-    if (btnAddRemove.innerText === button_text) {
-        btnAddRemove.innerText = 'Draw Lines';
-        btnAddRemove.classList.toggle(button_class)
-    } else {
-        btnAddRemove.innerText = button_text;
-        btnAddRemove.classList.remove(button_class)
-    }
-
-
-    // only when a boundary is drawn, the next steps will be executed
-    if (siteBoundaryLines.length > 0) {
-        database_add_remove_automatic({ add_remove: mode,
-            project_id: project_id, boundariesCoordinates: siteBoundaries });
-        removeBoundaries();
-    }
-}
 
 
 /************************************************************/
@@ -414,7 +255,7 @@ function optimize_grid(project_id) {
     // window.open("{{ url_for('simulation_results')}}");
 }
 
-function load_results(project_id) {
+async function load_results(project_id) {
     var xhr = new XMLHttpRequest();
     url = "load_results/" + project_id;
     xhr.open("GET", url, true);
@@ -440,9 +281,10 @@ function load_results(project_id) {
             document.getElementById("co2Savings").innerText = results['co2_savings'];
             document.getElementById("lcoe").innerText = results['lcoe'];
             document.getElementById("time").innerText = results['time'];
-            refresh_map(project_id, false);
+            db_nodes_to_js(project_id, false);
+            db_links_to_js(project_id);
             plot();
-            document.getElementById('section').style.display = 'block';
+            document.getElementById('dashboard').style.display = 'block';
         }
         else {
             document.getElementById('dashboard').style.display = 'none';
@@ -468,11 +310,6 @@ function load_results(project_id) {
     }}
 }}
 
-function refresh_map(project_id, hide_links){
-    database_read(nodes_or_link = 'nodes', map_or_export = 'map', project_id);
-    if(hide_links == false)
-    {database_read(nodes_or_link = 'links', map_or_export = 'map', project_id);}
-}
 
 /************************************************************/
 /*                    User Registration                     */
@@ -778,7 +615,7 @@ function export_data(project_id) {
     };
   
     // Get all nodes from the database.
-    database_read(nodes_or_links = 'nodes', map_or_export = 'export', project_id, function (data_nodes) {
+    db_links_to_js(nodes_or_links = 'nodes', map_or_export = 'export', project_id, function (data_nodes) {
         
         // Since the format of the JSON file exported by the `database_read` is
         // not compatible with the `Sheetjs` library, we need to restructure it
@@ -875,8 +712,8 @@ function import_data(project_id) {
             dataType: "json",
             statusCode: {
             200: function () {
-                database_read(nodes_or_links = 'nodes', map_or_export = 'map', project_id);
-                database_read(nodes_or_links = 'links', map_or_export = 'map', project_id);
+                db_links_to_js(nodes_or_links = 'nodes', map_or_export = 'map', project_id);
+                db_links_to_js(nodes_or_links = 'links', map_or_export = 'map', project_id);
             },
             },
         });
@@ -908,7 +745,7 @@ function identify_shs(project_id) {
         dataType: "json",
         statusCode: {
             200: function () {
-                database_read(nodes_or_links = 'nodes', map_or_export = 'map', project_id);
+                db_links_to_js(nodes_or_links = 'nodes', map_or_export = 'map', project_id);
                 //refreshNodeFromDataBase();
                 clearLinksDataBase();
                 $("#loading").hide();
@@ -918,7 +755,7 @@ function identify_shs(project_id) {
 }
 
 
-function show_user_email_in_navbar() {
+async function show_user_email_in_navbar() {
     $.ajax({url: "query_account_data/",
             type: "POST",
             contentType: "application/json",})
@@ -926,7 +763,7 @@ function show_user_email_in_navbar() {
 }
 
 
-function redirect_if_cookie_is_missing(access_token, consent_cookie){
+async function redirect_if_cookie_is_missing(access_token, consent_cookie){
         let has_access_token = (access_token === true || access_token === 'true');
         let has_consent_cookie = (consent_cookie === true || consent_cookie === 'true');
         $.ajax({url: "has_cookie/",
@@ -940,12 +777,6 @@ function redirect_if_cookie_is_missing(access_token, consent_cookie){
         })
 }
 
-
-function clear_nodes_and_links(project_id){
-            $.ajax({url: "clear_nodes_and_links/" + project_id,
-            type: "GET",
-            contentType: "application/json",})
-}
 
 function remove_project(project_id) {
         $.ajax({url: "remove_project/" + project_id,
