@@ -1,6 +1,7 @@
 // --------------------VARIABLES DECLARATION----------------------//
 
-var markers = [];
+let map_elements =[];
+
 var lines = [];
 
 var osmLayer = L.tileLayer(
@@ -124,9 +125,10 @@ L.Control.zoomHome = L.Control.extend({
   },
 
   _zoomHome: function (e) {
-    var group = new L.featureGroup(markers).addTo(this._map);
-    if (markers.length != 0) {
-      this._map.fitBounds(group.getBounds());
+    let latLonList = map_elements.map(obj => L.latLng(obj.lat, obj.lon));
+    let bounds = L.latLngBounds(latLonList);
+    if (map_elements.length != 0) {
+      this._map.fitBounds(bounds);
     }
   },
 
@@ -165,9 +167,10 @@ var zoomHome = new L.Control.zoomHome();
 zoomHome.addTo(mainMap);
 
 function zoomAll(mainMap) {
-  var group = new L.featureGroup(markers).addTo(mainMap);
-  if (markers.length != 0) {
-    mainMap.fitBounds(group.getBounds());
+  let latLonList = map_elements.map(obj => L.latLng(obj.latitude, obj.longitude));
+  let bounds = L.latLngBounds(latLonList);
+  if (latLonList.length != 0) {
+    mainMap.fitBounds(bounds);
   }
 }
 
@@ -177,8 +180,8 @@ L.easyButton(
   function (btn, map) {
     const urlParams = new URLSearchParams(window.location.search);
     project_id = urlParams.get('project_id');
-  clear_nodes_and_links(project_id = project_id);
   remove_marker_from_map();
+  map_elements = [];
   removeBoundaries();
     position: "topleft";
   },
@@ -220,6 +223,13 @@ var markerShs = new L.Icon({
   iconSize: [16, 16],
 });
 
+var icons = {
+  'consumer': markerConsumer,
+  'power-house': markerPowerHouse,
+  'pole': markerPole,
+  'shs': markerShs,
+};
+
 var legend = L.control({ position: "bottomright" });
 legend.onAdd = function (map) {
   var div = L.DomUtil.create("div", "info legend"),
@@ -251,19 +261,8 @@ mainMap.on("click", function (e) {
   var poplocation = e.latlng;
 
   if (document.getElementById("selectionMap").checked) {
-    database_add_remove_manual(
-      {
-        add_remove: 'add',
-        latitude: poplocation.lat,
-        longitude: poplocation.lng,
-      }
-    );
-    drawMarker(
-      poplocation.lat,
-      poplocation.lng,
-      'consumer'
-    );
-  };
+    add_single_consumer_to_array(poplocation.lat, poplocation.lng, 'manual', 'consumer')
+    drawMarker(poplocation.lat, poplocation.lng,'consumer');}
   if (
     document.getElementById("selectionBoundaries").checked &&
     (document.getElementById("btnDrawBoundariesAdd").innerText === 'Draw Lines' ||
@@ -279,13 +278,11 @@ mainMap.on("click", function (e) {
     if (dashedBoundaryLine) {
       mainMap.removeLayer(dashedBoundaryLine);
     }
-
     // creating a new dashed line closing the polygon
     dashedBoundaryLine = L.polyline(
       [siteBoundaries[0], siteBoundaries.slice(-1)[0]],
       { color: "black", dashArray: "10, 10", dashOffset: "20" }
     );
-
     // adding the new dashed line to the map
     dashedBoundaryLine.addTo(mainMap);
   };
@@ -298,8 +295,12 @@ mainMap.on("click", function (e) {
 // INTERACTION WITH LEAFLET MAP
 
 function remove_marker_from_map() {
-  for (marker of markers)
-  {mainMap.removeLayer(marker);}}
+  mainMap.eachLayer((layer) => {
+    if (layer instanceof L.Marker) {
+      mainMap.removeLayer(layer);
+    }
+  });
+}
 
 function drawMarker(latitude, longitude, type) {
   if (type === "consumer") {
@@ -309,24 +310,21 @@ function drawMarker(latitude, longitude, type) {
   } else if (type === "shs") {
     icon_type = markerShs;
   }
-  markers.push(
     L.marker([latitude, longitude], { icon: icon_type }).on('click', markerOnClick).addTo(mainMap)
-  );
 }
 
 function markerOnClick(e)
-{
-  L.DomEvent.stopPropagation(e);
-  database_add_remove_manual (
-    {
-      add_remove: 'remove',
-      latitude: e.latlng.lat,
-      longitude: e.latlng.lng,
+{ L.DomEvent.stopPropagation(e);
+    map_elements = map_elements.filter(function (obj) {
+        return obj.latitude !== e.latlng.lng && obj.longitude !== e.latlng.lat;});
+  mainMap.eachLayer(function (layer) {
+  if (layer instanceof L.Marker) {
+    let markerLatLng = layer.getLatLng();
+    if (markerLatLng.lat === e.latlng.lat && markerLatLng.lng === e.latlng.lng) {
+      mainMap.removeLayer(layer);
     }
-  );
-  const urlParams = new URLSearchParams(window.location.search);
-  project_id = urlParams.get('project_id');
-  database_read(nodes_or_links = 'nodes', map_or_export = 'map', project_id = project_id);
+  }
+});
 }
 
 function drawLinkOnMap(
@@ -373,4 +371,66 @@ function removeBoundaries() {
   siteBoundaries.length = 0;
   siteBoundaryLines.length = 0;
   dashedBoundaryLine = null;
+}
+
+function put_markers_on_map(array, markers_only) {
+  const n = array.length;
+  let counter;
+  let selected_icon;
+  for (counter = 0; counter < n; counter++) {
+    if (markers_only) {
+        if (array[counter]["node_type"] === "consumer") {selected_icon= markerConsumer;}}
+    else {
+        if (array[counter]["node_type"] === "consumer") {
+            if (array[counter]["is_connected"] === false) {selected_icon= markerShs;}
+            else {selected_icon= markerConsumer;}
+        }
+        else {selected_icon= icons[array[counter]["node_type"]];}}
+        L.marker([array[counter]["latitude"], array[counter]["longitude"]], {icon: selected_icon,})
+            .on('click', markerOnClick).addTo(mainMap);}
+  zoomAll(mainMap);
+}
+
+function add_single_consumer_to_array(latitude, longitude, how_added, node_type) {
+  map_elements.push({
+      latitude: latitude,
+      longitude: longitude,
+      how_added: how_added,
+      node_type: node_type,
+      surface_area: 0})
+}
+
+/************************************************************/
+/*                    BOUNDARY SELECTION                    */
+/************************************************************/
+// selecting boundaries of the site for adding new nodes
+
+
+function boundary_select(mode, project_id) {
+    button_text = 'Start'
+    if (mode == 'add') {
+        button_class = 'btn--success'
+        var btnAddRemove = document.getElementById("btnDrawBoundariesAdd");
+    } else {
+        var btnAddRemove = document.getElementById("btnDrawBoundariesRemove");
+        button_class = 'btn--error'
+    }
+    // changing the label of the button
+    if (btnAddRemove.innerText === button_text) {
+        btnAddRemove.innerText = 'Draw Lines';
+        btnAddRemove.classList.toggle(button_class)
+    } else {
+        btnAddRemove.innerText = button_text;
+        btnAddRemove.classList.remove(button_class)
+    }
+    // only when a boundary is drawn, the next steps will be executed
+    if (siteBoundaryLines.length > 0) {
+        if (mode == 'add') {
+            add_buildings_inside_boundary({boundariesCoordinates: siteBoundaries });
+        }
+        else {
+            remove_buildings_inside_boundary({boundariesCoordinates: siteBoundaries });
+        }
+            removeBoundaries();
+    }
 }

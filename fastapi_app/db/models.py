@@ -459,5 +459,14 @@ class HasCookies(BaseModel):
     access_token: bool
     consent_cookie: bool
 
+
 class Email(BaseModel):
     email: str
+
+
+class MapDataRequest(BaseModel):
+    map_elements: list
+
+class MapData(BaseModel):
+    boundary_coordinates: list
+    map_elements: list

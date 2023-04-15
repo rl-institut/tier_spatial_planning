@@ -155,3 +155,10 @@ def is_point_in_boundaries(point_coordinates: tuple,
     point = geometry.Point(point_coordinates)
 
     return polygon.contains(point)
+
+
+def are_points_in_boundaries(df, boundaries):
+    polygon = geometry.Polygon(boundaries)
+    df['inside_boundary'] = df.apply(lambda row: polygon.contains(geometry.Point([row['latitude'], row['longitude']])),
+                                     axis=1)
+    return df['inside_boundary']

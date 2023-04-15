@@ -1,11 +1,9 @@
-import os
 import pandas as pd
 from sqlalchemy import select, delete, text
 from fastapi_app.db import models
 from fastapi_app.db.database import get_async_session_maker
 from fastapi_app.db.queries import get_nodes_df, get_links_df
 from sqlalchemy import insert, update
-from sqlalchemy.inspection import inspect
 
 
 async def merge_model(model):
