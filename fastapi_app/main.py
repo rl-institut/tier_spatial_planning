@@ -1,7 +1,6 @@
 import uuid
 import asyncio
 import math
-import urllib.request
 import json
 import base64
 import random
@@ -704,52 +703,22 @@ async def get_co2_emissions_data(project_id, request: Request):
 
 
 @app.post("/add_buildings_inside_boundary")
-async def add_buildings_inside_boundary(selectBoundariesRequest: models.SelectBoundariesRequest,
-                                        request: Request):
+async def add_buildings_inside_boundary(selectBoundariesRequest: models.SelectBoundariesRequest, request: Request):
     user = await accounts.get_user_from_cookie(request)
     boundary_coordinates = selectBoundariesRequest.boundary_coordinates
-    # latitudes and longitudes of all buildings in the selected boundary
-    latitudes = [x[0] for x in boundary_coordinates]
-    longitudes = [x[1] for x in boundary_coordinates]
-    # min and max of latitudes and longitudes are sent to the overpass to get
-    # a large rectangle including (maybe) more buildings than selected
-    min_latitude = min(latitudes)
-    min_longitude = min(longitudes)
-    max_latitude = max(latitudes)
-    max_longitude = max(longitudes)
-    if max_latitude - min_latitude > float(os.environ.get("MAX_LAT_LON_DIST", 0.15)):
+    df = pd.DataFrame.from_records(boundary_coordinates, columns=['latitude', 'longitude'])
+    if df['latitude'].max() - df['latitude'].min() > float(os.environ.get("MAX_LAT_LON_DIST", 0.15)):
         return JSONResponse({'executed': False,
                              'msg': 'The maximum latitude distance selected is too large. '
                                     'Please select a smaller area.'})
-    elif max_longitude - min_longitude > float(os.environ.get("MAX_LAT_LON_DIST", 0.15)):
+    elif df['longitude'].max() - df['longitude'].min() > float(os.environ.get("MAX_LAT_LON_DIST", 0.15)):
         return JSONResponse({'executed': False,
                              'msg': 'The maximum longitude distance selected is too large. '
                                     'Please select a smaller area.'})
-    url = f'https://www.overpass-api.de/api/interpreter?data=[out:json][timeout:2500]' \
-          f'[bbox:{min_latitude},{min_longitude},{max_latitude},{max_longitude}];' \
-          f'(way["building"="yes"];relation["building"];);out body;>;out skel qt;'
-    url_formated = url.replace(" ", "+")
-    with urllib.request.urlopen(url_formated) as url:
-        data = json.loads(url.read().decode())
-    if user.email.split('__')[0] == 'anonymous':
-        max_consumer = int(os.environ.get("MAX_CONSUMER_ANONNYMOUS", 150))
-    else:
-        max_consumer = int(os.environ.get("MAX_CONSUMER", 1000))
 
-    # first converting the json file, which is delievered by overpass to geojson,
-    # then obtaining coordinates and surface areas of all buildings inside the
-    # 'big' rectangle.
-    formated_geojson = bi.convert_overpass_json_to_geojson(data)
-    (building_coord, building_area,) = bi.obtain_areas_and_mean_coordinates_from_geojson(formated_geojson)
-    # excluding the buildings which are outside the drawn boundary
-    features = formated_geojson["features"]
-    mask_building_within_boundaries = {key: bi.is_point_in_boundaries(value, boundary_coordinates)
-                                       for key, value in building_coord.items()}
-    filtered_features = \
-        [feature for feature in features if mask_building_within_boundaries[feature["property"]["@id"]]]
-    formated_geojson["features"] = filtered_features
-    building_coordidates_within_boundaries = \
-        {key: value for key, value in building_coord.items() if mask_building_within_boundaries[key]}
+
+    data, building_coordidates_within_boundaries, building_area\
+        = bi.get_consumer_within_boundaries(df)
     nodes = defaultdict(list)
     for label, coordinates in building_coordidates_within_boundaries.items():
         nodes["latitude"].append(coordinates[0])
@@ -757,6 +726,10 @@ async def add_buildings_inside_boundary(selectBoundariesRequest: models.SelectBo
         nodes["how_added"].append("automatic")
         nodes["node_type"].append("consumer")
         nodes["surface_area"].append(building_area[label])
+    if user.email.split('__')[0] == 'anonymous':
+        max_consumer = int(os.environ.get("MAX_CONSUMER_ANONNYMOUS", 150))
+    else:
+        max_consumer = int(os.environ.get("MAX_CONSUMER", 1000))
 
     if len(nodes['latitude']) > max_consumer:
         return JSONResponse({'executed': False,
