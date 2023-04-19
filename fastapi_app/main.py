@@ -703,9 +703,9 @@ async def get_co2_emissions_data(project_id, request: Request):
 
 
 @app.post("/add_buildings_inside_boundary")
-async def add_buildings_inside_boundary(selectBoundariesRequest: models.SelectBoundariesRequest, request: Request):
+async def add_buildings_inside_boundary(js_data: models.MapData, request: Request):
     user = await accounts.get_user_from_cookie(request)
-    boundary_coordinates = selectBoundariesRequest.boundary_coordinates
+    boundary_coordinates = js_data.boundary_coordinates
     df = pd.DataFrame.from_records(boundary_coordinates, columns=['latitude', 'longitude'])
     if df['latitude'].max() - df['latitude'].min() > float(os.environ.get("MAX_LAT_LON_DIST", 0.15)):
         return JSONResponse({'executed': False,
@@ -733,10 +733,14 @@ async def add_buildings_inside_boundary(selectBoundariesRequest: models.SelectBo
 
     if len(nodes['latitude']) > max_consumer:
         return JSONResponse({'executed': False,
-                             'msg': 'You have selected {} users. You can select a maximum of {} users. '
-                                    'Reduce the number of users by selecting a small area, for example.'
+                             'msg': 'You have selected {} consumers. You can select a maximum of {} consumer. '
+                                    'Reduce the number of consumers by selecting a small area, for example.'
                             .format(len(data['elements']), max_consumer)})
     df = pd.DataFrame.from_dict(nodes)
+    df_exisiting = pd.DataFrame.from_records(js_data.map_elements)
+    df = pd.concat([df, df_exisiting], ignore_index=True)
+    df['surface_area'] = df['surface_area'].round(2)
+    df = df.drop_duplicates()
     nodes_list = df.to_dict('records')
     return JSONResponse({'executed': True, 'msg': '', 'new_consumers': nodes_list})
 
@@ -744,10 +748,11 @@ async def add_buildings_inside_boundary(selectBoundariesRequest: models.SelectBo
 @app.post("/remove_buildings_inside_boundary")
 async def remove_buildings_inside_boundary(data: models.MapData):
     df = pd.DataFrame.from_records(data.map_elements)
-    df['inside_boundary'] = bi.are_points_in_boundaries(df, boundaries=data.boundary_coordinates, )
-    df = df[df['inside_boundary'] == False]
-    df = df.drop(columns=['inside_boundary'])
-    return JSONResponse({'map_elements': df.to_dict('records')})
+    if not df.empty:
+        df['inside_boundary'] = bi.are_points_in_boundaries(df, boundaries=data.boundary_coordinates, )
+        df = df[df['inside_boundary'] == False]
+        df = df.drop(columns=['inside_boundary'])
+        return JSONResponse({'map_elements': df.to_dict('records')})
 
 
 # add new manually-selected nodes to the *.csv file

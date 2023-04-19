@@ -66,15 +66,10 @@ async function consumer_to_db(project_id) {
 
 function add_buildings_inside_boundary({ boundariesCoordinates } = {}) {
   document.body.style.cursor = "wait";
-
   fetch("/add_buildings_inside_boundary", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      boundary_coordinates: boundariesCoordinates,
-    }),
+    headers: {"Content-Type": "application/json",},
+    body: JSON.stringify({boundary_coordinates: boundariesCoordinates, map_elements: map_elements,}),
   })
     .then((response) => {
       if (response.ok) {
