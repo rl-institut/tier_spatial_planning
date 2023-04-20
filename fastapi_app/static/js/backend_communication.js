@@ -43,8 +43,6 @@ async function db_nodes_to_js(project_id, markers_only) {
   .then(data => {
     map_elements = data
     if (map_elements !== null) {
-        console.log(map_elements);
-        console.log(map_elements.length);
         put_markers_on_map(map_elements, markers_only);
         }
     else {
@@ -544,10 +542,11 @@ function load_previous_data(page_name){
     xhr.send();
     if (page_name.includes("project_setup")) {
         xhr.onreadystatechange = function () {
+
             if (this.readyState == 4 && this.status == 200) {
                 // push nodes to the map
                 results = this.response;
-                if (Object.keys(results).length > 1){
+                if (results !== null && Object.keys(results).length > 1){
                     document.getElementById("projectName").value = results['project_name'];
                     document.getElementById("projectDescription").value = results['project_description'];
                     document.getElementById("interestRate").value = results['interest_rate'];
@@ -563,7 +562,7 @@ function load_previous_data(page_name){
             if (this.readyState == 4 && this.status == 200) {
                 // push nodes to the map
                 results = this.response;
-                if (Object.keys(results).length > 1) {
+                if (results !== null && Object.keys(results).length > 1) {
                     document.getElementById("distributionCableLifetime").value = results['distribution_cable_lifetime'];
                     document.getElementById("distributionCableCapex").value = results['distribution_cable_capex'];
                     document.getElementById("distributionCableMaxLength").value = results['distribution_cable_max_length'];

@@ -78,7 +78,10 @@ def obtain_areas_and_mean_coordinates_from_geojson(df):
                         longitude=latitudes_longitudes[edge][1],
                         ref_latitude=reference_coordinate[0],
                         ref_longitude=reference_coordinate[1]))
-                surface_area = geometry.Polygon(xy_coordinates).area
+                if len(xy_coordinates) > 2:
+                    surface_area = geometry.Polygon(xy_coordinates).area
+                else:
+                    surface_area = 0
                 building_mean_coordinates[row["id"]] = mean_coord
                 building_surface_areas[row["id"]] = surface_area
         return building_mean_coordinates, building_surface_areas
