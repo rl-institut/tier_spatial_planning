@@ -4,9 +4,8 @@
     {% set title= 'Simulation Results' %}
     {% include '_head.html' %}
     {% include '_style_msg_box.html' %}
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"/>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css"/>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
   </head>
   <body onload="redirect_if_cookie_is_missing(true, true);
                 load_results({{ project_id }});
@@ -46,11 +45,8 @@
                     </ul>
                   </div>
                 </div>
-                <div class="chart__plot">
-                  <!-- <div id="optimalSizes2"></div> -->
-                </div>
                 <div class="map">
-                  <div id="leafletMap"></div>
+                    <div id="map" style="width: 100%; height: 100%"></div>
                 </div>
               </div>
             </div>
@@ -416,7 +412,7 @@
     {% include '_footer.html' %}
   </body>
   {% include '_scripts.html' %}
-  {% include '_map_scripts.html' %}
+    <script src="{{ url_for('static', path='js/integrate_map.js') }}"></script>
   <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
   <script src="https://cdn.plot.ly/plotly-2.0.0.min.js"></script>
 <script src="{{ url_for('static', path='js/plots.js') }}"></script>

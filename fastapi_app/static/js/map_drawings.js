@@ -94,20 +94,7 @@ function add_single_consumer_to_array(latitude, longitude, how_added, node_type)
 
 
 
-function markerOnClick(e)
-{ if (is_active) {
-    L.DomEvent.stopPropagation(e);
-    map_elements = map_elements.filter(function (obj) {
-        return obj.latitude !== e.latlng.lng && obj.longitude !== e.latlng.lat;});
-  map.eachLayer(function (layer) {
-  if (layer instanceof L.Marker) {
-    let markerLatLng = layer.getLatLng();
-    if (markerLatLng.lat === e.latlng.lat && markerLatLng.lng === e.latlng.lng) {
-      map.removeLayer(layer);
-    }
-  }
-});
-}}
+
 
 
 function remove_marker_from_map() {
@@ -187,7 +174,7 @@ function isLatLngInMapBounds(lat, lng) {
 }
 
 let input = document.getElementById('toggleswitch');
-let is_active = false;
+
 input.addEventListener('change',function(){
     if(this.checked) {
         is_active = true;
@@ -204,3 +191,5 @@ function removeBoundaries() {
         drawnItems.clearLayers();
         polygonCoordinates = [];
 }
+
+

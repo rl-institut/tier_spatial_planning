@@ -12,7 +12,7 @@ const map = L.map('map', {
   maxBoundsViscosity: 1.0
 });
 
-
+let is_active = false;
 // Add the OSM map
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -87,4 +87,54 @@ function put_markers_on_map(array, markers_only) {
         L.marker([array[counter]["latitude"], array[counter]["longitude"]], {icon: selected_icon,})
             .on('click', markerOnClick).addTo(map);}
   zoomAll(map);
+}
+
+
+function removeLinksFromMap(map) {
+  for (line of polygonCoordinates) {
+    map.removeLayer(line);
+  }
+  polygonCoordinates.length = 0;
+}
+
+
+function markerOnClick(e)
+{ if (is_active) {
+    L.DomEvent.stopPropagation(e);
+    map_elements = map_elements.filter(function (obj) {
+        return obj.latitude !== e.latlng.lng && obj.longitude !== e.latlng.lat;});
+  map.eachLayer(function (layer) {
+  if (layer instanceof L.Marker) {
+    let markerLatLng = layer.getLatLng();
+    if (markerLatLng.lat === e.latlng.lat && markerLatLng.lng === e.latlng.lng) {
+      map.removeLayer(layer);
+    }
+  }
+});
+}}
+
+function drawLinkOnMap(
+  latitude_from,
+  longitude_from,
+  latitude_to,
+  longitude_to,
+  color,
+  map,
+  weight,
+  opacity,
+) {
+  var pointA = new L.LatLng(latitude_from, longitude_from);
+  var pointB = new L.LatLng(latitude_to, longitude_to);
+  var pointList = [pointA, pointB];
+
+  var link_polyline = new L.polyline(pointList, {
+    color: color,
+    weight: weight,
+    opacity: opacity,
+    smoothFactor: 1,
+  });
+  polygonCoordinates.push(
+    link_polyline.bindTooltip(
+      pointA.distanceTo(pointB).toFixed(2).toString() + " m"
+    ).addTo(map));
 }
