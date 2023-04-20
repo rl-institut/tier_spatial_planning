@@ -53,34 +53,37 @@ def obtain_areas_and_mean_coordinates_from_geojson(df):
         and the surface area of the buildings.
     """
     # TODO: Remove the area in the final version of the tool
-    df1 = df[df['type'] == 'way']
-    df2 = df[df['type'] == 'node'].set_index('id')
+    if not df.empty:
+        df1 = df[df['type'] == 'way']
+        df2 = df[df['type'] == 'node'].set_index('id')
 
-    df2['lat_lon'] = list(zip(df2['lat'], df2['lon']))
-    index_to_lat_lon = df2['lat_lon'].to_dict()
-    df1_exploded = df1.explode('nodes')
-    df1_exploded['nodes'] = df1.explode('nodes')['nodes'].map(index_to_lat_lon)
-    df1['nodes'] = df1_exploded.groupby(df1_exploded.index).agg({'nodes': list})
-    building_mean_coordinates = {}
-    building_surface_areas = {}
-    if not df1.empty:
-        reference_coordinate = df1['nodes'].iloc[0][0]
-        for row_idx, row in df1.iterrows():
-            xy_coordinates = []
-            latitudes_longitudes = [coord for coord in row["nodes"]]
-            latitudes = [x[0] for x in latitudes_longitudes]
-            longitudes = [x[1] for x in latitudes_longitudes]
-            mean_coord = [np.mean(latitudes), np.mean(longitudes)]
-            for edge in range(len(latitudes)):
-                xy_coordinates.append(conv.xy_coordinates_from_latitude_longitude(
-                    latitude=latitudes_longitudes[edge][0],
-                    longitude=latitudes_longitudes[edge][1],
-                    ref_latitude=reference_coordinate[0],
-                    ref_longitude=reference_coordinate[1]))
-            surface_area = geometry.Polygon(xy_coordinates).area
-            building_mean_coordinates[row["id"]] = mean_coord
-            building_surface_areas[row["id"]] = surface_area
-    return building_mean_coordinates, building_surface_areas
+        df2['lat_lon'] = list(zip(df2['lat'], df2['lon']))
+        index_to_lat_lon = df2['lat_lon'].to_dict()
+        df1_exploded = df1.explode('nodes')
+        df1_exploded['nodes'] = df1.explode('nodes')['nodes'].map(index_to_lat_lon)
+        df1['nodes'] = df1_exploded.groupby(df1_exploded.index).agg({'nodes': list})
+        building_mean_coordinates = {}
+        building_surface_areas = {}
+        if not df1.empty:
+            reference_coordinate = df1['nodes'].iloc[0][0]
+            for row_idx, row in df1.iterrows():
+                xy_coordinates = []
+                latitudes_longitudes = [coord for coord in row["nodes"]]
+                latitudes = [x[0] for x in latitudes_longitudes]
+                longitudes = [x[1] for x in latitudes_longitudes]
+                mean_coord = [np.mean(latitudes), np.mean(longitudes)]
+                for edge in range(len(latitudes)):
+                    xy_coordinates.append(conv.xy_coordinates_from_latitude_longitude(
+                        latitude=latitudes_longitudes[edge][0],
+                        longitude=latitudes_longitudes[edge][1],
+                        ref_latitude=reference_coordinate[0],
+                        ref_longitude=reference_coordinate[1]))
+                surface_area = geometry.Polygon(xy_coordinates).area
+                building_mean_coordinates[row["id"]] = mean_coord
+                building_surface_areas[row["id"]] = surface_area
+        return building_mean_coordinates, building_surface_areas
+    else:
+        return {}, {}
 
 
 def are_segments_crossing(segment1, segment2):

@@ -4,9 +4,35 @@
     {% set title='Consumer Selection' %}
     {% include '_head.html' %}
     {% include '_style_msg_box.html' %}
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"/>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css"/>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.css" />
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw-src.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.0.6/dist/geosearch.css" />
+<script src="https://unpkg.com/leaflet-geosearch@3.0.6/dist/geosearch.umd.js"></script>
+
+      <style>{% include '_toggle.html' %}
+      .leaflet-control-trashbin a {
+  font-size: 20px;
+  line-height: 20px;
+  width: 26px;
+  height: 26px;
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}
+#search-container {
+  width: 100%;
+}
+
+#search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px;
+
+
+      </style>
   </head>
   <body onload="redirect_if_cookie_is_missing(true, true);
                 db_nodes_to_js({{ project_id }}, true);
@@ -17,149 +43,34 @@
         <section id="section" class="dashboard">
             <div class="row">
             <form>
-                <h3>Selection of the geolocation of consumers</h3>
-                <p>Please select the geolocation of the consumer. There are four options to select the geolocation.</p>
-                <p>
-                <ul>
-                <li>Click on map: Adding single consumers by clicking on the map</li>
-                <li>Draw boundary on map: Adding consumers by drawing a polygon on the map, within the boundaries of which all detected buildings are then automatically added as consumers.</li>
-                <li>Excel file upload: Definition of geolocation (longitude, latitude) in Excel file, which can be uploaded. </li>
-                <li>Manuel input: Manual entry of geolocation (longitude, laditude) in website table form </li>
-            </ul></p>
-              <div class="input-item">
-                <div
-                  class="btn-group d-flex"
-                  role="group"
-                  aria-label="Basic radio toggle button group">
-                  <input
-                    type="radio"
-                    class="btn-check"
-                    name="consumerSelection"
-                    id="selectionFile"
-                    autocomplete="off"
-                    onclick="activation_check();"
-                  />
-                  <label class="btn btn-outline-secondary" for="selectionFile"
-                    >Import from File</label
-                  >
-                  <input
-                    type="radio"
-                    class="btn-check"
-                    name="consumerSelection"
-                    id="selectionBoundaries"
-                    autocomplete="off"
-                    onclick="activation_check();"
-                    checked
-                  />
-                  <label
-                    class="btn btn-outline-secondary"
-                    for="selectionBoundaries"
-                    >Select Boundaries</label
-                  >
-                  <input
-                    type="radio"
-                    class="btn-check"
-                    name="consumerSelection"
-                    id="selectionMap"
-                    autocomplete="off"
-                    onclick="activation_check();"
-                    x
-                  />
-                  <label class="btn btn-outline-secondary" for="selectionMap"
-                    >Click on the Map</label
-                  >
-                </div>
-              </div>
-              <div class="form-group form-inline">
-                <div class="input-group mb-3">
-                  <input
-                    type="file"
-                    class="form-control"
-                    id="fileImport"
-                    accept=".xlsx"
-                    disabled
-                  />
-                  <button
-                    id="btnImport"
-                    class="btn disabled"
-                    type="button"
-                    onclick="import_data();"
-                  >
-                    Import
-                  </button>
-                </div>
 
-                <div class="row input-item">
-                  <div class="col-9">
-                    <label
-                      id="lblDrawBoundariesAdd"
-                      class="form-label text-left"
-                      for="btnDrawBoundariesAdd"
-                      >Add consumers by selecting boundaries of the settlement
-                    </label>
-                  </div>
-                  <div class="col-3">
-                    <button
-                      class="btn btn--long"
-                      type="button"
-                      id="btnDrawBoundariesAdd"
-                      aria-disabled="true"
-                      onclick="boundary_select('add', {{ project_id }});"
-                    >
-                      Start
-                    </button>
-                  </div>
-                </div>
-                <div class="row input-item">
-                  <div class="col-9">
-                    <label
-                      id="lblDrawBoundariesRemove"
-                      class="form-label text-left"
-                      for="btnDrawBoundariesRemove"
-                      >Remove consumers by selecting boundaries of the
-                      settlement
-                    </label>
-                  </div>
-                  <div class="col-3">
-                    <button
-                      class="btn btn--long text-right"
-                      type="button"
-                      id="btnDrawBoundariesRemove"
-                      aria-disabled="true"
-                      onclick="boundary_select('remove', {{ project_id }});"
-                    >
-                      Start
-                    </button>
-                  </div>
-                </div>
-                <div class="row input-item">
-                  <div class="col-9">
-                    <label
-                      id="lblDownloadLocations"
-                      class="form-label disabled text-left"
-                      for="btnDownloadLocations"
-                      >Download locations of selected consumers
-                    </label>
-                  </div>
-                  <div class="col-3">
-                    <button
-                      class="btn btn--long disabled"
-                      type="button"
-                      id="btnDownloadLocations"
-                      aria-disabled="true"
-                      onclick="export_data();"
-                    >
-                      Download
-                    </button>
-                  </div>
-                </div>
-              </div>
-               <p id="responseMsg"></p>
+
             </form>
+                <div class="chart" style="height: auto">
+                                    <div class="chart__header">
+                  <h3 style="margin-left: 0; padding: 0 0px;">Determination of consumer geolocation</h3>
+                      <span style="float:right;">
+                      <a>Remove Markers</a>
+                      <label class="switch">
+                      <input type="checkbox" id="toggleswitch">
+                      <span class="slider round"></span>
+                      </label>
+                      <p></p>
+                      </span></div>
+                    <p>Draw a boundary around an area in which buildings should be automatically identified as consumers</p>
+                    <a id="drawPolygon" class="btn btn--medium"  href="#">Draw Polygon</a>
+                    <a id="drawRectangle" class="btn btn--medium"  href="#">Draw Rectangle</a>
+                    <p>Select individual consumer manually on the map by mouse click</p>
+                    <a id="drawMarker" class="btn btn--medium"  href="#">Mark Consumers</a>
+                                <p id="responseMsg"></p>
 
-            <div class="map" style="min-height: 700px;">
-               <div id="leafletMap"></div>
-            </div>
+                    <div id="search-container">
+  <input type="text" id="search-input" placeholder="Search location within Nigeria" class="input-group-text" style="text-align: left"/>
+</div>
+                    <p></p>
+            <div id="map" style="min-height: 700px; min-width: 1000px;"></div>
+                </div>
+
         </div>
         </section>
         <div id=noSelection class="modal">
@@ -178,7 +89,7 @@
   {% include '_footer.html' %}
   </body>
     {% include '_scripts.html' %}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    {% include '_map_scripts.html' %}
     <script src="{{ url_for('static', path='js/consumer_selection.js') }}"></script>
+<script src="{{ url_for('static', path='js/integrate_map.js') }}"></script>
+<script src="{{ url_for('static', path='js/map_drawings.js') }}"></script>
 </html>

@@ -705,8 +705,8 @@ async def get_co2_emissions_data(project_id, request: Request):
 @app.post("/add_buildings_inside_boundary")
 async def add_buildings_inside_boundary(js_data: models.MapData, request: Request):
     user = await accounts.get_user_from_cookie(request)
-    boundary_coordinates = js_data.boundary_coordinates
-    df = pd.DataFrame.from_records(boundary_coordinates, columns=['latitude', 'longitude'])
+    boundary_coordinates = js_data.boundary_coordinates[0][0]
+    df = pd.DataFrame.from_dict(boundary_coordinates).rename(columns={'lat': 'latitude', 'lng': 'longitude'})
     if df['latitude'].max() - df['latitude'].min() > float(os.environ.get("MAX_LAT_LON_DIST", 0.15)):
         return JSONResponse({'executed': False,
                              'msg': 'The maximum latitude distance selected is too large. '
@@ -715,8 +715,6 @@ async def add_buildings_inside_boundary(js_data: models.MapData, request: Reques
         return JSONResponse({'executed': False,
                              'msg': 'The maximum longitude distance selected is too large. '
                                     'Please select a smaller area.'})
-
-
     data, building_coordidates_within_boundaries, building_area\
         = bi.get_consumer_within_boundaries(df)
     nodes = defaultdict(list)
@@ -749,7 +747,8 @@ async def add_buildings_inside_boundary(js_data: models.MapData, request: Reques
 async def remove_buildings_inside_boundary(data: models.MapData):
     df = pd.DataFrame.from_records(data.map_elements)
     if not df.empty:
-        df['inside_boundary'] = bi.are_points_in_boundaries(df, boundaries=data.boundary_coordinates, )
+        boundaries = pd.DataFrame.from_records(data.boundary_coordinates[0][0]).values.tolist()
+        df['inside_boundary'] = bi.are_points_in_boundaries(df, boundaries=boundaries, )
         df = df[df['inside_boundary'] == False]
         df = df.drop(columns=['inside_boundary'])
         return JSONResponse({'map_elements': df.to_dict('records')})

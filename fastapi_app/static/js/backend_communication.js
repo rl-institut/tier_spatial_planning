@@ -13,7 +13,7 @@ function db_links_to_js(project_id) {
     })
     .then((links) => {
       // push links to the map
-      removeLinksFromMap(mainMap);
+      removeLinksFromMap(map);
       for (let index = 0; index < Object.keys(links.link_type).length; index++) {
         var color = links.link_type[index] === "distribution" ? "rgb(255, 99, 71)" : "rgb(0, 165, 114)";
         var weight = links.link_type[index] === "distribution" ? 3 : 2;
@@ -24,7 +24,7 @@ function db_links_to_js(project_id) {
           links.lat_to[index],
           links.lon_to[index],
           color,
-          mainMap,
+          map,
           weight,
           opacity
         );
@@ -275,7 +275,7 @@ async function load_results(project_id) {
         }
         else {
             document.getElementById('dashboard').style.display = 'none';
-            document.getElementById('leafletMap').style.display = 'none';
+            document.getElementById('map').style.display = 'none';
             document.getElementById('noResults').style.display='block';
             $.ajax({
             url: "has_pending_task/" + project_id,
@@ -828,14 +828,14 @@ function forward_if_consumer_selection_exists(project_id) {
         if (res.forward === true) {
             window.location.href = window.location.origin + '/grid_design?project_id=' + project_id;
         } else {
-            document.getElementById('leafletMap').style.display = 'none';
+            document.getElementById('map').style.display = 'none';
             document.getElementById('section').style.display = 'none';
             document.getElementById('noSelection').style.display='block'
         }})}
 
 
 function hide_no_selection_prompt() {
-    document.getElementById('leafletMap').style.display = 'block';
+    document.getElementById('map').style.display = 'block';
     document.getElementById('section').style.display = 'block';
     document.getElementById('noSelection').style.display='none';}
 

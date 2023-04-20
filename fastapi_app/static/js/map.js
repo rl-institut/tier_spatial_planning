@@ -40,7 +40,7 @@ var esriSatelliteMap = {
 lat = 9.8838;
 lon = 5.9231;
 
-var mainMap = L.map("leafletMap", {
+var map = L.map("leafletMap", {
   center: [lat, lon], // 1st arg.: latitude, 2nd arg.: longitude
   zoom: 17,
   layers: [osmLayer],
@@ -59,12 +59,12 @@ const search = new GeoSearch.GeoSearchControl({
   autoClose: true,
   keepResult: true,
 });
-mainMap.addControl(search);
+map.addControl(search);
 
-L.control.layers(osmMap, esriSatelliteMap).addTo(mainMap);
+L.control.layers(osmMap, esriSatelliteMap).addTo(map);
 
 // custom zoom bar control that includes a Zoom Home function
-mainMap.removeControl(mainMap.zoomControl);
+map.removeControl(map.zoomControl);
 L.Control.zoomHome = L.Control.extend({
   options: {
     position: "topleft",
@@ -164,7 +164,7 @@ L.Control.zoomHome = L.Control.extend({
 
 // add the new control to the map
 var zoomHome = new L.Control.zoomHome();
-zoomHome.addTo(mainMap);
+zoomHome.addTo(map);
 
 function zoomAll(mainMap) {
   let latLonList = map_elements.map(obj => L.latLng(obj.latitude, obj.longitude));
@@ -186,9 +186,9 @@ L.easyButton(
     position: "topleft";
   },
   "Clear all nodes from the map"
-).addTo(mainMap);
+).addTo(map);
 
-var layer = L.geoJson(null).addTo(mainMap);
+var layer = L.geoJson(null).addTo(map);
 
 // layer.fire("data:loading");
 // $.getJSON("http://server/path.geojson", function (data) {
@@ -201,7 +201,7 @@ var siteBoundaries = [];
 var siteBoundaryLines = [];
 var dashedBoundaryLine = null;
 
-L.control.scale().addTo(mainMap);
+L.control.scale().addTo(map);
 
 var markerConsumer = new L.Icon({
   iconUrl: "fastapi_app/static/assets/icons/i_consumer.svg",
@@ -255,9 +255,9 @@ legend.onAdd = function (map) {
   }
   return div;
 };
-legend.addTo(mainMap);
+legend.addTo(map);
 
-mainMap.on("click", function (e) {
+map.on("click", function (e) {
   var poplocation = e.latlng;
 
   if (document.getElementById("selectionMap").checked) {
@@ -273,10 +273,10 @@ mainMap.on("click", function (e) {
     siteBoundaries.push([poplocation.lat, poplocation.lng]);
     // adding the new solid line to siteBoundaryLines and draw it on the map
     siteBoundaryLines.push(L.polyline(siteBoundaries, { color: "black" , bounds: polylineBounds}));
-    siteBoundaryLines[siteBoundaryLines.length - 1].addTo(mainMap);
+    siteBoundaryLines[siteBoundaryLines.length - 1].addTo(map);
     // removing the dashed line
     if (dashedBoundaryLine) {
-      mainMap.removeLayer(dashedBoundaryLine);
+      map.removeLayer(dashedBoundaryLine);
     }
     // creating a new dashed line closing the polygon
     dashedBoundaryLine = L.polyline(
@@ -284,7 +284,7 @@ mainMap.on("click", function (e) {
       { color: "black", dashArray: "10, 10", dashOffset: "20" }
     );
     // adding the new dashed line to the map
-    dashedBoundaryLine.addTo(mainMap);
+    dashedBoundaryLine.addTo(map);
   };
 });
 
@@ -295,9 +295,9 @@ mainMap.on("click", function (e) {
 // INTERACTION WITH LEAFLET MAP
 
 function remove_marker_from_map() {
-  mainMap.eachLayer((layer) => {
+  map.eachLayer((layer) => {
     if (layer instanceof L.Marker) {
-      mainMap.removeLayer(layer);
+      map.removeLayer(layer);
     }
   });
 }
@@ -310,18 +310,18 @@ function drawMarker(latitude, longitude, type) {
   } else if (type === "shs") {
     icon_type = markerShs;
   }
-    L.marker([latitude, longitude], { icon: icon_type }).on('click', markerOnClick).addTo(mainMap)
+    L.marker([latitude, longitude], { icon: icon_type }).on('click', markerOnClick).addTo(map)
 }
 
 function markerOnClick(e)
 { L.DomEvent.stopPropagation(e);
     map_elements = map_elements.filter(function (obj) {
         return obj.latitude !== e.latlng.lng && obj.longitude !== e.latlng.lat;});
-  mainMap.eachLayer(function (layer) {
+  map.eachLayer(function (layer) {
   if (layer instanceof L.Marker) {
     let markerLatLng = layer.getLatLng();
     if (markerLatLng.lat === e.latlng.lat && markerLatLng.lng === e.latlng.lng) {
-      mainMap.removeLayer(layer);
+      map.removeLayer(layer);
     }
   }
 });
@@ -363,10 +363,10 @@ function removeLinksFromMap(map) {
 function removeBoundaries() {
   // Remove all boundary lines and markers
   for (line of siteBoundaryLines) {
-    mainMap.removeLayer(line);
+    map.removeLayer(line);
   }
   if (dashedBoundaryLine != null) {
-    mainMap.removeLayer(dashedBoundaryLine);
+    map.removeLayer(dashedBoundaryLine);
   }
   siteBoundaries.length = 0;
   siteBoundaryLines.length = 0;
@@ -387,8 +387,8 @@ function put_markers_on_map(array, markers_only) {
         }
         else {selected_icon= icons[array[counter]["node_type"]];}}
         L.marker([array[counter]["latitude"], array[counter]["longitude"]], {icon: selected_icon,})
-            .on('click', markerOnClick).addTo(mainMap);}
-  zoomAll(mainMap);
+            .on('click', markerOnClick).addTo(map);}
+  zoomAll(map);
 }
 
 function add_single_consumer_to_array(latitude, longitude, how_added, node_type) {
@@ -434,3 +434,4 @@ function boundary_select(mode, project_id) {
             removeBoundaries();
     }
 }
+
