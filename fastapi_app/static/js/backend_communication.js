@@ -63,7 +63,7 @@ async function consumer_to_db(project_id) {
 
 
 function add_buildings_inside_boundary({ boundariesCoordinates } = {}) {
-  document.body.style.cursor = "wait";
+  $("*").css("cursor", "wait");
   fetch("/add_buildings_inside_boundary", {
     method: "POST",
     headers: {"Content-Type": "application/json",},
@@ -77,7 +77,7 @@ function add_buildings_inside_boundary({ boundariesCoordinates } = {}) {
       }
     })
     .then((res) => {
-      document.body.style.cursor = "auto";
+      $("*").css('cursor','auto');
       const responseMsg = document.getElementById("responseMsg");
       responseMsg.innerHTML = res.msg;
       if (res.executed === false) {
