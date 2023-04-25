@@ -936,7 +936,7 @@ class EnergySystemOptimizer(Optimizer):
         date_time_index = pd.date_range(
             start=self.start_date, periods=self.n_days * 24, freq="H"
         )
-        energy_system = solph.EnergySystem(timeindex=date_time_index)
+        energy_system = solph.EnergySystem(timeindex=date_time_index, infer_last_interval=False)
 
         # -------------------- BUSES --------------------
         # create electricity and fuel buses
