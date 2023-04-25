@@ -717,6 +717,8 @@ async def add_buildings_inside_boundary(js_data: models.MapData, request: Reques
                                     'Please select a smaller area.'})
     data, building_coordidates_within_boundaries, building_area\
         = bi.get_consumer_within_boundaries(df)
+    if building_coordidates_within_boundaries is None:
+        return JSONResponse({'executed': False, 'msg': 'In the selected area, no buildings could be identified.'})
     nodes = defaultdict(list)
     for label, coordinates in building_coordidates_within_boundaries.items():
         nodes["latitude"].append(coordinates[0])
