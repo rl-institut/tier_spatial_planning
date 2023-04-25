@@ -17,11 +17,17 @@ def get_consumer_within_boundaries(df):
           f'(way["building"="yes"];relation["building"];);out body;>;out skel qt;'
     url_formated = url.replace(" ", "+")
     with urllib.request.urlopen(url_formated) as url:
-        data = json.loads(url.read().decode())
+        res = url.read().decode()
+        if len(res) > 0:
+            data = json.loads(res)
+        else:
+            return None, None, None
     # first converting the json file, which is delievered by overpass to geojson,
     # then obtaining coordinates and surface areas of all buildings inside the
     # 'big' rectangle.
     df2 = pd.DataFrame.from_dict(data['elements'])
+    if df2.empty:
+        return None, None, None
     (building_coord, building_area,) = obtain_areas_and_mean_coordinates_from_geojson(df2)
     # excluding the buildings which are outside the drawn boundary
     mask_building_within_boundaries = {key: is_point_in_boundaries(value, df.values.tolist())
