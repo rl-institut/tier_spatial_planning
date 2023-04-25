@@ -51,7 +51,7 @@ services:
     restart: always
     ports:
       - '5555:5555'
-    command: celery -A celery_worker.worker worker --loglevel=DEBUG --pool prefork --concurrency 8
+    command: celery -A celery_worker.worker worker --loglevel=DEBUG --pool prefork # --concurrency 4
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
