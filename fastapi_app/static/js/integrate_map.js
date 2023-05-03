@@ -24,7 +24,7 @@ let map_elements =[];
 
 var markerConsumer = new L.Icon({
   iconUrl: "fastapi_app/static/assets/icons/i_consumer.svg",
-  iconSize: [6, 6],
+  iconSize: [18, 18],
 });
 
 var markerPowerHouse = new L.Icon({

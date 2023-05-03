@@ -196,7 +196,7 @@ var layer = L.geoJson(null).addTo(map);
 //   layer.addData(data);
 // });
 
-var siteBoundaries = [];
+let siteBoundaries = [];
 
 var siteBoundaryLines = [];
 var dashedBoundaryLine = null;
@@ -205,7 +205,7 @@ L.control.scale().addTo(map);
 
 var markerConsumer = new L.Icon({
   iconUrl: "fastapi_app/static/assets/icons/i_consumer.svg",
-  iconSize: [6, 6],
+  iconSize: [12, 12],
 });
 
 var markerPowerHouse = new L.Icon({
@@ -386,6 +386,7 @@ function put_markers_on_map(array, markers_only) {
             else {selected_icon= markerConsumer;}
         }
         else {selected_icon= icons[array[counter]["node_type"]];}}
+        console.log(selected_icon);
         L.marker([array[counter]["latitude"], array[counter]["longitude"]], {icon: selected_icon,})
             .on('click', markerOnClick).addTo(map);}
   zoomAll(map);

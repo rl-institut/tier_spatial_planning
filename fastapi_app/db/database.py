@@ -61,7 +61,3 @@ def get_sync_session_maker():
     sync_session = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
     return sync_session()
 
-
-def get_async_db():
-    db = async_sessionmaker
-    yield db

@@ -195,6 +195,16 @@ async def consumer_selection(request: Request):
     return templates.TemplateResponse("consumer-selection.html", {"request": request, 'project_id': project_id})
 
 
+@app.get("/consumer_types")
+async def consumer_types(request: Request):
+    project_id = request.query_params.get('project_id')
+    try:
+        int(project_id)
+    except (TypeError, ValueError):
+        RedirectResponse('/')
+    return templates.TemplateResponse("consumer-types.html", {"request": request, 'project_id': project_id})
+
+
 @app.get("/grid_design", response_class=HTMLResponse)
 async def grid_design(request: Request):
     project_id = request.query_params.get('project_id')
@@ -291,7 +301,7 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
         project_id = get_project_id_from_request(request)
     df = await queries.get_nodes_df(user.id, project_id)
     if not df.empty:
-        df = df[['latitude', 'longitude', 'how_added', 'node_type', 'surface_area']]
+        df = df[['latitude', 'longitude', 'how_added', 'node_type', 'surface_area', 'consumer_type', 'consumer_detail']]
         if markers_only is True:
             df = df[df['node_type'] == 'consumer']
         df['latitude'] = df['latitude'].astype(float)
@@ -604,8 +614,9 @@ async def save_grid_design(request: Request, data: models.SaveGridDesign):
 async def save_project_setup(project_id, request: Request, data: models.SaveProjectSetup):
     user = await accounts.get_user_from_cookie(request)
     # project_id = get_project_id_from_request(request)
-    data.page_setup['created_at'] = pd.Timestamp.now()
-    data.page_setup['updated_at'] = pd.Timestamp.now()
+    timestamp = pd.Timestamp.now()
+    data.page_setup['created_at'] = timestamp
+    data.page_setup['updated_at'] = timestamp
     data.page_setup['id'] = user.id
     data.page_setup['project_id'] = project_id
     project_setup = models.ProjectSetup(**data.page_setup)
@@ -725,6 +736,8 @@ async def add_buildings_inside_boundary(js_data: models.MapData, request: Reques
         nodes["longitude"].append(coordinates[1])
         nodes["how_added"].append("automatic")
         nodes["node_type"].append("consumer")
+        nodes["consumer_type"].append('household')
+        nodes["consumer_detail"].append('default')
         nodes["surface_area"].append(building_area[label])
     if user.email.split('__')[0] == 'anonymous':
         max_consumer = int(os.environ.get("MAX_CONSUMER_ANONNYMOUS", 150))

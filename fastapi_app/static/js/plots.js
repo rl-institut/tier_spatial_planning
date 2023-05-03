@@ -186,13 +186,7 @@ xhr.onreadystatechange = function () {
         }
     }]
         
-    var layout = {
-    font: {
-        size: 16,
-        color: 'black'
-    }
-    }
-      
+    var layout = {font: {size: 16, color: 'black' } }
     Plotly.react(sankeyDiagram, data, layout)
   }
 };}

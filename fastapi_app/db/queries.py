@@ -6,8 +6,7 @@ import flatten_dict
 from flatten_dict.reducers import make_reducer
 from flatten_dict.splitters import make_splitter
 from fastapi_app.db import models
-from fastapi_app.db.database import get_async_session_maker, get_sync_session_maker
-
+from fastapi_app.db.database import get_async_session_maker
 
 async def get_user_by_username(username):
     query =select(models.User).where(models.User.email == username)

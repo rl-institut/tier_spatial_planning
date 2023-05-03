@@ -36,8 +36,6 @@ document.getElementById('drawRectangle').addEventListener('click', function () {
 // Add a listener that responds to the 'draw:created' event
 map.on(L.Draw.Event.CREATED, function (event) {
     const layer = event.layer;
-    console.log('hello');
-    console.log(event)
     if (event.layerType === 'marker') {
         const latLng = layer.getLatLng();
         const lat = latLng.lat;
@@ -89,12 +87,10 @@ function add_single_consumer_to_array(latitude, longitude, how_added, node_type)
       longitude: longitude,
       how_added: how_added,
       node_type: node_type,
+      consumer_type: 'household',
+      consumer_detail: 'deafault',
       surface_area: 0})
 }
-
-
-
-
 
 
 function remove_marker_from_map() {
@@ -183,8 +179,6 @@ input.addEventListener('change',function(){
         is_active = false;
         }
     });
-
-
 
 
 function removeBoundaries() {
