@@ -255,7 +255,7 @@ async function load_results(project_id) {
             document.getElementById("nConsumers").innerText = results['n_consumers'];
             document.getElementById("nShsConsumers").innerText = results['n_shs_consumers'];
             document.getElementById("nPoles").innerText = results['n_poles'];
-            document.getElementById("maxVoltageDrop").innerText = '1.3%';
+            document.getElementById("maxVoltageDrop").innerText = results['max_voltage_drop'];
             document.getElementById("lengthDistributionCable").innerText = results['length_distribution_cable'];
             document.getElementById("averageLengthDistributionCable").innerText = results['average_length_distribution_cable'];
             document.getElementById("lengthConnectionCable").innerText = results['length_connection_cable'];

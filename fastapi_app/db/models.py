@@ -282,6 +282,7 @@ class Results(Base):
     time_energy_system_design = Column(Numeric(10, 3))
     time = Column(Numeric(10, 3))
     co2_savings = Column(Numeric(10, 3))
+    max_voltage_drop = Column(Numeric(3, 1))
 
 
 class DemandCoverage(Base):

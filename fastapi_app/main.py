@@ -367,6 +367,7 @@ async def load_results(project_id, request: Request):
                  'cost_grid': 'USD/a',
                  'lcoe': 'c/kWh',
                  'res': '%',
+                 'max_voltage_drop': '%',
                  'shortage_total': '%',
                  'surplus_rate': '%',
                  'time': 's',
@@ -375,7 +376,6 @@ async def load_results(project_id, request: Request):
     for col in df.columns:
         df[col] = df[col] + ' ' + unit_dict[col]
     results = df.to_dict(orient='records')[0]
-    # importing nodes and links from the csv files to the map
     return results
 
 
@@ -1361,9 +1361,10 @@ async def optimize_grid(user_id, project_id):
     df.loc[0, "n_connection_links"] = int(
         grid.links[grid.links["link_type"] == "connection"].shape[0]
     )
-
-    await inserts.insert_results_df(df, user_id, project_id)
     voltage_drop_df = grid.get_voltage_drop_at_nodes()
+    df.loc[0, "max_voltage_drop"] = round(float(voltage_drop_df['voltage drop fraction [%]'].max()), 1)
+    await inserts.insert_results_df(df, user_id, project_id)
+
     grid.find_n_links_connected_to_each_pole()
 
     grid.find_capacity_of_each_link()
