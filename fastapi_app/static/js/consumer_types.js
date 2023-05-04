@@ -44,7 +44,9 @@ let old_marker
 
 function markerOnClick(e){
     L.DomEvent.stopPropagation(e);
+    if (marker) {
     update_map_elements();
+    };
     const index = map_elements.findIndex(obj => obj.latitude === e.latlng.lat && obj.longitude === e.latlng.lng);
     if (index >= 0) {
         marker = map_elements.splice(index, 1)[0];
@@ -80,16 +82,17 @@ function markerOnClick(e){
 }
 
 function update_map_elements(){
-    if (marker)
-    {
         marker.longitude = parseFloat(document.getElementById('longitude').value);
         marker.latitude = parseFloat(document.getElementById('latitude').value);
         marker.surface_area = parseFloat(document.getElementById('floor_area').value);
         if (document.getElementById('consumer').value === 'H') {
            marker.consumer_type = 'household';
+           marker.consumer_detail = 'default';
         }
         else {
-                marker.consumer_type = 'enterprise';
+            marker.consumer_type = 'enterprise';
+            let key = document.getElementById('enterprise').value;
+            marker.consumer_detail = enterprise_list[key];
         }
     map_elements.push(marker);
     map.eachLayer(function (layer) {
@@ -100,5 +103,22 @@ function update_map_elements(){
             L.marker([marker.latitude, marker.longitude], {icon: markerConsumer,})
             .on('click', markerOnClick).addTo(map);
         }
-    }})}}
+    }})}
 
+function move_marker(){
+    old_marker = JSON.parse(JSON.stringify(marker));
+    marker.longitude = parseFloat(document.getElementById('longitude').value);
+    marker.latitude = parseFloat(document.getElementById('latitude').value);
+    map.eachLayer(function (layer) {
+        if (layer instanceof L.Marker) {
+        let markerLatLng = layer.getLatLng();
+        if (markerLatLng.lat === old_marker.latitude && markerLatLng.lng === old_marker.longitude) {
+            map.removeLayer(layer);
+            L.marker([marker.latitude, marker.longitude], {icon: markerConsumerSelected,})
+            .on('click', markerOnClick).addTo(map);
+        }
+    }})
+}
+
+document.getElementById('latitude').addEventListener('change', move_marker);
+document.getElementById('longitude').addEventListener('change', move_marker);
