@@ -1054,20 +1054,12 @@ async def optimize_grid(user_id, project_id):
                         wacc=df.loc[0, "interest_rate"] / 100,
                         tax=0, )
 
-    # get nodes from the database (CSV file) as a dictionary
-    # then convert it again to a panda dataframe for simplicity
-    # TODO: check the format of nodes from the database_read()
 
     nodes = await queries.get_nodes_json(user_id, project_id)
-
     nodes = pd.DataFrame.from_dict(nodes)
 
-    # if there is no element in the nodes, optimization will be terminated
     if len(nodes) == 0:
         return {"code": "success", "message": "Empty grid cannot be optimized!"}
-
-    # initialite the database (remove contents of the CSV files)
-    # otherwise, when clicking on the 'optimize' button, the existing system won't be removed
 
     # create a new "grid" object from the Grid class
     epc_distribution_cable = ((opt.crf *
@@ -1371,7 +1363,7 @@ async def optimize_grid(user_id, project_id):
     )
 
     await inserts.insert_results_df(df, user_id, project_id)
-
+    voltage_drop_df = grid.get_voltage_drop_at_nodes()
     grid.find_n_links_connected_to_each_pole()
 
     grid.find_capacity_of_each_link()

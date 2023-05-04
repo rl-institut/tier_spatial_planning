@@ -474,6 +474,17 @@ class Grid:
         """
         return self.links
 
+    def get_nodes(self):
+        """
+        Return all nodes of the grid.
+
+        Returns
+        -------
+        class:`pandas.core.frame.DataFrame`
+            a pandas dataframe containing all nodes of the grid
+        """
+        return self.nodes
+
     def clear_all_links(self):
         """
         Removes all links from the grid.
@@ -1086,7 +1097,7 @@ class Grid:
     def is_segment_spanning_tree(self, segment):
         """
         This methods checks wheter or not the given nodes from the segment
-        is spanning (i.e. buiding a connected graph).
+        is spanning (i.e. building a connected graph).
 
         Parameters:
             str
@@ -1321,7 +1332,7 @@ class Grid:
             self.flip_node(selected_consumer_label)
 
     def set_all_node_type_to_consumers(self):
-        """ "
+        """
         This method sets the node_type to 'consumer' for all nodes with
         type_fixed == False.
         """
@@ -1498,7 +1509,7 @@ class Grid:
 
     # ----------------- COMPUTE DISTANCE BETWEEN NODES -----------------#
 
-    def get_cable_distance_from_consumers_to_powerhub(self):
+    def get_cable_distance_from_consumers_to_pole(self):
         """
         This method computes the cable distance separating each node
         from its powerhub. It recursively uses the method
@@ -1525,27 +1536,28 @@ class Grid:
         )
         distance_df = distance_df.set_index("label")
         # For every powerhub, compute cable length to nodes from the segment
-        for index_powerhub in self.get_nodes()[
-            self.get_nodes()["node_type"] == "powerhub"
-        ].index:
-
+        for index_powerhub in self.get_nodes()[self.get_nodes()["node_type"].isin(['power-house'])].index:
             distance_df.loc[index_powerhub] = [0, 0, index_powerhub]
-
             # this list gathers the index of all nodes that are directly
             # connected with a link to the powerhub
             node_next_neighbours = []
             # add all nodes connected to the pole to the list
-            for next_node in self.get_links()[
-                (self.get_links()["from"] == index_powerhub)
-            ]["to"]:
+            links = self.get_links()
+            links['from_node'] = pd.Series(self.links.index.str.split(','), index=links.index)\
+            .str[0].str.replace('(', '').str.replace(' ', '')
+            links['to_node'] = pd.Series(self.links.index.str.split(','), index=links.index)\
+            .str[1].str.replace(')', '').str.replace(' ', '')
+            for next_node in links[
+                (links["from_node"] == index_powerhub)
+            ]["to_node"]:
                 if (
                     next_node not in node_next_neighbours
                     and next_node not in distance_df.index
                 ):
                     node_next_neighbours.append(next_node)
-            for next_node in self.get_links()[
-                (self.get_links()["to"] == index_powerhub)
-            ]["from"]:
+            for next_node in links[
+                (links["to_node"] == index_powerhub)
+            ]["from_node"]:
                 if (
                     next_node not in node_next_neighbours
                     and next_node not in distance_df.index
@@ -1588,38 +1600,38 @@ class Grid:
         # link from node_n_minus_1 to node_n and from node_n and node_n_minus_1
         if (
             self.get_links()[
-                (self.get_links()["from"] == node_n_minus_1)
-                & (self.get_links()["to"] == str(node_n))
+                (self.get_links()["from_node"] == node_n_minus_1)
+                & (self.get_links()["to_node"] == str(node_n))
             ].shape[0]
             == 1
         ):
             index_link_between_nodes = self.get_links()[
-                (self.get_links()["from"] == node_n_minus_1)
-                & (self.get_links()["to"] == str(node_n))
+                (self.get_links()["from_node"] == node_n_minus_1)
+                & (self.get_links()["to_node"] == str(node_n))
             ].index[0]
 
         elif (
             self.get_links()[
-                (self.get_links()["from"] == node_n)
-                & (self.get_links()["to"] == node_n_minus_1)
+                (self.get_links()["from_node"] == node_n)
+                & (self.get_links()["to_node"] == node_n_minus_1)
             ].shape[0]
             == 1
         ):
             index_link_between_nodes = self.get_links()[
-                (self.get_links()["from"] == node_n)
-                & (self.get_links()["to"] == node_n_minus_1)
+                (self.get_links()["from_node"] == node_n)
+                & (self.get_links()["to_node"] == node_n_minus_1)
             ].index[0]
 
         # check what type the link is to know distiguish of the cable types
         # in the datafram
-        if self.get_links()["type"][index_link_between_nodes] == "distribution":
+        if self.get_links()["link_type"][index_link_between_nodes] == "distribution":
             distance_df.loc[node_n] = [
                 distance_df["distribution cable [m]"][node_n_minus_1]
                 + self.distance_between_nodes(node_n_minus_1, node_n),
                 0,
                 index_powerhub,
             ]
-        elif self.get_links()["type"][index_link_between_nodes] == "connection":
+        elif self.get_links()["link_type"][index_link_between_nodes] == "connection":
             distance_df.loc[node_n] = [
                 distance_df["distribution cable [m]"][node_n_minus_1],
                 self.distance_between_nodes(node_n_minus_1, node_n),
@@ -1629,16 +1641,14 @@ class Grid:
         # Call function for all the nodes that were not measured yet
         node_next_neighbours = []
         for node_next_neighbour in self.get_links()[
-            (self.get_links()["from"] == node_n)
-        ]["to"]:
+            (self.get_links()["from_node"] == node_n)
+        ]["to_node"]:
             if (
                 node_next_neighbour not in node_next_neighbours
                 and node_next_neighbour not in distance_df.index
             ):
                 node_next_neighbours.append(node_next_neighbour)
-        for node_next_neighbour in self.get_links()[(self.get_links()["to"] == node_n)][
-            "from"
-        ]:
+        for node_next_neighbour in self.get_links()[(self.get_links()["to_node"] == node_n)]["from_node"]:
             if (
                 node_next_neighbour not in node_next_neighbours
                 and node_next_neighbour not in distance_df.index
@@ -1666,7 +1676,7 @@ class Grid:
 
         Notes
         -----
-            The cable resistance R_i is computed as follow
+            The cable resistance R_i is computed as follows:
             R_i =  rho_i * 2* d_i / (i_cable_section)
             where i represent the cable type, rho the cable electric
             resistivity (self.distribution_cable_resistivity),
@@ -1675,20 +1685,20 @@ class Grid:
             U = R * I where U is the tension (here corresponding to the
             voltage drop), R the resistance and I the current.
         """
-        voltage_drop_df = self.get_cable_distance_from_consumers_to_powerhub()
+        voltage_drop_df = self.get_cable_distance_from_consumers_to_pole()
 
         voltage_drop_df["distribution cable resistance [Ω]"] = (
-            self.distribution_cable_resistivity
+            self.cables[self.cables["cable_type"] == "distribution"]["resistivity"].iat[0]
             * 2
             * voltage_drop_df["distribution cable [m]"]
-            / self.distribution_cable_section
+            / self.cables[self.cables["cable_type"] == "distribution"]["section_area"].iat[0]
         )
 
         voltage_drop_df["connection cable resistance [Ω]"] = (
-            self.connection_cable_resistivity
+            self.cables[self.cables["cable_type"] == "connection"]["resistivity"].iat[0]
             * 2
             * voltage_drop_df["connection cable [m]"]
-            / self.connection_cable_section
+            / self.cables[self.cables["cable_type"] == "connection"]["section_area"].iat[0]
         )
 
         voltage_drop_df["voltage drop [V]"] = (

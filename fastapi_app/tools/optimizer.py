@@ -364,7 +364,7 @@ class GridOptimizer(Optimizer):
     def mst_using_kruskal(self, grid: Grid):
         """
         Creates links between all poles using the Kruskal's algorithm for
-        the minimum spanning tree method from scpicy.sparse.csgraph.
+        the minimum spanning tree method from scipy.sparse.csgraph.
 
         Parameters
         ----------
@@ -380,7 +380,7 @@ class GridOptimizer(Optimizer):
         graph_matrix = np.zeros((n_poles, n_poles))
         for i in range(n_poles):
             for j in range(n_poles):
-                # since the graph does not have a direction, only the upper part of the matrix must be flled
+                # since the graph does not have a direction, only the upper part of the matrix must be filled
                 if j > i:
                     graph_matrix[i, j] = grid.distance_between_nodes(
                         label_node_1=poles.index[i], label_node_2=poles.index[j]
@@ -501,7 +501,7 @@ class GridOptimizer(Optimizer):
     def propagate_segment_to_neighbours(self, grid: Grid, index, segment):
         """
         This method is a helping function used to split a segment into two.
-        It is a recursice function that sets the segment of a node to a given
+        It is a recursive function that sets the segment of a node to a given
         value and then does the same for all of it's neighbours that have a
         different segment index. The recursion starts at the node corresponding
         to the index given as parameter.
