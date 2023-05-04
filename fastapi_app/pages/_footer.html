@@ -11,28 +11,34 @@
                 >Next</a>
              {% elif title == 'Consumer Selection' %}
                  <a class="btn btn--medium btn--hollow btn--previous"
-                 href="project_setup?project_id={{ project_id }}">Previous</a>
+                 href="project_setup?project_id={{ project_id }}"
+                 onclick="consumer_to_db({{ project_id }})"
+                 >Previous</a>
                  <a class="btn btn--medium" style="color: #fff"
                  href="consumer_types?project_id={{ project_id }}"
                  onclick="consumer_to_db({{ project_id }})">
                      Next</a>
              {% elif title == 'Consumer Types' %}
                  <a class="btn btn--medium btn--hollow btn--previous"
-                 href="consumer_selection?project_id={{ project_id }}">Previous</a>
+                 href="consumer_selection?project_id={{ project_id }}"
+                 onclick="update_map_elements(); consumer_to_db({{ project_id }})"
+                 >Previous</a>
                  <a class="btn btn--medium" style="color: #fff"
                  href="grid_design?project_id={{ project_id }}"
                  onclick="update_map_elements(); consumer_to_db({{ project_id }})">
                      Next</a>
              {% elif title == 'Grid Design' %}
                  <a class="btn btn--medium btn--hollow btn--previous"
-                 href="consumer_types?project_id={{ project_id }}">
+                 href="consumer_types?project_id={{ project_id }}"
+                 onclick="save_grid_design();">
                      Previous</a>
                  <a class="btn btn--medium" style="color: #fff"
                  href="energy_system_design?project_id={{ project_id }}"
                  onclick="save_grid_design();">Next</a>
             {% elif title == 'Energy System Design' %}
                  <a class="btn btn--medium btn--hollow btn--previous"
-                 href="grid_design?project_id={{ project_id }}">
+                 href="grid_design?project_id={{ project_id }}"
+                  onclick="save_energy_system_design();">
                      Previous</a>
                  <a class="btn btn--medium" style="color: #fff"
                  href="#"
