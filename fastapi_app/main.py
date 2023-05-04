@@ -1,4 +1,5 @@
 import uuid
+import ast
 import asyncio
 import math
 import json
@@ -607,6 +608,7 @@ async def save_grid_design(request: Request, data: models.SaveGridDesign):
     data.grid_design['id'] = user.id
     data.grid_design['project_id'] = project_id
     grid_design = models.GridDesign(**data.grid_design)
+    grid_design.allow_shs = ast.literal_eval(grid_design.allow_shs)
     await inserts.merge_model(grid_design)
 
 

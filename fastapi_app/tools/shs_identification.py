@@ -10,7 +10,7 @@ import time
 
 def create_nodes_df():
     """
-    This function creates and returns an empty DataFrame represetning nodes of
+    This function creates and returns an empty DataFrame representing nodes of
     following form:
                     x_coordinate  y_coordinate   required_capacity  max_power   shs_price
         label

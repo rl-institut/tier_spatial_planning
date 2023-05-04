@@ -133,6 +133,7 @@ class GridDesign(Base):
     pole_capex = Column(FLOAT(precision=5, scale=1, unsigned=True))
     pole_max_n_connections = Column(TINYINT(unsigned=True))
     mg_connection_cost = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    allow_shs = Column(Boolean(), default=False)
     shs_lifetime = Column(TINYINT(unsigned=True))
     shs_tier_one_capex = Column(SMALLINT(unsigned=True))
     shs_tier_two_capex = Column(SMALLINT(unsigned=True))
