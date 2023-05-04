@@ -323,10 +323,10 @@ async def consumer_to_db(project_id: str, map_elements: models.MapDataRequest, r
     if df.empty:
         await inserts.remove(models.Nodes, user.id, project_id)
         return
-    df = df[['latitude', 'longitude', 'how_added', 'node_type', 'surface_area']]
+    df = df[['latitude', 'longitude', 'how_added', 'node_type', 'surface_area', 'consumer_type', 'consumer_detail']]
     df['surface_area'] = df['surface_area'].fillna(0)
-    df['consumer_type'] = 'household'
-    df['consumer_detail'] = 'default'
+    df['consumer_type'] = df['consumer_type'].fillna('household')
+    df['consumer_detail'] = df['consumer_detail'].fillna('default')
     df['is_connected'] = True
     df['peak_demand'] = 0
     df['average_consumption'] = 0
@@ -743,7 +743,6 @@ async def add_buildings_inside_boundary(js_data: models.MapData, request: Reques
         max_consumer = int(os.environ.get("MAX_CONSUMER_ANONNYMOUS", 150))
     else:
         max_consumer = int(os.environ.get("MAX_CONSUMER", 1000))
-
     if len(nodes['latitude']) > max_consumer:
         return JSONResponse({'executed': False,
                              'msg': 'You have selected {} consumers. You can select a maximum of {} consumer. '
@@ -774,20 +773,14 @@ async def remove_buildings_inside_boundary(data: models.MapData):
 async def database_add_remove_manual(add_remove: str, project_id, add_node_request: models.AddNodeRequest,
                                      request: Request):
     user = await accounts.get_user_from_cookie(request)
-    # headers = pd.read_csv(full_path_nodes).columns
-
     nodes = models.Nodes(**dict(add_node_request)).to_dict()
     if add_remove == "remove":
-        # reading the existing CSV file of nodes, and then removing the corresponding row
-        # Since a node is removed, the calculated positions for ALL poles and
-        # the power house must be first removed.
         df = await queries.get_nodes_df(user.id, project_id)
         df = df[(df["node_type"] != "pole") & (df["node_type"] != "power-house")]
         for index in df.index:
             if (round(add_node_request.latitude, 6) == df.to_dict()["latitude"][index]) and \
                     (round(add_node_request.longitude, 6) == df.to_dict()["longitude"][index]):
                 df.drop(labels=index, axis=0, inplace=True)
-        # storing the nodes in the database (updating the existing CSV file)
         df = df.reset_index(drop=True)
         await inserts.update_nodes_and_links(True, False, df.to_dict(), user.id, project_id, add=False)
     else:
