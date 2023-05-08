@@ -579,7 +579,7 @@ function load_previous_data(page_name){
 
 function export_data(project_id) {
     // Create the excel workbook and fill it out with some properties
-    var workbook = XLSX.utils.book_new();
+    var workbook = XLSX.utils.book_new();s
     workbook.Props = {
       Title: "Import and Export Data form/to the Optimization Web App.",
       Subject: "Off-Grid Network and Energy Supply System",
@@ -693,39 +693,6 @@ function import_data(project_id) {
     }
   }
 
-/************************************************************/
-/*                    SOLAR-HOME-SYSTEM                     */
-/************************************************************/
-
-function identify_shs(project_id) {
-    const max_distance_between_poles = 40; // must be definded globally in the fututre
-    const cable_pole_price_per_meter =
-        cost_distribution_cable.value + cost_pole.value / max_distance_between_poles;
-    const algo = "mst1";
-    $("#loading").show();
-    $.ajax({
-        url: "shs_identification/",
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify({
-            cable_price_per_meter_for_shs_mst_identification: cable_pole_price_per_meter,
-            connection_cost_to_minigrid: cost_connection.value,
-            price_shs_hd: price_shs_hd.value,
-            price_shs_md: price_shs_md.value,
-            price_shs_ld: price_shs_ld.value,
-            algo,
-        }),
-        dataType: "json",
-        statusCode: {
-            200: function () {
-                db_links_to_js(nodes_or_links = 'nodes', map_or_export = 'map', project_id);
-                //refreshNodeFromDataBase();
-                clearLinksDataBase();
-                $("#loading").hide();
-            },
-        },
-    });
-}
 
 
 async function show_user_email_in_navbar() {
@@ -757,6 +724,7 @@ function remove_project(project_id) {
             contentType: "application/json",})
         .done(function () {window.location.href = window.location.origin;})}
 
+
 function wait_for_results(project_id, task_id, time)
 {   $.ajax({
         url: "waiting_for_results/",
@@ -774,6 +742,7 @@ function wait_for_results(project_id, task_id, time)
     });
 }
 
+
 function forward_if_no_task_is_pending(project_id) {
         $.ajax({
             url: "forward_if_no_task_is_pending/",
@@ -786,6 +755,7 @@ function forward_if_no_task_is_pending(project_id) {
             document.getElementById('pendingTask').style.display='block'
         }})}
 
+
 function revoke_users_task() {
     $.ajax({
         url: "revoke_users_task/",
@@ -793,6 +763,7 @@ function revoke_users_task() {
         contentType: "application/json"})
         .done(function () {document.getElementById('pendingTask').style.display='none';
         })}
+
 
 function start_calculation(project_id)
     {   $.ajax({
@@ -847,6 +818,7 @@ function show_cookie_consent(){
             {document.getElementById('consentCookie').style.display='none'}
         })
 }
+
 
 function send_reset_password_email(){
         $.ajax({url: "send_reset_password_email/",

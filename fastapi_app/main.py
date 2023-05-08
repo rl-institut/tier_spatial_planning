@@ -26,9 +26,9 @@ from passlib.context import CryptContext
 from fastapi.staticfiles import StaticFiles
 from fastapi_app.tools.grids import Grid
 from fastapi_app.tools.optimizer import Optimizer, GridOptimizer, EnergySystemOptimizer, po
-from fastapi_app.tools.accounts import Hasher, create_guid, is_valid_credentials, send_activation_link, activate_mail, \
+from fastapi_app.tools.account_helpers import Hasher, create_guid, is_valid_credentials, send_activation_link, activate_mail, \
     authenticate_user, create_access_token, send_mail
-from fastapi_app.tools import accounts
+from fastapi_app.tools import account_helpers as accounts
 from fastapi_app.db import config
 from fastapi_app.db import queries, inserts
 import pyutilib.subprocess.GlobalData
@@ -1291,9 +1291,7 @@ async def optimize_grid(user_id, project_id):
     grid.select_location_of_power_house()
 
     # Calculate the cost of SHS.
-    peak_demand_shs_consumers = grid.nodes[grid.nodes["is_connected"] == False].loc[
-                                :, "peak_demand"
-                                ]
+    peak_demand_shs_consumers = grid.nodes[grid.nodes["is_connected"] == False].loc[:, "peak_demand"]
     cost_shs = epc_shs * peak_demand_shs_consumers.sum()
 
     # get all poles obtained by the network relaxation method
@@ -1301,18 +1299,10 @@ async def optimize_grid(user_id, project_id):
 
     # remove the unnecessary columns to make it compatible with the CSV files
     # TODO: When some of these columns are removed in the future, this part here needs to be updated too.
-    poles.drop(
-        labels=[
-            "x",
-            "y",
-            "cluster_label",
-            "type_fixed",
-            "n_connection_links",
-            "n_distribution_links",
-        ],
-        axis=1,
-        inplace=True,
-    )
+    poles.drop(labels=["x", "y", "cluster_label", "type_fixed", "n_connection_links", "n_distribution_links"],
+               axis=1,
+               inplace=True)
+
 
     # Store the list of poles in the "node" database.
     await inserts.update_nodes_and_links(True, False, poles.to_dict(), user_id, project_id)
@@ -1322,20 +1312,9 @@ async def optimize_grid(user_id, project_id):
 
     # remove the unnecessary columns to make it compatible with the CSV files
     # TODO: When some of these columns are removed in the future, this part here needs to be updated too.
-    links.drop(
-        labels=[
-            "x_from",
-            "y_from",
-            "x_to",
-            "y_to",
-            "n_consumers",
-            "total_power",
-            "from_node",
-            "to_node",
-        ],
-        axis=1,
-        inplace=True,
-    )
+    links.drop(labels=["x_from", "y_from", "x_to", "y_to", "n_consumers", "total_power", "from_node", "to_node"],
+               axis=1,
+               inplace=True)
 
     # store the list of poles in the "node" database
     await inserts.update_nodes_and_links(False, True, links.to_dict(), user_id, project_id)
@@ -1348,30 +1327,24 @@ async def optimize_grid(user_id, project_id):
     df.loc[0, "n_consumers"] = len(grid.consumers())
     df.loc[0, "n_shs_consumers"] = n_shs_consumers
     df.loc[0, "n_poles"] = len(grid.poles())
-    df.loc[0, "length_distribution_cable"] = int(
-        grid.links[grid.links.link_type == "distribution"]["length"].sum()
-    )
-    df.loc[0, "length_connection_cable"] = int(
-        grid.links[grid.links.link_type == "connection"]["length"].sum()
-    )
+    df.loc[0, "length_distribution_cable"] = int(grid.links[grid.links.link_type == "distribution"]["length"].sum())
+    df.loc[0, "length_connection_cable"] = int(grid.links[grid.links.link_type == "connection"]["length"].sum())
     df.loc[0, "cost_grid"] = int(grid.cost())
     df.loc[0, "cost_shs"] = int(cost_shs)
     df.loc[0, "time_grid_design"] = round(end_execution_time - start_execution_time, 1)
-    df.loc[0, "n_distribution_links"] = int(
-        grid.links[grid.links["link_type"] == "distribution"].shape[0]
-    )
-    df.loc[0, "n_connection_links"] = int(
-        grid.links[grid.links["link_type"] == "connection"].shape[0]
-    )
+    df.loc[0, "n_distribution_links"] = int(grid.links[grid.links["link_type"] == "distribution"].shape[0])
+    df.loc[0, "n_connection_links"] = int(grid.links[grid.links["link_type"] == "connection"].shape[0])
     voltage_drop_df = grid.get_voltage_drop_at_nodes()
     df.loc[0, "max_voltage_drop"] = round(float(voltage_drop_df['voltage drop fraction [%]'].max()), 1)
     await inserts.insert_results_df(df, user_id, project_id)
-
-    grid.find_n_links_connected_to_each_pole()
+    grid.allocate_consumers_and_poles_to_branches()
+    grid.sum_up_consumers_depending_on_each_pole()
 
     grid.find_capacity_of_each_link()
     # ToDo:  what is with this last operations? It is not stored in the database.
-    # grid.distribute_grid_cost_among_consumers()
+    #grid.distribute_grid_cost_among_consumers()
+
+    t = 4
 
 
 async def optimize_energy_system(user_id, project_id):
