@@ -251,7 +251,6 @@ async function load_results(project_id) {
             db_nodes_to_js(project_id, false);
             db_links_to_js(project_id);
             plot();
-            document.getElementById('dashboard').style.display = 'block';
         }
         else {
             document.getElementById('dashboard').style.display = 'none';

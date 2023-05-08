@@ -1337,10 +1337,10 @@ async def optimize_grid(user_id, project_id):
     voltage_drop_df = grid.get_voltage_drop_at_nodes()
     df.loc[0, "max_voltage_drop"] = round(float(voltage_drop_df['voltage drop fraction [%]'].max()), 1)
     await inserts.insert_results_df(df, user_id, project_id)
-    grid.allocate_consumers_and_poles_to_branches()
-    grid.sum_up_consumers_depending_on_each_pole()
+    #grid.allocate_consumers_and_poles_to_branches()
+    #grid.sum_up_consumers_depending_on_each_pole()
 
-    grid.find_capacity_of_each_link()
+    #grid.find_capacity_of_each_link()
     # ToDo:  what is with this last operations? It is not stored in the database.
     #grid.distribute_grid_cost_among_consumers()
 
