@@ -58,7 +58,7 @@ def obtain_areas_and_mean_coordinates_from_geojson(df):
         Dict containing the 'id' of each building as a key
         and the surface area of the buildings.
     """
-    # TODO: Remove the area in the final version of the tool
+    retrieve_building_area_from_overpass = False
     if not df.empty:
         df1 = df[df['type'] == 'way']
         df2 = df[df['type'] == 'node'].set_index('id')
@@ -78,16 +78,16 @@ def obtain_areas_and_mean_coordinates_from_geojson(df):
                 latitudes = [x[0] for x in latitudes_longitudes]
                 longitudes = [x[1] for x in latitudes_longitudes]
                 mean_coord = [np.mean(latitudes), np.mean(longitudes)]
-                for edge in range(len(latitudes)):
-                    xy_coordinates.append(conv.xy_coordinates_from_latitude_longitude(
-                        latitude=latitudes_longitudes[edge][0],
-                        longitude=latitudes_longitudes[edge][1],
-                        ref_latitude=reference_coordinate[0],
-                        ref_longitude=reference_coordinate[1]))
-                if len(xy_coordinates) > 2:
-                    surface_area = geometry.Polygon(xy_coordinates).area
-                else:
-                    surface_area = 0
+                surface_area = 0
+                if retrieve_building_area_from_overpass is True:
+                    for edge in range(len(latitudes)):
+                        xy_coordinates.append(conv.xy_coordinates_from_latitude_longitude(
+                            latitude=latitudes_longitudes[edge][0],
+                            longitude=latitudes_longitudes[edge][1],
+                            ref_latitude=reference_coordinate[0],
+                            ref_longitude=reference_coordinate[1]))
+                    if len(xy_coordinates) > 2:
+                        surface_area = geometry.Polygon(xy_coordinates).area
                 building_mean_coordinates[row["id"]] = mean_coord
                 building_surface_areas[row["id"]] = surface_area
         return building_mean_coordinates, building_surface_areas
