@@ -15,7 +15,6 @@ from scipy.optimize import linprog
 from sklearn.datasets import make_blobs
 from sklearn.metrics import precision_recall_curve
 
-from fastapi_app.tools.io import make_folder
 from fastapi_app.tools.grids import Grid
 
 import oemof.solph as solph
@@ -382,10 +381,8 @@ class GridOptimizer(Optimizer):
             for j in range(n_poles):
                 # since the graph does not have a direction, only the upper part of the matrix must be filled
                 if j > i:
-                    graph_matrix[i, j] = grid.distance_between_nodes(
-                        label_node_1=poles.index[i], label_node_2=poles.index[j]
-                    )
-
+                    graph_matrix[i, j] \
+                        = grid.distance_between_nodes(label_node_1=poles.index[i], label_node_2=poles.index[j])
         # obtain the optimal links between all poles (grid_mst) and copy it in the grid object
         grid_mst = minimum_spanning_tree(graph_matrix)
         grid.grid_mst = grid_mst
