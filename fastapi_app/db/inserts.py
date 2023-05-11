@@ -126,7 +126,7 @@ async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id,
         except ValueError:
             df = pd.DataFrame(nodes, index=[0]).round(decimals=6)
         if add and replace:
-            df_existing = await get_nodes_df(user_id, project_id)
+            df_existing = await get_df(models.Nodes, user_id, project_id)
             if not df_existing.empty:
                 df_existing = df_existing[(df_existing["node_type"] != "pole") &
                                           (df_existing["node_type"] != "power-house")]

@@ -948,7 +948,8 @@ async def forward_if_no_task_is_pending(request: Request):
 @app.post("/forward_if_consumer_selection_exists/{project_id}")
 async def forward_if_consumer_selection_exists(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
-    nodes_json = await queries.get_nodes_json(user.id, project_id)
+    nodes = await queries.get_model_instance(models.Nodes, user.id, project_id)
+    nodes_json = nodes.to_json()
     if len(nodes_json['consumer_type']) > 0:
         res = {'forward': True}
     else:
@@ -1058,8 +1059,7 @@ async def optimize_grid(user_id, project_id):
                         tax=0, )
 
 
-    nodes = await queries.get_nodes_json(user_id, project_id)
-    nodes = pd.DataFrame.from_dict(nodes)
+    nodes = await queries.get_df(models.Nodes, user_id, project_id)
 
     if len(nodes) == 0:
         return {"code": "success", "message": "Empty grid cannot be optimized!"}

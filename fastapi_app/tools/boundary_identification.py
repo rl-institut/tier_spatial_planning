@@ -88,6 +88,8 @@ def obtain_areas_and_mean_coordinates_from_geojson(df):
                             ref_longitude=reference_coordinate[1]))
                     if len(xy_coordinates) > 2:
                         surface_area = geometry.Polygon(xy_coordinates).area
+                else:
+                    surface_area = 10 + np.random.uniform(0, 1)  #ToDo: Delete after demand-estimation is implemented
                 building_mean_coordinates[row["id"]] = mean_coord
                 building_surface_areas[row["id"]] = surface_area
         return building_mean_coordinates, building_surface_areas
