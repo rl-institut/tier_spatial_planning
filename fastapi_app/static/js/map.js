@@ -313,6 +313,7 @@ function drawMarker(latitude, longitude, type) {
     L.marker([latitude, longitude], { icon: icon_type }).on('click', markerOnClick).addTo(map)
 }
 
+/*
 function markerOnClick(e)
 { L.DomEvent.stopPropagation(e);
     map_elements = map_elements.filter(function (obj) {
@@ -326,6 +327,7 @@ function markerOnClick(e)
   }
 });
 }
+*/
 
 function drawLinkOnMap(
   latitude_from,

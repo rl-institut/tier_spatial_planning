@@ -15,21 +15,12 @@
                  onclick="consumer_to_db({{ project_id }})"
                  >Previous</a>
                  <a class="btn btn--medium" style="color: #fff"
-                 href="consumer_types?project_id={{ project_id }}"
-                 onclick="consumer_to_db({{ project_id }})">
-                     Next</a>
-             {% elif title == 'Consumer Types' %}
-                 <a class="btn btn--medium btn--hollow btn--previous"
-                 href="consumer_selection?project_id={{ project_id }}"
-                 onclick="update_map_elements(); consumer_to_db({{ project_id }})"
-                 >Previous</a>
-                 <a class="btn btn--medium" style="color: #fff"
                  href="grid_design?project_id={{ project_id }}"
-                 onclick="update_map_elements(); consumer_to_db({{ project_id }})">
+                 onclick="consumer_to_db({{ project_id }})">
                      Next</a>
              {% elif title == 'Grid Design' %}
                  <a class="btn btn--medium btn--hollow btn--previous"
-                 href="consumer_types?project_id={{ project_id }}"
+                 href="consumer_selection?project_id={{ project_id }}"
                  onclick="save_grid_design();">
                      Previous</a>
                  <a class="btn btn--medium" style="color: #fff"

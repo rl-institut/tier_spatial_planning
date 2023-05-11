@@ -32,12 +32,11 @@ document.getElementById('consumer').disabled = true;
 document.getElementById('enterprise').value = '';
 document.getElementById('consumer').value = '';
 
-var markerConsumerSelected = new L.Icon({
+let markerConsumerSelected = new L.Icon({
   iconUrl: "fastapi_app/static/assets/icons/i_consumer_selected.svg",
   iconSize: [12, 12],
 });
 
-function get_consumer_parameters() {}
 
 let marker
 let old_marker
@@ -46,7 +45,8 @@ function markerOnClick(e){
     L.DomEvent.stopPropagation(e);
     if (marker) {
     update_map_elements();
-    };
+    }
+    expandAccordionItem2();
     const index = map_elements.findIndex(obj => obj.latitude === e.latlng.lat && obj.longitude === e.latlng.lng);
     if (index >= 0) {
         marker = map_elements.splice(index, 1)[0];
@@ -61,8 +61,7 @@ function markerOnClick(e){
         .on('click', markerOnClick).addTo(map);
         document.getElementById('longitude').value = marker.longitude;
         document.getElementById('latitude').value = marker.latitude;
-        document.getElementById('floor_area').value = marker.surface_area;
-        if (marker.consumer_type == 'household') {
+        if (marker.consumer_type === 'household') {
            document.getElementById('consumer').value = 'H';
            document.getElementById('enterprise').disabled = true;
            document.getElementById('enterprise').value = '';
@@ -75,7 +74,6 @@ function markerOnClick(e){
         document.getElementById('consumer').disabled = false;
         document.getElementById('longitude').disabled = false;
         document.getElementById('latitude').disabled = false;
-        document.getElementById('floor_area').disabled = false;
     }
   }
 });
@@ -84,7 +82,6 @@ function markerOnClick(e){
 function update_map_elements(){
         marker.longitude = parseFloat(document.getElementById('longitude').value);
         marker.latitude = parseFloat(document.getElementById('latitude').value);
-        marker.surface_area = parseFloat(document.getElementById('floor_area').value);
         if (document.getElementById('consumer').value === 'H') {
            marker.consumer_type = 'household';
            marker.consumer_detail = 'default';
@@ -122,3 +119,4 @@ function move_marker(){
 
 document.getElementById('latitude').addEventListener('change', move_marker);
 document.getElementById('longitude').addEventListener('change', move_marker);
+

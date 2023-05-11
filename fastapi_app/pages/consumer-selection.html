@@ -42,38 +42,187 @@
     <main>
         <section id="section" class="dashboard">
             <div class="row">
-            <form>
-
-
-            </form>
                 <div class="chart" style="height: auto">
-                                    <div class="chart__header">
-                  <h3 style="margin-left: 0; padding: 0 0px;">Determination of consumer geolocation</h3>
-                      <span style="float:right;">
-                      <a>Remove Markers</a>
-                      <label class="switch">
-                      <input type="checkbox" id="toggleswitch">
-                      <span class="slider round"></span>
-                      </label>
-                      <p></p>
-                      </span></div>
-                    <p>Draw a boundary around an area in which buildings should be automatically identified as consumers</p>
-                    <a id="drawPolygon" class="btn btn--medium"  href="#">Draw Polygon</a>
-                    <a id="drawRectangle" class="btn btn--medium"  href="#">Draw Rectangle</a>
-                    <p>Select individual consumer manually on the map by mouse click</p>
-                    <a id="drawMarker" class="btn btn--medium"  href="#">Mark Consumers</a>
-                                <p id="responseMsg"></p>
+                    <div class="accordion" id="accordionExample" style="margin-top: 12px">
+                      <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingOne">
+                          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                            Select Geolocation of Consumers
+                          </button>
+                        </h2>
+                        <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+                          <div class="accordion-body">
+                              <p></p>
+                            <strong>Draw a boundary around an area in which buildings should be automatically identified as consumers</strong>
+                              <p></p>
+                              <p>
+                              <span>
+                              <a>Remove Markers inside Boundary</a>
+                              <label class="switch">
+                              <input type="checkbox" id="toggleswitch">
+                              <span class="slider round"></span>
+                              </label>
+                              </span>
+                              </p>
+                            <a id="drawPolygon" class="btn btn--medium"  href="#">Draw Polygon</a>
+                            <a id="drawRectangle" class="btn btn--medium"  href="#">Draw Rectangle</a>
+                              <p></p>
+                            <p><strong>Define individual consumer manually on the map by mouse click</strong></p>
+                              <p></p>
+                            <a id="drawMarker" class="btn btn--medium"  href="#">Mark Consumers</a>
+                              <p></p>
+                            <p><strong>Define individual consumer manually by specifying the geocoordinates</strong></p>
+                              <p></p>
+                              <div style="display: flex">
+                                <div class="input-group" style="max-width: 200px">
+                                  <input
+                                    type="number"
+                                    class="form-control"
+                                    id="latitude2"
+                                    placeholder="Latitude"
+                                    value=""
+                                    min="2"
+                                    max="16"
+                                    step="0.00001"
+                                    required
+                                  />
+                                  <span class="input-group-text" style="margin-right: 8px;">Degree</span>
+                                </div>
+                                  <div class="input-group" style="max-width: 200px">
+                                  <input
+                                    type="number"
+                                    class="form-control"
+                                    id="longitude2"
+                                    placeholder="Longitude"
+                                    value=""
+                                    min="2"
+                                    max="16"
+                                    step="0.00001"
+                                    required
+                                  />
+                                  <span class="input-group-text" style="margin-right: 8px;">Degree</span>
+                                </div>
+                                <a id="submit" class="btn btn--medium"  href="#" onclick="add_consumer();">Submit</a>
+                              </div>
+                          </div>
+                            </div>
+                        </div>
+                      </div>
+                      <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingTwo">
+                          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            Specify Consumers
+                          </button>
+                        </h2>
+                        <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
+                          <div class="accordion-body">
+                             <p>
+                              <span>
+                              <a>Show advanced Options</a>
+                              <label class="switch">
+                              <input type="checkbox" id="toggleswitch2">
+                              <span class="slider round"></span>
+                              </label>
+                              </span>
+                              </p>
+                            <table>
+                              <tr style="border-bottom:1px solid black">
+                                <th>Consumer Type</th>
+                                <th>Enterprise Category</th>
+                                <th>Latitude</th>
+                                <th>Longitude</th>
+                                <th>Delete Consumer</th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                              </tr>
+                                <TR>
+                                   <TD>
+                                        <div class="input-item" style="margin-right: 30px;">
+                                        <select id="consumer" class="form-select" style="max-width: 150px">
+                                          <option>Houshold</option>
+                                        </select>
+                                      </div>
+                                   </TD>
+                                   <TD>
+                                      <div class="input-item">
+                                        <select id="enterprise" class="form-select" style="max-width: 150px">
+                                          <option>Enterprise</option>
+                                        </select>
+                              </div>
+                                   </TD>
+                                   <TD>
+                              <div class="input-group" style="max-width: 200px">
+                              <input
+                                type="number"
+                                disabled="true"
+                                class="form-control"
+                                id="latitude"
+                                placeholder=""
+                                value=""
+                                min="2"
+                                max="16"
+                                step="0.00001"
+                                required
+                              />
+                              <span class="input-group-text">Degree</span>
+                            </div></TD>
+                                   <TD>
+                              <div class="input-group" style="max-width: 200px">
+                              <input
+                                type="number"
+                                disabled="true"
+                                class="form-control"
+                                id="longitude"
+                                placeholder=""
+                                value=""
+                                min="2"
+                                max="16"
+                                step="0.00001"
+                                required
+                              />
+                              <span class="input-group-text">Degree</span>
+                            </div>
+                                   </TD>
+                                    <TD>
+                                        <a id="submit"
+                                           class="btn btn--medium"
+                                           style="height: 32px; display: flex; align-items: center; justify-content: center;"
+                                           onclick="delete_consumer();"
+                                           href="#">Delete</a>
+                                    </TD>
+                                   <TD><span style="float:right;"><a>&nbsp;
+                                   </a></span></TD>
+                                   <TD><span style="float:right;"><a>&nbsp;
+                                   </a></span></TD>
+                                   <TD><span style="float:right;"><a>&nbsp;
+                                   </a></span></TD>
+                                </TR>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
 
-                    <div id="search-container">
-  <input type="text" id="search-input" placeholder="Search location within Nigeria" class="input-group-text" style="text-align: left"/>
-</div>
-                    <p></p>
-            <div id="map" style="min-height: 700px; min-width: 1000px;"></div>
+                    <div class="accordion-item">
+                        <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree">
+                          <div class="accordion-body">
+                            <a>Advanced Option</a>
+                            <hr>
+                              <p>Blabla</p>
+                          </div>
+                        </div>
+                      </div>
+
+                <p id="responseMsg"></p>
+                <div id="search-container">
+                        <input type="text" id="search-input" placeholder="Search location within Nigeria" class="input-group-text" style="text-align: left"/>
                 </div>
-
-        </div>
+                <p></p>
+                <div id="map" style="min-height: 700px; min-width: 1000px; margin-bottom: 10px"></div>
+                </div></div>
+            </div>
         </section>
-        <div id=noSelection class="modal">
+    <div id=noSelection class="modal">
         <form class="modal-content" action="/action_page.php">
             <div class="container">
                 <h1>No Selection</h1>
@@ -91,4 +240,62 @@
     {% include '_scripts.html' %}
 <script src="{{ url_for('static', path='js/integrate_map.js') }}"></script>
 <script src="{{ url_for('static', path='js/map_drawings.js') }}"></script>
+<script src="{{ url_for('static', path='js/consumer_types.js') }}"></script>
+<script>
+    function expandAccordionItem2() {
+  const accordion = new bootstrap.Collapse(document.getElementById('collapseTwo'), {
+    toggle: false
+  });
+  accordion.show();
+}
+document.getElementById('toggleswitch2').addEventListener('change', function (event) {
+  const accordionItem3 = new bootstrap.Collapse(document.getElementById('collapseThree'), {
+    toggle: false
+  });
+
+  if (event.target.checked) {
+    accordionItem3.show();
+  } else {
+    accordionItem3.hide();
+  }
+});
+
+
+document.querySelector('#headingTwo .accordion-button').addEventListener('click', function () {
+  const accordionItem2 = document.getElementById('collapseTwo');
+  const accordionItem3 = new bootstrap.Collapse(document.getElementById('collapseThree'), {
+    toggle: false
+  });
+  const toggleSwitch2 = document.getElementById('toggleswitch2');
+
+  // Check if the accordion item 2 is currently collapsed
+  if (!accordionItem2.classList.contains('show')) {
+    accordionItem3.hide();
+  } else if (toggleSwitch2.checked) {
+    accordionItem3.show();
+  }
+});
+
+function add_consumer() {
+    let lat = document.getElementById('latitude2').value;
+    let lng = document.getElementById('longitude2').value;
+    add_single_consumer_to_array(lat, lng, 'manual', 'consumer')
+    drawMarker(lat, lng,'consumer');
+}
+
+function delete_consumer() {
+    let lat = parseFloat(document.getElementById('latitude').value);
+    let lng = parseFloat(document.getElementById('longitude').value);
+    map_elements = map_elements.filter(function (obj) {
+        return obj.latitude !== lat && obj.longitude !== lng;});
+    map.eachLayer(function (layer) {
+      if (layer instanceof L.Marker) {
+        let markerLatLng = layer.getLatLng();
+        if (markerLatLng.lat === lat && markerLatLng.lng === lng) {
+          map.removeLayer(layer);
+        }
+      }
+    });
+}
+</script>
 </html>
