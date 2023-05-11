@@ -84,7 +84,7 @@ async def home(request: Request):
             if user.task_id is not None and project.project_id == user.project_id:
                 status = worker.AsyncResult(user.task_id).status.lower()
                 if status in ['success', 'failure', 'revoked']:
-                    project_setup = await queries.get_project_setup_of_user(user.id, user.project_id)
+                    project_setup = await queries.get_model_instance(models.ProjectSetup, user.id, user.project_id)
                     user.task_id = ''
                     user.project_id = None
                     await inserts.update_model_by_user_id(user)
@@ -275,7 +275,7 @@ async def calculating(request: Request):
 @app.post("/set_email_notification/{project_id}/{is_active}")
 async def set_email_notification(project_id: int, is_active: bool, request: Request):
     user = await accounts.get_user_from_cookie(request)
-    project_setup = await queries.get_project_setup_of_user(user.id, project_id)
+    project_setup = await queries.get_model_instance(models.ProjectSetup, user.id, project_id)
     project_setup.email_notification = is_active
     await inserts.merge_model(project_setup)
 
@@ -283,7 +283,7 @@ async def set_email_notification(project_id: int, is_active: bool, request: Requ
 @app.get("/get_demand_coverage_data/{project_id}")
 async def get_demand_coverage_data(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
-    df = await queries.get_demand_coverage_df(user.id, project_id)
+    df = await queries.get_df(models.DemandCoverage, user.id, project_id, is_timeseries=True)
     df = df.reset_index(drop=True)
     return json.loads(df.to_json())
 
@@ -300,7 +300,7 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
     user = await accounts.get_user_from_cookie(request)
     if project_id == 'undefined':
         project_id = get_project_id_from_request(request)
-    df = await queries.get_nodes_df(user.id, project_id)
+    df = await queries.get_df(models.Nodes, user.id, project_id)
     if not df.empty:
         df = df[['latitude', 'longitude', 'how_added', 'node_type', 'surface_area', 'consumer_type', 'consumer_detail']]
         if markers_only is True:
@@ -325,6 +325,7 @@ async def consumer_to_db(project_id: str, map_elements: models.MapDataRequest, r
         await inserts.remove(models.Nodes, user.id, project_id)
         return
     df = df[['latitude', 'longitude', 'how_added', 'node_type', 'surface_area', 'consumer_type', 'consumer_detail']]
+    df.loc[df['surface_area'] == 0] = 10 + np.random.uniform(0, 1)
     df['surface_area'] = df['surface_area'].fillna(0)
     df['consumer_type'] = df['consumer_type'].fillna('household')
     df['consumer_detail'] = df['consumer_detail'].fillna('default')
@@ -352,7 +353,7 @@ async def consumer_to_db(project_id: str, map_elements: models.MapDataRequest, r
 @app.get("/load_results/{project_id}")
 async def load_results(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
-    df = await queries.get_results_df(user.id, project_id)
+    df = await queries.get_df(models.Results, user.id, project_id)
     if df.empty:
         return {}
     df["average_length_distribution_cable"] = df["length_distribution_cable"] / df["n_distribution_links"]
@@ -392,7 +393,7 @@ async def load_previous_data(page_name, request: Request):
             project_id = int(project_id)
         except (ValueError, TypeError):
             return None
-        project_setup = await queries.get_project_setup_of_user(user.id, project_id)
+        project_setup = await queries.get_model_instance(models.ProjectSetup, user.id, project_id)
         if hasattr(project_setup, 'start_date'):
             project_setup.start_date = str(project_setup.start_date.date())
             return project_setup
@@ -403,7 +404,7 @@ async def load_previous_data(page_name, request: Request):
             project_id = int(project_id)
         except (ValueError, TypeError):
             return None
-        grid_design = await queries.get_grid_design_of_user(user.id, project_id)
+        grid_design = await queries.get_model_instance(models.GridDesign, user.id, project_id)
         return grid_design
 
 
@@ -648,7 +649,7 @@ def get_project_id_from_request(request: Request):
 @app.get("/get_optimal_capacities/{project_id}")
 async def get_optimal_capacities(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
-    df = await queries.get_results_df(user.id, project_id)
+    df = await queries.get_df(models.Results, user.id, project_id)
     optimal_capacities = {}
     optimal_capacities["pv"] = str(df.loc[0, "pv_capacity"])
     optimal_capacities["battery"] = str(df.loc[0, "battery_capacity"])
@@ -664,7 +665,7 @@ async def get_optimal_capacities(project_id, request: Request):
 @app.get("/get_lcoe_breakdown/{project_id}")
 async def get_lcoe_breakdown(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
-    df = await queries.get_results_df(user.id, project_id)
+    df = await queries.get_df(models.Results, user.id, project_id)
     lcoe_breakdown = {}
     lcoe_breakdown["renewable_assets"] = str(df.loc[0, "cost_renewable_assets"])
     lcoe_breakdown["non_renewable_assets"] = str(df.loc[0, "cost_non_renewable_assets"])
@@ -678,7 +679,7 @@ async def get_lcoe_breakdown(project_id, request: Request):
 async def get_data_for_sankey_diagram(project_id, request: Request):
     sankey_data = {}
     user = await  accounts.get_user_from_cookie(request)
-    df = await queries.get_results_df(user.id, project_id)
+    df = await queries.get_df(models.Results, user.id, project_id)
     sankey_data["fuel_to_diesel_genset"] = str(df.loc[0, "fuel_to_diesel_genset"])
     sankey_data["diesel_genset_to_rectifier"] = str(df.loc[0, "diesel_genset_to_rectifier"])
     sankey_data["diesel_genset_to_demand"] = str(df.loc[0, "diesel_genset_to_demand"])
@@ -777,7 +778,7 @@ async def database_add_remove_manual(add_remove: str, project_id, add_node_reque
     user = await accounts.get_user_from_cookie(request)
     nodes = models.Nodes(**dict(add_node_request)).to_dict()
     if add_remove == "remove":
-        df = await queries.get_nodes_df(user.id, project_id)
+        df = await queries.get_df(models.Nodes, user.id, project_id)
         df = df[(df["node_type"] != "pole") & (df["node_type"] != "power-house")]
         for index in df.index:
             if (round(add_node_request.latitude, 6) == df.to_dict()["latitude"][index]) and \
@@ -909,7 +910,7 @@ def queue_remove_anonymous_users(user_email, user_id):
 
 async def optimization(user_id, project_id):
     await remove_results(user_id, project_id)
-    project_setup = await queries.get_project_setup_of_user(user_id, project_id)
+    project_setup = await queries.get_model_instance(models.ProjectSetup, user_id, project_id)
     project_setup.status = "queued"
     await inserts.merge_model(project_setup)
     # ToDo: Remove known machines
@@ -993,7 +994,7 @@ async def waiting_for_results(request: Request, data: models.TaskInfo):
         res['finished'] = True
     if res['finished'] is True:
         user = await accounts.get_user_from_cookie(request)
-        project_setup = await queries.get_project_setup_of_user(user.id, user.project_id)
+        project_setup = await queries.get_model_instance(models.ProjectSetup, user.id, user.project_id)
         if project_setup is not None:
             if 'status' in locals():
                 if status == 'success':
@@ -1323,19 +1324,21 @@ async def optimize_grid(user_id, project_id):
     end_execution_time = time.monotonic()
 
     # store data for showing in the final results
-    df = await queries.get_results_df(user_id, project_id)
-    df.loc[0, "n_consumers"] = len(grid.consumers())
-    df.loc[0, "n_shs_consumers"] = n_shs_consumers
-    df.loc[0, "n_poles"] = len(grid.poles())
-    df.loc[0, "length_distribution_cable"] = int(grid.links[grid.links.link_type == "distribution"]["length"].sum())
-    df.loc[0, "length_connection_cable"] = int(grid.links[grid.links.link_type == "connection"]["length"].sum())
-    df.loc[0, "cost_grid"] = int(grid.cost())
-    df.loc[0, "cost_shs"] = int(cost_shs)
-    df.loc[0, "time_grid_design"] = round(end_execution_time - start_execution_time, 1)
-    df.loc[0, "n_distribution_links"] = int(grid.links[grid.links["link_type"] == "distribution"].shape[0])
-    df.loc[0, "n_connection_links"] = int(grid.links[grid.links["link_type"] == "connection"].shape[0])
+    results = models.Results()
+    results.n_consumers = len(grid.consumers())
+    results.n_shs_consumers = n_shs_consumers
+    results.n_poles = len(grid.poles())
+    results.length_distribution_cable = int(grid.links[grid.links.link_type == "distribution"]["length"].sum())
+    results.length_connection_cable = int(grid.links[grid.links.link_type == "connection"]["length"].sum())
+    results.cost_grid = int(grid.cost())
+    results.cost_shs = int(cost_shs)
+    results.time_grid_design = round(end_execution_time - start_execution_time, 1)
+    results.n_distribution_links = int(grid.links[grid.links["link_type"] == "distribution"].shape[0])
+    results.n_connection_links = int(grid.links[grid.links["link_type"] == "connection"].shape[0])
     voltage_drop_df = grid.get_voltage_drop_at_nodes()
-    df.loc[0, "max_voltage_drop"] = round(float(voltage_drop_df['voltage drop fraction [%]'].max()), 1)
+    results.max_voltage_drop = round(float(voltage_drop_df['voltage drop fraction [%]'].max()), 1)
+    df = results.to_df()
+
     await inserts.insert_results_df(df, user_id, project_id)
     #grid.allocate_consumers_and_poles_to_branches()
     #grid.sum_up_consumers_depending_on_each_pole()
@@ -1392,7 +1395,7 @@ async def optimize_energy_system(user_id, project_id):
     # TODO: -2 must actually be -1, but for some reason, the co2-emission csv file has an additional empty row
     co2_savings = df.loc[:, "co2_savings"][-2]  # takes the last element of the cumulative sum
     # store data for showing in the final results
-    df = await queries.get_results_df(user_id, project_id)
+    df = await queries.get_df(models.Results, user_id, project_id)
     df.loc[0, "cost_renewable_assets"] = ensys_opt.total_renewable
     df.loc[0, "cost_non_renewable_assets"] = ensys_opt.total_non_renewable
     df.loc[0, "cost_fuel"] = ensys_opt.total_fuel
@@ -1482,7 +1485,7 @@ async def optimize_energy_system(user_id, project_id):
     df['h'] = np.arange(1, len(ensys_opt.sequences_genset) + 1)
     df = df.round(3)
     await inserts.insert_df(models.DurationCurve, df, user_id, project_id)
-    project_setup = await queries.get_project_setup_of_user(user_id, project_id)
+    project_setup = await queries.get_model_instance(models.ProjectSetup, user_id, project_id)
     project_setup.status = "finished"
     if project_setup.email_notification is True:
         user = await queries.get_user_by_id(user_id)
@@ -1591,64 +1594,18 @@ def identify_shs(shs_identification_request: models.ShsIdentificationRequest):
 # *                     IMPORT / EXPORT                      */
 # ************************************************************/
 
+@app.post("/export_data/{project_id}")
+async def export_data(project_id, request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    df = await queries.get_df(models.DemandCoverage.id, user.id, project_id)
+    df = await queries.queries.get_df(models.Results, user.id, project_id)
+    df = await queries.get_df(models.EnergyFlow, user.id, project_id)
+    df = await queries.get_df(models.DurationCurve, user.id, project_id)
+    df = await queries.get_df(models.Emissions, user.id, project_id)
 
-@app.post("/export_data/")
-async def export_data(generate_export_file_request: models.GenerateExportFileRequest):
-    """
-    Generates an Excel file from the database tables (*.csv files) and the
-    webapp settings. The file is stored in fastapi_app/import_export/temp.xlsx
+    # parameters
 
-    Parameters
-    ----------
-    generate_export_file_request (fastapi_app.models.GenerateExportFileRequest):
-        Basemodel request object containing the data send to the request as attributes.
-    """
-
-    # read nodes and links from *.csv files
-    # then convert their type from dictionary to data frame
-    nodes = await database_read(nodes_or_links="nodes")
-    links = await database_read(nodes_or_links="links")
-    nodes_df = pd.DataFrame(nodes)
-    links_df = pd.DataFrame(links)
-
-    # get all settings defined in the web app
-    settings = [element for element in generate_export_file_request]
-    settings_df = pd.DataFrame(
-        {"Setting": [x[0] for x in settings], "value": [x[1] for x in settings]}
-    ).set_index("Setting")
-
-    # create the *.xlsx file with sheets for nodes, links and settings
-    with pd.ExcelWriter(full_path_import_export) as writer:  # pylint: disable=abstract-class-instantiated
-        nodes_df.to_excel(
-            excel_writer=writer,
-            sheet_name="nodes",
-            header=nodes_df.columns,
-            index=False,
-        )
-        links_df.to_excel(
-            excel_writer=writer,
-            sheet_name="links",
-            header=links_df.columns,
-            index=False,
-        )
-        settings_df.to_excel(excel_writer=writer, sheet_name="settings")
-
-    # TO DO: formatting of the excel file
-
-
-@app.get("/download_export_file",
-         responses={200: {"description": "xlsx file containing the information about the configuration.",
-                          "content": {"static/io/test_excel_node.xlsx": {"example": "No example available."}}, }}, )
-async def download_export_file():
-    file_name = "temp.xlsx"
-    # Download xlsx file
-    file_path = os.path.join(config.directory_parent, f"import_export/{file_name}")
-    if os.path.exists(file_path):
-        return FileResponse(path=file_path,
-                            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                            filename="backup.xlsx", )
-    else:
-        return {"error": "File not found!"}
+    # timeseries
 
 
 @app.post("/import_data/{project_id}")

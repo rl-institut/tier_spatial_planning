@@ -85,103 +85,47 @@ async def get_energy_system_design(user_id, project_id):
     return energy_system_design
 
 
-async def get_nodes_df(user_id, project_id):
-    user_id, project_id = int(user_id), int(project_id)
-    query = select(models.Nodes).where(models.Nodes.id == user_id, models.Nodes.project_id == project_id)
-    async with get_async_session_maker() as async_db:
-        res = await async_db.execute(query)
-        nodes = res.scalars().fetchall()
-    nodes = [node.to_dict() for node in nodes]
-    df = pd.DataFrame.from_records(nodes)
-    if df.empty:
-        df = models.Nodes().to_df().iloc[0:0]
-    df = df.drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
-    return df
-
-
-
 async def get_nodes_json(user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
-    df = await get_nodes_df(user_id, project_id)
+    df = await get_df(models.Nodes, user_id, project_id)
     nodes_json = json.loads(df.to_json())
     return nodes_json
-
-
-async def get_links_df(user_id, project_id):
-    user_id, project_id = int(user_id), int(project_id)
-    query = select(models.Links).where(models.Links.id == user_id, models.Links.project_id == project_id)
-    async with get_async_session_maker() as async_db:
-        res = await async_db.execute(query)
-    links = res.scalars().all()
-    links = [link.to_dict() for link in links]
-    df = pd.DataFrame.from_records(links)
-    if df.empty:
-        df = models.Links().to_df().iloc[0:0]
-    df = df.drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
-    return df
 
 
 async def get_links_json(user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
-    df = await get_links_df(user_id, project_id)
+    df = await get_df(models.Links, user_id, project_id)
     nodes_json = json.loads(df.to_json())
     return nodes_json
 
 
-async def get_grid_design_of_user(user_id, project_id):
-    user_id, project_id = int(user_id), int(project_id)
-    query = select(models.GridDesign).where(models.GridDesign.id == user_id,
-                                                     models.GridDesign.project_id == project_id)
-    async with get_async_session_maker() as async_db:
-        res = await async_db.execute(query)
-        grid_design = res.scalars().first()
-    return grid_design
-
-
-async def get_input_df(user_id, project_id):
-    user_id, project_id = int(user_id), int(project_id)
-    project_setup = await get_project_setup_of_user(user_id, project_id)
-    grid_design = await get_grid_design_of_user(user_id, project_id)
-    df = pd.concat([project_setup.to_df(), grid_design.to_df()], axis=1).drop(columns=['id', 'project_id'])
-    return df
-
-
-async def get_results_df(user_id, project_id):
-    user_id, project_id = int(user_id), int(project_id)
-    query = select(models.Results).where(models.Results.id == user_id, models.Results.project_id == project_id)
-    async with get_async_session_maker() as async_db:
-        res = await async_db.execute(query)
-    results = res.scalars().all()
-    results = [result.to_dict() for result in results]
-    df = pd.DataFrame.from_records(results)
-    if not df.empty:
-        df = df.drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
-    return df
-
-
-async def get_demand_coverage_df(user_id, project_id):
-    user_id, project_id = int(user_id), int(project_id)
-    query = select(models.DemandCoverage)\
-        .where(models.DemandCoverage.id == user_id, models.DemandCoverage.project_id == project_id)
-    async with get_async_session_maker() as async_db:
-        res = await async_db.execute(query)
-    results = res.scalars().all()
-    results = [result.to_dict() for result in results]
-    df = pd.DataFrame.from_records(results)
-    if not df.empty:
-        df = df.drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
-    if 'dt' in df.columns:
-        df = df.set_index('dt')
-    return df
-
-
-async def get_df(model, user_id, project_id):
+async def get_model_instance(model, user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     query = select(model).where(model.id == user_id, model.project_id == project_id)
     async with get_async_session_maker() as async_db:
         res = await async_db.execute(query)
-    results = res.scalars().all()
-    results = [result.to_dict() for result in results]
+        model_instance = res.scalars().first()
+    return model_instance
+
+
+async def get_input_df(user_id, project_id):
+    user_id, project_id = int(user_id), int(project_id)
+    project_setup = await get_df(models.ProjectSetup, user_id, project_id, is_timeseries=False)
+    grid_design = await get_df(models.GridDesign, user_id, project_id, is_timeseries=False)
+    df = pd.concat([project_setup, grid_design], axis=1)
+    return df
+
+
+async def get_df(model, user_id, project_id, is_timeseries=True):
+    user_id, project_id = int(user_id), int(project_id)
+    query = select(model).where(model.id == user_id, model.project_id == project_id)
+    async with get_async_session_maker() as async_db:
+        res = await async_db.execute(query)
+    if is_timeseries:
+        results = res.scalars().all()
+        results = [result.to_dict() for result in results]
+    else:
+        results = [res.scalars().one().to_dict()]
     df = pd.DataFrame.from_records(results)
     if not df.empty:
         df = df.drop(columns=['id', 'project_id']).dropna(how='all', axis=0)

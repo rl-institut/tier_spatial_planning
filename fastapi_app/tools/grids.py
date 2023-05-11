@@ -342,8 +342,8 @@ class Grid:
         consumer_type="household",
         consumer_detail="default",
         surface_area=0,
-        peak_demand=0,  # FIXME: must be read automatically
-        average_consumption=0,  # FIXME: must be read automatically
+        peak_demand=1,  # FIXME: must be read automatically
+        average_consumption=1,  # FIXME: must be read automatically
         distance_to_load_center=0,
         is_connected=True,
         how_added="automatic",
