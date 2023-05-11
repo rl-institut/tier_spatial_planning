@@ -4,8 +4,8 @@ import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from fastapi_app.db.config import db_host, db_name, db_user_name, PW, db_port
-from fastapi_app.db.models import Base
+from fastapi_app.io.db.config import db_host, db_name, db_user_name, PW, db_port
+from fastapi_app.io.db.models import Base
 from sqlalchemy.exc import SQLAlchemyError
 from mysql.connector import DatabaseError, ProgrammingError, InterfaceError
 from pymongo import MongoClient

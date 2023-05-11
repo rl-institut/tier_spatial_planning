@@ -10,15 +10,13 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from passlib.context import CryptContext
 from sqlalchemy import select
-from fastapi_app.db.models import User
+from fastapi_app.io.db import config
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import jwt, JWTError
-from fastapi_app.db import config
 from fastapi.security.utils import get_authorization_scheme_param
-from fastapi_app.db.database import get_async_session_maker
-from fastapi_app.db import queries, inserts
-
+from fastapi_app.io.db.database import get_async_session_maker
+from fastapi_app.io.db import inserts, queries, models
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -77,7 +75,7 @@ def send_activation_link(mail, guid):
 
 
 def send_mail(to_adress, msg, subject='Activate your PeopleSun-Account'):
-    from fastapi_app.db.config import MAIL_PW
+    from fastapi_app.io.db.config import MAIL_PW
     smtp_server = config.MAIL_HOST
     smtp_port = config.MAIL_PORT
     smtp_username = config.MAIL_ADRESS
@@ -147,7 +145,7 @@ async def _get_user_from_token(token):
     except JWTError:
         return None
     # if isinstance(db, scoped_session):
-    query = select(User).where(User.email == username)
+    query = select(models.User).where(models.User.email == username)
     async with get_async_session_maker() as async_db:
         res = await async_db.execute(query)
         user = res.scalars().first()

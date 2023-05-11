@@ -8,18 +8,19 @@ import random
 from captcha.image import ImageCaptcha
 import pandas as pd
 import numpy as np
+
+import fastapi_app.io.schema
 from celery_worker import worker
 import os
 from datetime import datetime, timedelta, timezone
 from collections import defaultdict
-from typing import Any, Dict, List, Union, Tuple
+from typing import Any, Dict, List, Union
 import time
-import socket
 import fastapi_app.tools.boundary_identification as bi
 import fastapi_app.tools.coordinates_conversion as conv
 import fastapi_app.tools.shs_identification as shs_ident
-import fastapi_app.db.models as models
-from fastapi import FastAPI, Request, Response, BackgroundTasks
+import fastapi_app.io.db.models as models
+from fastapi import FastAPI, Request, Response
 from fastapi.responses import RedirectResponse, FileResponse, JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
@@ -29,8 +30,8 @@ from fastapi_app.tools.optimizer import Optimizer, GridOptimizer, EnergySystemOp
 from fastapi_app.tools.account_helpers import Hasher, create_guid, is_valid_credentials, send_activation_link, activate_mail, \
     authenticate_user, create_access_token, send_mail
 from fastapi_app.tools import account_helpers as accounts
-from fastapi_app.db import config
-from fastapi_app.db import queries, inserts
+from fastapi_app.io.db import config
+from fastapi_app.io.db import inserts, queries
 import pyutilib.subprocess.GlobalData
 
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
@@ -173,7 +174,7 @@ async def reset_password(request: Request, form_data: Dict[str, str]):
             else:
                 validation = False
                 res = 'The password needs to be at least 8 characters long'
-            return models.ValidRegistration(validation=validation, msg=res)
+            return fastapi_app.io.schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.get("/account_overview")
@@ -314,7 +315,7 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
 
 
 @app.post("/consumer_to_db/{project_id}")
-async def consumer_to_db(project_id: str, map_elements: models.MapDataRequest, request: Request):
+async def consumer_to_db(project_id: str, map_elements: fastapi_app.io.schema.MapDataRequest, request: Request):
     user = await accounts.get_user_from_cookie(request)
     df = pd.DataFrame.from_records(map_elements.map_elements)
     if df.empty:
@@ -435,7 +436,7 @@ async def add_user_to_db(data: Dict[str, str]):
             send_activation_link(user.email, guid)
         else:
             res = [False, 'Please enter a valid captcha']
-    return models.ValidRegistration(validation=res[0], msg=res[1])
+    return fastapi_app.io.schema.ValidRegistration(validation=res[0], msg=res[1])
 
 
 @app.post("/anonymous_login/")
@@ -466,11 +467,11 @@ async def anonymous_login(data: Dict[str, str], response: Response):
         validation, res = True, ''
     else:
         validation, res = False, 'Please enter a valid captcha'
-    return models.ValidRegistration(validation=validation, msg=res)
+    return fastapi_app.io.schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/login/")
-async def login(response: Response, credentials: models.Credentials):
+async def login(response: Response, credentials: fastapi_app.io.schema.Credentials):
     if isinstance(credentials.email, str) and len(credentials.email) > 3:
         is_valid, res = await authenticate_user(credentials.email, credentials.password)
         if is_valid:
@@ -481,10 +482,10 @@ async def login(response: Response, credentials: models.Credentials):
             del credentials
             access_token = create_access_token(data={"sub": res.email}, expires_delta=access_token_expires)
             response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
-            return models.ValidRegistration(validation=True, msg="")
+            return fastapi_app.io.schema.ValidRegistration(validation=True, msg="")
         else:
             del credentials
-            return models.ValidRegistration(validation=False, msg=res)
+            return fastapi_app.io.schema.ValidRegistration(validation=False, msg=res)
 
 
 @app.post("/consent_cookie/")
@@ -496,7 +497,7 @@ async def consent_cookie(response: Response):
 
 
 @app.post("/change_email/")
-async def change_email(request: Request, credentials: models.Credentials):
+async def change_email(request: Request, credentials: fastapi_app.io.schema.Credentials):
     if isinstance(credentials.email, str) and len(credentials.email) > 3:
         user = await accounts.get_user_from_cookie(request)
         is_valid, res = await authenticate_user(user.email, credentials.password)
@@ -514,11 +515,11 @@ async def change_email(request: Request, credentials: models.Credentials):
                 res = 'Please enter a valid email address.'
         else:
             del credentials
-        return models.ValidRegistration(validation=validation, msg=res)
+        return fastapi_app.io.schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/change_pw/")
-async def change_pw(request: Request, passwords: models.ChangePW):
+async def change_pw(request: Request, passwords: fastapi_app.io.schema.ChangePW):
     user = await accounts.get_user_from_cookie(request)
     is_valid, res = await authenticate_user(user.email, passwords.old_password)
     validation = False
@@ -532,7 +533,7 @@ async def change_pw(request: Request, passwords: models.ChangePW):
             res = 'The password needs to be at least 8 characters long'
     else:
         del passwords
-    return models.ValidRegistration(validation=validation, msg=res)
+    return fastapi_app.io.schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/send_reset_password_email/")
@@ -555,11 +556,11 @@ async def send_reset_password_email(data: Dict[str, str], request: Request):
             validation, res = True, 'Please click the link we sent to your email.'
         else:
             validation, res = False, 'Please enter a valid captcha'
-    return models.ValidRegistration(validation=validation, msg=res)
+    return fastapi_app.io.schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/delete_account/")
-async def change_pw(response: Response, request: Request, form_data: models.Password):
+async def change_pw(response: Response, request: Request, form_data: fastapi_app.io.schema.Password):
     user = await accounts.get_user_from_cookie(request)
     is_valid, res = await authenticate_user(user.email, form_data.password)
     validation = False
@@ -568,7 +569,7 @@ async def change_pw(response: Response, request: Request, form_data: models.Pass
         response.delete_cookie("access_token")
         res = 'Account removed'
         validation = True
-    return models.ValidRegistration(validation=validation, msg=res)
+    return fastapi_app.io.schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/logout/")
@@ -584,13 +585,13 @@ async def query_account_data(request: Request):
         name = user.email
         if 'anonymous__' in name:
             name = name.split('__')[0]
-        return models.UserOverview(email=name)
+        return fastapi_app.io.schema.UserOverview(email=name)
     else:
-        return models.UserOverview(email="")
+        return fastapi_app.io.schema.UserOverview(email="")
 
 
 @app.post("/has_cookie/")
-async def has_cookie(request: Request, has_cookies: models.HasCookies):
+async def has_cookie(request: Request, has_cookies: fastapi_app.io.schema.HasCookies):
     if has_cookies.access_token:
         token = request.cookies.get("access_token")
         if token is None:
@@ -603,7 +604,7 @@ async def has_cookie(request: Request, has_cookies: models.HasCookies):
 
 
 @app.post("/save_grid_design/")
-async def save_grid_design(request: Request, data: models.SaveGridDesign):
+async def save_grid_design(request: Request, data: fastapi_app.io.schema.SaveGridDesign):
     user = await accounts.get_user_from_cookie(request)
     project_id = get_project_id_from_request(request)
     data.grid_design['id'] = user.id
@@ -614,7 +615,7 @@ async def save_grid_design(request: Request, data: models.SaveGridDesign):
 
 
 @app.post("/save_project_setup/{project_id}")
-async def save_project_setup(project_id, request: Request, data: models.SaveProjectSetup):
+async def save_project_setup(project_id, request: Request, data: fastapi_app.io.schema.SaveProjectSetup):
     user = await accounts.get_user_from_cookie(request)
     # project_id = get_project_id_from_request(request)
     timestamp = pd.Timestamp.now()
@@ -627,7 +628,7 @@ async def save_project_setup(project_id, request: Request, data: models.SaveProj
 
 
 @app.post("/save_energy_system_design/")
-async def save_energy_system_design(request: Request, data: models.OptimizeEnergySystemRequest):
+async def save_energy_system_design(request: Request, data: fastapi_app.io.schema.OptimizeEnergySystemRequest):
     user = await accounts.get_user_from_cookie(request)
     project_id = get_project_id_from_request(request)
     df = data.to_df()
@@ -717,7 +718,7 @@ async def get_co2_emissions_data(project_id, request: Request):
 
 
 @app.post("/add_buildings_inside_boundary")
-async def add_buildings_inside_boundary(js_data: models.MapData, request: Request):
+async def add_buildings_inside_boundary(js_data: fastapi_app.io.schema.MapData, request: Request):
     user = await accounts.get_user_from_cookie(request)
     boundary_coordinates = js_data.boundary_coordinates[0][0]
     df = pd.DataFrame.from_dict(boundary_coordinates).rename(columns={'lat': 'latitude', 'lng': 'longitude'})
@@ -761,7 +762,7 @@ async def add_buildings_inside_boundary(js_data: models.MapData, request: Reques
 
 
 @app.post("/remove_buildings_inside_boundary")
-async def remove_buildings_inside_boundary(data: models.MapData):
+async def remove_buildings_inside_boundary(data: fastapi_app.io.schema.MapData):
     df = pd.DataFrame.from_records(data.map_elements)
     if not df.empty:
         boundaries = pd.DataFrame.from_records(data.boundary_coordinates[0][0]).values.tolist()
@@ -773,7 +774,7 @@ async def remove_buildings_inside_boundary(data: models.MapData):
 
 # add new manually-selected nodes to the *.csv file
 @app.post("/database_add_remove_manual/{add_remove}/{project_id}")
-async def database_add_remove_manual(add_remove: str, project_id, add_node_request: models.AddNodeRequest,
+async def database_add_remove_manual(add_remove: str, project_id, add_node_request: fastapi_app.io.schema.AddNodeRequest,
                                      request: Request):
     user = await accounts.get_user_from_cookie(request)
     nodes = models.Nodes(**dict(add_node_request)).to_dict()
@@ -970,7 +971,7 @@ async def start_calculation(project_id, request: Request):
 
 
 @app.post('/waiting_for_results/')
-async def waiting_for_results(request: Request, data: models.TaskInfo):
+async def waiting_for_results(request: Request, data: fastapi_app.io.schema.TaskInfo):
     max_time = 3600 * 24 * 7
     t_wait = 5
     if data.time == 10:
@@ -1024,7 +1025,7 @@ async def has_pending_task(project_id, request: Request):
 
 
 @app.post('/revoke_task/')
-async def revoke_task(request: Request, data: models.TaskID):
+async def revoke_task(request: Request, data: fastapi_app.io.schema.TaskID):
     celery_task = worker.AsyncResult(data.task_id)
     celery_task.revoke(terminate=True, signal='SIGKILL')
     user = await accounts.get_user_from_cookie(request)
@@ -1498,7 +1499,7 @@ async def optimize_energy_system(user_id, project_id):
 
 
 @app.post("/shs_identification/")
-def identify_shs(shs_identification_request: models.ShsIdentificationRequest):
+def identify_shs(shs_identification_request: fastapi_app.io.schema.ShsIdentificationRequest):
     print("starting shs_identification...")
     # res = db.execute("select * from nodes")
     # nodes = res.fetchall()

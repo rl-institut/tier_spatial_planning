@@ -3,10 +3,9 @@ import pandas as pd
 import sqlalchemy as sa
 from sqlalchemy import select
 import flatten_dict
-from flatten_dict.reducers import make_reducer
 from flatten_dict.splitters import make_splitter
-from fastapi_app.db import models
-from fastapi_app.db.database import get_async_session_maker
+from fastapi_app.io.db import models
+from fastapi_app.io.db.database import get_async_session_maker
 
 async def get_user_by_username(username):
     query =select(models.User).where(models.User.email == username)
@@ -34,7 +33,7 @@ async def get_user_by_guid(guid):
 async def get_max_project_id_of_user(user_id):
     subqry = select(sa.func.max(models.ProjectSetup.project_id)).filter(models.ProjectSetup.id == user_id).as_scalar()
     qry = select(models.ProjectSetup).filter(models.ProjectSetup.id == user_id,
-                                               models.ProjectSetup.project_id == subqry)
+                                             models.ProjectSetup.project_id == subqry)
     async with get_async_session_maker() as async_db:
         res = await async_db.execute(qry)
     res = res.scalars().first()

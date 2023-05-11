@@ -1,9 +1,9 @@
 import pandas as pd
-from sqlalchemy import select, delete, text
-from fastapi_app.db import models
-from fastapi_app.db.database import get_async_session_maker
-from fastapi_app.db.queries import get_df
-from sqlalchemy import insert, update
+from sqlalchemy import delete, text
+from fastapi_app.io.db import models
+from fastapi_app.io.db.database import get_async_session_maker
+from fastapi_app.io.db.queries import get_df
+from sqlalchemy import update
 
 
 async def merge_model(model):
@@ -136,7 +136,7 @@ async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id,
         if not df.empty:
             df["node_type"] = df["node_type"].astype(str)
             if df["node_type"].str.contains("consumer").sum() > 0:
-                df_links = await get_df(models.Links ,user_id, project_id)
+                df_links = await get_df(models.Links, user_id, project_id)
                 if not df_links.empty:
                     df_links.drop(labels=df_links.index, axis=0, inplace=True)
                     await insert_links_df(df_links, user_id, project_id)

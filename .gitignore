@@ -10,5 +10,5 @@ venv/
 *.DS_Store
 data
 scratch.py
-fastapi_app/db/dev_config.py
+fastapi_app/io/db/dev_config.py
 /.db_data/
