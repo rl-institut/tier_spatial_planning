@@ -124,12 +124,12 @@ def df_to_xlsx(input_df, energy_flow_df, results_df, nodes_df, links_df):
         worksheet3.set_column(0, 0, col1_width, format1)
         worksheet3.set_column(1, 1, col2_width, format2)
         worksheet3.set_column(2, 2, col3_width, format1)
-        sheet4 = 'consumer overview'
+        sheet4 = 'nodes'
         nodes_df.to_excel(writer, sheet_name=sheet4, index=False)
         writer.sheets[sheet4] = set_column_width(writer.sheets[sheet4],
                                                  energy_flow_df,
                                                  workbook.add_format({'align': 'right'}))
-        sheet5 = 'cables'
+        sheet5 = 'links'
         links_df.to_excel(writer, sheet_name=sheet5, index=False)
         writer.sheets[sheet5] = set_column_width(writer.sheets[sheet5],
                                                  energy_flow_df,
