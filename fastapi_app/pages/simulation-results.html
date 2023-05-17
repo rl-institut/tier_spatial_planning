@@ -145,6 +145,83 @@
           href="#">Download results (xlsx-format)</a>
           </div>
           <div class="row">
+            <div class="col">
+              <div class="chart">
+                <div class="chart__header">
+                  <div>
+                    <span class="title"
+                      >Demand Coverage by Renewable and Non-Renewable
+                      Resources</span
+                    >
+                  </div>
+                  <div class="dropdown">
+                    <button
+                      class="btn dropdown-toggle btn--transparent"
+                      type="button"
+                      id="dropdownMenuButton1"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      <span class="icon icon-more"></span>
+                    </button>
+                    <ul
+                      class="dropdown-menu"
+                      aria-labelledby="dropdownMenuButton1"
+                    >
+                      <li>
+                        <a class="dropdown-item" href="#">Export as .xls</a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#">Export as PDF</a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="chart__plot">
+                  <div id="demandCoverage"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <div class="chart">
+                <div class="chart__header">
+                  <div>
+                    <span class="title"
+                      >Annual Energy Flows with 1-Hour Resolution</span
+                    >
+                  </div>
+                  <div class="dropdown">
+                    <button
+                      class="btn dropdown-toggle btn--transparent"
+                      type="button"
+                      id="dropdownMenuButton1"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      <span class="icon icon-more"></span>
+                    </button>
+                    <ul
+                      class="dropdown-menu"
+                      aria-labelledby="dropdownMenuButton1"
+                    >
+                      <li>
+                        <a class="dropdown-item" href="#">Export as .xls</a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#">Export as PDF</a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="chart__plot">
+                  <div id="energyFlows"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
             <div class="col col-md-6">
               <div class="chart">
                 <div class="chart__header">
@@ -210,122 +287,6 @@
                 </div>
                 <div class="chart__plot">
                   <div id="lcoeBreakdown"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col">
-              <div class="chart">
-                <div class="chart__header">
-                  <div>
-                    <span class="title"
-                      >Sankey Diagram Representing the Energy Flow in the
-                      System</span
-                    >
-                  </div>
-                  <div class="dropdown">
-                    <button
-                      class="btn dropdown-toggle btn--transparent"
-                      type="button"
-                      id="dropdownMenuButton1"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <span class="icon icon-more"></span>
-                    </button>
-                    <ul
-                      class="dropdown-menu"
-                      aria-labelledby="dropdownMenuButton1"
-                    >
-                      <li>
-                        <a class="dropdown-item" href="#">Export as .xls</a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="#">Export as PDF</a>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                <div class="chart__plot">
-                  <div id="sankeyDiagram"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col">
-              <div class="chart">
-                <div class="chart__header">
-                  <div>
-                    <span class="title"
-                      >Annual Energy Flows with 1-Hour Resolution</span
-                    >
-                  </div>
-                  <div class="dropdown">
-                    <button
-                      class="btn dropdown-toggle btn--transparent"
-                      type="button"
-                      id="dropdownMenuButton1"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <span class="icon icon-more"></span>
-                    </button>
-                    <ul
-                      class="dropdown-menu"
-                      aria-labelledby="dropdownMenuButton1"
-                    >
-                      <li>
-                        <a class="dropdown-item" href="#">Export as .xls</a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="#">Export as PDF</a>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                <div class="chart__plot">
-                  <div id="energyFlows"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col">
-              <div class="chart">
-                <div class="chart__header">
-                  <div>
-                    <span class="title"
-                      >Demand Coverage by Renewable and Non-Renewable
-                      Resources</span
-                    >
-                  </div>
-                  <div class="dropdown">
-                    <button
-                      class="btn dropdown-toggle btn--transparent"
-                      type="button"
-                      id="dropdownMenuButton1"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <span class="icon icon-more"></span>
-                    </button>
-                    <ul
-                      class="dropdown-menu"
-                      aria-labelledby="dropdownMenuButton1"
-                    >
-                      <li>
-                        <a class="dropdown-item" href="#">Export as .xls</a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="#">Export as PDF</a>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                <div class="chart__plot">
-                  <div id="demandCoverage"></div>
                 </div>
               </div>
             </div>
@@ -398,6 +359,45 @@
                 </div>
                 <div class="chart__plot">
                   <div id="co2Emissions"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <div class="chart">
+                <div class="chart__header">
+                  <div>
+                    <span class="title"
+                      >Sankey Diagram Representing the Energy Flow in the
+                      System</span
+                    >
+                  </div>
+                  <div class="dropdown">
+                    <button
+                      class="btn dropdown-toggle btn--transparent"
+                      type="button"
+                      id="dropdownMenuButton1"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      <span class="icon icon-more"></span>
+                    </button>
+                    <ul
+                      class="dropdown-menu"
+                      aria-labelledby="dropdownMenuButton1"
+                    >
+                      <li>
+                        <a class="dropdown-item" href="#">Export as .xls</a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="#">Export as PDF</a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="chart__plot">
+                  <div id="sankeyDiagram"></div>
                 </div>
               </div>
             </div>
