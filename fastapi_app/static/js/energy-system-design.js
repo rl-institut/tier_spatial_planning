@@ -33,8 +33,47 @@ function check_optimization_strategy(id) {
         document.getElementById(id+"NominalCapacityUnit").classList.remove('disabled');
     }
 }
-
 function check_box_visibility(id) {
+    if (id === 'inverter' && !document.getElementById('selectInverter').checked) {
+        // If it's not checked, then uncheck 'selectPv' and 'selectBattery'
+        document.getElementById('selectPv').checked = false;
+        document.getElementById('selectBattery').checked = false;
+        change_box_visibility(id);
+        let list = ['pv', 'battery'];
+        for (let i = 0; i < list.length; i++) {
+            change_box_visibility(list[i]);
+            refreshBlocksOnDiagram(list[i]);
+        }
+    }
+    if (id === 'pv' && document.getElementById('selectPv').checked) {
+        document.getElementById('selectInverter').checked = true;
+        change_box_visibility('inverter');
+        refreshBlocksOnDiagram('inverter');
+    }
+    if (id === 'battery' && document.getElementById('selectBattery').checked) {
+        document.getElementById('selectInverter').checked = true;
+        change_box_visibility('inverter');
+        refreshBlocksOnDiagram('inverter');
+    }
+    if (id === 'battery'
+        && !document.getElementById('selectBattery').checked
+        && !document.getElementById('selectPv').checked) {
+        document.getElementById('selectInverter').checked = false;
+        change_box_visibility('inverter');
+        refreshBlocksOnDiagram('inverter');
+    }
+    if (id === 'pv'
+        && !document.getElementById('selectBattery').checked
+        && !document.getElementById('selectPv').checked) {
+        document.getElementById('selectInverter').checked = false;
+        change_box_visibility('inverter');
+        refreshBlocksOnDiagram('inverter');
+    }
+    change_box_visibility(id);
+}
+
+
+function change_box_visibility(id) {
     // Depending on the selection of each box (i.e., component), the visibility
     // of the box components will be changed
     var component_specifications = {
@@ -77,7 +116,7 @@ function check_box_visibility(id) {
             // First, get the property listed in the above dictionary.
             property = component_specifications[id][index]
             
-            // All fields as well as the `diesgn` and `dispatch` buttons.
+            // All fields as well as the `design` and `dispatch` buttons.
             document.getElementById(id+property).disabled = false;
             
             // All labels.
