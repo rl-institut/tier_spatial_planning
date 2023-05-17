@@ -1,3 +1,4 @@
+
 function makeplot_bar_chart(){
 // BAR DIAGRAM FOR OPTIMAL CAPACITY OF COMPONENTS
 // get optimal capacities from energy system optimizer

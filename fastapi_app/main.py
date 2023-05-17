@@ -8,7 +8,7 @@ import random
 from captcha.image import ImageCaptcha
 import pandas as pd
 import numpy as np
-
+from io import StringIO
 import fastapi_app.io.schema
 from celery_worker import worker
 import os
@@ -21,7 +21,7 @@ import fastapi_app.tools.coordinates_conversion as conv
 import fastapi_app.tools.shs_identification as shs_ident
 import fastapi_app.io.db.models as models
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import RedirectResponse, FileResponse, JSONResponse, HTMLResponse
+from fastapi.responses import RedirectResponse, FileResponse, JSONResponse, HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
 from fastapi.staticfiles import StaticFiles
@@ -30,8 +30,8 @@ from fastapi_app.tools.optimizer import Optimizer, GridOptimizer, EnergySystemOp
 from fastapi_app.tools.account_helpers import Hasher, create_guid, is_valid_credentials, send_activation_link, activate_mail, \
     authenticate_user, create_access_token, send_mail
 from fastapi_app.tools import account_helpers as accounts
-from fastapi_app.io.db import config
-from fastapi_app.io.db import inserts, queries
+from fastapi_app.io.db import config, inserts, queries
+from fastapi_app.io.df_to_excel import df_to_xlsx
 import pyutilib.subprocess.GlobalData
 
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
@@ -1595,18 +1595,20 @@ def identify_shs(shs_identification_request: fastapi_app.io.schema.ShsIdentifica
 # *                     IMPORT / EXPORT                      */
 # ************************************************************/
 
-@app.post("/export_data/{project_id}")
-async def export_data(project_id, request: Request):
+@app.get("/download_data/{project_id}/{file_type}/")
+async def export_data(project_id: int, file_type:str,  request: Request):
     user = await accounts.get_user_from_cookie(request)
-    df = await queries.get_df(models.DemandCoverage.id, user.id, project_id)
-    df = await queries.queries.get_df(models.Results, user.id, project_id)
-    df = await queries.get_df(models.EnergyFlow, user.id, project_id)
-    df = await queries.get_df(models.DurationCurve, user.id, project_id)
-    df = await queries.get_df(models.Emissions, user.id, project_id)
+    input_parameters_df = await queries.get_input_df(user.id, project_id)
+    results_df = await queries.get_df(models.Results, user.id, project_id)
+    energy_flow_df = await queries.get_df(models.EnergyFlow, user.id, project_id)
+    nodes_df = await queries.get_df(models.Nodes, user.id, project_id)
+    links_df = await queries.get_df(models.Links, user.id, project_id)
+    excel_file = df_to_xlsx(input_parameters_df, energy_flow_df, results_df, nodes_df, links_df)
+    response = StreamingResponse(excel_file, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response.headers["Content-Disposition"] = "attachment; filename=output.xlsx"
+    return response
 
-    # parameters
 
-    # timeseries
 
 
 @app.post("/import_data/{project_id}")

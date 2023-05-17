@@ -26,3 +26,4 @@ flower==1.2.0
 asgiref==3.6.0
 captcha==0.4
 pymongo==4.3.3
+openpyxl==3.1.2

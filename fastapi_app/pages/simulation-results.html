@@ -138,6 +138,12 @@
               </div>
             </div>
           </div>
+          <div class="row" style="padding: 12px">
+          <a id="downloadCSV"
+          class="btn btn--medium"
+          style="height: 32px; display: flex; align-items: center; justify-content: center"
+          href="#">Download results (xlsx-format)</a>
+          </div>
           <div class="row">
             <div class="col col-md-6">
               <div class="chart">
@@ -415,5 +421,11 @@
     <script src="{{ url_for('static', path='js/integrate_map.js') }}"></script>
   <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
   <script src="https://cdn.plot.ly/plotly-2.0.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.0/jspdf.umd.min.js"></script>
 <script src="{{ url_for('static', path='js/plots.js') }}"></script>
+<script>
+    document.getElementById('downloadCSV').addEventListener('click', function() {
+    window.location.href = '/download_data/{{ project_id }}/csv';
+        });
+</script>
 </html>
