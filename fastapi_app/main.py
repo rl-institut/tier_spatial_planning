@@ -377,6 +377,8 @@ async def load_results(project_id, request: Request):
                  'co2_savings': 't/a'}
     df = df[list(unit_dict.keys())].round(1).astype(str)
     for col in df.columns:
+        if unit_dict[col] in ['%', 's']:
+            df[col] = df[col].astype(float).round(1).astype(str)
         df[col] = df[col] + ' ' + unit_dict[col]
     results = df.to_dict(orient='records')[0]
     return results
