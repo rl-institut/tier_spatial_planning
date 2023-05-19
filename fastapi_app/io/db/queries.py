@@ -2,10 +2,12 @@ import json
 import pandas as pd
 import sqlalchemy as sa
 from sqlalchemy import select
+from sqlalchemy.sql import text
 import flatten_dict
 from flatten_dict.splitters import make_splitter
 from fastapi_app.io.db import models
-from fastapi_app.io.db.database import get_async_session_maker
+from fastapi_app.io.db.database import get_async_session_maker, get_sync_session_maker
+
 
 async def get_user_by_username(username):
     query =select(models.User).where(models.User.email == username)
@@ -124,3 +126,11 @@ async def get_df(model, user_id, project_id, is_timeseries=True):
     if 'dt' in df.columns:
         df = df.set_index('dt')
     return df
+
+def check_if_weather_data_exists():
+    query = text("""SELECT EXISTS(SELECT 1 FROM people_sun.weatherdata LIMIT 1) as 'Exists';""")
+    with get_sync_session_maker() as sync_db:
+        res = sync_db.execute(query)
+    results = res.scalars().all()
+    ans = bool(results[0])
+    return ans

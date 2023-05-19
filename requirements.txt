@@ -28,7 +28,7 @@ captcha==0.4
 pymongo==4.3.3
 openpyxl==3.1.2
 geopandas~=0.13.0
-git+https://github.com/oemof/feedinlib.git
+feedinlib==0.1.0rc4 --no-deps
 XlsxWriter~=3.1.0
 networkx~=3.0
 PyUtilib~=6.0.0

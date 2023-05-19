@@ -1,9 +1,7 @@
 import warnings
-from pandas.core.common import SettingWithCopyWarning
 warnings.filterwarnings('ignore', category=FutureWarning, module='pandas')
 import pandas as pd
 import io
-import xlsxwriter
 
 
 def df_to_xlsx(input_df, energy_flow_df, results_df, nodes_df, links_df):

@@ -49,6 +49,8 @@ if bool(os.environ.get('DOCKERIZED')):
             break
 
 
+
+
 def get_async_session_maker():
     async_engine = create_async_engine(ASYNC_DB_URL, pool_size=10, )
     async_sessionmaker = scoped_session(sessionmaker(bind=async_engine,

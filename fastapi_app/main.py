@@ -36,6 +36,9 @@ import pyutilib.subprocess.GlobalData
 
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 
+if not queries.check_if_weather_data_exists():
+    inserts.dump_weather_data_into_db()
+
 app = FastAPI()
 
 app.mount("/fastapi_app/static", StaticFiles(directory="fastapi_app/static"), name="static")
@@ -45,6 +48,7 @@ templates = Jinja2Templates(directory="fastapi_app/pages")
 json_object = Dict[Any, Any]
 json_array = List[Any]
 import_structure = Union[json_array, json_object]
+
 
 
 @app.get('/favicon.ico', include_in_schema=False)

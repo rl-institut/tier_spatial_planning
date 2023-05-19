@@ -323,3 +323,17 @@ class Emissions(Base):
     co2_savings = Column(Numeric(10, 3))
 
 
+class WeatherData(Base):
+
+    @staticmethod
+    def __name__():
+        return 'WeatherData'
+
+    dt = Column(DateTime, primary_key=True, index=True)
+    lat = Column(Numeric(7, 3), primary_key=True, index=True)
+    lon = Column(Numeric(10, 7), primary_key=True, index=True)
+    wind_speed = Column(Numeric(5, 2))
+    temp_air = Column(Numeric(4, 2))
+    ghi = Column(Numeric(6, 2))
+    dni = Column(Numeric(6, 2))
+    dhi = Column(Numeric(6, 2))
