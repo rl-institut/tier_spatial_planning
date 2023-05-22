@@ -137,7 +137,8 @@ async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id,
             if not df_existing.empty:
                 df_existing = df_existing[(df_existing["node_type"] != "pole") &
                                           (df_existing["node_type"] != "power-house")]
-            df_total = df_existing.append(df).drop_duplicates(subset=["latitude", "longitude", "node_type"], inplace=False)
+            df_total = pd.concat([df, df_existing], ignore_index=True, axis=0)
+            df_total = df_total.drop_duplicates(subset=["latitude", "longitude", "node_type"])
         else:
             df_total = df
         if not df.empty:
@@ -156,7 +157,7 @@ async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id,
             # finally adding the refined dataframe (if it is not empty) to the existing csv file
             if len(df_total.index) != 0:
                 if 'parent' in df_total.columns:
-                    df_total['parent'] = df_total['parent'].replace('unknown', None)
+                    df_total['parent'] = df_total['parent'].where(df_total['parent'] != 'unknown', None)
                 await insert_nodes_df(df_total, user_id, project_id, replace=replace)
     if links:
         links = inlet
@@ -242,8 +243,8 @@ def handle_duplicates(if_exists, query, col_names):
         return query
 
 
-def dump_weather_data_into_db():
-    ds = xr.open_dataset('ERA5_weather_data.nc', engine='netcdf4')
+def dump_weather_data_into_db(file_name):
+    ds = xr.open_dataset(file_name, engine='netcdf4')
     df = era5.format_pvlib(ds)
     df = df.reset_index()
     df = df.rename(columns={'time': 'dt', 'latitude': 'lat', 'longitude': 'lon'})

@@ -1,26 +1,13 @@
 from __future__ import division
-from copyreg import remove_extension
-import ssl
 import numpy as np
 import pandas as pd
-import os
-import time
-import json
 from k_means_constrained import KMeansConstrained
 from munkres import Munkres
-from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import minimum_spanning_tree
-from scipy.optimize import linprog
-
-from sklearn.datasets import make_blobs
-from sklearn.metrics import precision_recall_curve
-
 from fastapi_app.tools.grids import Grid
-
 import oemof.solph as solph
 from datetime import datetime, timedelta
 import pyomo.environ as po
-from pyomo.util.infeasible import log_infeasible_constraints
 
 
 class Optimizer:
@@ -816,6 +803,7 @@ class EnergySystemOptimizer(Optimizer):
         project_lifetime,
         wacc,
         tax,
+        solar_potential,
         path_data="",
         solver="cbc",
         pv={
@@ -897,6 +885,7 @@ class EnergySystemOptimizer(Optimizer):
         self.inverter = inverter
         self.rectifier = rectifier
         self.shortage = shortage
+        self.solar_potential = solar_potential
 
     def create_datetime_objects(self):
         """
@@ -913,13 +902,8 @@ class EnergySystemOptimizer(Optimizer):
 
     def import_data(self):
         data = pd.read_csv(filepath_or_buffer=self.path_data)
-        data.index = pd.date_range(
-            start=self.start_datetime, periods=len(data), freq="H"
-        )
-
-        self.solar_potential = data.SolarGen.loc[
-            self.start_datetime : self.end_datetime
-        ]
+        data.index = pd.date_range(start=self.start_datetime, periods=len(data), freq="H")
+        # self.solar_potential = data.SolarGen.loc[self.start_datetime : self.end_datetime]
         self.demand = data.Demand.loc[self.start_datetime : self.end_datetime]
         self.solar_potential_peak = self.solar_potential.max()
         self.demand_peak = self.demand.max()

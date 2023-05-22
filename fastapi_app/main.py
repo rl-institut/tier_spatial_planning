@@ -33,11 +33,14 @@ from fastapi_app.tools import account_helpers as accounts
 from fastapi_app.io.db import config, inserts, queries
 from fastapi_app.io.df_to_excel import df_to_xlsx
 import pyutilib.subprocess.GlobalData
+from fastapi_app.tools.solar_potential import get_dc_feed_in
 
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 
 if not queries.check_if_weather_data_exists():
-    inserts.dump_weather_data_into_db()
+    inserts.dump_weather_data_into_db('ERA5_weather_data1.nc')
+    inserts.dump_weather_data_into_db('ERA5_weather_data2.nc')
+    inserts.dump_weather_data_into_db('ERA5_weather_data3.nc')
 
 app = FastAPI()
 
@@ -382,7 +385,9 @@ async def load_results(project_id, request: Request):
     df = df[list(unit_dict.keys())].round(1).astype(str)
     for col in df.columns:
         if unit_dict[col] in ['%', 's']:
-            df[col] = df[col].astype(float).round(1).astype(str)
+            df[col] = df[col].where(df[col] != 'None', 0)
+            if df[col].isna().sum() == 0:
+                df[col] = df[col].astype(float).round(1).astype(str)
         df[col] = df[col] + ' ' + unit_dict[col]
     results = df.to_dict(orient='records')[0]
     return results
@@ -1055,17 +1060,13 @@ async def optimize_grid(user_id, project_id):
     project_setup.status = "in progress"
     await inserts.merge_model(project_setup)
     start_execution_time = time.monotonic()
-
     # create GridOptimizer object
     df = await queries.get_input_df(user_id, project_id)
-
     opt = GridOptimizer(start_date=df.loc[0, "start_date"],
                         n_days=df.loc[0, "n_days"],
                         project_lifetime=df.loc[0, "project_lifetime"],
                         wacc=df.loc[0, "interest_rate"] / 100,
                         tax=0, )
-
-
     nodes = await queries.get_df(models.Nodes, user_id, project_id)
 
     if len(nodes) == 0:
@@ -1354,7 +1355,6 @@ async def optimize_grid(user_id, project_id):
     # ToDo:  what is with this last operations? It is not stored in the database.
     #grid.distribute_grid_cost_among_consumers()
 
-    t = 4
 
 
 async def optimize_energy_system(user_id, project_id):
@@ -1363,12 +1363,22 @@ async def optimize_energy_system(user_id, project_id):
     df = await queries.get_input_df(user_id, project_id)
     energy_system_design = await queries.get_energy_system_design(user_id, project_id)
     solver = 'gurobi' if po.SolverFactory('gurobi').available() else 'cbc'
+    nodes = await queries.get_df(models.Nodes, user_id, project_id)
+    if not nodes[nodes['consumer_type'] == 'power_house'].empty:
+        lat, lon = nodes[nodes['consumer_type'] == 'power_house']['latitude', 'longitude'].to_list()
+    else:
+        lat, lon = nodes[['latitude', 'longitude']].mean().to_list()
+    n_days = min(df.loc[0, "n_days"], int(os.environ.get('MAX_DAYS', 365)))
+    start = pd.to_datetime(df.loc[0, "start_date"])
+    end = start + timedelta(days=int(n_days))
+    solar_potential_df = await get_dc_feed_in(lat, lon, start, end)
     ensys_opt = EnergySystemOptimizer(
         start_date=df.loc[0, "start_date"],
-        n_days=min(df.loc[0, "n_days"], int(os.environ.get('MAX_DAYS', 365))),
+        n_days=n_days,
         project_lifetime=df.loc[0, "project_lifetime"],
         wacc=df.loc[0, "interest_rate"] / 100,
         tax=0,
+        solar_potential=solar_potential_df,
         path_data=config.full_path_timeseries,
         solver=solver,
         pv=energy_system_design['pv'],
