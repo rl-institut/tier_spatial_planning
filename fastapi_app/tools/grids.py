@@ -844,11 +844,9 @@ class Grid:
         cost of the grid
         """
 
-        # get the number of poles, consumers and links fron the grid
+        # get the number of poles, consumers and links from the grid
         n_poles = self.poles().shape[0]
-        n_mg_consumers = self.consumers()[
-            self.consumers()["is_connected"] == True
-        ].shape[0]
+        n_mg_consumers = self.consumers()[self.consumers()["is_connected"] == True].shape[0]
         n_links = self.get_links().shape[0]
 
         # if there is no poles in the grid, or there is no link,

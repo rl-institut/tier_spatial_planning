@@ -1,4 +1,4 @@
-let consumer_list = {'H': 'Houshold', 'E': 'Enterprise'};
+let consumer_list = {'H': 'Houshold', 'E': 'Enterprise', 'P': 'Public Service', 'O': 'Ohter'};
 let consumer_type = "H";
 (function () {
     let option_consumer =  '';
@@ -9,12 +9,20 @@ let consumer_type = "H";
 })();
 
 let enterprise_list = {'group1': 'Bakery', 'group2': 'Gas Station'};
+let enterpise_option =  '';
+for(let enterprise_code in enterprise_list){
+    let selected = (enterprise_code == consumer_type) ? ' selected' : '';
+    enterpise_option += '<option value="'+enterprise_code+'"'+selected+'>'+enterprise_list[enterprise_code]+'</option>';}
 
-    let enterpise_option =  '';
-    for(let enterprise_code in enterprise_list){
-        let selected = (enterprise_code == consumer_type) ? ' selected' : '';
-        enterpise_option += '<option value="'+enterprise_code+'"'+selected+'>'+enterprise_list[enterprise_code]+'</option>';}
-
+let large_load_list = {'W': 'Welder', 'M': 'Motor', 'I': 'Milling'};
+let large_load_type = "M";
+(function () {
+    let option_load =  '';
+    for(let load_code in large_load_list){
+        let selected = (load_code == large_load_type) ? ' selected' : '';
+        option_load += '<option value="'+load_code+'"'+selected+'>'+large_load_list[load_code]+'</option>';}
+    document.getElementById('loads').innerHTML = option_load;
+})();
 
 
 document.getElementById('consumer').addEventListener('change', function() {

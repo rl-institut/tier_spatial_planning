@@ -32,6 +32,32 @@
   padding: 5px;}
 
 
+.list_container {
+    display: flex;
+    }
+
+.dropdown, .list {
+    width: 30%;
+    padding: 5px; // Decreased from 10px to 5px
+}
+
+.list {
+    border: 1px solid black;
+    min-height: 100px;
+}
+
+
+    #load_list > div {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .right-align {
+        margin-left: auto;
+    }
+
+
       </style>
   </head>
   <body onload="redirect_if_cookie_is_missing(true, true);
@@ -115,7 +141,7 @@
                           </button>
                         </h2>
                         <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
-                          <div class="accordion-body">
+                          <div class="accordion-body" style="border-bottom: none;">
                              <p>
                               <span>
                               <a>Show advanced Options</a>
@@ -125,10 +151,10 @@
                               </label>
                               </span>
                               </p>
-                            <table>
-                              <tr style="border-bottom:1px solid black">
+                            <table style="border-top: none;">
+                              <tr >
                                 <th>Consumer Type</th>
-                                <th>Enterprise Category</th>
+                                <th>Consumer Category</th>
                                 <th>Latitude</th>
                                 <th>Longitude</th>
                                 <th>Delete Consumer</th>
@@ -142,14 +168,14 @@
                                         <select id="consumer" class="form-select" style="max-width: 150px">
                                           <option>Houshold</option>
                                         </select>
-                                      </div>
+                                        </div>
                                    </TD>
                                    <TD>
-                                      <div class="input-item">
+                                        <div class="input-item">
                                         <select id="enterprise" class="form-select" style="max-width: 150px">
-                                          <option>Enterprise</option>
+                                        <option>Enterprise</option>
                                         </select>
-                              </div>
+                                        </div>
                                    </TD>
                                    <TD>
                               <div class="input-group" style="max-width: 200px">
@@ -203,12 +229,42 @@
                         </div>
                       </div>
 
-                    <div class="accordion-item">
+                    <div class="accordion-item" style="border-top: none">
                         <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree">
                           <div class="accordion-body">
-                            <a>Advanced Option</a>
-                            <hr>
-                              <p>Blabla</p>
+
+                              <div class="list_container"><div>
+                              <p><b>Large loads to add</b></p>
+                                        <div class="input-item" style="margin-right: 30px;  margin-bottom: 20px; width: 200px;">
+                                        <select id="loads" class="form-select" style="max-width: 200px">
+                                          <option>Motor</option>
+                                        </select>
+                                        </div>
+                                  <div class="input-group" style="width: 200px;  margin-bottom: 20px;">
+                                  <input
+                                    type="number"
+                                    class="form-control"
+                                    id="number_loads"
+                                    placeholder="Number"
+                                    value="1"
+                                    min="1"
+                                    max="30"
+                                    step="1"
+                                    required/>
+                                </div>
+                                        <a id="add"
+                                           class="btn btn--medium"
+                                           style="height: 32px; display: flex; align-items: center; justify-content: center;  margin-bottom: 20px; width: 200px;"
+                                           onclick="add_load();"
+                                           href="#">Add Load</a>
+                                  </div>
+                                  <div>
+
+                                  <p><b>Selected Loads</b></p>
+                                      <div class="list" id="load_list" style="width: 200px"></div></div>
+                                  <div>
+                                  </div>
+                                  </div>
                           </div>
                         </div>
                       </div>
@@ -242,12 +298,14 @@
 <script src="{{ url_for('static', path='js/map_drawings.js') }}"></script>
 <script src="{{ url_for('static', path='js/consumer_types.js') }}"></script>
 <script>
-    function expandAccordionItem2() {
+function expandAccordionItem2() {
   const accordion = new bootstrap.Collapse(document.getElementById('collapseTwo'), {
     toggle: false
   });
   accordion.show();
 }
+
+
 document.getElementById('toggleswitch2').addEventListener('change', function (event) {
   const accordionItem3 = new bootstrap.Collapse(document.getElementById('collapseThree'), {
     toggle: false
@@ -260,6 +318,18 @@ document.getElementById('toggleswitch2').addEventListener('change', function (ev
   }
 });
 
+document.getElementById('toggleswitch2').addEventListener('change', function (event) {
+    if (event.target.checked && accordionTwo._isShown) {
+      accordionThree.show();
+    } else {
+      accordionThree.hide();
+    }
+  });
+
+  // Uncheck 'toggleswitch2' when 'collapseTwo' is hidden
+  $('#collapseTwo').on('hidden.bs.collapse', function () {
+    document.getElementById('toggleswitch2').checked = false;
+  });
 
 document.querySelector('#headingTwo .accordion-button').addEventListener('click', function () {
   const accordionItem2 = document.getElementById('collapseTwo');
@@ -297,5 +367,47 @@ function delete_consumer() {
       }
     });
 }
+
+
+document.getElementById('add').addEventListener('click', addElement);
+
+function addElement() {
+    // Get the dropdown selected value
+    var dropdown = document.getElementById('loads');
+    var selectedValue = dropdown.options[dropdown.selectedIndex].text;
+
+    // Get the value from the input field
+    var inputValue = document.getElementById('number_loads').value;
+
+    // Get the list div
+    var list = document.getElementById('load_list');
+
+    // Create new list item and button
+    var newItem = document.createElement('div');
+    var newButton = document.createElement('button');
+
+    // Add the class to the button
+    newButton.classList.add('right-align');
+
+    // Set button text and click event
+    newButton.textContent = 'Delete';
+    newButton.onclick = function() {
+        list.removeChild(newItem);
+    };
+
+    // Add text and button to the new item
+    newItem.textContent = inputValue + ' x ' + selectedValue + '    ';
+    newItem.appendChild(newButton);
+
+    // Add bottom margin to the new item
+    newItem.style.marginBottom = '10px';
+
+    // Append the new item to the list
+    list.appendChild(newItem);
+    document.getElementById('number_loads').value = '1';
+}
+
+
+
 </script>
 </html>
