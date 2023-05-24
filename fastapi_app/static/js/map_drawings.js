@@ -15,6 +15,7 @@ var rectangleDrawer = new L.Draw.Rectangle(map, {
 
 var markerDrawer = new L.Draw.Marker(map);
 document.getElementById('drawMarker').addEventListener('click', function () {
+    update_map_elements();
   markerDrawer.enable();
     rectangleDrawer.disable();
   polygonDrawer.disable();
@@ -22,12 +23,14 @@ document.getElementById('drawMarker').addEventListener('click', function () {
 
 // Enable polygon drawing when the button is clicked
 document.getElementById('drawPolygon').addEventListener('click', function () {
+  update_map_elements();
   markerDrawer.disable();
   rectangleDrawer.disable();
   polygonDrawer.enable();
 });
 
 document.getElementById('drawRectangle').addEventListener('click', function () {
+    update_map_elements();
   rectangleDrawer.enable();
     markerDrawer.disable();
     polygonDrawer.disable();
@@ -185,5 +188,8 @@ function removeBoundaries() {
         drawnItems.clearLayers();
         polygonCoordinates = [];
 }
+
+
+
 
 

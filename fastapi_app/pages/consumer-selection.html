@@ -56,7 +56,9 @@
     .right-align {
         margin-left: auto;
     }
-
+.input-item select, .input-group input, .input-group-text, .btn btn--medium {
+    height: 32px; /* Adjust this value to your preference */
+}
 
       </style>
   </head>
@@ -90,12 +92,12 @@
                               </label>
                               </span>
                               </p>
-                            <a id="drawPolygon" class="btn btn--medium"  href="#">Draw Polygon</a>
-                            <a id="drawRectangle" class="btn btn--medium"  href="#">Draw Rectangle</a>
+                              <a id="drawPolygon" class="btn btn--medium"  href="#" style="height: 32px; display: flex; justify-content: center; align-items: center; max-width: 180px; margin-bottom: 10px;">Draw Polygon</a>
+                            <a id="drawRectangle" class="btn btn--medium"  href="#" style="height: 32px; display: flex; justify-content: center; align-items: center; max-width: 180px">Draw Rectangle</a>
                               <p></p>
                             <p><strong>Define individual consumer manually on the map by mouse click</strong></p>
                               <p></p>
-                            <a id="drawMarker" class="btn btn--medium"  href="#">Mark Consumers</a>
+                            <a id="drawMarker" class="btn btn--medium" href="#" style="height: 32px; display: flex; justify-content: center; align-items: center; max-width: 180px">Mark Consumers</a>
                               <p></p>
                             <p><strong>Define individual consumer manually by specifying the geocoordinates</strong></p>
                               <p></p>
@@ -128,7 +130,7 @@
                                   />
                                   <span class="input-group-text" style="margin-right: 8px;">Degree</span>
                                 </div>
-                                <a id="submit" class="btn btn--medium"  href="#" onclick="add_consumer();">Submit</a>
+                                <a id="submit" class="btn btn--medium"  href="#" onclick="add_consumer();" style="height: 32px; display: flex; align-items: center; justify-content: center;">Submit</a>
                               </div>
                           </div>
                             </div>
@@ -137,7 +139,7 @@
                       <div class="accordion-item">
                         <h2 class="accordion-header" id="headingTwo">
                           <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                            Specify Consumers
+                            Set Consumer Properties
                           </button>
                         </h2>
                         <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
@@ -151,6 +153,7 @@
                               </label>
                               </span>
                               </p>
+                               <p><strong>To set consumer properties, first select the consumers by clicking on the markers on the map</strong></p>
                             <table style="border-top: none;">
                               <tr >
                                 <th>Consumer Type</th>
@@ -171,8 +174,8 @@
                                         </div>
                                    </TD>
                                    <TD>
-                                        <div class="input-item">
-                                        <select id="enterprise" class="form-select" style="max-width: 150px">
+                                        <div class="input-item" style="display: flex; align-items: center;">
+                                        <select id="enterprise" class="form-select" style="max-width: 150px;">
                                         <option>Enterprise</option>
                                         </select>
                                         </div>
@@ -347,6 +350,7 @@ document.querySelector('#headingTwo .accordion-button').addEventListener('click'
 });
 
 function add_consumer() {
+    update_map_elements();
     let lat = document.getElementById('latitude2').value;
     let lng = document.getElementById('longitude2').value;
     add_single_consumer_to_array(lat, lng, 'manual', 'consumer')

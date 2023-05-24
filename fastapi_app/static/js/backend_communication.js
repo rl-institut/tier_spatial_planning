@@ -41,7 +41,7 @@ async function db_nodes_to_js(project_id, markers_only) {
     fetch("/db_nodes_to_js/" + project_id + '/' + markers_only)
   .then(response => response.json())
   .then(data => {
-    map_elements = data
+    map_elements = data;
     if (map_elements !== null) {
         put_markers_on_map(map_elements, markers_only);
         }

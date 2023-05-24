@@ -24,15 +24,27 @@ let large_load_type = "M";
     document.getElementById('loads').innerHTML = option_load;
 })();
 
+document.getElementById('loads').disabled = true;
+document.getElementById('loads').value = "";
+document.getElementById('number_loads').disabled = true;
 
 document.getElementById('consumer').addEventListener('change', function() {
     if (this.value === 'H') {
         document.getElementById('enterprise').value = '';
         document.getElementById('enterprise').disabled = true;
+        document.getElementById('loads').disabled = true;
+        document.getElementById('loads').value = '';
+        document.getElementById('add').disabled = true;
+        document.getElementById('number_loads').disabled = true;
+        deleteAllElements();
     } else {
         document.getElementById('enterprise').innerHTML = enterpise_option;
         document.getElementById('enterprise').value = 'group1';
         document.getElementById('enterprise').disabled = false;
+        document.getElementById('loads').disabled = false;
+        document.getElementById('loads').value = 'W';
+        document.getElementById('add').disabled = false;
+        document.getElementById('number_loads').disabled = false;
     }
 });
 document.getElementById('enterprise').disabled = true;
@@ -73,11 +85,19 @@ function markerOnClick(e){
            document.getElementById('consumer').value = 'H';
            document.getElementById('enterprise').disabled = true;
            document.getElementById('enterprise').value = '';
+           document.getElementById('loads').disabled = true;
+           document.getElementById('loads').value = "";
+           document.getElementById('add').disabled = true;
+           document.getElementById('number_loads').disabled = true;
+
         }
         else {
             document.getElementById('consumer').value = 'E';
             document.getElementById('enterprise').disabled = false;
             document.getElementById('enterprise').value = 'group1';
+           document.getElementById('loads').disabled = false;
+           document.getElementById('add').disabled = false;
+           document.getElementById('number_loads').disabled = false;
         }
         document.getElementById('consumer').disabled = false;
         document.getElementById('longitude').disabled = false;
@@ -128,3 +148,7 @@ function move_marker(){
 document.getElementById('latitude').addEventListener('change', move_marker);
 document.getElementById('longitude').addEventListener('change', move_marker);
 
+function deleteAllElements() {
+    var listDiv = document.getElementById('load_list');
+    listDiv.innerHTML = '';
+}

@@ -5,6 +5,7 @@ const nigeriaBounds = [
   [13.9, 14.7] // Northeast corner
 ];
 
+
 const map = L.map('map', {
   center: [9.8838, 5.9231],
   zoom: 6,
@@ -13,10 +14,30 @@ const map = L.map('map', {
 });
 
 let is_active = false;
-// Add the OSM map
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+
+// Define the OSM layer
+let osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-}).addTo(map);
+});
+
+// Define the Esri satellite layer
+let satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri'
+});
+
+// Add the OSM layer to the map as the default
+osmLayer.addTo(map);
+
+// Define the base layers for the control
+let baseMaps = {
+    "OpenStreetMap": osmLayer,
+    "Satellite": satelliteLayer
+};
+
+// Add the layer control to the map
+L.control.layers(baseMaps).addTo(map);
+
+
 const drawnItems = new L.FeatureGroup();
 map.addLayer(drawnItems);
 let polygonCoordinates = [];
@@ -138,3 +159,29 @@ function drawLinkOnMap(
       pointA.distanceTo(pointB).toFixed(2).toString() + " m"
     ).addTo(map));
 }
+
+var zoomAllControl = L.Control.extend({
+    options: {
+        position: 'topleft'
+    },
+
+    onAdd: function (map) {
+        var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+        let baseUrl = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '');
+        let address = "url(" + baseUrl + "/fastapi_app/static/images/imgZoomToAll.png)"
+        container.style.backgroundColor = 'white';
+        container.style.backgroundImage = address;
+        container.style.backgroundSize = "28px 28px";
+        container.style.width = '32px';
+        container.style.height = '32px';
+
+        container.onclick = function(){
+            zoomAll(map);
+        };
+
+        return container;
+    },
+});
+
+map.addControl(new zoomAllControl());
+
