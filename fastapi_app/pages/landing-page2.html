@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    {% set title='PeopleSun' %}
+    {% include '_head.html' %}
+    {% include '_style_msg_box.html' %}
+      <style>
+          body {
+    text-align: justify;
+}
+      </style>
+  </head>
+  <body onload="show_cookie_consent(); show_user_email_in_navbar();">
+  {% include '_navbar.html' %}
+    <main>
+                    <p style="color:darkred; text-align: center;">
+                      This tool is still under development. The release is for testing purposes, and the tool is not yet suitable for designing energy systems (some of the calculations are still based on dummy data). [Last updated on 21.04.2023]
+                    </p>
+        <section id="section" class="dashboard">
+            <div class="container">
+            <div class="row">
+                        <div class="col-md-6">
+                    <h1 style="color: var(--ccb); margin-top: 60px">
+                      Off Grid Planning Tool
+                    </h1>
+                    <p style="color: var(--ccb); text-align: justify;">
+
+                    <p style="color: var(--ccb); text-align: justify;">
+                        This open-source computer tool is part of the <a href="https://www.peoplesun.org">PeopleSuN project</a>, which contains a web-based app that aims to optimize the network structure as well as the power supply system for mini-grid systems.
+                    </p>
+                  <p style="color: var(--ccb); text-align: justify;">The features of the tool are listed below:</p>
+                  <ul style="color: var(--ccb); text-align: justify;">
+                      <li>
+                        Automatic identification of buildings from OpenStreetMap
+                      </li>
+                      <li>
+                       Spatial optimization of electrical mini-grids
+                      </li>
+                      <li>
+                        Optimization of the design and unit commitment power supply systems of the mini-grids (PV systems, battery systems, inverters and diesel-engines)
+                      </li>
+                      <li>
+                        Automatic identification of buildings that are better to be served by individual solar home systems.
+                      </li>
+                  </ul>
+                    <p style="color: var(--ccb); text-align: justify;">
+                     The tool can be tested without registration. However, users are recommended to create an account to get access to larger computing capacity and to be able to store models.
+                    </p>
+                    <button
+                          class="btn btn--long text-right"
+                          type="button"
+                          onclick="document.getElementById('msgBox').style.display='block'"
+                        >
+                          Test it (without an account)
+                    </button>
+
+                    </p>
+        </div>
+        <div class="col-md-6">
+            <img src="{{ url_for('static', path='assets/gui/off_grid.svg') }}">
+        </div>
+            </div>
+
+            <div class="row" style="margin-top: 100px">
+                        <div class="col-md-6">
+            <img src="{{ url_for('static', path='assets/gui/map_selection.svg') }}" style="float: left;">
+
+        </div>
+                        <div class="col-md-6">
+                    <h1 style="color: var(--ccb); margin-top: 20px">
+                      Map-based Consumer Selection
+                    </h1>
+                    <p style="color: var(--ccb); text-align: justify;">
+                        For the spatial optimization of the electric grid, the geolocation of the consumers must be provided. TFor this, a map from OpenStreetMap is integrated into the tool. The determination of the geocoordinates of the consumers can be done in three ways:
+                        . The locations of the consumers can be selected in two ways:
+                    </p>
+                            <p style="color: var(--ccb); text-align: justify;">
+                            1. Automatic detection of buildings within areas marked using drawing tools.
+        </p>
+                            <p style="color: var(--ccb); text-align: justify;">
+                                2. Manual selection of consumer locations by placing markers on the map.
+                            </p>
+
+                            <p style="color: var(--ccb); text-align: justify;">
+                                3. Manual input of the geocoordinates using input fields.
+                            </p>
+
+                        </div>
+
+            </div>
+
+                            <div class="row">
+                        <div class="col-md-6">
+                    <h1 style="color: var(--ccb); margin-top: 20px">
+                      Demand Estimation
+                    </h1>
+                    <p style="color: var(--ccb); text-align: justify;">
+                        PeopleSuN's project includes a demand modeling tool which utilizes both quantitative and qualitative survey data collected from various non-urban Nigerian villages. With an extensive dataset that includes responses from thousands of households and enterprises, it models appliance ownership, electricity consumption trends, and available expenditures for electricity services, and determines affordable monthly costs. The tool uses statistical models in conjunction with stochastic algorithms to generate likely distributions of electricity demand and expenditures. Initially, this is applied to the surveyed areas and then extrapolated to cover all non-urban regions in Nigeria. The system leverages geolocation to customize the demand modeling for each village. Furthermore, it generates different consumer categories/profiles based on geographical zones and wealth categories, aiding in a more nuanced and accurate prediction of electricity demand.
+                    </p>
+        </div>
+        <div class="col-md-6">
+            <img src="{{ url_for('static', path='assets/gui/plot.svg') }}" style="margin-top: 60px">
+        </div>
+            </div>
+
+            <div class="row" style="margin-top: 100px">
+                        <div class="col-md-6">
+            <img src="{{ url_for('static', path='assets/gui/grid_opt.svg') }}" style="float: left;">
+
+        </div>
+                        <div class="col-md-6">
+                    <h1 style="color: var(--ccb); margin-top: 20px">
+                      Spatial Grid Optimization
+                    </h1>
+                    <p style="color: var(--ccb); text-align: justify;">
+                        The spatial grid optimization tool operates through a sequence of steps that ensure efficient energy system design. The tool identifies consumers, sorts them based on proximity to the load center, and meticulously calculates the optimal setup required to connect all consumers within the grid, adhering to constraints on maximum connections per consumer and maximum distance between consumers.
+
+The tool employs a clustering algorithm to determine optimal pole locations, constructs a minimum spanning tree (MST) for efficient pole interconnectivity, and connects each consumer to their nearest pole. If needed, the number of poles is increased, ensuring all constraints are met. Furthermore, long links exceeding the maximum allowed distance are segmented into smaller ones with additional poles. Thus, the tool offers a comprehensive solution for optimal grid design.
+                    </p>
+
+                        </div>
+
+            </div>
+
+<div class="row">
+                        <div class="col-md-6">
+                    <h1 style="color: var(--ccb); margin-top: 60px">
+                      Design and Dispatch Optimization
+                    </h1>
+                    <p style="color: var(--ccb); text-align: justify;">
+                        This tool excels in the design and optimization of off-grid energy systems, integrating different types of energy converters including photovoltaic (PV) systems and diesel generators, along with components like battery systems, inverters, and rectifiers. The tool uses ERA5 satellite data and PVLIB for the modeling of solar potentials in PV systems.
+The design optimization of the tool revolves around minimizing the Levelized Cost of Energy (LCOE), a method that considers both capital and operational costs. This results in an optimal configuration that satisfies consumer demands, modeled as a mixed-integer linear model.
+Leveraging the open-source modeling framework OEMOF and the high-efficiency Gurobi solver, the tool offers an effective solution for complex optimization challenges. The insights generated by the tool - including installed capacities, time series of system operations, investment costs, CO2 emissions, and fuel requirements - provide stakeholders with invaluable information for strategic decision-making.
+                    </p>
+        </div>
+        <div class="col-md-6">
+            <img src="{{ url_for('static', path='assets/gui/design_opt.svg') }}" style="margin-top: 60px">
+        </div>
+            </div>
+
+                </div>
+
+
+        </section>
+
+             <div id="msgBox" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999;">
+              <form class="modal-content" style="max-width: 40rem">
+                <div class="container">
+                  <h1 style="text-align:left;">Using the planing tool without registration</h1>
+                  <p style="text-align:left;">To test the planning tool, you do not need to register an account, a temporary account will be created automatically. However, if you use the planning tool without registering, please note:</p>
+                    <p style="text-align:left;"> &bull; Your data will be automatically deleted after three hours</p>
+                    <p style="text-align:left;"> &bull; If you log out, you lose access to your data</p>
+                    <p style="text-align:left;"> &bull; The modeling time is limited to {{ MAX_DAYS }} days</p>
+                    <p style="text-align:left;"> &bull; The number of allowed consumers is limited to {{ MAX_CONSUMER_ANONYMOUS }}</p>
+                   <p style="text-align:left;"> &bull; The calculation time of your optimization model is limited to 5 minutes</p>
+                    <p style="text-align:left;"> Please enter the letters shown below</p>
+                    <div style="display: flex; align-items: center;">
+                    <img id="captcha_img3" style="margin-right: 1rem;">
+                    <a style="font-family: Lucida Sans Unicode; font-weight: 900; font-size: 2rem"
+                       type="button"
+                       onclick="get_captcha();"
+                    >&#x21bb;</a>
+                </div>
+                  <div style="text-align: left;">
+                  <p style="display:inline; text-align:left;"
+                  >Captcha <i>(Hint: capital letters only)</i>
+                </p>
+                </div>
+                <input
+                  type="text"
+                  class="form-control"
+                  style="max-width: 20rem"
+                  id="captcha_input3"
+                  placeholder="Enter the capital letters shown above"
+                  value=""
+                  required
+                />
+                    <p id="responseMsg3"></p>
+                  <div class="clearfix">
+                      <button onclick="anonymous_login();" type="button" class="deletebtn">Continue</button>
+                    <button onclick="document.getElementById('msgBox').style.display='none'" type="button" class="cancelbtn">Chancel</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+            <div id="consentCookie" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999;">
+              <form class="modal-content"  style="max-width: 40rem">
+                <div class="container">
+                  <h1 style="text-align:left;">Cookies</h1>
+                  <p style="text-align:left;">This website uses cookies. These are strictly necessary to allow core
+                      website functionality such as user login and account management. The website cannot be used
+                      without them.</p>
+                  <div class="clearfix">
+                      <button onclick="consent_cookie(); document.getElementById('consentCookie').style.display='none';"
+                              type="button"
+                              class="deletebtn"
+                      >Accept
+                      </button>
+                    <button onclick="document.getElementById('consentCookie').style.display='none'"
+                            type="button" class="cancelbtn">Decline</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+            <div id="registration" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999;">
+              <form class="modal-content" style="max-width: 20rem">
+                <div class="container">
+                  <h1 style="text-align:left;">Registration</h1>
+                  <div class="clearfix">
+              <div class="input-item" style="text-align: left">
+                <div style="display: flex; align-items: center;">
+                    <img id="captcha_img2" style="margin-right: 1rem;">
+                    <a style="font-family: Lucida Sans Unicode; font-weight: 900; font-size: 2rem"
+                       type="button"
+                       onclick="get_captcha();"
+                    >&#x21bb;
+                    </a>
+                </div>
+                  <p style="display:inline; text-align: left">
+                      Captcha <i>(Hint: capital letters only)</i>
+                </p>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="captcha_input2"
+                  placeholder="Please enter the capital letters shown above"
+                  value=""
+                  required
+                />
+                <p style="display:inline">
+                  Email
+                </p>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="userEmail2"
+                  placeholder="Enter your mail address"
+                  value=""
+                  required
+                />
+              </div>
+                <div class="input-item" style="text-align: left">
+                <p style="display:inline">
+                  Password
+                </p>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="userPassword2"
+                  placeholder="Enter your password"
+                  value=""
+                  required
+                />
+              </div>
+                <div class="input-item" style="text-align: left">
+                <p style="display:inline">
+                  Repeat Password
+                </p>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="userPassword3"
+                  placeholder="Enter your password"
+                  value=""
+                  required
+                />
+              </div>
+              <p id="responseMsg2"></p>
+                      <button onclick="add_user_to_db();"
+                              type="button"
+                              class="deletebtn"
+                      >Register
+                      </button>
+                    <button onclick="document.getElementById('registration').style.display='none'"
+                            type="button" class="cancelbtn">
+                        Close
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+            <div id="forgotPassword" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999;">
+              <form class="modal-content" style="max-width: 20rem">
+                <div class="container">
+                  <h1 style="text-align:left;">Reset Password</h1>
+                    <p style="text-align: left">If you have forgotten your password, a link can be sent to your registered email address that
+                        will allow you to reset your password.</p>
+                  <div class="clearfix">
+              <div class="input-item" style="text-align: left">
+                <p style="display:inline">
+                </p>
+                <div style="display: flex; align-items: center;">
+                    <img id="captcha_img" style="margin-right: 1rem;">
+                    <a style="font-family: Lucida Sans Unicode; font-weight: 900; font-size: 2rem"
+                       type="button"
+                       onclick="get_captcha();"
+                    >&#x21bb;
+                    </a>
+                </div>
+                  <p style="display:inline; text-align: left">
+                      Captcha <i>(Hint: capital letters only)</i>
+                </p>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="captcha_input"
+                  placeholder="Please enter the capital letters shown above"
+                  value=""
+                  required
+                />
+               <p style="display:inline">
+                  Email
+                </p>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="userEmail4"
+                  placeholder="Enter your mail address"
+                  value=""
+                  required
+                />
+              </div>
+              <p id="responseMsg4"></p>
+                      <button onclick="send_reset_password_email();"
+                              type="button"
+                              class="deletebtn"
+                      >Send Mail
+                      </button>
+                    <button onclick="document.getElementById('forgotPassword').style.display='none'"
+                            type="button" class="cancelbtn">
+                        Close
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+    </main>
+    {% include '_footer.html' %}
+  </body>
+{% include '_scripts.html' %}
+<script>
+const img = document.getElementById("captcha_img");
+const img2 = document.getElementById("captcha_img2");
+const img3 = document.getElementById("captcha_img3");
+let hashedCaptcha;
+function get_captcha(){
+fetch("/get_captcha")
+  .then(response => response.json())
+  .then(data => {
+    img.src = "data:image/jpeg;base64," + data.img;
+    img2.src = "data:image/jpeg;base64," + data.img;
+    img3.src = "data:image/jpeg;base64," + data.img;
+    hashedCaptcha = data.hashed_captcha;
+  });}
+get_captcha();
+</script>
+</html>
