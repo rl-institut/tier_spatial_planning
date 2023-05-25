@@ -79,7 +79,7 @@ async def home(request: Request):
     user = await accounts.get_user_from_cookie(request)
     consent = request.cookies.get("consent_cookie")
     if user is None or consent is None:
-        return templates.TemplateResponse("landing-page2.html",
+        return templates.TemplateResponse("landing-page.html",
                                           {"request": request,
                                            'MAX_DAYS': int(os.environ.get('MAX_DAYS', 14)),
                                            'MAX_CONSUMER_ANONYMOUS': int(

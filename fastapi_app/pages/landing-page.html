@@ -4,38 +4,46 @@
     {% set title='PeopleSun' %}
     {% include '_head.html' %}
     {% include '_style_msg_box.html' %}
+      <style>
+          body {
+    text-align: justify;
+}
+      </style>
   </head>
   <body onload="show_cookie_consent(); show_user_email_in_navbar();">
-  {% include '_navbar.html' %}
+  {% include '_navbar_homepage.html' %}
     <main>
-      <section class="project-setup two-columns">
-          <div class="left">
-              <div>
-                    <h1>
-                      Welcome!
-                    </h1>
-                    <p style="color:darkred">
+                    <p style="color:darkred; text-align: center;">
                       This tool is still under development. The release is for testing purposes, and the tool is not yet suitable for designing energy systems (some of the calculations are still based on dummy data). [Last updated on 21.04.2023]
                     </p>
-                    <p>
+        <section id="section" class="dashboard">
+            <div class="container">
+            <div class="row">
+                        <div class="col-md-6">
+                    <h1 style="color: var(--ccb); margin-top: 60px">
+                      Off Grid Planning Tool
+                    </h1>
+                    <p style="color: var(--ccb); text-align: justify;">
+
+                    <p style="color: var(--ccb); text-align: justify;">
                         This open-source computer tool is part of the <a href="https://www.peoplesun.org">PeopleSuN project</a>, which contains a web-based app that aims to optimize the network structure as well as the power supply system for mini-grid systems.
                     </p>
-                  <p>The features of the tool are listed below:</p>
-                  <ul>
+                  <p style="color: var(--ccb); text-align: justify;">The features of the tool are listed below:</p>
+                  <ul style="color: var(--ccb); text-align: justify;">
                       <li>
-                        Automatic identification of buildings from the OpenStreetMap inside a given boundary.
+                        Automatic identification of buildings from OpenStreetMap
                       </li>
                       <li>
-                       Optimization of electrical mini-grids
+                       Spatial optimization of electrical mini-grids
                       </li>
                       <li>
-                        Optimization of the power supply systems for mini-grids (PV, battery, and diesel-engine)
+                        Optimization of the design and unit commitment power supply systems of the mini-grids (PV systems, battery systems, inverters and diesel-engines)
                       </li>
                       <li>
                         Automatic identification of buildings that are better to be served by individual solar home systems.
                       </li>
                   </ul>
-                    <p>
+                    <p style="color: var(--ccb); text-align: justify;">
                      The tool can be tested without registration. However, users are recommended to create an account to get access to larger computing capacity and to be able to store models.
                     </p>
                     <button
@@ -45,64 +53,127 @@
                         >
                           Test it (without an account)
                     </button>
-              </div>
-          </div>
-                    <div class="right">
-              <div>
-                                      <h1>
-                      Login
-                    </h1>
-                <form>
-                  <div class="input-item">
-                    <label for="userEmail" class="form-label">
-                      Email
-                    </label>
-                    <input
-                      type="text"
-                      class="form-control"
-                      id="userEmail"
-                      name="email"
-                      placeholder="Enter your mail address"
-                    />
-                  </div>
-                    <div class="input-item">
-                    <label for="userPassword" class="form-label">
-                      Password
-                    </label>
-                    <input
-                      type="password"
-                      class="form-control"
-                      id="userPassword"
-                      name="password"
-                      placeholder="Enter your password"
-                    />
-                  </div>
-                      <input type="checkbox" class="form-check-input" id="isEnabled"/>
-                    <label for="isEnabled" > <span>&nbsp;Remember me</span></label>
-                    <p></p>
-                    <p style="text-align:left;">&nbsp;Don't have an account yet?
-                        <a href="#"
-                           onclick="document.getElementById('registration').style.display='block'"
-                        >Register here</a>
-                        <span style="float:right;">
-                            <a href="#"
-                               onclick="document.getElementById('forgotPassword').style.display='block'"
-                            >&nbsp;Forgot your password?</a>
-                        </span>
+
                     </p>
-                    <button
-                          class="btn btn--long text-right"
-                          type="button"
-                          onclick="login();"
-                        >
-                          Log in
-                    </button>
-                    <p id="responseMsg"></p>
-                </form>
-              </div>
-          </div>
-      </section>
-             <div id="msgBox" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999;">
+        </div>
+        <div class="col-md-6">
+            <img src="{{ url_for('static', path='assets/gui/off_grid.svg') }}">
+        </div>
+            </div>
+
+            <div class="row" style="margin-top: 100px">
+                        <div class="col-md-6">
+            <img src="{{ url_for('static', path='assets/gui/map_selection.svg') }}" style="float: left;">
+
+        </div>
+                        <div class="col-md-6">
+                    <h1 style="color: var(--ccb); margin-top: 20px">
+                      Map-based Consumer Selection
+                    </h1>
+                    <p style="color: var(--ccb); text-align: justify;">
+                        For the spatial optimization of the electric grid, the geolocation of the consumers must be provided. TFor this, a map from OpenStreetMap is integrated into the tool. The determination of the geocoordinates of the consumers can be done in three ways:
+                        . The locations of the consumers can be selected in two ways:
+                    </p>
+                            <p style="color: var(--ccb); text-align: justify;">
+                            1. Automatic detection of buildings within areas marked using drawing tools.
+        </p>
+                            <p style="color: var(--ccb); text-align: justify;">
+                                2. Manual selection of consumer locations by placing markers on the map.
+                            </p>
+
+                            <p style="color: var(--ccb); text-align: justify;">
+                                3. Manual input of the geocoordinates using input fields.
+                            </p>
+
+                        </div>
+
+            </div>
+
+                            <div class="row">
+                        <div class="col-md-6">
+                    <h1 style="color: var(--ccb); margin-top: 20px">
+                      Demand Estimation
+                    </h1>
+                    <p style="color: var(--ccb); text-align: justify;">
+                        PeopleSuN's project includes a demand modeling tool which utilizes both quantitative and qualitative survey data collected from various non-urban Nigerian villages. With an extensive dataset that includes responses from thousands of households and enterprises, it models appliance ownership, electricity consumption trends, and available expenditures for electricity services, and determines affordable monthly costs. The tool uses statistical models in conjunction with stochastic algorithms to generate likely distributions of electricity demand and expenditures. Initially, this is applied to the surveyed areas and then extrapolated to cover all non-urban regions in Nigeria. The system leverages geolocation to customize the demand modeling for each village. Furthermore, it generates different consumer categories/profiles based on geographical zones and wealth categories, aiding in a more nuanced and accurate prediction of electricity demand.
+                    </p>
+        </div>
+        <div class="col-md-6">
+            <img src="{{ url_for('static', path='assets/gui/plot.svg') }}" style="margin-top: 60px">
+        </div>
+            </div>
+
+            <div class="row" style="margin-top: 100px">
+                        <div class="col-md-6">
+            <img src="{{ url_for('static', path='assets/gui/grid_opt.svg') }}" style="float: left;">
+
+        </div>
+                        <div class="col-md-6">
+                    <h1 style="color: var(--ccb); margin-top: 20px">
+                      Spatial Grid Optimization
+                    </h1>
+                    <p style="color: var(--ccb); text-align: justify;">
+                        The spatial grid optimization tool operates through a sequence of steps that ensure efficient energy system design. The tool identifies consumers, sorts them based on proximity to the load center, and meticulously calculates the optimal setup required to connect all consumers within the grid, adhering to constraints on maximum connections per consumer and maximum distance between consumers.
+
+The tool employs a clustering algorithm to determine optimal pole locations, constructs a minimum spanning tree (MST) for efficient pole interconnectivity, and connects each consumer to their nearest pole. If needed, the number of poles is increased, ensuring all constraints are met. Furthermore, long links exceeding the maximum allowed distance are segmented into smaller ones with additional poles. Thus, the tool offers a comprehensive solution for optimal grid design.
+                    </p>
+
+                        </div>
+
+            </div>
+
+<div class="row">
+                        <div class="col-md-6">
+                    <h1 style="color: var(--ccb); margin-top: 60px">
+                      Design and Dispatch Optimization
+                    </h1>
+                    <p style="color: var(--ccb); text-align: justify;">
+                        This tool excels in the design and optimization of off-grid energy systems, integrating different types of energy converters including photovoltaic (PV) systems and diesel generators, along with components like battery systems, inverters, and rectifiers. The tool uses ERA5 satellite data and PVLIB for the modeling of solar potentials in PV systems.
+The design optimization of the tool revolves around minimizing the Levelized Cost of Energy (LCOE), a method that considers both capital and operational costs. This results in an optimal configuration that satisfies consumer demands, modeled as a mixed-integer linear model.
+Leveraging the open-source modeling framework OEMOF and the high-efficiency Gurobi solver, the tool offers an effective solution for complex optimization challenges. The insights generated by the tool - including installed capacities, time series of system operations, investment costs, CO2 emissions, and fuel requirements - provide stakeholders with invaluable information for strategic decision-making.
+                    </p>
+        </div>
+        <div class="col-md-6">
+            <img src="{{ url_for('static', path='assets/gui/design_opt.svg') }}" style="margin-top: 60px">
+        </div>
+            </div>
+
+                </div>
+
+
+        </section>
+            <div id="login" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999; text-align: left">
+    <form class="modal-content" style="max-width: 24rem">
+        <div class="container">
+            <h1 style="text-align:left;">Login</h1>
+
+                <div style="display:inline">
+                    <p style="text-align: left">Email</p>
+                    <div class="input-item">
+                        <input type="text" class="form-control" id="userEmail" name="email" placeholder="Enter your mail address" />
+                    </div>
+                    <p style="text-align: left">Password</p>
+                    <div class="input-item">
+                        <input type="password" class="form-control" id="userPassword" name="password" placeholder="Enter your password" />
+                    </div>
+                </div>
+        <div style="text-align: left;">
+          <input type="checkbox" class="form-check-input" id="isEnabled"/>
+          <label for="isEnabled" style="margin-left: 5px;"><span>Remember me</span></label>
+        </div>
+                <p style="text-align:left;">&nbsp;Don't have an account yet?
+                    <a href="#" onclick="document.getElementById('registration').style.display='block'; document.getElementById('login').style.display='none';">Register here</a>
+            <p style="text-align: left"><a href="#" onclick="document.getElementById('forgotPassword').style.display='block'">&nbsp;Forgot your password?</a></p>
+
+                </p>
+                <button onclick="login();" type="button" class="deletebtn">Log in</button>
+                <button onclick="document.getElementById('login').style.display='none'" type="button" class="cancelbtn">Close</button>
+                <p id="responseMsg"></p>
+
+        </div>
+    </form>
+</div>
+            <div id="msgBox" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999;">
               <form class="modal-content" style="max-width: 40rem">
                 <div class="container">
                   <h1 style="text-align:left;">Using the planing tool without registration</h1>
