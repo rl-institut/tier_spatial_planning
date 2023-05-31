@@ -18,29 +18,28 @@
     width: 150px;  /* Adjust width as needed */
     height: auto;  /* Maintains aspect ratio */
 }
+
 </style>
 
   </head>
   <body onload="show_cookie_consent(); show_user_email_in_navbar();">
   {% include '_navbar_homepage.html' %}
     <main>
-                    <p style="color:darkred; text-align: center;">
-                      This tool is still under development. The release is for testing purposes, and the tool is not yet suitable for designing energy systems (some of the calculations are still based on dummy data). [Last updated on 21.04.2023]
-                    </p>
-        <section id="section" class="dashboard">
-            <div class="container">
-            <div class="row">
+
+        <section id="section" class="dashboard" style="background-color: var(--ccb);">
+            <div class="container" style="background-color: transparent;">
+            <div class="row" style="background-color: transparent;">
                         <div class="col-md-6">
-                    <h1 style="color: var(--ccb); margin-top: 60px">
+                    <h1 style="color: var(--cdg); margin-top: 60px">
                       Off Grid Planning Tool
                     </h1>
-                    <p style="color: var(--ccb); text-align: justify;">
+                    <p style="color: var(--cdg); text-align: justify;">
 
-                    <p style="color: var(--ccb); text-align: justify;">
-                        This open-source computer tool is part of the <a href="https://www.peoplesun.org">PeopleSuN project</a>, which contains a web-based app that aims to optimize the network structure as well as the power supply system for off-grid systems.
+                    <p style="color: var(--cdg); text-align: justify;">
+                        This open-source computer tool is part of the PeopleSuN project, which contains a web-based app that aims to optimize the network structure as well as the power supply system for off-grid systems.
                     </p>
-                  <p style="color: var(--ccb); text-align: justify;">The features of the tool are listed below:</p>
-                  <ul style="color: var(--ccb); text-align: justify;">
+                  <p style="color: var(--cdg); text-align: justify;">The features of the tool are listed below:</p>
+                  <ul style="color: var(--cdg); text-align: justify;">
                       <li>
                         Automatic identification of buildings from OpenStreetMap
                       </li>
@@ -54,13 +53,14 @@
                         Automatic identification of buildings that are better to be served by individual solar home systems.
                       </li>
                   </ul>
-                    <p style="color: var(--ccb); text-align: justify;">
+                    <p style="color: var(--cdg); text-align: justify;">
                      The tool can be tested without registration. However, users are recommended to create an account to get access to larger computing capacity and to be able to store models.
                     </p>
                     <button
                           class="btn btn--long text-right"
                           type="button"
                           onclick="document.getElementById('msgBox').style.display='block'"
+                          style="background-color: var(--cdg); color: var(--ccb);"
                         >
                           Test it (without an account)
                     </button>
@@ -68,10 +68,19 @@
                     </p>
         </div>
         <div class="col-md-6">
-            <img src="{{ url_for('static', path='assets/gui/off_grid.svg') }}">
+            <img src="{{ url_for('static', path='assets/gui/off_grid_grey.svg') }}">
         </div>
             </div>
+                                </div>
 
+
+        </section>
+                    <p style="color:darkred; text-align: center; margin-top: 50px">
+                      This tool is still under development. The release is for testing purposes, and the tool is not yet suitable for designing energy systems (some of the calculations are still based on dummy data). [Last updated on 21.04.2023]
+                    </p>
+
+                        <section id="section" class="dashboard">
+            <div class="container">
             <div class="row" style="margin-top: 100px">
                         <div class="col-md-6">
             <img src="{{ url_for('static', path='assets/gui/map_selection.svg') }}" style="float: left;">
@@ -145,32 +154,34 @@ Leveraging the open-source modeling framework OEMOF and the high-efficiency Guro
                     </p>
         </div>
         <div class="col-md-6">
-            <img src="{{ url_for('static', path='assets/gui/design_opt.svg') }}" style="margin-top: 60px">
+            <img src="{{ url_for('static', path='assets/gui/design_opt.svg') }}">
         </div>
             </div>
-        <div class="row" style="margin-top: 10rem">
-            <hr>
-            <h1 style="color: var(--ccb); text-align: left;">About</h1>
-            <p style="color: var(--ccb); text-align: left">
+                                </div>
+
+
+        </section>
+
+            <div class="container-fluid" style="background-color: var(--ccb); width: 100%; padding-bottom: 2rem; margin-bottom: 0px">
+    <div class="container" style="background-color: var(--ccb); width: 100%">
+        <div class="row">
+            <h1 style="color: var(--cdg); text-align: left;">About</h1>
+            <p style="color: var(--cdg); text-align: left">
             PeopleSuN is a project funded by the German Federal Ministry of Education and Research (BMBF) within the
                 funding initiative "Client II - International Partnerships for Suistainable Innovations". The off-grid tool was developed
                 by the Department of Energy Engineering and Environmental Protection at the Technische Universität
                 Berlin in cooperation with the Reiner-Lemoine-Institute. Gurobi has provided a free version of the Gurobi Solver for the non-commercial project.
             </p>
-<div class="image-container">
+<div class="image-container"  >
     <img src="{{ url_for('static', path='images/LogoBMBF.svg') }}">
     <img src="{{ url_for('static', path='images/logo-client2-en.svg') }}">
     <img src="{{ url_for('static', path='images/LogoTUB.svg') }}" style="width: 100px">
     <img src="{{ url_for('static', path='images/LogoRLI.svg') }}" style="width: 120px">
     <img src="{{ url_for('static', path='images/gurobi-optimizer.svg') }}">
-
 </div>
-
         </div>
-                </div>
+                </div></div>
 
-
-        </section>
             <div id="login" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999; text-align: left">
     <form class="modal-content" style="max-width: 24rem">
         <div class="container">
@@ -236,7 +247,7 @@ Leveraging the open-source modeling framework OEMOF and the high-efficiency Guro
                 />
                     <p id="responseMsg3"></p>
                   <div class="clearfix">
-                      <button  id="myButton" onclick="anonymous_login();" type="button" class="deletebtn">Continue</button>
+                      <button  id="myButton"onclick="anonymous_login();" type="button" class="deletebtn">Continue</button>
                     <button onclick="document.getElementById('msgBox').style.display='none'" type="button" class="cancelbtn">Chancel</button>
                   </div>
                 </div>
@@ -394,7 +405,7 @@ Leveraging the open-source modeling framework OEMOF and the high-efficiency Guro
               </form>
             </div>
     </main>
-    {% include '_footer.html' %}
+    {% include '_footer_homepage.html' %}
   </body>
 {% include '_scripts.html' %}
 <script>
