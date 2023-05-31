@@ -1,0 +1,3 @@
+FROM mysql:latest
+
+RUN usermod -u 1006 mysql && groupmod -g 1006 mysql

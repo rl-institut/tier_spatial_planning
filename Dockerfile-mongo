@@ -1,0 +1,3 @@
+FROM mongo:latest
+
+RUN usermod -u 1006 mongodb && groupmod -g 1006 mongodb

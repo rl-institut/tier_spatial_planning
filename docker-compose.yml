@@ -3,7 +3,7 @@ services:
   app:
     container_name: 'app'
     build: .
-    # command: gunicorn -w 2 -k uvicorn.workers.UvicornWorker fastapi_app.main:app --bind 0.0.0.0:40000 --timeout 1200  --forwarded-allow-ips='*'
+    # command: gunicorn -w 2 -k uvicorn.workers.UvicornWorker fastapi_app.main:app --bind 0.0.0.0:40000 --timeout 1200  --forwarded-allow-ips='*' --access-logfile - --error-logfile -
     command: uvicorn fastapi_app.main:app --host 0.0.0.0 --reload --port 40000 --forwarded-allow-ips='*' --proxy-headers
     restart: always
     environment:
@@ -28,7 +28,9 @@ services:
       - mongo
   mysql:
     container_name: mysql
-    image: mysql
+    build:
+      context: .
+      dockerfile: Dockerfile-mysql
     restart: always
     environment:
       MYSQL_DATABASE: peoplesun_user_db
@@ -121,7 +123,9 @@ services:
       - app
   mongo:
     container_name: 'mongo'
-    image: mongo:latest
+    build:
+      context: .
+      dockerfile: Dockerfile-mongo
     restart: always
     environment:
       - MONGO_INITDB_ROOT_USERNAME=ackee_user
