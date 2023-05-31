@@ -37,7 +37,7 @@
                     <p style="color: var(--ccb); text-align: justify;">
 
                     <p style="color: var(--ccb); text-align: justify;">
-                        This open-source computer tool is part of the <a href="https://www.peoplesun.org">PeopleSuN project</a>, which contains a web-based app that aims to optimize the network structure as well as the power supply system for mini-grid systems.
+                        This open-source computer tool is part of the <a href="https://www.peoplesun.org">PeopleSuN project</a>, which contains a web-based app that aims to optimize the network structure as well as the power supply system for off-grid systems.
                     </p>
                   <p style="color: var(--ccb); text-align: justify;">The features of the tool are listed below:</p>
                   <ul style="color: var(--ccb); text-align: justify;">
@@ -45,10 +45,10 @@
                         Automatic identification of buildings from OpenStreetMap
                       </li>
                       <li>
-                       Spatial optimization of electrical mini-grids
+                       Spatial optimization of electrical off-grids
                       </li>
                       <li>
-                        Optimization of the design and unit commitment power supply systems of the mini-grids (PV systems, battery systems, inverters and diesel-engines)
+                        Optimization of the design and unit commitment power supply systems of the off-grids (PV systems, battery systems, inverters and diesel-engines)
                       </li>
                       <li>
                         Automatic identification of buildings that are better to be served by individual solar home systems.
@@ -203,7 +203,7 @@ Leveraging the open-source modeling framework OEMOF and the high-efficiency Guro
     </form>
 </div>
             <div id="msgBox" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999;">
-              <form class="modal-content" style="max-width: 40rem">
+              <form class="modal-content" id="myForm" style="max-width: 40rem">
                 <div class="container">
                   <h1 style="text-align:left;">Using the planing tool without registration</h1>
                   <p style="text-align:left;">To test the planning tool, you do not need to register an account, a temporary account will be created automatically. However, if you use the planning tool without registering, please note:</p>
@@ -236,7 +236,7 @@ Leveraging the open-source modeling framework OEMOF and the high-efficiency Guro
                 />
                     <p id="responseMsg3"></p>
                   <div class="clearfix">
-                      <button onclick="anonymous_login();" type="button" class="deletebtn">Continue</button>
+                      <button  id="myButton" onclick="anonymous_login();" type="button" class="deletebtn">Continue</button>
                     <button onclick="document.getElementById('msgBox').style.display='none'" type="button" class="cancelbtn">Chancel</button>
                   </div>
                 </div>
@@ -412,5 +412,9 @@ fetch("/get_captcha")
     hashedCaptcha = data.hashed_captcha;
   });}
 get_captcha();
+document.getElementById('myForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  document.getElementById('myButton').click();
+});
 </script>
 </html>
