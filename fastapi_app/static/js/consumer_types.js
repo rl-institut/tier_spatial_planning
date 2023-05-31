@@ -1,4 +1,7 @@
-let consumer_list = {'H': 'Houshold', 'E': 'Enterprise', 'P': 'Public Service', 'O': 'Ohter'};
+let consumer_list = {
+    'H': 'Houshold',
+    'E': 'Enterprise',
+    'P': 'Public Service'};
 let consumer_type = "H";
 (function () {
     let option_consumer =  '';
@@ -8,21 +11,77 @@ let consumer_type = "H";
     document.getElementById('consumer').innerHTML = option_consumer;
 })();
 
-let enterprise_list = {'group1': 'Bakery', 'group2': 'Gas Station'};
-let enterpise_option =  '';
-for(let enterprise_code in enterprise_list){
-    let selected = (enterprise_code == consumer_type) ? ' selected' : '';
-    enterpise_option += '<option value="'+enterprise_code+'"'+selected+'>'+enterprise_list[enterprise_code]+'</option>';}
+let public_service_list = {
+'group1' : 'Public Health Centre',
+'group2' : 'Public Clinic',
+'group3' : 'Public CHPS',
+'group4' : 'School',
+'group5' : 'Cell Tower',
+'group6' : 'Street Light'
+}
 
-let large_load_list = {'W': 'Welder', 'M': 'Motor', 'I': 'Milling'};
-let large_load_type = "M";
-(function () {
+let enterprise_list = {
+
+ 'group1' :'Groceries',
+ 'group2' :'Restaurant',
+ 'group3' :'Bar',
+ 'group4' :'Drinks',
+ 'group5' :'Fruits or vegetables',
+ 'group6' :'Tailoring',
+ 'group7' :'Beauty or Hair',
+ 'group8' :'Metalworks',
+ 'group9' :'Car or Motorbike Repair',
+ 'group10' :'Carpentry',
+ 'group11' :'Laundry',
+ 'group12' :'Cycle Repair',
+ 'group13' :'Shoemaking',
+ 'group14' :'Medical',
+ 'group15' :'Clothes and accessories',
+ 'group16' :'Electronics',
+ 'group17' :'Retail or Other',
+ 'group18' :'Agricultural',
+ 'group19' :'Mobile or Electronics Repair',
+ 'group20' :'Digital Other',
+ 'group21' :'Cybercafé',
+ 'group22' :'Cinema or Betting',
+ 'group23' :'Photostudio',
+ 'group24' :'Mill or Thresher or Grater',
+ 'group25' :'Agricultural or Other'};
+
+let enterpise_option =  '';
+
+function dropDownMenu(dropdown_list) {
+    enterpise_option =  '';
+    for(let enterprise_code in dropdown_list){
+    let selected = (enterprise_code == consumer_type) ? ' selected' : '';
+    enterpise_option += '<option value="'+enterprise_code+'"'+selected+'>'+dropdown_list[enterprise_code]+'</option>';
+    document.getElementById('enterprise').innerHTML = enterpise_option;
+    document.getElementById('enterprise').disabled = false;}
+}
+
+let large_load_list = {
+    'group1': 'Milling Machine (7.5kW)',
+    'group2': 'Crop Dryer (8kW)',
+    'group3': 'Thresher (8kW)',
+    'group4': 'Grinder (5.2kW)',
+    'group5': 'Sawmill (2.25kW)',
+    'group6': 'Circular Wood Saw (1.5kW)',
+    'group7': 'Jigsaw (0.4kW)',
+    'group8': 'Drill (0.4kW)',
+    'group9': 'Welder (5.25kW)',
+    'group10': 'Angle Grinder (2kW)',
+    'group11': 'Drill (0.4kW)',
+    'group12': 'Welder (5.25kW)',
+    'group13': 'Angle Grinder (2kW)'
+};
+let large_load_type = "group1";
+
     let option_load =  '';
     for(let load_code in large_load_list){
         let selected = (load_code == large_load_type) ? ' selected' : '';
         option_load += '<option value="'+load_code+'"'+selected+'>'+large_load_list[load_code]+'</option>';}
     document.getElementById('loads').innerHTML = option_load;
-})();
+
 
 document.getElementById('loads').disabled = true;
 document.getElementById('loads').value = "";
@@ -32,19 +91,18 @@ document.getElementById('consumer').addEventListener('change', function() {
     if (this.value === 'H') {
         document.getElementById('enterprise').value = '';
         document.getElementById('enterprise').disabled = true;
-        document.getElementById('loads').disabled = true;
-        document.getElementById('loads').value = '';
-        document.getElementById('add').disabled = true;
-        document.getElementById('number_loads').disabled = true;
-        deleteAllElements();
-    } else {
+        deactivate_large_loads();
+    }
+    else if (this.value === 'E') {
+        dropDownMenu(enterprise_list);
         document.getElementById('enterprise').innerHTML = enterpise_option;
         document.getElementById('enterprise').value = 'group1';
         document.getElementById('enterprise').disabled = false;
-        document.getElementById('loads').disabled = false;
-        document.getElementById('loads').value = 'W';
-        document.getElementById('add').disabled = false;
-        document.getElementById('number_loads').disabled = false;
+        activate_large_loads();
+    }
+    else if (this.value === 'P') {
+        dropDownMenu(public_service_list);
+        deactivate_large_loads();
     }
 });
 document.getElementById('enterprise').disabled = true;
@@ -85,19 +143,19 @@ function markerOnClick(e){
            document.getElementById('consumer').value = 'H';
            document.getElementById('enterprise').disabled = true;
            document.getElementById('enterprise').value = '';
-           document.getElementById('loads').disabled = true;
-           document.getElementById('loads').value = "";
-           document.getElementById('add').disabled = true;
-           document.getElementById('number_loads').disabled = true;
+           deactivate_large_loads();
 
         }
-        else {
+        else if (marker.consumer_type === 'enterprise'){
+            dropDownMenu(enterprise_list);
             document.getElementById('consumer').value = 'E';
-            document.getElementById('enterprise').disabled = false;
             document.getElementById('enterprise').value = 'group1';
-           document.getElementById('loads').disabled = false;
-           document.getElementById('add').disabled = false;
-           document.getElementById('number_loads').disabled = false;
+            activate_large_loads();
+        }
+        else if (marker.consumer_type === 'public_service'){
+            dropDownMenu(public_service_list);
+            deactivate_large_loads()
+
         }
         document.getElementById('consumer').disabled = false;
         document.getElementById('longitude').disabled = false;
@@ -151,4 +209,22 @@ document.getElementById('longitude').addEventListener('change', move_marker);
 function deleteAllElements() {
     var listDiv = document.getElementById('load_list');
     listDiv.innerHTML = '';
+}
+
+
+function activate_large_loads() {
+    deleteAllElements();
+    document.getElementById('loads').innerHTML = option_load;
+    document.getElementById('loads').disabled = false;
+    document.getElementById('add').disabled = false;
+    document.getElementById('number_loads').disabled = false;
+}
+
+
+function deactivate_large_loads() {
+    deleteAllElements();
+    document.getElementById('loads').disabled = true;
+    document.getElementById('loads').value = "";
+    document.getElementById('add').disabled = true;
+    document.getElementById('number_loads').disabled = true;
 }
