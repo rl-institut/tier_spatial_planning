@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import os
 import asyncio
 from sqlalchemy import delete, text
 from fastapi_app.io.db import models
