@@ -7,6 +7,19 @@
       <style>
           body { text-align: justify;}
       </style>
+
+      <style>
+.image-container {
+    display: flex;
+    justify-content: space-between; /* Adjusts space between images */
+}
+
+.image-container img {
+    width: 150px;  /* Adjust width as needed */
+    height: auto;  /* Maintains aspect ratio */
+}
+</style>
+
   </head>
   <body onload="show_cookie_consent(); show_user_email_in_navbar();">
   {% include '_navbar_homepage.html' %}
@@ -120,7 +133,7 @@ The tool employs a clustering algorithm to determine optimal pole locations, con
 
             </div>
 
-<div class="row">
+            <div class="row">
                         <div class="col-md-6">
                     <h1 style="color: var(--ccb); margin-top: 60px">
                       Design and Dispatch Optimization
@@ -135,7 +148,25 @@ Leveraging the open-source modeling framework OEMOF and the high-efficiency Guro
             <img src="{{ url_for('static', path='assets/gui/design_opt.svg') }}" style="margin-top: 60px">
         </div>
             </div>
+        <div class="row" style="margin-top: 10rem">
+            <hr>
+            <h1 style="color: var(--ccb); text-align: left;">About</h1>
+            <p style="color: var(--ccb); text-align: left">
+            PeopleSuN is a project funded by the German Federal Ministry of Education and Research (BMBF) within the
+                funding initiative "Client II - International Partnerships for Suistainable Innovations". The off-grid tool was developed
+                by the Department of Energy Engineering and Environmental Protection at the Technische Universität
+                Berlin in cooperation with the Reiner-Lemoine-Institute. Gurobi has provided a free version of the Gurobi Solver for the non-commercial project.
+            </p>
+<div class="image-container">
+    <img src="{{ url_for('static', path='images/LogoBMBF.svg') }}">
+    <img src="{{ url_for('static', path='images/logo-client2-en.svg') }}">
+    <img src="{{ url_for('static', path='images/LogoTUB.svg') }}" style="width: 100px">
+    <img src="{{ url_for('static', path='images/LogoRLI.svg') }}" style="width: 120px">
+    <img src="{{ url_for('static', path='images/gurobi-optimizer.svg') }}">
 
+</div>
+
+        </div>
                 </div>
 
 
