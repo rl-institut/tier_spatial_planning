@@ -28,7 +28,15 @@ captcha==0.4
 pymongo==4.3.3
 openpyxl==3.1.2
 geopandas~=0.13.0
-feedinlib==0.1.0rc4 --no-deps
 XlsxWriter~=3.1.0
 networkx~=3.0
 PyUtilib~=6.0.0
+netCDF4==1.6.3
+pvlib==0.9.5
+windpowerlib==0.2.1
+requests==2.30.0
+cdsapi==0.6.1
+oedialect==0.0.10
+tables==3.8.0
+descartes==1.1.0
+
