@@ -92,12 +92,12 @@
                               </label>
                               </span>
                               </p>
-                              <a id="drawPolygon" class="btn btn--medium"  href="#" style="height: 32px; display: flex; justify-content: center; align-items: center; max-width: 180px; margin-bottom: 10px;">Draw Polygon</a>
-                            <a id="drawRectangle" class="btn btn--medium"  href="#" style="height: 32px; display: flex; justify-content: center; align-items: center; max-width: 180px">Draw Rectangle</a>
+                              <a id="drawPolygon" class="btn btn--medium"  href="javascript:void(0);" style="height: 32px; display: flex; justify-content: center; align-items: center; max-width: 180px; margin-bottom: 10px;">Draw Polygon</a>
+                            <a id="drawRectangle" class="btn btn--medium"  href="javascript:void(0);" style="height: 32px; display: flex; justify-content: center; align-items: center; max-width: 180px">Draw Rectangle</a>
                               <p></p>
                             <p><strong>Define individual consumer manually on the map by mouse click</strong></p>
                               <p></p>
-                            <a id="drawMarker" class="btn btn--medium" href="#" style="height: 32px; display: flex; justify-content: center; align-items: center; max-width: 180px">Mark Consumers</a>
+                            <a id="drawMarker" class="btn btn--medium" href="javascript:void(0);" style="height: 32px; display: flex; justify-content: center; align-items: center; max-width: 180px">Mark Consumers</a>
                               <p></p>
                             <p><strong>Define individual consumer manually by specifying the geocoordinates</strong></p>
                               <p></p>
@@ -130,7 +130,7 @@
                                   />
                                   <span class="input-group-text" style="margin-right: 8px;">Degree</span>
                                 </div>
-                                <a id="submit" class="btn btn--medium"  href="#" onclick="add_consumer();" style="height: 32px; display: flex; align-items: center; justify-content: center;">Submit</a>
+                                <a id="submit" class="btn btn--medium"  href="javascript:void(0);" onclick="add_consumer();" style="height: 32px; display: flex; align-items: center; justify-content: center;">Submit</a>
                               </div>
                           </div>
                             </div>
@@ -218,7 +218,7 @@
                                            class="btn btn--medium"
                                            style="height: 32px; display: flex; align-items: center; justify-content: center;"
                                            onclick="delete_consumer();"
-                                           href="#">Delete</a>
+                                           href="javascript:void(0);">Delete</a>
                                     </TD>
                                    <TD><span style="float:right;"><a>&nbsp;
                                    </a></span></TD>
@@ -258,13 +258,13 @@
                                         <a id="add"
                                            class="btn btn--medium"
                                            style="height: 32px; display: flex; align-items: center; justify-content: center;  margin-bottom: 20px; width: 200px;"
-                                           onclick="add_load();"
-                                           href="#">Add Load</a>
+                                           onclick="addElement();"
+                                           href="javascript:void(0);">Add Load</a>
                                   </div>
                                   <div>
 
                                   <p><b>Selected Loads</b></p>
-                                      <div class="list" id="load_list" style="width: 200px"></div></div>
+                                      <div class="list" id="load_list" style="width: 400px"></div></div>
                                   <div>
                                   </div>
                                   </div>
@@ -287,7 +287,7 @@
                 <h1>No Selection</h1>
                 <p>No consumers are selected. You must select the geolocation of the consumers before you go
                     to the next page.</p>
-                <a class="btn btn--long text-right" href="#" onclick="hide_no_selection_prompt();">OK</a>
+                <a class="btn btn--long text-right" href="javascript:void(0);" onclick="hide_no_selection_prompt();">OK</a>
 
             </div>
         </form>
@@ -321,13 +321,7 @@ document.getElementById('toggleswitch2').addEventListener('change', function (ev
   }
 });
 
-document.getElementById('toggleswitch2').addEventListener('change', function (event) {
-    if (event.target.checked && accordionTwo._isShown) {
-      accordionThree.show();
-    } else {
-      accordionThree.hide();
-    }
-  });
+
 
   // Uncheck 'toggleswitch2' when 'collapseTwo' is hidden
   $('#collapseTwo').on('hidden.bs.collapse', function () {
@@ -372,8 +366,6 @@ function delete_consumer() {
     });
 }
 
-
-document.getElementById('add').addEventListener('click', addElement);
 
 function addElement() {
     // Get the dropdown selected value
