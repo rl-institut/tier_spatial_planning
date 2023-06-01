@@ -4206,4 +4206,20 @@ nav.navbar .dropdown-menu li {
   box-shadow: 0 0 0 0.25rem rgba(31, 86, 125, 0.1);
 }
 
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
 
+.modal {
+  animation: modalFadeIn 0.3s;
+}
+
+@keyframes loadingEffect {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+    .dashboard {
+      animation: loadingEffect 0.5s;
+    }

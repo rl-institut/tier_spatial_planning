@@ -6,9 +6,7 @@
     {% include '_style_msg_box.html' %}
       <style>
           body { text-align: justify;}
-      </style>
 
-      <style>
 .image-container {
     display: flex;
     justify-content: space-between; /* Adjusts space between images */
@@ -17,6 +15,10 @@
 .image-container img {
     width: 150px;  /* Adjust width as needed */
     height: auto;  /* Maintains aspect ratio */
+}
+
+.row {
+  animation: loadingEffect 1s;
 }
 
 </style>
@@ -29,7 +31,9 @@
         <section id="section" class="dashboard" style="background-color: var(--ccb);">
             <div class="container" style="background-color: transparent;">
             <div class="row" style="background-color: transparent;">
-                        <div class="col-md-6">
+<div class="row parallax" style="animation: loadingEffect 0.3s; background-color: transparent;">
+
+                        <div class="col-md-6 no-reveal">
                     <h1 style="color: var(--cdg); margin-top: 60px">
                       Off Grid Planning Tool
                     </h1>
@@ -67,11 +71,11 @@
 
                     </p>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-6 no-reveal">
             <img src="{{ url_for('static', path='assets/gui/off_grid_grey.svg') }}">
         </div>
             </div>
-                                </div>
+                                </div></div>
 
 
         </section>
@@ -426,5 +430,26 @@ document.getElementById('myForm').addEventListener('submit', function(e) {
   e.preventDefault();
   document.getElementById('myButton').click();
 });
+$(window).scroll(function() {
+    var scrollTop = $(this).scrollTop();
+    $('.parallax').css('transform', 'translateY(' + -(scrollTop * 0.2) + 'px)');
+});
 </script>
+<script src="https://unpkg.com/scrollreveal"></script>
+<script>
+  ScrollReveal().reveal('.col-md-6:nth-child(odd):not(.no-reveal)', {
+    origin: 'left',
+    distance: '0px',
+    duration: 1000,
+    reset: false
+  });
+
+  ScrollReveal().reveal('.col-md-6:nth-child(even):not(.no-reveal)', {
+    origin: 'right',
+    distance: '0px',
+    duration: 1000,
+    reset: false
+  });
+</script>
+
 </html>

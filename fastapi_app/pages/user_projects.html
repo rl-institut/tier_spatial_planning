@@ -4,6 +4,11 @@
 {% set title= 'Projects' %}
 {% include '_head.html' %}
 {% include '_style_msg_box.html' %}
+<style>
+    .dashboard {
+  animation: loadingEffect 1s;
+}
+</style>
   </head>
   <body onload="redirect_if_cookie_is_missing(true, true);
                 show_user_email_in_navbar();
