@@ -21,6 +21,7 @@ import fastapi_app.tools.coordinates_conversion as conv
 import fastapi_app.tools.shs_identification as shs_ident
 import fastapi_app.io.db.models as models
 from fastapi import FastAPI, Request, Response
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.responses import RedirectResponse, FileResponse, JSONResponse, HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
@@ -52,7 +53,9 @@ json_object = Dict[Any, Any]
 json_array = List[Any]
 import_structure = Union[json_array, json_object]
 
-
+@app.exception_handler(Exception)
+async def exception_handler(request: Request, exc: Exception):
+    return RedirectResponse(url="/?internal_error", status_code=303)
 
 @app.get('/favicon.ico', include_in_schema=False)
 async def favicon():

@@ -6,7 +6,8 @@
 {% include '_style_msg_box.html' %}
   </head>
   <body onload="redirect_if_cookie_is_missing(true, true);
-                show_user_email_in_navbar();">
+                show_user_email_in_navbar();
+                set_and_show_error_msg();">
 {% include '_navbar.html' %}
     <main>
       <section class="dashboard">
@@ -91,8 +92,26 @@
             </div>
             {% endfor %}
         {% endif %}
+        <div id="msgBox" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999; text-align: left">
+            <form class="modal-content" style="max-width: 24rem">
+                <div class="container">
+                    <h1>Warning</h1>
+                    <p id="responseMsg"></p>
+                        <button onclick="document.getElementById('msgBox').style.display='none'" type="button" class="deletebtn">OK</button>
+
+                </div>
+            </form>
+        </div>
     </main>
   {% include '_footer.html' %}
   </body>
 {% include '_scripts.html' %}
+<script>
+        function set_and_show_error_msg() {
+    if(window.location.href.includes("/?internal_error")) {
+        document.getElementById('responseMsg').textContent = "An internal server error occurred!";
+        document.getElementById('msgBox').style.display = "block";
+    }
+    }
+</script>
 </html>
