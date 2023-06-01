@@ -1,5 +1,6 @@
 import logging
 import os
+import traceback
 
 directory = os.getcwd() + '/logs'
 
@@ -23,7 +24,9 @@ class CustomLogger(logging.Logger):
             msg += '; ' + str(request.scope) if hasattr(request,'scope') else ''
         except Exception:
             msg += ''
-        msg += '\n'
+        msg += '\n\n'
+        msg += traceback.format_exc()
+        msg += '\n\n'
         self.error(msg)
 
 

@@ -120,6 +120,7 @@ async def home(request: Request):
 
 @app.get("/project_setup", response_class=HTMLResponse)
 async def project_setup(request: Request):
+    raise TypeError("Not implemented")
     user = await accounts.get_user_from_cookie(request)
     project_id = request.query_params.get('project_id')
     if project_id is None:
