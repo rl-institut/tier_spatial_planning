@@ -35,6 +35,7 @@ from fastapi_app.io.db import config, inserts, queries
 from fastapi_app.io.df_to_excel import df_to_xlsx
 import pyutilib.subprocess.GlobalData
 from fastapi_app.tools.solar_potential import get_dc_feed_in
+from fastapi_app.tools.error_logger import logger as error_logger
 
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 
@@ -55,6 +56,12 @@ import_structure = Union[json_array, json_object]
 
 @app.exception_handler(Exception)
 async def exception_handler(request: Request, exc: Exception):
+    try:
+        user = await accounts.get_user_from_cookie(request)
+        user_name = user.email
+    except:
+        user_name = 'unkown username'
+    error_logger.error_log(exc, request, user_name)
     return RedirectResponse(url="/?internal_error", status_code=303)
 
 @app.get('/favicon.ico', include_in_schema=False)
