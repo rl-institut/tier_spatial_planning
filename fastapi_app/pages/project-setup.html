@@ -115,7 +115,7 @@
                     id="startDate"
                     name="project-start"
 
-                    min="2020-01-01"
+                    min="2023-01-01"
                     max="2050-12-31"
                     required
                   />
@@ -179,9 +179,9 @@
     {% include '_scripts.html' %}
       <script>
       var currentDate = new Date();
-      var lastYear = currentDate.getFullYear() - 1;
-      var firstDayLastYear = new Date(Date.UTC(lastYear, 1, 1));
+      var Year = currentDate.getFullYear();
+      var firstDay = new Date(Date.UTC(Year, 0, 1));
       var startDateInput = document.getElementById("startDate");
-      startDateInput.value = firstDayLastYear.toISOString().slice(0,10);
+      startDateInput.value = firstDay.toISOString().slice(0,10);
     </script>
 </html>
