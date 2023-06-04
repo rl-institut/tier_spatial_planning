@@ -166,8 +166,11 @@ function markerOnClick(e){
 }
 
 function update_map_elements(){
-        marker.longitude = parseFloat(document.getElementById('longitude').value);
-        marker.latitude = parseFloat(document.getElementById('latitude').value);
+        let longitude= document.getElementById('longitude').value;
+        let latitude = document.getElementById('latitude').value;
+        if (longitude.length > 0 && latitude.length > 0) {
+        marker.longitude = parseFloat(longitude);
+        marker.latitude = parseFloat(latitude);
         if (document.getElementById('consumer').value === 'H') {
            marker.consumer_type = 'household';
            marker.consumer_detail = 'default';
@@ -186,7 +189,7 @@ function update_map_elements(){
             L.marker([marker.latitude, marker.longitude], {icon: markerConsumer,})
             .on('click', markerOnClick).addTo(map);
         }
-    }})}
+    }})}}
 
 function move_marker(){
     old_marker = JSON.parse(JSON.stringify(marker));

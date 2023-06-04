@@ -23,10 +23,17 @@ document.getElementById('drawMarker').addEventListener('click', function () {
 
 // Enable polygon drawing when the button is clicked
 document.getElementById('drawPolygon').addEventListener('click', function () {
-  update_map_elements();
+    update_map_elements();
   markerDrawer.disable();
   rectangleDrawer.disable();
   polygonDrawer.enable();
+});
+
+map.on('draw:created', function (e) {
+    var layerType = e.layerType;
+    if (layerType === 'marker' || layerType === 'rectangle' || layerType === 'polygon') {
+        update_map_elements();
+    }
 });
 
 document.getElementById('drawRectangle').addEventListener('click', function () {
@@ -160,7 +167,6 @@ searchInput.addEventListener('keypress', async (event) => {
     } else {
         const responseMsg = document.getElementById("responseMsg");
         responseMsg.innerHTML = 'Location is outside of Nigeria';
-        responseMsg.style.color = "red";
       }} else {
         alert('No results found');
       }

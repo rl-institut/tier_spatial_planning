@@ -493,8 +493,7 @@ function makeplot_duration_curves() {
           Plotly.newPlot(durationCurves, data, layout);
       }
   };
-
-};
+}
 
 
 // DEMAND COVERAGE PLOT

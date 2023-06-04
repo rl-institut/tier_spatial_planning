@@ -272,7 +272,6 @@
                         </div>
                       </div>
 
-                <p id="responseMsg"></p>
                 <div id="search-container">
                         <input type="text" id="search-input" placeholder="Search location within Nigeria" class="input-group-text" style="text-align: left"/>
                 </div>
@@ -292,6 +291,7 @@
             </div>
         </form>
     </div>
+     {% include '_warningBox.html' %}
     </main>
 
   {% include '_footer.html' %}
@@ -403,7 +403,17 @@ function addElement() {
     document.getElementById('number_loads').value = '1';
 }
 
-
-
+var targetNode = document.getElementById('responseMsg');
+var config = { childList: true, subtree: true, characterData: true };
+var callback = function(mutationsList, observer) {
+    for(let mutation of mutationsList) {
+        if (mutation.type === 'childList' || mutation.type === 'characterData') {
+            var modal = document.getElementById('msgBox');
+            modal.style.display = "block";
+        }
+    }
+};
+var observer = new MutationObserver(callback);
+observer.observe(targetNode, config);
 </script>
 </html>

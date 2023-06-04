@@ -81,7 +81,6 @@ function add_buildings_inside_boundary({ boundariesCoordinates } = {}) {
       const responseMsg = document.getElementById("responseMsg");
       responseMsg.innerHTML = res.msg;
       if (res.executed === false) {
-        responseMsg.style.color = "red";
       } else {
         responseMsg.innerHTML = "";
         Array.prototype.push.apply(map_elements, res.new_consumers);
