@@ -71,6 +71,7 @@ class TaskInfo(BaseModel):
     project_id: str
     task_id: str
     time: int
+    model: str
 
 
 class TaskID(BaseModel):

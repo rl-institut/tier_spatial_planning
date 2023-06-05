@@ -1,4 +1,5 @@
 import json
+import copy
 import decimal
 import pandas as pd
 import sqlalchemy as sa
@@ -139,9 +140,12 @@ async def _get_df(query, is_timeseries=True):
     return df
 
 async def get_weather_data(lat, lon, start, end):
-    if end > pd.to_datetime('2023-05-01'):
+    index = pd.date_range(start, end, freq='1H')
+    ts_changed = False
+    if end > pd.to_datetime('2023-03-01'):
+        end = pd.to_datetime('2022-{}-{}'.format(start.month, start.day)) + (end - start)
         start = pd.to_datetime('2022-{}-{}'.format(start.month, start.day))
-        end = pd.to_datetime('2022-{}-{}'.format(end.month, end.day))
+        ts_changed = True
     model = models.WeatherData
     lats = pd.Series([14.442, 14.192, 13.942, 13.692, 13.442, 13.192, 12.942, 12.692, 12.442,
                       12.192, 11.942, 11.692, 11.442, 11.192, 10.942, 10.692, 10.442, 10.192,
@@ -160,6 +164,8 @@ async def get_weather_data(lat, lon, start, end):
     closest_lon = round(lons.loc[(lons - lon).abs().idxmin()], 3)
     query = select(model).where(model.lat == closest_lat, model.lon == closest_lon, model.dt >= start, model.dt <= end)
     df = await _get_df(query, is_timeseries=True)
+    if ts_changed:
+        df.index = index
     return df
 
 def check_if_weather_data_exists():

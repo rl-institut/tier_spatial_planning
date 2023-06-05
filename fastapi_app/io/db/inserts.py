@@ -244,7 +244,7 @@ def handle_duplicates(if_exists, query, col_names):
         return query
 
 
-def dump_weather_data_into_db(file_name):
+async def dump_weather_data_into_db(file_name):
     ds = xr.open_dataset(file_name, engine='netcdf4')
     df = era5.format_pvlib(ds)
     df = df.reset_index()
@@ -279,6 +279,4 @@ def dump_weather_data_into_db(file_name):
     df.loc[:, 'lon'] = df.loc[:, 'lon'].round(3)
     df.loc[:, 'lat'] = df.loc[:, 'lat'].round(7)
     df.iloc[:, 1:] = df.iloc[:, 1:].astype(str)
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(insert_df(models.WeatherData, df))
+    await insert_df(models.WeatherData, df)

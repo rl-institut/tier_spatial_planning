@@ -658,6 +658,7 @@ class GridOptimizer(Optimizer):
             size_min=0,
             size_max=grid.pole_max_connection,
             random_state=0,
+            n_jobs=4,
         )
 
         # fit clusters to the data
@@ -914,9 +915,8 @@ class EnergySystemOptimizer(Optimizer):
 
         # define an empty dictionary for all epc values
         self.epc = {}
-        date_time_index = pd.date_range(
-            start=self.start_date, periods=self.n_days * 24, freq="H"
-        )
+        date_time_index = pd.date_range(start=self.start_date, periods=self.n_days * 24, freq="H")
+        self.solar_potential = self.solar_potential[date_time_index]
         energy_system = solph.EnergySystem(timeindex=date_time_index)
 
         # -------------------- BUSES --------------------

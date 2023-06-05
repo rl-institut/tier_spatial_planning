@@ -47,17 +47,39 @@ services:
     restart: always
     ports:
     - '6379:6379'
-  worker:
-    container_name: 'celery'
+  worker_default:
+    container_name: 'celery_default'
     build: .
     restart: always
     ports:
       - '5555:5555'
-    command: celery -A celery_worker.worker worker --loglevel=DEBUG --pool prefork --concurrency 8
+    command: celery -A celery_worker.worker worker --loglevel=DEBUG --pool prefork  --concurrency=16 --queues=default_queue
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - FLOWER_PORT=5555
+      - PW=/run/secrets/pw
+    depends_on:
+      - app
+      - redis
+      - mysql
+    secrets:
+      - pw
+    deploy:
+      resources:
+        limits:
+          memory: 40g
+  worker_milp:
+    container_name: 'celery_milp'
+    build: .
+    restart: always
+    ports:
+      - '5556:5556'
+    command: celery -A celery_worker.worker worker --loglevel=DEBUG --pool prefork  --concurrency=8 --queues=milp_queue
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - FLOWER_PORT=5556
       - PW=/run/secrets/pw
     depends_on:
       - app
@@ -83,7 +105,8 @@ services:
       - '40002:5555'
     depends_on:
       - redis
-      - worker
+      - worker_default
+      - worker_milp
       - app
     secrets:
       - pw

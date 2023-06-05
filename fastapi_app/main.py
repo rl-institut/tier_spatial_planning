@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 from io import StringIO
 import fastapi_app.io.schema
+from celery import group
 from celery_worker import worker
 import os
 from datetime import datetime, timedelta, timezone
@@ -21,7 +22,6 @@ import fastapi_app.tools.coordinates_conversion as conv
 import fastapi_app.tools.shs_identification as shs_ident
 import fastapi_app.io.db.models as models
 from fastapi import FastAPI, Request, Response
-from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.responses import RedirectResponse, FileResponse, JSONResponse, HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
@@ -39,10 +39,7 @@ from fastapi_app.tools.error_logger import logger as error_logger
 
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 
-if not queries.check_if_weather_data_exists():
-    inserts.dump_weather_data_into_db('ERA5_weather_data1.nc')
-    inserts.dump_weather_data_into_db('ERA5_weather_data2.nc')
-    inserts.dump_weather_data_into_db('ERA5_weather_data3.nc')
+
 
 app = FastAPI()
 
@@ -53,6 +50,13 @@ templates = Jinja2Templates(directory="fastapi_app/pages")
 json_object = Dict[Any, Any]
 json_array = List[Any]
 import_structure = Union[json_array, json_object]
+
+@app.on_event("startup")
+async def startup_event():
+    if not queries.check_if_weather_data_exists():
+        await inserts.dump_weather_data_into_db('ERA5_weather_data1.nc')
+        await inserts.dump_weather_data_into_db('ERA5_weather_data2.nc')
+        await inserts.dump_weather_data_into_db('ERA5_weather_data3.nc')
 
 @app.exception_handler(Exception)
 async def exception_handler(request: Request, exc: Exception):
@@ -84,6 +88,20 @@ async def captcha(request: Request):
     return JSONResponse({'img': base64_image, 'hashed_captcha': hashed_captcha})
 
 
+@app.get("/test_run")
+async def test_run(request: Request):
+    task = task_grid_opt.delay(9, 1)
+    supply = False
+    for i in range(1000):
+        await asyncio.sleep(20)
+        status = get_status_of_task(task.id)
+        if status in ['success', 'failure', 'revoked']:
+            if supply is True:
+                break
+            task = task_supply_opt.delay(9, 1)
+            supply = True
+
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     user = await accounts.get_user_from_cookie(request)
@@ -100,7 +118,10 @@ async def home(request: Request):
             project.created_at = project.created_at.date()
             project.updated_at = project.updated_at.date()
             if user.task_id is not None and project.project_id == user.project_id:
-                status = worker.AsyncResult(user.task_id).status.lower()
+                if bool(os.environ.get('DOCKERIZED')):
+                    status = worker.AsyncResult(user.task_id).status.lower()
+                else:
+                    status = 'success'
                 if status in ['success', 'failure', 'revoked']:
                     project_setup = await queries.get_model_instance(models.ProjectSetup, user.id, user.project_id)
                     user.task_id = ''
@@ -265,7 +286,6 @@ async def calculating(request: Request):
     try:
         int(project_id)
     except (TypeError, ValueError):
-        # ToDo: If user is logged in, redirect to the project overview page
         return RedirectResponse('/')
     if 'anonymous' in user.email:
         msg = 'You will be forwarded after the model calculation is completed.'
@@ -484,7 +504,7 @@ async def anonymous_login(data: Dict[str, str], response: Response):
         if bool(os.environ.get('DOCKERIZED')):
             minutes = config.ACCESS_TOKEN_EXPIRE_MINUTES_ANONYMOUS + 60
             eta = datetime.utcnow() + timedelta(minutes=minutes)
-            queue_remove_anonymous_users.apply_async((user.email, user.id,), eta=eta)
+            task_remove_anonymous_users.apply_async((user.email, user.id,), eta=eta)
         validation, res = True, ''
     else:
         validation, res = False, 'Please enter a valid captcha'
@@ -915,29 +935,52 @@ async def run_opt_task(user_id, project_id):
     await optimize_energy_system(user_id, project_id)
 
 
-@worker.task(name='queue_opt', force=True, track_started=True)
-def queue_opt_task(user_id, project_id):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(optimize_grid(user_id, project_id))
-    loop.run_until_complete(optimize_energy_system(user_id, project_id))
+@worker.task(name='celery_worker.task_grid_opt', force=True, track_started=True)
+def task_grid_opt(user_id, project_id):
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    if loop.is_running():
+        result = loop.run_until_complete(optimize_grid(user_id, project_id))
+    else:
+        result = asyncio.run(optimize_grid(user_id, project_id))
+    return result
 
+@worker.task(name='celery_worker.task_supply_opt', force=True, track_started=True)
+def task_supply_opt(user_id, project_id):
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    if loop.is_running():
+        result = loop.run_until_complete(optimize_energy_system(user_id, project_id))
+    else:
+        result = asyncio.run(optimize_energy_system(user_id, project_id))
+    return result
 
-@worker.task(name='queue_remove_anonymous_users', force=True, track_started=True)
-def queue_remove_anonymous_users(user_email, user_id):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(inserts.remove_account(user_email, user_id))
-
+@worker.task(name='celery_worker.task_remove_anonymous_users', force=True, track_started=True)
+def task_remove_anonymous_users(user_email, user_id):
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    if loop.is_running():
+        result = loop.run_until_complete(inserts.remove_account(user_email, user_id))
+    else:
+        result = asyncio.run(inserts.remove_account(user_email, user_id))
+    return result
 
 async def optimization(user_id, project_id):
     await remove_results(user_id, project_id)
     project_setup = await queries.get_model_instance(models.ProjectSetup, user_id, project_id)
     project_setup.status = "queued"
     await inserts.merge_model(project_setup)
-    # ToDo: Remove known machines
     if bool(os.environ.get('DOCKERIZED')):
-        task = queue_opt_task.delay(user_id, project_id)
+        task = task_grid_opt.delay(user_id, project_id)
         return task.id
     else:
         await run_opt_task(user_id, project_id)
@@ -994,13 +1037,9 @@ async def start_calculation(project_id, request: Request):
 @app.post('/waiting_for_results/')
 async def waiting_for_results(request: Request, data: fastapi_app.io.schema.TaskInfo):
     max_time = 3600 * 24 * 7
-    t_wait = 5
-    if data.time == 10:
-        t_wait *= 2
-    elif data.time == 60:
-        t_wait *= 2
+    t_wait = -2E-05 *  data.time + 0.0655 *  data.time + 5.7036 if data.time < 1800 else 60
     # ToDo: set the time limit based on number of queued tasks and size of the model
-    res = {'time': int(data.time) + t_wait, 'status': ''}
+    res = {'time': int(data.time) + t_wait, 'status': '', 'task_id': data.task_id, 'model': data.model}
     if len(data.task_id) > 12 and max_time > res['time']:
         if not data.time == 0:
             await asyncio.sleep(t_wait)
@@ -1012,24 +1051,33 @@ async def waiting_for_results(request: Request, data: fastapi_app.io.schema.Task
             if status in ['pending', 'received', 'retry']:
                 res['status'] = "task queued, waiting for processing..."
             else:
-                res['status'] = "calculation is running..."
+                res['status'] = "spatial grid optimization is running..."
     else:
         res['finished'] = True
     if res['finished'] is True:
         user = await accounts.get_user_from_cookie(request)
-        project_setup = await queries.get_model_instance(models.ProjectSetup, user.id, user.project_id)
-        if project_setup is not None:
-            if 'status' in locals():
-                if status == 'success':
-                    project_setup.status = "finished"
-                else:
-                    project_setup.status = status
-            else:
-                project_setup.status = "finished"
-            await inserts.merge_model(project_setup)
-            user.task_id = ''
-            user.project_id = None
+        if data.model == 'grid' and bool(os.environ.get('DOCKERIZED')):
+            task = task_supply_opt.delay(user.id, data.project_id)
+            user.task_id = task.id
             await inserts.update_model_by_user_id(user)
+            res['finished'] = False
+            res['status'] = "power supply optimization is running..."
+            res['model'] = 'supply'
+            res[task.id] = task.id
+        else:
+            project_setup = await queries.get_model_instance(models.ProjectSetup, user.id, user.project_id)
+            if project_setup is not None:
+                if 'status' in locals():
+                    if status == 'success':
+                        project_setup.status = "finished"
+                    else:
+                        project_setup.status = status
+                else:
+                    project_setup.status = "finished"
+                await inserts.merge_model(project_setup)
+                user.task_id = ''
+                user.project_id = None
+                await inserts.update_model_by_user_id(user)
     return JSONResponse(res)
 
 
@@ -1267,7 +1315,7 @@ async def optimize_grid(user_id, project_id):
     # the constraint on the maximum distance between consumers and poles.
     while True:
         # Initial number of poles.
-        number_of_poles = opt.find_opt_number_of_poles(grid=grid, min_n_clusters=min_number_of_poles)
+        opt.find_opt_number_of_poles(grid=grid, min_n_clusters=min_number_of_poles)
 
         # Find those connections with constraint violation.
         constraints_violation = grid.links[grid.links["link_type"] == "connection"]
