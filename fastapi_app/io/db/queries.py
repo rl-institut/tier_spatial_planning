@@ -41,7 +41,7 @@ async def get_max_project_id_of_user(user_id):
                                              models.ProjectSetup.project_id == subqry)
     async with get_async_session_maker() as async_db:
         res = await async_db.execute(qry)
-    res = res.scalars().first()
+        res = res.scalars().first()
     max_project_id = res.project_id if hasattr(res, 'project_id') else None
     return max_project_id
 
@@ -122,11 +122,11 @@ async def get_df(model, user_id, project_id, is_timeseries=True):
 async def _get_df(query, is_timeseries=True):
     async with get_async_session_maker() as async_db:
         res = await async_db.execute(query)
-    if is_timeseries:
-        results = res.scalars().all()
-        results = [result.to_dict() for result in results]
-    else:
-        results = [res.scalars().one().to_dict()]
+        if is_timeseries:
+            results = res.scalars().all()
+            results = [result.to_dict() for result in results]
+        else:
+            results = [res.scalars().one().to_dict()]
     df = pd.DataFrame.from_records(results)
 
     if not df.empty:
@@ -172,7 +172,7 @@ def check_if_weather_data_exists():
     query = text("""SELECT EXISTS(SELECT 1 FROM {}.weatherdata LIMIT 1) as 'Exists';""".format(db_name))
     with get_sync_session_maker() as sync_db:
         res = sync_db.execute(query)
-    results = res.scalars().all()
+        results = res.scalars().all()
     ans = bool(results[0])
     return ans
 

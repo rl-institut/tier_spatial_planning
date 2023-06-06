@@ -13,7 +13,7 @@ from feedinlib import era5, Photovoltaic
 from shapely.geometry import Point, Polygon
 from fastapi_app.io.db.inserts import insert_df
 from fastapi_app.io.db import models
-from fastapi_app.io.db import queries
+from fastapi_app.io.db import queries, sync_queries
 
 
 def download_weather_data(start_date, end_date, fiel_name='ERA5_weather_data2.nc', country='Nigeria'):
@@ -33,6 +33,14 @@ def download_weather_data(start_date, end_date, fiel_name='ERA5_weather_data2.nc
 
 async def get_dc_feed_in(lat, lon, start, end):
     weather_df = await queries.get_weather_data(lat, lon, start, end)
+    return _get_dc_feed_in(lat, lon, weather_df)
+
+def get_dc_feed_in_sync_db_query(lat, lon, start, end):
+    weather_df = sync_queries.get_weather_data(lat, lon, start, end)
+    return _get_dc_feed_in(lat, lon, weather_df)
+
+
+def _get_dc_feed_in(lat, lon, weather_df):
     module = pvlib.pvsystem.retrieve_sam('SandiaMod')['SolarWorld_Sunmodule_250_Poly__2013_']
     inverter = pvlib.pvsystem.retrieve_sam('cecinverter')['ABB__MICRO_0_25_I_OUTD_US_208__208V_']
     temperature_model_parameters = TEMPERATURE_MODEL_PARAMETERS['sapm']['open_rack_glass_glass']
@@ -46,3 +54,4 @@ async def get_dc_feed_in(lat, lon, start, end):
     mc.run_model(weather=weather_df)
     dc_power = mc.results.dc['p_mp'].clip(0).fillna(0) / 1000
     return dc_power
+

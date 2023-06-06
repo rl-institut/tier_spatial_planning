@@ -31,10 +31,10 @@ from fastapi_app.tools.optimizer import Optimizer, GridOptimizer, EnergySystemOp
 from fastapi_app.tools.account_helpers import Hasher, create_guid, is_valid_credentials, send_activation_link, activate_mail, \
     authenticate_user, create_access_token, send_mail
 from fastapi_app.tools import account_helpers as accounts
-from fastapi_app.io.db import config, inserts, queries
+from fastapi_app.io.db import config, inserts, queries, sync_queries, sync_inserts
 from fastapi_app.io.df_to_excel import df_to_xlsx
 import pyutilib.subprocess.GlobalData
-from fastapi_app.tools.solar_potential import get_dc_feed_in
+from fastapi_app.tools.solar_potential import get_dc_feed_in_sync_db_query
 from fastapi_app.tools.error_logger import logger as error_logger
 
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
@@ -931,36 +931,17 @@ async def remove_results(user_id, project_id):
     await inserts.remove(models.Links, user_id, project_id)
 
 
-async def run_opt_task(user_id, project_id):
-    await optimize_grid(user_id, project_id)
-    await optimize_energy_system(user_id, project_id)
-
-
 @worker.task(name='celery_worker.task_grid_opt', force=True, track_started=True)
 def task_grid_opt(user_id, project_id):
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    if loop.is_running():
-        result = loop.run_until_complete(optimize_grid(user_id, project_id))
-    else:
-        result = asyncio.run(optimize_grid(user_id, project_id))
+    result = optimize_grid(user_id, project_id)
     return result
+
 
 @worker.task(name='celery_worker.task_supply_opt', force=True, track_started=True)
 def task_supply_opt(user_id, project_id):
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    if loop.is_running():
-        result = loop.run_until_complete(optimize_energy_system(user_id, project_id))
-    else:
-        result = asyncio.run(optimize_energy_system(user_id, project_id))
+    result = optimize_energy_system(user_id, project_id)
     return result
+
 
 @worker.task(name='celery_worker.task_remove_anonymous_users', force=True, track_started=True)
 def task_remove_anonymous_users(user_email, user_id):
@@ -984,7 +965,8 @@ async def optimization(user_id, project_id):
         task = task_grid_opt.delay(user_id, project_id)
         return task.id
     else:
-        await run_opt_task(user_id, project_id)
+        optimize_grid(user_id, project_id)
+        optimize_energy_system(user_id, project_id)
         return 'no_celery_id'
 
 
@@ -1113,20 +1095,20 @@ async def revoke_users_task(request: Request):
     await inserts.update_model_by_user_id(user)
 
 
-async def optimize_grid(user_id, project_id):
+def optimize_grid(user_id, project_id):
     # Grab Currrent Time Before Running the Code
-    project_setup = await queries.get_project_setup_of_user(user_id, project_id)
+    project_setup = sync_queries.get_project_setup_of_user(user_id, project_id)
     project_setup.status = "in progress"
-    await inserts.merge_model(project_setup)
+    sync_inserts.merge_model(project_setup)
     start_execution_time = time.monotonic()
     # create GridOptimizer object
-    df = await queries.get_input_df(user_id, project_id)
+    df = sync_queries.get_input_df(user_id, project_id)
     opt = GridOptimizer(start_date=df.loc[0, "start_date"],
                         n_days=df.loc[0, "n_days"],
                         project_lifetime=df.loc[0, "project_lifetime"],
                         wacc=df.loc[0, "interest_rate"] / 100,
                         tax=0, )
-    nodes = await queries.get_df(models.Nodes, user_id, project_id)
+    nodes = sync_queries.get_df(models.Nodes, user_id, project_id)
 
     if len(nodes) == 0:
         return {"code": "success", "message": "Empty grid cannot be optimized!"}
@@ -1348,7 +1330,7 @@ async def optimize_grid(user_id, project_id):
 
 
     # Store the list of poles in the "node" database.
-    await inserts.update_nodes_and_links(True, False, poles.to_dict(), user_id, project_id)
+    sync_inserts.update_nodes_and_links(True, False, poles.to_dict(), user_id, project_id)
 
     # get all links obtained by the network relaxation method
     links = grid.links.reset_index(drop=True)
@@ -1360,7 +1342,7 @@ async def optimize_grid(user_id, project_id):
                inplace=True)
 
     # store the list of poles in the "node" database
-    await inserts.update_nodes_and_links(False, True, links.to_dict(), user_id, project_id)
+    sync_inserts.update_nodes_and_links(False, True, links.to_dict(), user_id, project_id)
 
     # Grab Currrent Time After Running the Code
     end_execution_time = time.monotonic()
@@ -1385,7 +1367,7 @@ async def optimize_grid(user_id, project_id):
         results.max_voltage_drop = 0
     df = results.to_df()
 
-    await inserts.insert_results_df(df, user_id, project_id)
+    sync_inserts.insert_results_df(df, user_id, project_id)
     #grid.allocate_consumers_and_poles_to_branches()
     #grid.sum_up_consumers_depending_on_each_pole()
 
@@ -1395,13 +1377,13 @@ async def optimize_grid(user_id, project_id):
 
 
 
-async def optimize_energy_system(user_id, project_id):
+def optimize_energy_system(user_id, project_id):
     # Grab Currrent Time Before Running the Code
     start_execution_time = time.monotonic()
-    df = await queries.get_input_df(user_id, project_id)
-    energy_system_design = await queries.get_energy_system_design(user_id, project_id)
+    df = sync_queries.get_input_df(user_id, project_id)
+    energy_system_design = sync_queries.get_energy_system_design(user_id, project_id)
     solver = 'gurobi' if po.SolverFactory('gurobi').available() else 'cbc'
-    nodes = await queries.get_df(models.Nodes, user_id, project_id)
+    nodes = sync_queries.get_df(models.Nodes, user_id, project_id)
     if not nodes[nodes['consumer_type'] == 'power_house'].empty:
         lat, lon = nodes[nodes['consumer_type'] == 'power_house']['latitude', 'longitude'].to_list()
     else:
@@ -1409,7 +1391,7 @@ async def optimize_energy_system(user_id, project_id):
     n_days = min(df.loc[0, "n_days"], int(os.environ.get('MAX_DAYS', 365)))
     start = pd.to_datetime(df.loc[0, "start_date"])
     end = start + timedelta(days=int(n_days))
-    solar_potential_df = await get_dc_feed_in(lat, lon, start, end)
+    solar_potential_df = get_dc_feed_in_sync_db_query(lat, lon, start, end)
     ensys_opt = EnergySystemOptimizer(
         start_date=df.loc[0, "start_date"],
         n_days=n_days,
@@ -1446,11 +1428,11 @@ async def optimize_energy_system(user_id, project_id):
         df.loc[:, "non_renewable_electricity_production"] - df.loc[:, "hybrid_electricity_production"]  # tCO2 per year
     df['h'] = np.arange(1, len(ensys_opt.demand) + 1)
     df = df.round(3)
-    await inserts.insert_df(models.Emissions, df, user_id, project_id)
+    sync_inserts.insert_df(models.Emissions, df, user_id, project_id)
     # TODO: -2 must actually be -1, but for some reason, the co2-emission csv file has an additional empty row
     co2_savings = df.loc[:, "co2_savings"][-2]  # takes the last element of the cumulative sum
     # store data for showing in the final results
-    df = await queries.get_df(models.Results, user_id, project_id)
+    df = sync_queries.get_df(models.Results, user_id, project_id)
     df.loc[0, "cost_renewable_assets"] = ensys_opt.total_renewable
     df.loc[0, "cost_non_renewable_assets"] = ensys_opt.total_non_renewable
     df.loc[0, "cost_fuel"] = ensys_opt.total_fuel
@@ -1484,7 +1466,7 @@ async def optimize_energy_system(user_id, project_id):
     df.loc[0, "time_energy_system_design"] = end_execution_time - start_execution_time
     df.loc[0, "co2_savings"] = co2_savings
     df = df.astype(float).round(3)
-    await inserts.insert_results_df(df, user_id, project_id)
+    sync_inserts.insert_results_df(df, user_id, project_id)
 
     # store energy flows
     df = pd.DataFrame()
@@ -1496,7 +1478,7 @@ async def optimize_energy_system(user_id, project_id):
     df["demand"] = ensys_opt.sequences_demand
     df["surplus"] = ensys_opt.sequences_surplus
     df = df.round(3)
-    await inserts.insert_df(models.EnergyFlow, df, user_id, project_id)
+    sync_inserts.insert_df(models.EnergyFlow, df, user_id, project_id)
 
     df = pd.DataFrame()
     df["demand"] = ensys_opt.sequences_demand
@@ -1506,7 +1488,7 @@ async def optimize_energy_system(user_id, project_id):
     df.index.name = "dt"
     df = df.reset_index()
     df = df.round(3)
-    await inserts.insert_demand_coverage_df(df, user_id, project_id)
+    sync_inserts.insert_demand_coverage_df(df, user_id, project_id)
 
     # store duration curves
     df = pd.DataFrame()
@@ -1539,17 +1521,17 @@ async def optimize_energy_system(user_id, project_id):
                                         / ensys_opt.sequences_battery_discharge.max())
     df['h'] = np.arange(1, len(ensys_opt.sequences_genset) + 1)
     df = df.round(3)
-    await inserts.insert_df(models.DurationCurve, df, user_id, project_id)
-    project_setup = await queries.get_model_instance(models.ProjectSetup, user_id, project_id)
+    sync_inserts.insert_df(models.DurationCurve, df, user_id, project_id)
+    project_setup = sync_queries.get_model_instance(models.ProjectSetup, user_id, project_id)
     project_setup.status = "finished"
     if project_setup.email_notification is True:
-        user = await queries.get_user_by_id(user_id)
+        user = sync_queries.get_user_by_id(user_id)
         subject = "PeopleSun: Model Calculation finished"
         msg = "The calculation of your optimization model is finished. You can view the results at: " \
               "\n\n{}/simulation_results?project_id={}\n".format(config.DOMAIN, project_id)
         send_mail(user.email, msg, subject=subject)
     project_setup.email_notification = False
-    await inserts.merge_model(project_setup)
+    sync_inserts.merge_model(project_setup)
 
 
 @app.post("/shs_identification/")
