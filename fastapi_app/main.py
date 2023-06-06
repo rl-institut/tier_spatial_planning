@@ -1378,7 +1378,11 @@ async def optimize_grid(user_id, project_id):
     results.n_distribution_links = int(grid.links[grid.links["link_type"] == "distribution"].shape[0])
     results.n_connection_links = int(grid.links[grid.links["link_type"] == "connection"].shape[0])
     voltage_drop_df = grid.get_voltage_drop_at_nodes()
-    results.max_voltage_drop = round(float(voltage_drop_df['voltage drop fraction [%]'].max()), 1)
+    voltage_drop = voltage_drop_df['voltage drop fraction [%]'].max()
+    if isinstance(voltage_drop, float):
+        results.max_voltage_drop = round(float(voltage_drop_df['voltage drop fraction [%]'].max()), 1)
+    else:
+        results.max_voltage_drop = 0
     df = results.to_df()
 
     await inserts.insert_results_df(df, user_id, project_id)

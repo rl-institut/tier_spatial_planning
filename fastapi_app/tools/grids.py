@@ -1742,9 +1742,9 @@ class Grid:
         voltage_drop_df["voltage drop fraction [%]"] = (
             100 * voltage_drop_df["voltage drop [V]"] / self.voltage
         )
-        if voltage_drop_df["voltage drop fraction [%]"] > 100:
+        if voltage_drop_df["voltage drop fraction [%]"].max() > 100:
             # ToDo: Voltage drop fraction should be between 0 and 100.
-            voltage_drop_df["voltage drop fraction [%]"] = 0
+            voltage_drop_df["voltage drop fraction [%]"] = '-'
         return voltage_drop_df
 
     def export(
