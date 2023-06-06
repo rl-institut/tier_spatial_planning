@@ -18,11 +18,8 @@ ASYNC_DB_URL = BASE_URL.replace('package', 'aiomysql')
 for i in range(400):
     try:
         sync_engine = create_engine(SYNC_DB_URL)
-        sync_session = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
         Base.metadata.create_all(bind=sync_engine)
-        async_engine = create_async_engine(ASYNC_DB_URL, pool_size=30, max_overflow=40, pool_timeout=30)
-        async_sessionmaker = scoped_session(sessionmaker(bind=async_engine,
-                                                         class_=AsyncSession))
+        async_engine = create_async_engine(ASYNC_DB_URL, pool_size=30, max_overflow=60, pool_timeout=30)
     except (SQLAlchemyError, DatabaseError, ProgrammingError, InterfaceError) as e:
         time.sleep(5)
     else:
@@ -52,9 +49,12 @@ if bool(os.environ.get('DOCKERIZED')):
 
 
 def get_async_session_maker():
+    async_sessionmaker = scoped_session(sessionmaker(bind=async_engine,
+                                                     class_=AsyncSession))
     return async_sessionmaker()
 
 
 def get_sync_session_maker():
+    sync_session = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
     return sync_session()
 

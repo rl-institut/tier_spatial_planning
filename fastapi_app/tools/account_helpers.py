@@ -148,7 +148,7 @@ async def _get_user_from_token(token):
     query = select(models.User).where(models.User.email == username)
     async with get_async_session_maker() as async_db:
         res = await async_db.execute(query)
-        user = res.scalars().first()
+    user = res.scalars().first()
     return user
 
 
