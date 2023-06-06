@@ -632,13 +632,8 @@ class GridOptimizer(Optimizer):
         grid.clear_poles()
 
         # gets (x,y) coordinates of all nodes in the grid
-        nodes_coord = np.array(
-            [
-                [grid.nodes.x.loc[index], grid.nodes.y.loc[index]]
-                for index in grid.nodes.index
-                if grid.nodes.is_connected.loc[index] == True
-            ]
-        )
+        nodes_coord = np.array([[grid.nodes.x.loc[index], grid.nodes.y.loc[index]]
+                                for index in grid.nodes.index if grid.nodes.is_connected.loc[index] == True])
 
         # features, true_labels = make_blobs(
         #    n_samples=200,
@@ -658,50 +653,41 @@ class GridOptimizer(Optimizer):
             size_min=0,
             size_max=grid.pole_max_connection,
             random_state=0,
-            n_jobs=4,
+            n_jobs=2,
         )
 
         # fit clusters to the data
         kmeans.fit(nodes_coord)
 
         # coordinates of the centroids of the clusters
-        centroids_coord = kmeans.cluster_centers_
-
-        # add the obtained centroids as poles to the grid
-        counter = 0
-        for i in range(n_clusters):
-            centroids_label = f"p-{counter}"
-            grid.add_node(
-                label=centroids_label,
-                x=centroids_coord[i, 0],
-                y=centroids_coord[i, 1],
-                node_type="pole",
-                consumer_type="n.a.",
-                consumer_detail="n.a.",
-                is_connected=True,
-                how_added="k-means",
-                cluster_label=counter,
-            )
-            counter += 1
+        grid.nodes["cluster_label"] = kmeans.predict(nodes_coord)
+        poles = pd.DataFrame(kmeans.cluster_centers_, columns=["x", "y"])
+        poles.index.name = 'cluster_label'
+        poles = poles.reset_index(drop=False)
+        poles.index = 'p-' + poles.index.astype(str)
+        poles['node_type'] = "pole"
+        poles['consumer_type'] = "n.a."
+        poles['consumer_detail'] = "n.a."
+        poles['is_connected'] = True
+        poles['how_added'] = "k-means"
+        poles['latitude'] = 0
+        poles['longitude'] = 0
+        poles['surface_area'] = 0
+        poles['peak_demand'] = 1
+        poles['average_consumption'] = 1
+        poles['distance_to_load_center'] = 0
+        poles['type_fixed'] = False
+        poles['n_connection_links'] = "0"
+        poles['n_distribution_links'] = 0
+        poles['parent'] = "unknown"
+        poles['distribution_cost'] = 0
+        grid.nodes = pd.concat([grid.nodes, poles], axis=0)
 
         # compute (lon,lat) coordinates for the poles
         grid.convert_lonlat_xy(inverse=True)
 
-        # connect different elements of the grid
-        #   + consumers to the nearest poles
-        #   + poles together
 
-        # this parameter shows the label of the associated cluster to each node
-        nodes_cluster_labels = kmeans.predict(nodes_coord)
-        counter = 0
-        for node_label in grid.consumers().index:
-            if grid.nodes.is_connected.loc[node_label] == True:
-                grid.nodes.cluster_label.loc[node_label] = nodes_cluster_labels[counter]
-                counter += 1
-            else:
-                grid.nodes.cluster_label.loc[node_label] = "n.a."
-
-    def find_opt_number_of_poles(self, grid: Grid, min_n_clusters: int):
+    def determine_poles(self, grid: Grid, min_n_clusters: int):
         """
         Computes the cost of grid based on the configuration obtained from
         the k-means clustering algorithm for different numbers of poles, and
@@ -723,7 +709,6 @@ class GridOptimizer(Optimizer):
 
         # obtain the location of poles using kmeans clustering method
         self.kmeans_clustering(grid=grid, n_clusters=min_n_clusters)
-
         # create the minimum spanning tree to obtain the optimal links between poles
         self.create_minimum_spanning_tree(grid)
 
@@ -736,7 +721,40 @@ class GridOptimizer(Optimizer):
 
         return number_of_poles
 
-    # -----------------------REMOVE NODE-------------------------#
+    def find_opt_number_of_poles(self, grid, connection_cable_max_length, n_mg_consumers):
+        # calculate the minimum number of poles based on the
+        # maximum number of connectins at each pole
+        if grid.pole_max_connection == 0:
+            min_number_of_poles = 1
+        else:
+            min_number_of_poles = int(np.ceil(n_mg_consumers / (grid.pole_max_connection)))
+
+        space = pd.Series(range(min_number_of_poles, n_mg_consumers, 1))
+
+        def is_enough_poles(n):
+            self.kmeans_clustering(grid=grid, n_clusters=n)
+            self.connect_grid_consumers(grid)
+            constraints_violation = grid.links[grid.links["link_type"] == "connection"]
+            constraints_violation = constraints_violation[
+                constraints_violation["length"] > connection_cable_max_length]
+            if constraints_violation.shape[0] > 0:
+                return False
+            else:
+                return True
+
+        for _ in range(min_number_of_poles, n_mg_consumers, 1):
+            if len(space) >= 5:
+                next_n = int(space.median())
+                if is_enough_poles(next_n) is True:
+                    space = space[space <= next_n]
+                else:
+                    space = space[space > next_n]
+            else:
+                for next_n in space:
+                    next_n = int(next_n)
+                    if next_n == space.iat[-1] or is_enough_poles(next_n) is True:
+                        return next_n
+
 
     def remove_last_node(self, grid: Grid):
         """

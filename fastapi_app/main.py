@@ -53,10 +53,11 @@ import_structure = Union[json_array, json_object]
 
 @app.on_event("startup")
 async def startup_event():
-    if not queries.check_if_weather_data_exists():
-        await inserts.dump_weather_data_into_db('ERA5_weather_data1.nc')
-        await inserts.dump_weather_data_into_db('ERA5_weather_data2.nc')
-        await inserts.dump_weather_data_into_db('ERA5_weather_data3.nc')
+    #if not queries.check_if_weather_data_exists():
+        #await inserts.dump_weather_data_into_db('ERA5_weather_data1.nc')
+        #await inserts.dump_weather_data_into_db('ERA5_weather_data2.nc')
+        #await inserts.dump_weather_data_into_db('ERA5_weather_data3.nc')
+    pass
 
 @app.exception_handler(Exception)
 async def exception_handler(request: Request, exc: Exception):
@@ -64,7 +65,7 @@ async def exception_handler(request: Request, exc: Exception):
         user = await accounts.get_user_from_cookie(request)
         user_name = user.email
     except:
-        user_name = 'unkown username'
+        user_name = 'unknown username'
     error_logger.error_log(exc, request, user_name)
     return RedirectResponse(url="/?internal_error", status_code=303)
 
@@ -1301,33 +1302,8 @@ async def optimize_grid(user_id, project_id):
     # number of mini-grid consumers.
     _demand_estimation(nodes=grid.nodes, update_total_demand=True)
 
-    # calculate the minimum number of poles based on the
-    # maximum number of connectins at each pole
-    if grid.pole_max_connection == 0:
-        min_number_of_poles = 1
-    else:
-        min_number_of_poles = int(np.ceil(n_mg_consumers / (grid.pole_max_connection)))
-
-    # ---------- MAX DISTANCE BETWEEN POLES AND CONSUMERS ----------
-    connection_cable_max_length = df.loc[0, "connection_cable_max_length"]
-
-    # First, the appropriate number of poles should be selected, to meet
-    # the constraint on the maximum distance between consumers and poles.
-    while True:
-        # Initial number of poles.
-        opt.find_opt_number_of_poles(grid=grid, min_n_clusters=min_number_of_poles)
-
-        # Find those connections with constraint violation.
-        constraints_violation = grid.links[grid.links["link_type"] == "connection"]
-        constraints_violation = constraints_violation[
-            constraints_violation["length"] > connection_cable_max_length]
-
-        # Increase the number of poles if necessary.
-        if constraints_violation.shape[0] > 0:
-            min_number_of_poles += 1
-        else:
-            break
-
+    n_poles = opt.find_opt_number_of_poles(grid, df.loc[0, "connection_cable_max_length"], n_mg_consumers)
+    opt.determine_poles(grid=grid, min_n_clusters=n_poles)
     # ----------------- MAX DISTANCE BETWEEN POLES -----------------
     distribution_cable_max_length = df.loc[0, "distribution_cable_max_length"]
 
