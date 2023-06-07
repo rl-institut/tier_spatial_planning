@@ -1,16 +1,50 @@
 import pandas as pd
 from sqlalchemy import delete, text
+from sqlalchemy.exc import OperationalError
 from fastapi_app.io.db import models
-from fastapi_app.io.db.database import get_sync_session_maker
+from fastapi_app.io.db.database import get_sync_session_maker, sync_engine
 from fastapi_app.io.db.sync_queries import get_df
 from fastapi_app.io.db.inserts import df_2_sql
+from fastapi_app.io.db.config import RETRY_COUNT, RETRY_DELAY
 
 
 
 def merge_model(model):
-    with get_sync_session_maker() as session:
-        session.merge(model)
-        session.commit()
+    new_engine = False
+    for i in range(RETRY_COUNT):
+        try:
+            with get_sync_session_maker(sync_engine, new_engine) as session:
+                session.merge(model)
+                session.commit()
+                return
+        except OperationalError as e:
+            print(f'OperationalError occurred: {str(e)}. Retrying {i + 1}/{RETRY_COUNT}')
+            if i == 0:
+                new_engine = True
+            elif i < RETRY_COUNT - 1:  # Don't wait after the last try
+                time.sleep(RETRY_DELAY)
+            else:
+                raise e
+                print(f"Failed to merge and commit after {RETRY_COUNT} retries")
+
+
+def execute_stmt(stmt):
+    new_engine = False
+    for i in range(RETRY_COUNT):
+        try:
+            with get_sync_session_maker(sync_engine, new_engine) as session:
+                session.execute(stmt)
+                session.commit()
+                return
+        except OperationalError as e:
+            print(f'OperationalError occurred: {str(e)}. Retrying {i + 1}/{RETRY_COUNT}')
+            if i == 0:
+                new_engine = True
+            elif i < RETRY_COUNT - 1:  # Don't wait after the last try
+                time.sleep(RETRY_DELAY)
+            else:
+                raise e
+                print(f"Failed to merge and commit after {RETRY_COUNT} retries")
 
 
 def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, project_id, add=True, replace=True):
@@ -96,25 +130,14 @@ def _insert_df(table: str, df, if_exists='update', chunk_size=None):
 
 
 def sql_str_2_db(sql):
-    session = get_sync_session_maker()
-    try:
-        session.execute(text(sql))
-        session.commit()
-        session.close()
-    except Exception as err:
-        if len(sql) > 500:
-            sql = "\n(...)\n".join((sql[0:min(400, int(len(sql) / 2))], sql[-100:]))
-        print("\n Something went wrong while trying to write to the database.\n\n Your query was:\n{0}".format(sql))
-        session.rollback()  # Revert everything that has been written so far
-        Exception(err)
+    stmt = text(sql)
+    execute_stmt(stmt)
 
 
 def remove(model_class, user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
-    query = delete(model_class).where(model_class.id == user_id, model_class.project_id == project_id)
-    with get_sync_session_maker() as session:
-        session.execute(query)
-        session.commit()
+    stmt = delete(model_class).where(model_class.id == user_id, model_class.project_id == project_id)
+    execute_stmt(stmt)
 
 
 def insert_results_df(df, user_id, project_id):

@@ -38,3 +38,5 @@ directory_database = os.path.join(directory_parent, "data", "database").replace(
 full_path_demands = os.path.join(directory_database, "demands.csv").replace("\\", "/")
 directory_inputs = os.path.join(directory_parent, "data", "inputs").replace("\\", "/")
 full_path_timeseries = os.path.join(directory_inputs, "timeseries.csv").replace("\\", "/")
+RETRY_COUNT = 10
+RETRY_DELAY = 0.5

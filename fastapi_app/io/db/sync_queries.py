@@ -1,24 +1,21 @@
-import json
-import copy
 import decimal
 import pandas as pd
-import sqlalchemy as sa
+import time
 from sqlalchemy import select
 from sqlalchemy.sql import text
 import flatten_dict
 from flatten_dict.splitters import make_splitter
+from sqlalchemy.exc import OperationalError
 from fastapi_app.io.db import models
-from fastapi_app.io.db.config import db_name
-from fastapi_app.io.db.database import get_async_session_maker, get_sync_session_maker
+from fastapi_app.io.db.database import get_sync_session_maker, sync_engine
+from fastapi_app.io.db.config import RETRY_COUNT, RETRY_DELAY, db_name
 
 
 def get_project_setup_of_user(user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     query = select(models.ProjectSetup).where(models.ProjectSetup.id == user_id,
                                               models.ProjectSetup.project_id == project_id)
-    with get_sync_session_maker() as session:
-        res = session.execute(query)
-        project_setup = res.scalars().first()
+    project_setup = _execute_with_retry(query, which='first')
     return project_setup
 
 
@@ -38,13 +35,12 @@ def get_df(model, user_id, project_id, is_timeseries=True):
 
 
 def _get_df(query, is_timeseries=True):
-    with get_sync_session_maker() as session:
-        res = session.execute(query)
-        if is_timeseries:
-            results = res.scalars().all()
-            results = [result.to_dict() for result in results]
-        else:
-            results = [res.scalars().one().to_dict()]
+    if is_timeseries:
+        results = _execute_with_retry(query, which='all')
+        results = [result.to_dict() for result in results]
+    else:
+        results = _execute_with_retry(query, which='one')
+        results = [results.to_dict()]
     df = pd.DataFrame.from_records(results)
 
     if not df.empty:
@@ -60,17 +56,13 @@ def _get_df(query, is_timeseries=True):
 def get_model_instance(model, user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     query = select(model).where(model.id == user_id, model.project_id == project_id)
-    with get_sync_session_maker() as session:
-        res = session.execute(query)
-        model_instance = res.scalars().first()
+    model_instance = _execute_with_retry(query, which='first')
     return model_instance
 
 
 def get_user_by_id(user_id):
     query =select(models.User).where(models.User.id == user_id)
-    with get_sync_session_maker() as session:
-        res = session.execute(query)
-        user = res.scalars().first()
+    user = _execute_with_retry(query, which='first')
     return user
 
 
@@ -108,12 +100,40 @@ def get_energy_system_design(user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     query = select(models.EnergySystemDesign).where(models.EnergySystemDesign.id == user_id,
                                                     models.EnergySystemDesign.project_id == project_id)
-    with get_sync_session_maker() as session:
-        res = session.execute(query)
-        model_inst = res.scalars().first()
+    model_inst = res = _execute_with_retry(query, which='first')
     df = model_inst.to_df()
     if df.empty:
         df = models.Nodes().to_df().iloc[0:0]
     df = df.drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
     energy_system_design = flatten_dict.unflatten(df.to_dict('records')[0], splitter=make_splitter('__'))
     return energy_system_design
+
+
+def check_if_weather_data_exists():
+    query = text("""SELECT EXISTS(SELECT 1 FROM {}.weatherdata LIMIT 1) as 'Exists';""".format(db_name))
+    res = _execute_with_retry(query, which='first')
+    ans = bool(res[0])
+    return ans
+
+def _execute_with_retry(query, which='first'):
+    new_engine = False
+    for i in range(RETRY_COUNT):
+        try:
+            with get_sync_session_maker(sync_engine, new_engine) as session:
+                res = session.execute(query)
+                if which == 'first':
+                    res = res.scalars().first()
+                elif which == 'all':
+                    res = res.scalars().all()
+                elif which == 'one':
+                    res = res.scalars().one()
+                return res
+        except OperationalError as e:
+            print(f'OperationalError occurred: {str(e)}. Retrying {i + 1}/{RETRY_COUNT}')
+            if i == 0:
+                new_engine = True
+            elif i < RETRY_COUNT - 1:  # Don't wait after the last try
+                time.sleep(RETRY_DELAY)
+            else:
+                print(f"Failed to execute query after {RETRY_COUNT} retries")
+                raise e

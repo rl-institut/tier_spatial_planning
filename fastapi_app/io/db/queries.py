@@ -1,5 +1,5 @@
 import json
-import copy
+import asyncio
 import decimal
 import pandas as pd
 import sqlalchemy as sa
@@ -7,41 +7,36 @@ from sqlalchemy import select
 from sqlalchemy.sql import text
 import flatten_dict
 from flatten_dict.splitters import make_splitter
+from jose import jwt, JWTError
+from sqlalchemy.exc import OperationalError
 from fastapi_app.io.db import models
-from fastapi_app.io.db.config import db_name
-from fastapi_app.io.db.database import get_async_session_maker, get_sync_session_maker
+from fastapi_app.io.db import config
+from fastapi_app.io.db.database import get_async_session_maker, async_engine
+from fastapi_app.io.db.config import RETRY_COUNT, RETRY_DELAY
 
 
 async def get_user_by_username(username):
     query =select(models.User).where(models.User.email == username)
-    async with get_async_session_maker() as async_db:
-        res = await async_db.execute(query)
-        user = res.scalars().first()
+    user = await _execute_with_retry(query, which='first')
     return user
 
 async def get_user_by_id(user_id):
     query =select(models.User).where(models.User.id == user_id)
-    async with get_async_session_maker() as async_db:
-        res = await async_db.execute(query)
-        user = res.scalars().first()
+    user = await _execute_with_retry(query, which='first')
     return user
 
 
 async def get_user_by_guid(guid):
     query =select(models.User).where(models.User.guid == guid)
-    async with get_async_session_maker() as async_db:
-        res = await async_db.execute(query)
-        user = res.scalars().first()
+    user = await _execute_with_retry(query, which='first')
     return user
 
 
 async def get_max_project_id_of_user(user_id):
     subqry = select(sa.func.max(models.ProjectSetup.project_id)).filter(models.ProjectSetup.id == user_id).as_scalar()
-    qry = select(models.ProjectSetup).filter(models.ProjectSetup.id == user_id,
+    query = select(models.ProjectSetup).filter(models.ProjectSetup.id == user_id,
                                              models.ProjectSetup.project_id == subqry)
-    async with get_async_session_maker() as async_db:
-        res = await async_db.execute(qry)
-        res = res.scalars().first()
+    res = await _execute_with_retry(query, which='first')
     max_project_id = res.project_id if hasattr(res, 'project_id') else None
     return max_project_id
 
@@ -58,9 +53,8 @@ async def next_project_id_of_user(user_id):
 
 async def get_project_of_user(user_id):
     user_id = int(user_id)
-    async with get_async_session_maker() as async_db:
-        res = await async_db.execute(select(models.ProjectSetup).where(models.ProjectSetup.id == user_id))
-        projects = res.scalars().all()
+    query = select(models.ProjectSetup).where(models.ProjectSetup.id == user_id)
+    projects = await _execute_with_retry(query, which='all')
     return projects
 
 
@@ -68,9 +62,7 @@ async def get_project_setup_of_user(user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     query = select(models.ProjectSetup).where(models.ProjectSetup.id == user_id,
                                               models.ProjectSetup.project_id == project_id)
-    async with get_async_session_maker() as async_db:
-        res = await async_db.execute(query)
-        project_setup = res.scalars().first()
+    project_setup = await _execute_with_retry(query, which='first')
     return project_setup
 
 
@@ -78,9 +70,7 @@ async def get_energy_system_design(user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     query = select(models.EnergySystemDesign).where(models.EnergySystemDesign.id == user_id,
                                                     models.EnergySystemDesign.project_id == project_id)
-    async with get_async_session_maker() as async_db:
-        res = await async_db.execute(query)
-        model_inst = res.scalars().first()
+    model_inst = await _execute_with_retry(query, which='first')
     df = model_inst.to_df()
     if df.empty:
         df = models.Nodes().to_df().iloc[0:0]
@@ -99,9 +89,7 @@ async def get_links_json(user_id, project_id):
 async def get_model_instance(model, user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     query = select(model).where(model.id == user_id, model.project_id == project_id)
-    async with get_async_session_maker() as async_db:
-        res = await async_db.execute(query)
-        model_instance = res.scalars().first()
+    model_instance = await _execute_with_retry(query, which='first')
     return model_instance
 
 
@@ -120,13 +108,12 @@ async def get_df(model, user_id, project_id, is_timeseries=True):
     return df
 
 async def _get_df(query, is_timeseries=True):
-    async with get_async_session_maker() as async_db:
-        res = await async_db.execute(query)
-        if is_timeseries:
-            results = res.scalars().all()
-            results = [result.to_dict() for result in results]
-        else:
-            results = [res.scalars().one().to_dict()]
+    if is_timeseries:
+        results = await _execute_with_retry(query, which='all')
+        results = [result.to_dict() for result in results]
+    else:
+        results = await _execute_with_retry(query, which='one')
+        results = [results.to_dict()]
     df = pd.DataFrame.from_records(results)
 
     if not df.empty:
@@ -168,11 +155,38 @@ async def get_weather_data(lat, lon, start, end):
         df.index = index
     return df
 
-def check_if_weather_data_exists():
-    query = text("""SELECT EXISTS(SELECT 1 FROM {}.weatherdata LIMIT 1) as 'Exists';""".format(db_name))
-    with get_sync_session_maker() as sync_db:
-        res = sync_db.execute(query)
-        results = res.scalars().all()
-    ans = bool(results[0])
-    return ans
 
+async def _get_user_from_token(token):
+    try:
+        payload = jwt.decode(token, config.KEY_FOR_TOKEN, algorithms=[config.TOKEN_ALG])
+        username = payload.get("sub")
+    except JWTError:
+        return None
+    # if isinstance(db, scoped_session):
+    query = select(models.User).where(models.User.email == username)
+    user = await _execute_with_retry(query, which='first')
+    return user
+
+
+async def _execute_with_retry(query, which='first'):
+    new_engine = False
+    for i in range(RETRY_COUNT):
+        try:
+            async with get_async_session_maker(async_engine, new_engine) as async_db:
+                res = await async_db.execute(query)
+                if which == 'first':
+                    res = res.scalars().first()
+                elif which == 'all':
+                    res = res.scalars().all()
+                elif which == 'one':
+                    res = res.scalars().one()
+                return res
+        except OperationalError as e:
+            print(f'OperationalError occurred: {str(e)}. Retrying {i + 1}/{RETRY_COUNT}')
+            if i == 0:
+                new_engine = True
+            elif i < RETRY_COUNT - 1:  # Don't wait after the last try
+                await asyncio.sleep(RETRY_DELAY)
+            else:
+                print(f"Failed to execute query after {RETRY_COUNT} retries")
+                raise e

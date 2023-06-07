@@ -53,7 +53,7 @@ import_structure = Union[json_array, json_object]
 
 @app.on_event("startup")
 async def startup_event():
-    #if not queries.check_if_weather_data_exists():
+    #if not sync_queries.check_if_weather_data_exists():
         #await inserts.dump_weather_data_into_db('ERA5_weather_data1.nc')
         #await inserts.dump_weather_data_into_db('ERA5_weather_data2.nc')
         #await inserts.dump_weather_data_into_db('ERA5_weather_data3.nc')

@@ -2,28 +2,59 @@ import pandas as pd
 import numpy as np
 import os
 import asyncio
+from sqlalchemy.exc import OperationalError
 from sqlalchemy import delete, text
 from fastapi_app.io.db import models
-from fastapi_app.io.db.database import get_async_session_maker
+from fastapi_app.io.db.database import get_async_session_maker, async_engine
 from fastapi_app.io.db.queries import get_df
 from sqlalchemy import update
 import xarray as xr
 import pvlib
 from feedinlib import era5
+from fastapi_app.io.db.config import RETRY_COUNT, RETRY_DELAY
 
 
 async def merge_model(model):
-    async with get_async_session_maker() as async_db:
-        await async_db.merge(model)
-        await async_db.commit()
+    new_engine = False
+    for i in range(RETRY_COUNT):
+        try:
+            async with get_async_session_maker(async_engine, new_engine) as async_db:
+                await async_db.merge(model)
+                await async_db.commit()
+                return
+        except OperationalError as e:
+            print(f'OperationalError occurred: {str(e)}. Retrying {i + 1}/{RETRY_COUNT}')
+            if i == 0:
+                new_engine = True
+            elif i < RETRY_COUNT - 1:  # Don't wait after the last try
+                await asyncio.sleep(RETRY_DELAY)
+            else:
+                raise e
+                print(f"Failed to merge and commit after {RETRY_COUNT} retries")
 
+
+async def execute_stmt(stmt):
+    new_engine = False
+    for i in range(RETRY_COUNT):
+        try:
+            async with get_async_session_maker(async_engine, new_engine) as async_db:
+                await async_db.execute(stmt)
+                await async_db.commit()
+                return
+        except OperationalError as e:
+            print(f'OperationalError occurred: {str(e)}. Retrying {i + 1}/{RETRY_COUNT}')
+            if i == 0:
+                new_engine = True
+            elif i < RETRY_COUNT - 1:  # Don't wait after the last try
+                await asyncio.sleep(RETRY_DELAY)
+            else:
+                raise e
+                print(f"Failed to merge and commit after {RETRY_COUNT} retries")
 
 async def update_model_by_user_id(model):
     stmt = (update(model.metadata.tables[model.__name__().lower()])
             .where(model.__mapper__.primary_key[0] == model.id).values(**model.to_dict()))
-    async with get_async_session_maker() as async_db:
-        await async_db.execute(stmt)
-        await async_db.commit()
+    await execute_stmt(stmt)
 
 
 async def insert_links_df(df, user_id, project_id):
@@ -94,28 +125,24 @@ async def insert_df(model_class, df, user_id=None, project_id=None):
 
 async def remove(model_class, user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
-    query = delete(model_class).where(model_class.id == user_id, model_class.project_id == project_id)
-    async with get_async_session_maker() as async_db:
-        await async_db.execute(query)
-        await async_db.commit()
+    stmt = delete(model_class).where(model_class.id == user_id, model_class.project_id == project_id)
+    await execute_stmt(stmt)
 
 
 async def remove_account(user_email, user_id):
-    async with get_async_session_maker() as async_db:
-        for model_class in [models.User,
-                            models.ProjectSetup,
-                            models.GridDesign,
-                            models.EnergySystemDesign,
-                            models.Nodes,
-                            models.Links,
-                            models.Results,
-                            models.DemandCoverage,
-                            models.EnergyFlow,
-                            models.Emissions,
-                            models.DurationCurve]:
-            query = delete(model_class).where(model_class.id == user_id)
-            await async_db.execute(query)
-            await async_db.commit()
+    for model_class in [models.User,
+                        models.ProjectSetup,
+                        models.GridDesign,
+                        models.EnergySystemDesign,
+                        models.Nodes,
+                        models.Links,
+                        models.Results,
+                        models.DemandCoverage,
+                        models.EnergyFlow,
+                        models.Emissions,
+                        models.DurationCurve]:
+        stmt = delete(model_class).where(model_class.id == user_id)
+        await execute_stmt(stmt)
 
 
 async def remove_project(user_id, project_id):
@@ -174,17 +201,8 @@ async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id,
 
 
 async def sql_str_2_db(sql):
-    async_session = get_async_session_maker()
-    try:
-        await async_session.execute(text(sql))
-        await async_session.commit()
-        await async_session.close()
-    except Exception as err:
-        if len(sql) > 500:
-            sql = "\n(...)\n".join((sql[0:min(400, int(len(sql) / 2))], sql[-100:]))
-        print("\n Something went wrong while trying to write to the database.\n\n Your query was:\n{0}".format(sql))
-        await async_session.rollback()  # Revert everything that has been written so far
-        raise Exception(err)
+    stmt = text(sql)
+    await execute_stmt(stmt)
 
 
 async def _insert_df(table: str, df, if_exists='update', chunk_size=None):

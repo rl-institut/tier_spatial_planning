@@ -9,13 +9,11 @@ from captcha.image import ImageCaptcha
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from passlib.context import CryptContext
-from sqlalchemy import select
 from fastapi_app.io.db import config
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import jwt, JWTError
 from fastapi.security.utils import get_authorization_scheme_param
-from fastapi_app.io.db.database import get_async_session_maker
 from fastapi_app.io.db import inserts, queries, models
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -138,24 +136,10 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 
-async def _get_user_from_token(token):
-    try:
-        payload = jwt.decode(token, config.KEY_FOR_TOKEN, algorithms=[config.TOKEN_ALG])
-        username = payload.get("sub")
-    except JWTError:
-        return None
-    # if isinstance(db, scoped_session):
-    query = select(models.User).where(models.User.email == username)
-    async with get_async_session_maker() as async_db:
-        res = await async_db.execute(query)
-    user = res.scalars().first()
-    return user
-
-
 async def get_user_from_cookie(request):
     token = request.cookies.get("access_token")
     scheme, param = get_authorization_scheme_param(token)
-    user = await _get_user_from_token(token=param)
+    user = await queries._get_user_from_token(token=param)
     return user
 
 
