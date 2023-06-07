@@ -1,6 +1,11 @@
 import pandas as pd
+import numpy as np
+import os
 from sqlalchemy import delete, text
 from sqlalchemy.exc import OperationalError
+import xarray as xr
+import pvlib
+from feedinlib import era5
 from fastapi_app.io.db import models
 from fastapi_app.io.db.database import get_sync_session_maker, sync_engine
 from fastapi_app.io.db.sync_queries import get_df
@@ -175,3 +180,42 @@ def insert_demand_coverage_df(df, user_id, project_id):
         df['id'] = int(user_id)
         df['project_id'] = int(project_id)
         _insert_df('demandcoverage', df, if_exists='update')
+
+
+def dump_weather_data_into_db(file_name):
+    print('Dumping weather data into database... {}'.format(file_name))
+    ds = xr.open_dataset(file_name, engine='netcdf4')
+    df = era5.format_pvlib(ds)
+    df = df.reset_index()
+    df = df.rename(columns={'time': 'dt', 'latitude': 'lat', 'longitude': 'lon'})
+    df = df.set_index(['dt'])
+
+    def get_all_locations(ds):
+        lat = ds.variables['latitude'][:]
+        lon = ds.variables['longitude'][:]
+        lon_grid, lat_grid = np.meshgrid(lat, lon)
+        grid_points = np.stack((lat_grid, lon_grid), axis=-1)
+        grid_points = grid_points.reshape(-1, 2)
+        return grid_points
+
+    df['dni'] = np.nan
+    grid_points = get_all_locations(ds)
+    for lon, lat in grid_points:
+        mask = (df['lat'] == lat) & (df['lon'] == lon)
+        tmp_df = df.loc[mask]
+        solar_position = pvlib.solarposition.get_solarposition(time=tmp_df.index,
+                                                               latitude=lat,
+                                                               longitude=lon)
+
+        df.loc[mask, 'dni'] = pvlib.irradiance.dni(ghi=tmp_df['ghi'],
+                                                   dhi=tmp_df['dhi'],
+                                                   zenith=solar_position['apparent_zenith']).fillna(0)
+    df = df.reset_index()
+    df['dt'] = df['dt'] - pd.Timedelta('30min')
+    df['dt'] = df['dt'].dt.tz_convert('UTC').dt.tz_localize(None)
+    df.iloc[:, 3:] = df.iloc[:, 3:] + 0.0000001
+    df.iloc[:, 3:] = df.iloc[:, 3:].round(1)
+    df.loc[:, 'lon'] = df.loc[:, 'lon'].round(3)
+    df.loc[:, 'lat'] = df.loc[:, 'lat'].round(7)
+    df.iloc[:, 1:] = df.iloc[:, 1:].astype(str)
+    insert_df(models.WeatherData, df)

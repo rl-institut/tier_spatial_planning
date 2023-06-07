@@ -112,7 +112,7 @@ def get_energy_system_design(user_id, project_id):
 def check_if_weather_data_exists():
     query = text("""SELECT EXISTS(SELECT 1 FROM {}.weatherdata LIMIT 1) as 'Exists';""".format(db_name))
     res = _execute_with_retry(query, which='first')
-    ans = bool(res[0])
+    ans = bool(res)
     return ans
 
 def _execute_with_retry(query, which='first'):

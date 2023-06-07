@@ -51,13 +51,25 @@ json_object = Dict[Any, Any]
 json_array = List[Any]
 import_structure = Union[json_array, json_object]
 
+"""
 @app.on_event("startup")
-async def startup_event():
-    #if not sync_queries.check_if_weather_data_exists():
-        #await inserts.dump_weather_data_into_db('ERA5_weather_data1.nc')
-        #await inserts.dump_weather_data_into_db('ERA5_weather_data2.nc')
-        #await inserts.dump_weather_data_into_db('ERA5_weather_data3.nc')
-    pass
+def startup_event():
+    if not sync_queries.check_if_weather_data_exists():
+        sync_inserts.dump_weather_data_into_db('ERA5_weather_data1.nc')
+        sync_inserts.dump_weather_data_into_db('ERA5_weather_data2.nc')
+        sync_inserts.dump_weather_data_into_db('ERA5_weather_data3.nc')
+"""
+
+@app.get('/insert_weather_data')
+async def insert_weather_data(request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    if user.is_superuser:
+        sync_inserts.dump_weather_data_into_db('ERA5_weather_data1.nc')
+        sync_inserts.dump_weather_data_into_db('ERA5_weather_data2.nc')
+        sync_inserts.dump_weather_data_into_db('ERA5_weather_data3.nc')
+    else:
+        print('no privileges to insert weather data')
+
 
 @app.exception_handler(Exception)
 async def exception_handler(request: Request, exc: Exception):
@@ -91,8 +103,6 @@ async def captcha(request: Request):
 
 @app.get("/test_run")
 async def test_run(request: Request):
-    pass
-    """
     task = task_grid_opt.delay(9, 1)
     supply = False
     for i in range(1000):
@@ -103,7 +113,6 @@ async def test_run(request: Request):
                 break
             task = task_supply_opt.delay(9, 1)
             supply = True
-    """
 
 
 @app.get("/", response_class=HTMLResponse)
