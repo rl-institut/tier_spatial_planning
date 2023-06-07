@@ -31,6 +31,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile-mysql
+    command: --max-connections=1000
     restart: always
     environment:
       MYSQL_DATABASE: peoplesun_user_db
