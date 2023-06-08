@@ -57,10 +57,8 @@ async function consumer_to_db(project_id) {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({map_elements: map_elements})
-  });
-  forward_if_consumer_selection_exists(project_id);
+  }).then(() => forward_if_consumer_selection_exists(project_id))
 }
-
 
 function add_buildings_inside_boundary({ boundariesCoordinates } = {}) {
   $("*").css("cursor", "wait");
@@ -783,16 +781,10 @@ function forward_if_consumer_selection_exists(project_id) {
         if (res.forward === true) {
             window.location.href = window.location.origin + '/grid_design?project_id=' + project_id;
         } else {
-            document.getElementById('map').style.display = 'none';
-            document.getElementById('section').style.display = 'none';
-            document.getElementById('noSelection').style.display='block'
+            document.getElementById('responseMsg').innerHTML = 'No consumers are selected. You must select the geolocation of the consumers before you go\n' +
+                '                    to the next page.';
         }})}
 
-
-function hide_no_selection_prompt() {
-    document.getElementById('map').style.display = 'block';
-    document.getElementById('section').style.display = 'block';
-    document.getElementById('noSelection').style.display='none';}
 
 
 function send_email_notification(project_id, is_active) {
