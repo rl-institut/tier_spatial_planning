@@ -214,8 +214,6 @@ function drawBlock(id, x, y) {
 
 function styleBlock(id) {
     const block = document.getElementById("block"+toTitleCase(id));
-    console.log(id);
-
     if (id === 'demand') {
         block.classList.add('components-block--demand');
     } else if (id === 'shortage') {

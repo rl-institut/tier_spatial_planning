@@ -691,12 +691,22 @@ function import_data(project_id) {
 
 
 
-async function show_user_email_in_navbar() {
-    $.ajax({url: "query_account_data/",
-            type: "POST",
-            contentType: "application/json",})
-        .done(function (response) { document.getElementById("showMail").innerHTML = response.email;})
+function show_user_email_in_navbar() {
+    fetch("query_account_data/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    })
+        .then(response => response.json())
+        .then(data => {
+            const showMailElement = document.getElementById("showMail");
+            if (showMailElement) {
+                showMailElement.innerHTML = data.email;
+            }
+        });
 }
+
 
 
 async function redirect_if_cookie_is_missing(access_token, consent_cookie){
