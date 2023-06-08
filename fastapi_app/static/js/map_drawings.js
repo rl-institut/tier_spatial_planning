@@ -163,7 +163,6 @@ searchInput.addEventListener('keypress', async (event) => {
 
         if (isLatLngInMapBounds(lat, lng)) {
       map.setView([lat, lng], 13);
-      responseMsg.innerHTML = 'Location is outside of Nigeria';
     } else {
         const responseMsg = document.getElementById("responseMsg");
         responseMsg.innerHTML = 'Location is outside of Nigeria';
