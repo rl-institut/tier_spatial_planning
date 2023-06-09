@@ -273,7 +273,8 @@ async def remove_project(project_id, request: Request):
 
 @app.get("/demand_estimation", response_class=HTMLResponse)
 async def demand_estimation(request: Request):
-    return templates.TemplateResponse("demand_estimation.html", {"request": request})
+    project_id = request.query_params.get('project_id')
+    return templates.TemplateResponse("demand_estimation.html", {"request": request, 'project_id': project_id})
 
 
 @app.get("/energy_system_design", response_class=HTMLResponse)
@@ -461,6 +462,20 @@ async def load_previous_data(page_name, request: Request):
             return None
         grid_design = await queries.get_model_instance(models.GridDesign, user.id, project_id)
         return grid_design
+    elif page_name == "demand_estimation":
+        try:
+            project_id = int(project_id)
+        except (ValueError, TypeError):
+            return None
+        demand_estimation = await queries.get_model_instance(models.Demand, user.id, project_id)
+        demand_estimation.maximum_peak_load = str(demand_estimation.maximum_peak_load) \
+            if demand_estimation.maximum_peak_load is not None else ''
+        demand_estimation.average_daily_energy = str(demand_estimation.average_daily_energy) \
+            if demand_estimation.average_daily_energy is not None else ''
+        demand_estimation.custom_calibration = True \
+            if len(demand_estimation.maximum_peak_load) > 0 or len(demand_estimation.average_daily_energy) \
+            else False
+        return demand_estimation
 
 
 @app.post("/add_user_to_db/")
@@ -666,6 +681,32 @@ async def save_grid_design(request: Request, data: fastapi_app.io.schema.SaveGri
     grid_design = models.GridDesign(**data.grid_design)
     grid_design.allow_shs = ast.literal_eval(grid_design.allow_shs)
     await inserts.merge_model(grid_design)
+
+
+@app.post("/save_demand_estimation/")
+async def save_demand_estimation(request: Request, data: fastapi_app.io.schema.SaveDemandEstimation):
+    user = await accounts.get_user_from_cookie(request)
+    project_id = get_project_id_from_request(request)
+    custom_calibration = ast.literal_eval(data.demand_estimation['custom_calibration'])
+    if custom_calibration is None or '':
+        maximum_peak_load = None
+        average_daily_energy = None
+    else:
+        try:
+            maximum_peak_load = round(float(data.demand_estimation['maximum_peak_load']), 1)
+        except ValueError:
+            maximum_peak_load = None
+        try:
+            average_daily_energy = round(float(data.demand_estimation['average_daily_energy']), 1)
+        except ValueError:
+            average_daily_energy = None
+    dictionary = {'id': user.id,
+                  'project_id': project_id,
+                  'household_option': data.demand_estimation['household_option'],
+                  'maximum_peak_load': maximum_peak_load,
+                  'average_daily_energy': average_daily_energy}
+    demand_estimation = models.Demand(**dictionary)
+    await inserts.merge_model(demand_estimation)
 
 
 @app.post("/save_project_setup/{project_id}")

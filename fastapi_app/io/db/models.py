@@ -185,7 +185,7 @@ class Nodes(Base):
     distance_to_load_center = Column(Numeric(10, 6))
     parent = Column(Numeric(10, 5))
     distribution_cost = Column(Numeric(10, 5))
-
+    custom_specification = Column(VARCHAR(1000))
 
 class Links(Base):
 
@@ -201,6 +201,19 @@ class Links(Base):
     lon_to = Column(Numeric(9, 6), primary_key=True)
     link_type = Column(VARCHAR(50), primary_key=True)
     length = Column(SMALLINT(unsigned=True))
+
+
+class Demand(Base):
+
+    @staticmethod
+    def __name__():
+        return 'Demand'
+
+    id = Column(SMALLINT, primary_key=True, index=True)
+    project_id = Column(SMALLINT, primary_key=True, index=True)
+    household_option = Column(SMALLINT, default=0)
+    maximum_peak_load = Column(Numeric(10, 3), default=None)
+    average_daily_energy = Column(Numeric(10, 3), default=None)
 
 
 class Results(Base):

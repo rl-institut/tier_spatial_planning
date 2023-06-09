@@ -18,9 +18,18 @@
                  href="#"
                  onclick="consumer_to_db({{ project_id }})">
                      Next</a>
-             {% elif title == 'Grid Design' %}
+             {% elif title == 'Demand Estimation' %}
                  <a class="btn btn--medium btn--hollow btn--previous"
                  href="consumer_selection?project_id={{ project_id }}"
+                 onclick="save_demand_estimation();"
+                 >Previous</a>
+                 <a class="btn btn--medium" style="color: #fff"
+                 href="grid_design?project_id={{ project_id }}"
+                 onclick="save_demand_estimation();">
+                     Next</a>
+             {% elif title == 'Grid Design' %}
+                 <a class="btn btn--medium btn--hollow btn--previous"
+                 href="demand_estimation?project_id={{ project_id }}"
                  onclick="save_grid_design();">
                      Previous</a>
                  <a class="btn btn--medium" style="color: #fff"

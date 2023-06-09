@@ -125,6 +125,9 @@ class SaveProjectSetup(BaseModel):
 class SaveGridDesign(BaseModel):
     grid_design: Dict[str, str]
 
+class SaveDemandEstimation(BaseModel):
+    demand_estimation: Dict[str, str]
+
 
 class OptimizeGridRequest(BaseModel):
     optimization: Dict[str, int]

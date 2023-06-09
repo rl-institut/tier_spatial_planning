@@ -514,6 +514,24 @@ function save_grid_design() {
     }).then(response => response.json());
 }
 
+function save_demand_estimation() {
+    let custom_calibration = document.getElementById("toggleswitch").checked;
+    fetch("save_demand_estimation/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            demand_estimation: {
+                'household_option': selectedValue,
+                'maximum_peak_load': maximum_peak_load.value,
+                'average_daily_energy': average_daily_energy.value,
+                'custom_calibration': custom_calibration,
+            }
+        })
+    }).then(response => response.json());
+}
+
 
 function load_previous_data(page_name){
     var xhr = new XMLHttpRequest();
@@ -565,7 +583,31 @@ function load_previous_data(page_name){
                 boxVisibilityShs();
             }
         };
-    }
+    } else if (page_name.includes("demand_estimation")) {
+        xhr.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+                // push nodes to the map
+                results = this.response;
+                if (results !== null && Object.keys(results).length > 1) {
+                    document.getElementById("maximum_peak_load").value = results['maximum_peak_load'];
+                    document.getElementById("average_daily_energy").value = results['average_daily_energy'];
+                    document.getElementById("toggleswitch").checked = results['custom_calibration'];
+                    let accordionItem2 = new bootstrap.Collapse(document.getElementById('collapseTwo'),
+                        {toggle: false});
+                    if (results['custom_calibration'] == true){
+                        accordionItem2.show();}
+                    else {
+                        accordionItem2.hide();
+                    }
+                  const radioButton = document.querySelector(`input[name="options"][id="option${results['household_option'] + 1}"]`);
+
+                  if (radioButton) {
+                    radioButton.checked = true;
+                  }
+                    }
+                }
+            }
+        }
 }
 
 
@@ -789,7 +831,7 @@ function forward_if_consumer_selection_exists(project_id) {
         contentType: "application/json",})
             .done(function (res) {
         if (res.forward === true) {
-            window.location.href = window.location.origin + '/grid_design?project_id=' + project_id;
+            window.location.href = window.location.origin + '/demand_estimation?project_id=' + project_id;
         } else {
             document.getElementById('responseMsg').innerHTML = 'No consumers are selected. You must select the geolocation of the consumers before you go\n' +
                 '                    to the next page.';
