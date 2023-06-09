@@ -6,17 +6,18 @@ import plotly.express as px
 import plotly.figure_factory as ff
 from fastapi_app.io.db import queries, sync_queries
 from fastapi_app.io.db import models
+from fastapi_app.io.db import config
 
 
-def get_demand_time_series(nodes, all_profiles, distribution_lookup):
+def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distribution_lookup=None):
     num_households = get_number_of_households(nodes)
     lat, lon = get_location_GPS(nodes).values()
-    hh_demand_option = get_user_household_demand_option_selection()
-    calibration_option = get_user_calibration_option_selection()
+    hh_demand_option = get_user_household_demand_option_selection(demand_par_dict)
+    calibration_option = get_user_calibration_option_selection(demand_par_dict)
     if all_profiles is None:
-        all_profiles = read_all_profiles()
+        all_profiles = read_all_profiles(config.full_path_profiles)
     if distribution_lookup is None:
-        distribution_lookup = read_distribution_lookup()
+        distribution_lookup = read_distribution_lookup(config.full_path_distributions)
     df_hh_profiles = combine_hh_profiles(all_profiles,
                                              lat = lat,
                                              lon = lon,
@@ -39,7 +40,7 @@ def get_calibration_target():
 
 
 def get_number_of_households(nodes):
-    num_households = len(nodes[nodes['consumer_type'] == 'houshold'].index)
+    num_households = len(nodes[nodes['consumer_type'] == 'household'].index)
     return num_households
 
 
@@ -54,14 +55,14 @@ def get_location_GPS(nodes):
     return {"lat" : lat, "lon": lon}
 
 
-def get_user_household_demand_option_selection():
+def get_user_household_demand_option_selection(demand_par_dict):
     #Dummy function
     #Gives chosen selection option from radio button list
-    option = "National"
+    option = demand_par_dict['household_option']
     return option
 
 
-def get_user_calibration_option_selection():
+def get_user_calibration_option_selection(demand_par_dict):
     #Dummy function
     #Gives chosen selection option from calibration radio button list
     option = "kW"
@@ -85,7 +86,7 @@ def read_distribution_lookup(filepath):
     return distribution_lookup
 
 
-def read_wealth_lookup(filepath):
+def read_wealth_lookup(filepath=None):
     ##Dummy function
     
     #wealth_lookup = pd.read_parquet(path = filepath, engine = "pyarrow")
@@ -165,26 +166,26 @@ def combine_hh_profiles(all_profiles, lat, lon, num_households, distribution_loo
     
     default_profile_name = "Household_Distribution_Based_Very Low Consumption"
     
-    if option == "National":
+    if option == 0:
         percentages = distribution_lookup.loc["National"]["percentages"]
         df_hh_profiles = combine_hh_profiles_distribution_based(all_profiles, num_households, percentages)
         
-    elif option == "South South":
+    elif option == 1:
         percentages = distribution_lookup.loc["South South"]["percentages"]
         df_hh_profiles = combine_hh_profiles_distribution_based(all_profiles, num_households, percentages)
         
-    elif option == "North West":
+    elif option == 2:
         percentages = distribution_lookup.loc["North West"]["percentages"]
         df_hh_profiles = combine_hh_profiles_distribution_based(all_profiles, num_households, percentages)
         
-    elif option == "North Central":
+    elif option == 3:
         percentages = distribution_lookup.loc["North Central"]["percentages"]
         df_hh_profiles = combine_hh_profiles_distribution_based(all_profiles, num_households, percentages)
         
-    elif option == "Location Estimate":
+    elif option == 4:
         df_hh_profiles = hh_location_estimate(all_profiles, lat, lon, num_households, read_wealth_lookup())
     
-    elif option == "Default":
+    elif option == 5:
         percentages = distribution_lookup.loc["National"]["percentages"]
         df_hh_profiles = combine_hh_profiles_distribution_based(all_profiles, num_households, percentages)
         

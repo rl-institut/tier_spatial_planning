@@ -41,3 +41,4 @@ tables==3.8.0
 descartes==1.1.0
 h3==3.7.6
 plotly==5.15.0
+pyarrow==12.0.0

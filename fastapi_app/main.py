@@ -31,7 +31,7 @@ from fastapi_app.tools.optimizer import Optimizer, GridOptimizer, EnergySystemOp
 from fastapi_app.tools.account_helpers import Hasher, create_guid, is_valid_credentials, send_activation_link, activate_mail, \
     authenticate_user, create_access_token, send_mail
 from fastapi_app.tools import account_helpers as accounts
-from fastapi_app.io.db import config, inserts, queries, sync_queries, sync_inserts
+from fastapi_app.io.db import config, inserts, queries, sync_queries, sync_inserts, queries_demand
 from fastapi_app.io.df_to_excel import df_to_xlsx
 import pyutilib.subprocess.GlobalData
 from fastapi_app.tools.solar_potential import get_dc_feed_in_sync_db_query
@@ -1226,7 +1226,11 @@ def optimize_grid(user_id, project_id):
         end_datetime = start_datetime + timedelta(days=int(opt.n_days))
 
         # First, the demand for the entire year is read from the CSV file.
-        demand_full_year = pd.read_csv(filepath_or_buffer=config.full_path_timeseries)
+        demand_opt_dict = sync_queries.get_model_instance(models.Demand, user_id, project_id).to_dict()
+        try:
+            demand_full_year = queries_demand.get_demand_time_series(nodes, demand_opt_dict).to_float('Demand')
+        except Exception as e:
+            demand_full_year = pd.read_csv(filepath_or_buffer=config.full_path_timeseries)
         demand_full_year.index = pd.date_range(
             start=start_datetime, periods=len(demand_full_year), freq="H"
         )
