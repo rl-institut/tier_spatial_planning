@@ -9,7 +9,7 @@ venv/
 *secret*
 *.DS_Store
 data
-!wp3
+!/wp3
 scratch.py
 fastapi_app/io/db/dev_config.py
 /.db_data/
