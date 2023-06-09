@@ -4,13 +4,55 @@ import h3
 import plotly
 import plotly.express as px
 import plotly.figure_factory as ff
+from fastapi_app.io.db import queries, sync_queries
+from fastapi_app.io.db import models
 
-def get_location_GPS():
-    #Dummy function
-    #gives location of mean value, first value, or value of power house of project site
-    lat = 0
-    lon = 0
+
+def get_demand_time_series(nodes, all_profiles, distribution_lookup):
+    num_households = get_number_of_households(nodes)
+    lat, lon = get_location_GPS(nodes).values()
+    hh_demand_option = get_user_household_demand_option_selection()
+    calibration_option = get_user_calibration_option_selection()
+    if all_profiles is None:
+        all_profiles = read_all_profiles()
+    if distribution_lookup is None:
+        distribution_lookup = read_distribution_lookup()
+    df_hh_profiles = combine_hh_profiles(all_profiles,
+                                             lat = lat,
+                                             lon = lon,
+                                             num_households = num_households,
+                                             distribution_lookup = distribution_lookup,
+                                             option = hh_demand_option)
+    df_ent_profiles = combine_ent_profiles(all_profiles, nodes=get_all_enterprise_customer_nodes(nodes))
+    calibrated_profile = combine_and_calibrate_total_profile(
+        df_hh_profiles=df_hh_profiles,
+        df_ent_profiles=df_ent_profiles,
+        calibration_target_value=get_calibration_target(),
+        calibration_option=calibration_option) / 1000
+    # calibration totals/setpoints are in kW
+    # profiles are still in W
+    return calibrated_profile
+
+
+def get_calibration_target():
+    return 5
+
+
+def get_number_of_households(nodes):
+    num_households = len(nodes[nodes['consumer_type'] == 'houshold'].index)
+    return num_households
+
+
+def get_number_of_enterprise(nodes):
+    num_enterprise = len(nodes[nodes['consumer_type'] == 'enterprise'].index)
+    return num_enterprise
+
+
+def get_location_GPS(nodes):
+    lat = nodes["latitude"].median()
+    lon = nodes["longitude"].median()
     return {"lat" : lat, "lon": lon}
+
 
 def get_user_household_demand_option_selection():
     #Dummy function
@@ -18,27 +60,30 @@ def get_user_household_demand_option_selection():
     option = "National"
     return option
 
+
 def get_user_calibration_option_selection():
     #Dummy function
     #Gives chosen selection option from calibration radio button list
     option = "kW"
     return option
 
-def get_all_enterprise_customer_nodes():
+
+def get_all_enterprise_customer_nodes(nodes):
     #Dummy function
     #Returns a list or dataframe of all of the enterprise node "strings" of the community
-    nodes = ["placeholder"] * 5
-    
+    nodes = nodes
     return nodes
+
 
 def read_all_profiles(filepath):
     df_all_profiles = pd.read_parquet(path = filepath, engine = "pyarrow")
-    
     return df_all_profiles
+
 
 def read_distribution_lookup(filepath):
     distribution_lookup = pd.read_parquet(path = filepath, engine = "pyarrow")
     return distribution_lookup
+
 
 def read_wealth_lookup(filepath):
     ##Dummy function
@@ -47,15 +92,18 @@ def read_wealth_lookup(filepath):
     wealth_lookup = 0
     return wealth_lookup
 
+
 def plot_profiles_hourly(profiles):
     ##TODO
     plotly_object = "placeholder"
     return plotly_object
 
+
 def plot_profiles_1_minute(profiles):
     ##TODO
     plotly_object = "placeholder"
     return plotly_object
+
 
 def resample_to_hourly(profile):
     ##TODO
@@ -73,9 +121,9 @@ def combine_ent_profiles(all_profiles, nodes):
     ##regex or str.split to parse enterprise users
     ##compile total list of enterprises and heavy loads
     enterprise_nodes_list = nodes
-    
-    node_count = len(enterprise_nodes_list)
-    
+
+    node_count = get_number_of_enterprise(nodes)
+
     default_ent_profile = all_profiles[default_profile_name]
     
     ##combine profiles
@@ -134,7 +182,7 @@ def combine_hh_profiles(all_profiles, lat, lon, num_households, distribution_loo
         df_hh_profiles = combine_hh_profiles_distribution_based(all_profiles, num_households, percentages)
         
     elif option == "Location Estimate":
-        df_hh_profiles = hh_location_estimate(all_profiles, lat, lon, num_households, wealth_lookup)
+        df_hh_profiles = hh_location_estimate(all_profiles, lat, lon, num_households, read_wealth_lookup())
     
     elif option == "Default":
         percentages = distribution_lookup.loc["National"]["percentages"]
