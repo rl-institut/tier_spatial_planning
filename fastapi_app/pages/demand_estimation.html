@@ -1,10 +1,197 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Demand Estimation</title>
-</head>
-<body>
+<html lang="en-us">
+  <head>
+    {% set title='Demand Estimation' %}
+    {% include '_head.html' %}
+    {% include '_style_msg_box.html' %}
 
-</body>
+
+
+      <style>
+          {% include '_toggle.html' %}
+
+
+
+.input-item select, .input-group input, .input-group-text, .btn btn--medium {
+    height: 32px; /* Adjust this value to your preference */
+}
+
+.btn-custom {
+    color: black;
+    background-color: transparent;
+    border-color: transparent;
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.btn-custom:hover, .btn-custom:active, .btn-custom.focus, .btn-custom:focus, .btn-custom.active {
+    background-color: transparent;
+    border-color: transparent;
+}
+
+.btn-custom input[type='radio'] {
+    margin-right: 5px;
+}
+
+      </style>
+  </head>
+  <body onload="redirect_if_cookie_is_missing(true, true);
+                load_previous_data('demand_estimation?project_id={{ project_id }}');
+                show_user_email_in_navbar();">
+  {% include '_navbar.html' %}
+  {% include '_wizard.html' %}
+    <main>
+        <section id="section" class="dashboard" style="height: auto">
+            <div class="row" style="height: auto">
+                <div class="chart" style="height: auto">
+                                        <div class="accordion" id="accordionExample" style="margin-top: 12px">
+                      <div class="accordion-item" style="padding: 10px">
+                        <h2 class="accordion-header" id="headingOne">
+                          <button class="accordion-button no-arrow" type="button">
+                            Select Household Demand Option
+                          </button>
+                        </h2>
+                        <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+                          <div class="accordion-body">
+                            <div class="btn-group-vertical btn-group-toggle" data-toggle="buttons">
+                                <label class="btn btn-custom active d-flex align-items-center">
+                                    <input type="radio" name="options" id="option1" autocomplete="off" checked> National Distribution
+                                </label>
+                                <label class="btn btn-custom d-flex align-items-center">
+                                    <input type="radio" name="options" id="option2" autocomplete="off"> South-South Distribution
+                                </label>
+                                <label class="btn btn-custom d-flex align-items-center">
+                                    <input type="radio" name="options" id="option3" autocomplete="off"> North-West Distribution
+                                </label>
+                                <label class="btn btn-custom d-flex align-items-center">
+                                    <input type="radio" name="options" id="option4" autocomplete="off"> North-East Distribution
+                                </label>
+                                <label class="btn btn-custom d-flex align-items-center">
+                                    <input type="radio" name="options" id="option5" autocomplete="off"> North-Central Distribution
+                                </label>
+                                <label class="btn btn-custom d-flex align-items-center">
+                                    <input type="radio" name="options" id="option6" autocomplete="off"> Location-Based Estimate (NB*)
+                                </label>
+                            </div>
+                          </div>
+                            </div>
+                              <span style="padding: 2rem">
+                              <a>Show advanced Options</a>
+                              <label class="switch">
+                              <input type="checkbox" id="toggleswitch">
+                              <span class="slider round"></span>
+                              </label>
+                              </span>
+                        </div>
+
+                      </div>
+
+                    <div class="accordion-item" style="border-top: none; padding: 10px">
+                        <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo">
+                          <div class="accordion-body">
+
+<p><a>Set Custom Calibration Value</a></p>
+<div class="btn-group-vertical btn-group-toggle" data-toggle="buttons">
+    <label class="btn btn-custom active d-flex align-items-center justify-content-between">
+        <span style="width: 60%;">
+            <input type="radio" name="options2" id="option7" autocomplete="off" checked>
+            Average Daily Energy (kWh)
+        </span>
+        <div class="input-group" style="max-width: 200px">
+            <input
+                type="number"
+                class="form-control"
+                id="average_daily_energy"
+                placeholder=""
+                value=""
+                min="0"
+                max="10000"
+                step="0.1"
+                required
+            />
+            <span class="input-group-text" style="margin-right: 8px;">kWh</span>
+        </div>
+    </label>
+    <label class="btn btn-custom d-flex align-items-center justify-content-between">
+        <span style="width: 300px">
+            <input type="radio" name="options2" id="option8" autocomplete="off">
+            Maximum Peak Demand (kW)
+        </span>
+        <div class="input-group" style="max-width: 200px">
+            <input
+                type="number"
+                class="form-control"
+                id="maximum_peak_load"
+                placeholder=""
+                value=""
+                min="0"
+                max="10000"
+                step="0.1"
+                required
+                disabled
+            />
+            <span class="input-group-text" style="margin-right: 8px;">kW</span>
+        </div>
+    </label>
+</div>
+
+
+                              </div>
+                          </div>
+                        </div>
+                      </div>
+
+
+
+
+
+
+                </div></div>
+            </div>
+        </section>
+     {% include '_warningBox.html' %}
+    </main>
+  {% include '_footer.html' %}
+  </body>
+    {% include '_scripts.html' %}
+  <script>
+document.getElementById('toggleswitch').addEventListener('change', function (event) {
+  const accordionItem2 = new bootstrap.Collapse(document.getElementById('collapseTwo'), {
+    toggle: false
+  });
+  if (event.target.checked) {
+    accordionItem2.show();
+  } else {
+    accordionItem2.hide();
+  }
+});
+
+$(function() {
+    $("input[name='options2']").change(function() {
+        if ($("#option7").is(':checked')) {
+            $("#average_daily_energy").prop('disabled', false);
+            $("#maximum_peak_load").prop('disabled', true).val('');
+        } else {
+            $("#average_daily_energy").prop('disabled', true).val('');
+            $("#maximum_peak_load").prop('disabled', false);
+        }
+    });
+});
+
+
+
+const radioButtons = document.getElementsByName("options");
+let selectedValue = -1; // Default value if no selection is made
+
+document.addEventListener('DOMContentLoaded', function() {
+  for (let i = 0; i < radioButtons.length; i++) {
+    radioButtons[i].addEventListener("change", function() {
+      if (this.checked) {
+        selectedValue = i;
+      }
+    });
+  }
+});
+
+</script>
 </html>
