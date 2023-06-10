@@ -468,6 +468,8 @@ async def load_previous_data(page_name, request: Request):
         except (ValueError, TypeError):
             return None
         demand_estimation = await queries.get_model_instance(models.Demand, user.id, project_id)
+        if demand_estimation is None or not hasattr(demand_estimation,'maximum_peak_load'):
+            return None
         demand_estimation.maximum_peak_load = str(demand_estimation.maximum_peak_load) \
             if demand_estimation.maximum_peak_load is not None else ''
         demand_estimation.average_daily_energy = str(demand_estimation.average_daily_energy) \
@@ -1228,20 +1230,31 @@ def optimize_grid(user_id, project_id):
         # First, the demand for the entire year is read from the CSV file.
         demand_opt_dict = sync_queries.get_model_instance(models.Demand, user_id, project_id).to_dict()
         try:
-            demand_full_year = queries_demand.get_demand_time_series(nodes, demand_opt_dict).to_float('Demand')
+            demand_full_year = queries_demand.get_demand_time_series(nodes, demand_opt_dict).to_frame('Demand')
+            demand_full_year.index = pd.date_range(
+                start=start_datetime, periods=len(demand_full_year), freq="H"
+            )
+
+            # Then the demand for the selected time peroid given by the user will be
+            # obtained.
+            demand_selected_period = demand_full_year.Demand.loc[start_datetime:end_datetime]
+
+            # The average consumption of the entire community in kWh for the selected
+            # time period is calculated.
+            average_consumption_selected_period = demand_selected_period.sum()
         except Exception as e:
             demand_full_year = pd.read_csv(filepath_or_buffer=config.full_path_timeseries)
-        demand_full_year.index = pd.date_range(
-            start=start_datetime, periods=len(demand_full_year), freq="H"
-        )
+            demand_full_year.index = pd.date_range(
+                start=start_datetime, periods=len(demand_full_year), freq="H"
+            )
 
-        # Then the demand for the selected time peroid given by the user will be
-        # obtained.
-        demand_selected_period = demand_full_year.Demand.loc[start_datetime:end_datetime]
+            # Then the demand for the selected time peroid given by the user will be
+            # obtained.
+            demand_selected_period = demand_full_year.Demand.loc[start_datetime:end_datetime]
 
-        # The average consumption of the entire community in kWh for the selected
-        # time period is calculated.
-        average_consumption_selected_period = demand_selected_period.sum()
+            # The average consumption of the entire community in kWh for the selected
+            # time period is calculated.
+            average_consumption_selected_period = demand_selected_period.sum()
 
         # Total number of consumers that must be considered for calculating the
         # the total number of required SHS tier 1 to 3.
@@ -1453,6 +1466,12 @@ def optimize_energy_system(user_id, project_id):
         start = pd.to_datetime(df.loc[0, "start_date"])
         end = start + timedelta(days=int(n_days))
         solar_potential_df = get_dc_feed_in_sync_db_query(lat, lon, start, end)
+        try:
+            nodes = sync_queries.get_df(models.Nodes, user_id, project_id)
+            demand_opt_dict = sync_queries.get_model_instance(models.Demand, user_id, project_id).to_dict()
+            demand_full_year = queries_demand.get_demand_time_series(nodes, demand_opt_dict).to_frame('Demand')
+        except Exception as exc:
+            demand_full_year = None
         ensys_opt = EnergySystemOptimizer(
             start_date=df.loc[0, "start_date"],
             n_days=n_days,
@@ -1460,6 +1479,7 @@ def optimize_energy_system(user_id, project_id):
             wacc=df.loc[0, "interest_rate"] / 100,
             tax=0,
             solar_potential=solar_potential_df,
+            demand=demand_full_year,
             path_data=config.full_path_timeseries,
             solver=solver,
             pv=energy_system_design['pv'],

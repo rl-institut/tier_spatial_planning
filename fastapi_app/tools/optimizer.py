@@ -8,6 +8,7 @@ from fastapi_app.tools.grids import Grid
 import oemof.solph as solph
 from datetime import datetime, timedelta
 import pyomo.environ as po
+from fastapi_app.io.db import sync_queries, queries_demand, models
 
 
 class Optimizer:
@@ -823,6 +824,7 @@ class EnergySystemOptimizer(Optimizer):
         wacc,
         tax,
         solar_potential,
+        demand,
         path_data="",
         solver="cbc",
         pv={
@@ -905,6 +907,7 @@ class EnergySystemOptimizer(Optimizer):
         self.rectifier = rectifier
         self.shortage = shortage
         self.solar_potential = solar_potential
+        self.demand = demand
 
     def create_datetime_objects(self):
         """
@@ -923,7 +926,13 @@ class EnergySystemOptimizer(Optimizer):
         data = pd.read_csv(filepath_or_buffer=self.path_data)
         data.index = pd.date_range(start=self.start_datetime, periods=len(data), freq="H")
         # self.solar_potential = data.SolarGen.loc[self.start_datetime : self.end_datetime]
-        self.demand = data.Demand.loc[self.start_datetime : self.end_datetime]
+        try:
+            # ToDo create correct timestamps
+            self.demand.index = pd.date_range(start=self.start_datetime, periods=len(self.demand.index), freq='H')
+            self.demand = self.demand.loc[self.start_datetime : self.end_datetime]['Demand'] * 10
+        except Exception as e:
+            self.demand = data.Demand.loc[self.start_datetime : self.end_datetime]
+
         self.solar_potential_peak = self.solar_potential.max()
         self.demand_peak = self.demand.max()
 
