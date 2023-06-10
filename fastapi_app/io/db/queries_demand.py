@@ -13,7 +13,7 @@ def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distributi
     num_households = get_number_of_households(nodes)
     lat, lon = get_location_GPS(nodes).values()
     hh_demand_option = get_user_household_demand_option_selection(demand_par_dict)
-    calibration_option = get_user_calibration_option_selection(demand_par_dict)
+    calibration_option, calibration_target_value = get_calibration_target(demand_par_dict)
     if all_profiles is None:
         all_profiles = read_all_profiles(config.full_path_profiles)
     if distribution_lookup is None:
@@ -28,15 +28,24 @@ def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distributi
     calibrated_profile = combine_and_calibrate_total_profile(
         df_hh_profiles=df_hh_profiles,
         df_ent_profiles=df_ent_profiles,
-        calibration_target_value=get_calibration_target(),
+        calibration_target_value=calibration_target_value,
         calibration_option=calibration_option) / 1000
     # calibration totals/setpoints are in kW
     # profiles are still in W
     return calibrated_profile
 
 
-def get_calibration_target():
-    return 5
+def get_calibration_target(demand_par_dict):
+    if demand_par_dict['maximum_peak_load'] is not None:
+        value = demand_par_dict['maximum_peak_load']
+        calibration_option = 'kW'
+    elif demand_par_dict['average_daily_energy'] is not None:
+        value = demand_par_dict['average_daily_energy']
+        calibration_option = 'kWh'
+    else:
+        value = 5
+        calibration_option = 'kW'
+    return value, calibration_option
 
 
 def get_number_of_households(nodes):
