@@ -43,8 +43,8 @@ def get_calibration_target(demand_par_dict):
         value = demand_par_dict['average_daily_energy']
         calibration_option = 'kWh'
     else:
-        value = 5
-        calibration_option = 'kW'
+        value = 1
+        calibration_option = 'kWh'
     return value, calibration_option
 
 

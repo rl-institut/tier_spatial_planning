@@ -929,7 +929,7 @@ class EnergySystemOptimizer(Optimizer):
         try:
             # ToDo create correct timestamps
             self.demand.index = pd.date_range(start=self.start_datetime, periods=len(self.demand.index), freq='H')
-            self.demand = self.demand.loc[self.start_datetime : self.end_datetime]['Demand'] * 10
+            self.demand = self.demand.loc[self.start_datetime : self.end_datetime]['Demand'] * 1.5
         except Exception as e:
             self.demand = data.Demand.loc[self.start_datetime : self.end_datetime]
 
