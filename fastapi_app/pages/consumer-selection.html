@@ -170,7 +170,7 @@
                                    <TD>
                                         <div class="input-item" style="margin-right: 30px;">
                                         <select id="consumer" class="form-select" style="max-width: 150px">
-                                          <option>Houshold</option>
+                                          <option>Household</option>
                                         </select>
                                         </div>
                                    </TD>
@@ -397,7 +397,7 @@ var targetNode = document.getElementById('responseMsg');
 var config = { childList: true, subtree: true, characterData: true };
 var callback = function(mutationsList, observer) {
     for(let mutation of mutationsList) {
-        if (mutation.type === 'childList' || mutation.type === 'characterData') {
+        if ((mutation.type === 'childList' || mutation.type === 'characterData') && targetNode.textContent.trim() !== '') {
             var modal = document.getElementById('msgBox');
             modal.style.display = "block";
         }
@@ -405,5 +405,6 @@ var callback = function(mutationsList, observer) {
 };
 var observer = new MutationObserver(callback);
 observer.observe(targetNode, config);
+
 </script>
 </html>

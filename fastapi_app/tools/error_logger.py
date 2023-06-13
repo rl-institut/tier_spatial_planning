@@ -3,10 +3,10 @@ import os
 import traceback
 
 directory = os.getcwd() + '/logs'
-
+print(directory)
 if not os.path.exists(directory):
     os.makedirs(directory)
-
+print(directory)
 
 class CustomLogger(logging.Logger):
     def __init__(self, name, level=logging.NOTSET):
@@ -25,7 +25,11 @@ class CustomLogger(logging.Logger):
         except Exception:
             msg += ''
         msg += '\n\n'
-        msg += traceback.format_exc()
+        try:
+            if hasattr(exc, '__str__') and isinstance(exc, Exception):
+                msg += traceback.format_exc()
+        except Exception:
+            pass
         msg += '\n\n'
         self.error(msg)
 

@@ -1,5 +1,3 @@
-
-
 // Create a polygon draw handler object
 var polygonDrawer = new L.Draw.Polygon(map, {
   shapeOptions: {
