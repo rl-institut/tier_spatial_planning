@@ -7,6 +7,7 @@
   </head>
   <body onload="redirect_if_cookie_is_missing(true, true);
                 refreshBlocksOnDiagramOnLoad();
+                load_previous_data('energy_system_design?project_id={{ project_id }}');
                 check_box_visibility('shortage');
                 show_user_email_in_navbar();">
   {% include '_navbar.html' %}

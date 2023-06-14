@@ -1,6 +1,8 @@
 import decimal
 import pandas as pd
 import time
+
+import sqlalchemy.exc
 from sqlalchemy import select
 from sqlalchemy.sql import text
 import flatten_dict
@@ -126,7 +128,10 @@ def _execute_with_retry(query, which='first'):
                 elif which == 'all':
                     res = res.scalars().all()
                 elif which == 'one':
-                    res = res.scalars().one()
+                    try:
+                        res = res.scalars().one()
+                    except sqlalchemy.exc.NoResultFound:
+                        return None
                 return res
         except OperationalError as e:
             print(f'OperationalError occurred: {str(e)}. Retrying {i + 1}/{RETRY_COUNT}')

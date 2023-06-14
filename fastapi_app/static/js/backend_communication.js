@@ -149,6 +149,8 @@ function save_energy_system_design() {
                     'fuel_lhv': dieselGensetFuelLhv.value,
                     'min_load': dieselGensetMinLoad.value/100,
                     'max_efficiency': dieselGensetMaxEfficiency.value/100,
+                    'max_load': dieselGensetMaxLoad.value/100,
+                    'min_efficiency': dieselGensetMinEfficiency.value/100,
                 }
             },
             battery: {
@@ -604,6 +606,65 @@ function load_previous_data(page_name){
                   if (radioButton) {
                     radioButton.checked = true;
                   }
+                    }
+                }
+            }
+        }
+    else if (page_name.includes("energy_system_design")) {
+        xhr.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+                // push nodes to the map
+                results = this.response;
+                if (results !== null && Object.keys(results).length > 1) {
+                    document.getElementById("selectPv").checked = results['pv__settings__is_selected'];
+                    document.getElementById("pvDesign").checked = results['pv__settings__design'];
+                    document.getElementById("pvNominalCapacity").value = results['pv__parameters__nominal_capacity'];
+                    document.getElementById("pvLifetime").value = results['pv__parameters__lifetime'];
+                    document.getElementById("pvCapex").value = results['pv__parameters__capex'];
+                    document.getElementById("pvOpex").value = results['pv__parameters__opex'];
+                    document.getElementById("selectDieselGenset").checked = results['diesel_genset__settings__is_selected'];
+                    document.getElementById("dieselGensetDesign").checked = results['diesel_genset__settings__design'];
+                    document.getElementById("dieselGensetCapex").value = results['diesel_genset__parameters__capex'];
+                    document.getElementById("dieselGensetOpex").value = results['diesel_genset__parameters__opex'];
+                    document.getElementById("dieselGensetVariableCost").value = results['diesel_genset__parameters__variable_cost'];
+                    document.getElementById("dieselGensetFuelCost").value = results['diesel_genset__parameters__fuel_cost'];
+                    document.getElementById("dieselGensetFuelLhv").value = results['diesel_genset__parameters__fuel_lhv'];
+                    document.getElementById("dieselGensetMinLoad").value = results['diesel_genset__parameters__min_load'] * 100;
+                    document.getElementById("dieselGensetMaxEfficiency").value = results['diesel_genset__parameters__max_efficiency'] * 100;
+                    document.getElementById("dieselGensetMaxLoad").value = results['diesel_genset__parameters__max_load'] * 100;
+                    document.getElementById("dieselGensetMinEfficiency").value = results['diesel_genset__parameters__min_efficiency'] * 100;
+                    document.getElementById("dieselGensetLifetime").value = results['diesel_genset__parameters__lifetime'];
+                    document.getElementById("dieselGensetNominalCapacity").value = results['diesel_genset__parameters__nominal_capacity'];
+                    document.getElementById("selectInverter").checked = results['inverter__settings__is_selected'];
+                    document.getElementById("inverterDesign").checked = results['inverter__settings__design'];
+                    document.getElementById("inverterNominalCapacity").value = results['inverter__parameters__nominal_capacity'];
+                    document.getElementById("inverterLifetime").value = results['inverter__parameters__lifetime'];
+                    document.getElementById("inverterCapex").value = results['inverter__parameters__capex'];
+                    document.getElementById("inverterOpex").value = results['inverter__parameters__opex'];
+                    document.getElementById("inverterEfficiency").value = results['inverter__parameters__efficiency'];
+                    document.getElementById("selectRectifier").checked = results['rectifier__settings__is_selected'];
+                    document.getElementById("rectifierDesign").checked = results['rectifier__settings__design'];
+                    document.getElementById("rectifierNominalCapacity").value = results['rectifier__parameters__nominal_capacity'];
+                    document.getElementById("rectifierLifetime").value = results['rectifier__parameters__lifetime'];
+                    document.getElementById("rectifierCapex").value = results['rectifier__parameters__capex'];
+                    document.getElementById("rectifierOpex").value = results['rectifier__parameters__opex'];
+                    document.getElementById("rectifierEfficiency").value = results['rectifier__parameters__efficiency'] * 100;
+                    document.getElementById("selectShortage").checked = results['shortage__settings__is_selected'];
+                    document.getElementById("shortageMaxTotal").value = results['shortage__parameters__max_shortage_total'] * 100;
+                    document.getElementById("shortageMaxTimestep").value = results['shortage__parameters__max_shortage_timestep'] * 100;
+                    document.getElementById("shortagePenaltyCost").value = results['shortage__parameters__shortage_penalty_cost'];
+                    document.getElementById("selectBattery").checked = results['battery__settings__is_selected'];
+                    document.getElementById("batteryDesign").checked = results['battery__settings__design'];
+                    document.getElementById("batteryNominalCapacity").value = results['battery__parameters__nominal_capacity'];
+                    document.getElementById("batteryLifetime").value = results['battery__parameters__lifetime'];
+                    document.getElementById("batteryCrateIn").value = results['battery__parameters__c_rate_in'];
+                    document.getElementById("batteryCrateOut").value = results['battery__parameters__c_rate_out'];
+                    document.getElementById("batterySocMin").value = results['battery__parameters__soc_min'] * 100;
+                    document.getElementById("batterySocMax").value = results['battery__parameters__soc_max'] * 100;
+                    document.getElementById("batteryEfficiency").value = results['battery__parameters__efficiency'] * 100;
+                    document.getElementById("batteryOpex").value = results['battery__parameters__opex'];
+                    document.getElementById("batteryCapex").value = results['battery__parameters__capex'];
+                    document.getElementById("batteryNominalCapacity").value = results['battery__parameters__nominal_capacity'];
                     }
                 }
             }

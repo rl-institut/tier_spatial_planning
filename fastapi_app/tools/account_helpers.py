@@ -137,10 +137,12 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 
 async def get_user_from_cookie(request):
-    token = request.cookies.get("access_token")
-    scheme, param = get_authorization_scheme_param(token)
-    user = await queries._get_user_from_token(token=param)
-    return user
+    for i in range(2):
+        token = request.cookies.get("access_token")
+        scheme, param = get_authorization_scheme_param(token)
+        user = await queries._get_user_from_token(token=param)
+        if user is not None:
+            return user
 
 
 async def generate_captcha_image() -> Tuple[str, str]:
