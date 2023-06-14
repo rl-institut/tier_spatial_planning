@@ -174,9 +174,6 @@ async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id,
         if not df_total.empty:
             df_total.latitude = df_total.latitude.map(lambda x: "%.6f" % x)
             df_total.longitude = df_total.longitude.map(lambda x: "%.6f" % x)
-            df_total.surface_area = df_total.surface_area.map(lambda x: "%.2f" % x)
-            df_total.peak_demand = df_total.peak_demand.map(lambda x: "%.3f" % x)
-            df_total.average_consumption = df_total.average_consumption.map(lambda x: "%.3f" % x)
             # finally adding the refined dataframe (if it is not empty) to the existing csv file
             if len(df_total.index) != 0:
                 if 'parent' in df_total.columns:

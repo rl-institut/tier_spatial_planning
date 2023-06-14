@@ -48,8 +48,6 @@ class Grid:
             - node_type ('consumer' or 'pole')
             - consumer_type ('household', 'enterprise', ...)
             - consumer_detail ('default' or 'custom')
-            - average_consumption (in kWh per year)
-            - peak_demand (in kW)
             - is_connected (is False only for solar-home-system nodes)
             - how_added (if a node is added as a result of optimization or by user)
             - segment (which cluster the node belongs to)
@@ -112,9 +110,6 @@ class Grid:
                 "node_type": pd.Series([], dtype=str),
                 "consumer_type": pd.Series([], dtype=str),
                 "consumer_detail": pd.Series([], dtype=str),
-                "surface_area": pd.Series([], dtype=np.dtype(float)),
-                "peak_demand": pd.Series([], dtype=np.dtype(float)),
-                "average_consumption": pd.Series([], dtype=np.dtype(float)),
                 "distance_to_load_center": pd.Series([], dtype=np.dtype(float)),
                 "is_connected": pd.Series([], dtype=bool),
                 "how_added": pd.Series([], dtype=str),
@@ -184,8 +179,8 @@ class Grid:
         This function obtains the ideal location for the power house, which is
         at the load centroid of the village.
         """
-        x_centroid = np.average(self.nodes["x"], weights=self.nodes["peak_demand"])
-        y_centroid = np.average(self.nodes["y"], weights=self.nodes["peak_demand"])
+        x_centroid = np.average(self.nodes["x"])
+        y_centroid = np.average(self.nodes["y"])
         self.load_centroid = [x_centroid, y_centroid]
 
     def get_nodes_distances_from_load_centroid(self):
@@ -359,9 +354,6 @@ class Grid:
         node_type="consumer",
         consumer_type="household",
         consumer_detail="default",
-        surface_area=0,
-        peak_demand=1,  # FIXME: must be read automatically
-        average_consumption=1,  # FIXME: must be read automatically
         distance_to_load_center=0,
         is_connected=True,
         how_added="automatic",
@@ -387,9 +379,6 @@ class Grid:
         self.nodes.at[label, "node_type"] = node_type
         self.nodes.at[label, "consumer_type"] = consumer_type
         self.nodes.at[label, "consumer_detail"] = consumer_detail
-        self.nodes.at[label, "surface_area"] = surface_area
-        self.nodes.at[label, "peak_demand"] = peak_demand
-        self.nodes.at[label, "average_consumption"] = average_consumption
         self.nodes.at[label, "distance_to_load_center"] = distance_to_load_center
         self.nodes.at[label, "is_connected"] = is_connected
         self.nodes.at[label, "how_added"] = how_added
@@ -639,6 +628,7 @@ class Grid:
             # electrification for each consumer. If it is cheaper than the SHS,
             # the consumer will stay connected to the mini-grid. Otherwise, it
             # needs to be disconnected and be served by a SHS.
+            # ToDo: average_consumption does not exists anymore
             specific_cost = (cost / self.nodes.loc[consumer_index, 'average_consumption'] * 100)
             self.nodes.loc[consumer_index, 'distribution_cost'] = specific_cost
             # The number of connection links connected to each consumer is only

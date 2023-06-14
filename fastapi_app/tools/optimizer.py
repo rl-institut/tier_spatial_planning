@@ -673,9 +673,6 @@ class GridOptimizer(Optimizer):
         poles['how_added'] = "k-means"
         poles['latitude'] = 0
         poles['longitude'] = 0
-        poles['surface_area'] = 0
-        poles['peak_demand'] = 1
-        poles['average_consumption'] = 1
         poles['distance_to_load_center'] = 0
         poles['type_fixed'] = False
         poles['n_connection_links'] = "0"
@@ -825,7 +822,6 @@ class EnergySystemOptimizer(Optimizer):
         tax,
         solar_potential,
         demand,
-        path_data="",
         solver="cbc",
         pv={
             "settings": {"is_selected": True,
@@ -898,7 +894,6 @@ class EnergySystemOptimizer(Optimizer):
         Initialize the grid optimizer object
         """
         super().__init__(start_date, n_days, project_lifetime, wacc, tax)
-        self.path_data = path_data
         self.solver = solver
         self.pv = pv
         self.diesel_genset = diesel_genset
@@ -916,23 +911,14 @@ class EnergySystemOptimizer(Optimizer):
         start_date_obj = self.start_date
         self.start_date = start_date_obj.date()
         self.start_time = start_date_obj.time()
-        self.start_datetime = datetime.combine(
-            start_date_obj.date(), start_date_obj.time()
-        )
+        self.start_datetime = datetime.combine(start_date_obj.date(), start_date_obj.time())
         # conversion to in() is needed becasue self.n_days is a <class 'numpy.int64'> and it causes troubles
         self.end_datetime = self.start_datetime + timedelta(days=int(self.n_days))
 
     def import_data(self):
-        data = pd.read_csv(filepath_or_buffer=self.path_data)
-        data.index = pd.date_range(start=self.start_datetime, periods=len(data), freq="H")
-        # self.solar_potential = data.SolarGen.loc[self.start_datetime : self.end_datetime]
-        try:
-            # ToDo create correct timestamps
-            self.demand.index = pd.date_range(start=self.start_datetime, periods=len(self.demand.index), freq='H')
-            self.demand = self.demand.loc[self.start_datetime : self.end_datetime]['Demand'] * 1.5
-        except Exception as e:
-            self.demand = data.Demand.loc[self.start_datetime : self.end_datetime]
-
+        # ToDo create correct timestamps
+        self.demand.index = pd.date_range(start=self.start_datetime, periods=len(self.demand.index), freq='H')
+        self.demand = self.demand.loc[self.start_datetime : self.end_datetime]['Demand'] * 1.5
         self.solar_potential_peak = self.solar_potential.max()
         self.demand_peak = self.demand.max()
 

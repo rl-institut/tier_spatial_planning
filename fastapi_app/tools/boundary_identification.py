@@ -28,20 +28,19 @@ def get_consumer_within_boundaries(df):
     df2 = pd.DataFrame.from_dict(data['elements'])
     if df2.empty:
         return None, None, None
-    (building_coord, building_area,) = obtain_areas_and_mean_coordinates_from_geojson(df2)
+    building_coord = obtain_mean_coordinates_from_geojson(df2)
     # excluding the buildings which are outside the drawn boundary
     mask_building_within_boundaries = {key: is_point_in_boundaries(value, df.values.tolist())
                                        for key, value in building_coord.items()}
     building_coordidates_within_boundaries = \
         {key: value for key, value in building_coord.items() if mask_building_within_boundaries[key]}
-    return data, building_coordidates_within_boundaries, building_area
+    return data, building_coordidates_within_boundaries
 
 
-def obtain_areas_and_mean_coordinates_from_geojson(df):
+def obtain_mean_coordinates_from_geojson(df):
     """
     This function creates a dictionnary with the 'id' of each building as a key
-    and the mean loaction of the building as value in the form [lat, long] as well as
-    the surface area of each buolding.
+    and the mean loaction of the building as value in the form [lat, long].
 
     Parameters
     ----------
@@ -56,7 +55,6 @@ def obtain_areas_and_mean_coordinates_from_geojson(df):
         and the mean loaction of the building as value in the form [long, lat].
 
         Dict containing the 'id' of each building as a key
-        and the surface area of the buildings.
     """
     retrieve_building_area_from_overpass = False
     if not df.empty:
@@ -69,7 +67,6 @@ def obtain_areas_and_mean_coordinates_from_geojson(df):
         df1_exploded['nodes'] = df1.explode('nodes')['nodes'].map(index_to_lat_lon)
         df1['nodes'] = df1_exploded.groupby(df1_exploded.index).agg({'nodes': list})
         building_mean_coordinates = {}
-        building_surface_areas = {}
         if not df1.empty:
             reference_coordinate = df1['nodes'].iloc[0][0]
             for row_idx, row in df1.iterrows():
@@ -78,21 +75,9 @@ def obtain_areas_and_mean_coordinates_from_geojson(df):
                 latitudes = [x[0] for x in latitudes_longitudes]
                 longitudes = [x[1] for x in latitudes_longitudes]
                 mean_coord = [np.mean(latitudes), np.mean(longitudes)]
-                surface_area = 0
-                if retrieve_building_area_from_overpass is True:
-                    for edge in range(len(latitudes)):
-                        xy_coordinates.append(conv.xy_coordinates_from_latitude_longitude(
-                            latitude=latitudes_longitudes[edge][0],
-                            longitude=latitudes_longitudes[edge][1],
-                            ref_latitude=reference_coordinate[0],
-                            ref_longitude=reference_coordinate[1]))
-                    if len(xy_coordinates) > 2:
-                        surface_area = geometry.Polygon(xy_coordinates).area
-                else:
-                    surface_area = 10 + np.random.uniform(0, 1)  #ToDo: Delete after demand-estimation is implemented
+
                 building_mean_coordinates[row["id"]] = mean_coord
-                building_surface_areas[row["id"]] = surface_area
-        return building_mean_coordinates, building_surface_areas
+        return building_mean_coordinates
     else:
         return {}, {}
 
