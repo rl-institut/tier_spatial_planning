@@ -168,6 +168,12 @@ async def _get_user_from_token(token):
     return user
 
 
+async def get_user_from_task_id(task_id):
+    query = select(models.User).where(models.User.task_id == task_id)
+    user = await _execute_with_retry(query, which='first')
+    return user
+
+
 async def _execute_with_retry(query, which='first'):
     new_engine = False
     for i in range(RETRY_COUNT):

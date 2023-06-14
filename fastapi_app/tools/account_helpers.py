@@ -144,7 +144,6 @@ async def get_user_from_cookie(request):
         if user is not None:
             return user
 
-
 async def generate_captcha_image() -> Tuple[str, str]:
     captcha_text = ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ', k=6))
     captcha = ImageCaptcha()
