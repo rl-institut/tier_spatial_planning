@@ -48,6 +48,16 @@ var markerConsumer = new L.Icon({
   iconSize: [18, 18],
 });
 
+var markerEnterprise = new L.Icon({
+  iconUrl: "fastapi_app/static/assets/icons/i_enterprise.svg",
+  iconSize: [18, 18],
+});
+
+var markerPublicservice = new L.Icon({
+  iconUrl: "fastapi_app/static/assets/icons/i_public_service.svg",
+  iconSize: [18, 18],
+});
+
 var markerPowerHouse = new L.Icon({
   iconUrl: "fastapi_app/static/assets/icons/i_power_house.svg",
   iconSize: [12, 12],
@@ -86,10 +96,7 @@ var icons = {
 function zoomAll(map) {
   let latLonList = map_elements.map(obj => L.latLng(obj.latitude, obj.longitude));
   let bounds = L.latLngBounds(latLonList);
-  if (latLonList.length != 0) {
-    map.fitBounds(bounds);
-  }
-}
+  if (latLonList.length != 0) {map.fitBounds(bounds);}}
 
 
 function put_markers_on_map(array, markers_only) {
@@ -98,11 +105,19 @@ function put_markers_on_map(array, markers_only) {
   let selected_icon;
   for (counter = 0; counter < n; counter++) {
     if (markers_only) {
-        if (array[counter]["node_type"] === "consumer") {selected_icon= markerConsumer;}}
+        if (array[counter]["node_type"] === "consumer") {
+            if (array[counter]["consumer_type"] === "household") {selected_icon= markerConsumer;}
+            else if (array[counter]["consumer_type"] === "enterprise") {selected_icon= markerEnterprise;}
+            else if (array[counter]["consumer_type"] === "public_service") {selected_icon= markerPublicservice;}
+        }}
     else {
         if (array[counter]["node_type"] === "consumer") {
             if (array[counter]["is_connected"] === false) {selected_icon= markerShs;}
-            else {selected_icon= markerConsumer;}
+            else {
+                if (array[counter]["consumer_type"] === "household") {selected_icon= markerConsumer;}
+                else if (array[counter]["consumer_type"] === "enterprise") {selected_icon= markerEnterprise;}
+                else if (array[counter]["consumer_type"] === "public_service") {selected_icon= markerPublicservice;}
+            }
         }
         else {selected_icon= icons[array[counter]["node_type"]];}}
         L.marker([array[counter]["latitude"], array[counter]["longitude"]], {icon: selected_icon,})

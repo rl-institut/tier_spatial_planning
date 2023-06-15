@@ -44,31 +44,37 @@ document.getElementById('drawRectangle').addEventListener('click', function () {
 // Add a listener that responds to the 'draw:created' event
 map.on(L.Draw.Event.CREATED, function (event) {
     const layer = event.layer;
+
     if (event.layerType === 'marker') {
         const latLng = layer.getLatLng();
         const lat = latLng.lat;
         const lng = latLng.lng;
-        add_single_consumer_to_array(lat, lng, 'manual', 'consumer')
-        drawMarker(lat, lng,'consumer');
-  }
-  else {
-  drawnItems.addLayer(layer);
 
-  // Save the polygon coordinates in a variable
-  polygonCoordinates.push(layer.getLatLngs());
+        add_single_consumer_to_array(lat, lng, 'manual', 'consumer');
+        drawMarker(lat, lng, 'consumer');
 
-  polygonDrawer.disable();
-  if (!is_active)
-  {
-    add_buildings_inside_boundary({boundariesCoordinates: polygonCoordinates });
-  }
-  else
-  {
-    remove_buildings_inside_boundary({boundariesCoordinates: polygonCoordinates });
-  }
-  removeBoundaries();
-  }
+        // Add a delay before re-enabling to bypass the default disable action
+        setTimeout(() => markerDrawer.enable(), 10);
+    }
+    else {
+        drawnItems.addLayer(layer);
+
+        // Save the polygon coordinates in a variable
+        polygonCoordinates.push(layer.getLatLngs());
+
+        polygonDrawer.disable();
+        if (!is_active)
+        {
+            add_buildings_inside_boundary({boundariesCoordinates: polygonCoordinates });
+        }
+        else
+        {
+            remove_buildings_inside_boundary({boundariesCoordinates: polygonCoordinates });
+        }
+        removeBoundaries();
+    }
 });
+
 
 
 
