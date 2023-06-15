@@ -342,6 +342,8 @@ class Grid:
                     how_added=long_link,
                     type_fixed=True,
                     cluster_label=1000,
+                    custom_specification='',
+                    shs_options=0
                 )
 
     def add_node(
@@ -363,6 +365,8 @@ class Grid:
         n_distribution_links=0,
         parent="unknown",
         distribution_cost=0,
+        custom_specification='',
+        shs_options=0
     ):
         """
         adds a node to the grid's node dataframe.
@@ -388,6 +392,8 @@ class Grid:
         self.nodes.at[label, "n_distribution_links"] = n_distribution_links
         self.nodes.at[label, "parent"] = parent
         self.nodes.at[label, "distribution_cost"] = distribution_cost
+        self.nodes.at[label, "custom_specification"] = custom_specification
+        self.shs_options = shs_options
 
     def remove_node(self, node_label):
         """

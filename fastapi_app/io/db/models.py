@@ -185,6 +185,8 @@ class Nodes(Base):
     parent = Column(Numeric(10, 5))
     distribution_cost = Column(Numeric(10, 5))
     custom_specification = Column(VARCHAR(1000))
+    shs_options = Column(SMALLINT)
+
 
 class Links(Base):
 

@@ -106,7 +106,7 @@ function remove_buildings_inside_boundary(
     }).done(function (res) {
         $("*").css('cursor','auto');
         map_elements = res.map_elements;
-        remove_marker_from_map()
+        remove_marker_from_map();
         put_markers_on_map(map_elements, true)})}
 
 

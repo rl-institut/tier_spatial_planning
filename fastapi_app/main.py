@@ -354,7 +354,14 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
         project_id = get_project_id_from_request(request)
     df = await queries.get_df(models.Nodes, user.id, project_id)
     if not df.empty:
-        df = df[['latitude', 'longitude', 'how_added', 'node_type', 'surface_area', 'consumer_type', 'consumer_detail']]
+        df = df[['latitude',
+                 'longitude',
+                 'how_added',
+                 'node_type',
+                 'consumer_type',
+                 'consumer_detail',
+                 'custom_specification',
+                 'shs_options']]
         if markers_only is True:
             df = df[df['node_type'] == 'consumer']
         df['latitude'] = df['latitude'].astype(float)
@@ -376,26 +383,16 @@ async def consumer_to_db(project_id: str, map_elements: fastapi_app.io.schema.Ma
     if df.empty is True:
         await inserts.remove(models.Nodes, user.id, project_id)
         return
-    df = df[['latitude', 'longitude', 'how_added', 'node_type', 'surface_area', 'consumer_type', 'consumer_detail']]
-    df.loc[df['surface_area'] == 0, 'surface_area'] = 10 + np.random.uniform(0, 1)
-    df['surface_area'] = df['surface_area'].fillna(0)
+    df = df[['latitude', 'longitude', 'how_added', 'node_type', 'consumer_type', 'custom_specification', 'shs_options']]
     df['consumer_type'] = df['consumer_type'].fillna('household')
-    df['consumer_detail'] = df['consumer_detail'].fillna('default')
+    df['custom_specification'] = df['custom_specification'].fillna('')
+    df['shs_options'] = df['shs_options'].fillna(0)
     df['is_connected'] = True
-    df['peak_demand'] = 0
-    df['average_consumption'] = 0
-    known_surface_df = df[df['surface_area'] > 0]
-    unknown_surface_df = df[df['surface_area'] == 0]
-    known_surface_df = demand_estimation2(known_surface_df)
-    df = pd.concat([known_surface_df, unknown_surface_df])
     df = df.round(decimals=6)
     if df.empty:
         await inserts.remove(models.Nodes, user.id, project_id)
         return
     df["node_type"] = df["node_type"].astype(str)
-    df['surface_area'] = df.surface_area.map(lambda x: "%.2f" % x)
-    df['peak_demand'] = df.peak_demand.map(lambda x: "%.3f" % x)
-    df['average_consumption'] = df.average_consumption.map(lambda x: "%.3f" % x)
     if len(df.index) != 0:
         if 'parent' in df.columns:
             df['parent'] = df['parent'].replace('unknown', None)
@@ -478,6 +475,13 @@ async def load_previous_data(page_name, request: Request):
             if len(demand_estimation.maximum_peak_load) > 0 or len(demand_estimation.average_daily_energy) \
             else False
         return demand_estimation
+    elif page_name == 'energy_system_design':
+        try:
+            project_id = int(project_id)
+        except (ValueError, TypeError):
+            return None
+        energy_system_design = await queries.get_model_instance(models.EnergySystemDesign, user.id, project_id)
+        return energy_system_design
 
 
 @app.post("/add_user_to_db/")
@@ -590,13 +594,13 @@ async def change_email(request: Request, credentials: fastapi_app.io.schema.Cred
 
 
 @app.post("/change_pw/")
-async def change_pw(request: Request, passwords: fastapi_app.io.schema.ChangePW):
+async def change_pw(request: Request, passwords: Dict[str, str]):
     user = await accounts.get_user_from_cookie(request)
-    is_valid, res = await authenticate_user(user.email, passwords.old_password)
+    is_valid, res = await authenticate_user(user.email, passwords['old_password'])
     validation = False
     if is_valid:
-        if accounts.is_valid_password(passwords.new_password):
-            user.hashed_password = Hasher.get_password_hash(passwords.new_password)
+        if accounts.is_valid_password(passwords['new_password']):
+            user.hashed_password = Hasher.get_password_hash(passwords['new_password'])
             await inserts.merge_model(user)
             res = 'Password changed successfully.'
             validation = True
@@ -827,8 +831,7 @@ async def add_buildings_inside_boundary(js_data: fastapi_app.io.schema.MapData, 
         return JSONResponse({'executed': False,
                              'msg': 'The maximum longitude distance selected is too large. '
                                     'Please select a smaller area.'})
-    data, building_coordidates_within_boundaries, building_area\
-        = bi.get_consumer_within_boundaries(df)
+    data, building_coordidates_within_boundaries = bi.get_consumer_within_boundaries(df)
     if building_coordidates_within_boundaries is None:
         return JSONResponse({'executed': False, 'msg': 'In the selected area, no buildings could be identified.'})
     nodes = defaultdict(list)
@@ -839,7 +842,8 @@ async def add_buildings_inside_boundary(js_data: fastapi_app.io.schema.MapData, 
         nodes["node_type"].append("consumer")
         nodes["consumer_type"].append('household')
         nodes["consumer_detail"].append('default')
-        nodes["surface_area"].append(building_area[label])
+        nodes['custom_specification'].append('')
+        nodes['shs_options'].append(0)
     if user.email.split('__')[0] == 'anonymous':
         max_consumer = int(os.environ.get("MAX_CONSUMER_ANONNYMOUS", 150))
     else:
@@ -852,7 +856,6 @@ async def add_buildings_inside_boundary(js_data: fastapi_app.io.schema.MapData, 
     df = pd.DataFrame.from_dict(nodes)
     df_exisiting = pd.DataFrame.from_records(js_data.map_elements)
     df = pd.concat([df, df_exisiting], ignore_index=True)
-    df['surface_area'] = df['surface_area'].round(2)
     df = df.drop_duplicates()
     nodes_list = df.to_dict('records')
     return JSONResponse({'executed': True, 'msg': '', 'new_consumers': nodes_list})
@@ -886,95 +889,6 @@ async def database_add_remove_manual(add_remove: str, project_id, add_node_reque
         await inserts.update_nodes_and_links(True, False, df.to_dict(), user.id, project_id, add=False)
     else:
         await inserts.update_nodes_and_links(True, False, nodes, user.id, project_id, add=True, replace=False)
-
-
-def _demand_estimation(nodes, update_total_demand):
-    # after collecting all surface areas, based on a simple assumption, the peak demand will be obtained
-    max_surface_area = max(nodes["surface_area"])
-
-    # normalized demands is a CSV file with 5 columns representing the very low to very high demand profiles
-    normalized_demands = pd.read_csv(config.full_path_demands, delimiter=";", header=None)
-
-    if update_total_demand:
-        # calculate the total peak demand for each of the five demand profiles to make the final demand profile
-        peak_very_low_demand = 0
-        peak_low_demand = 0
-        peak_medium_demand = 0
-        peak_high_demand = 0
-        peak_very_high_demand = 0
-
-        for area in nodes[nodes["is_connected"] == True]["surface_area"]:
-            if area <= 0.2 * max_surface_area:
-                peak_very_low_demand += 0.01 * area
-            elif area < 0.4 * max_surface_area:
-                peak_low_demand += 0.02 * area
-            elif area < 0.6 * max_surface_area:
-                peak_medium_demand += 0.03 * area
-            elif area < 0.8 * max_surface_area:
-                peak_high_demand += 0.04 * area
-            else:
-                peak_very_high_demand += 0.05 * area
-
-        # create the total demand profile of the selected buildings
-        total_demand = (
-                normalized_demands.iloc[:, 0] * peak_very_low_demand
-                + normalized_demands.iloc[:, 1] * peak_low_demand
-                + normalized_demands.iloc[:, 2] * peak_medium_demand
-                + normalized_demands.iloc[:, 3] * peak_high_demand
-                + normalized_demands.iloc[:, 4] * peak_very_high_demand
-        )
-
-        # load timeseries data
-        timeseries = pd.read_csv(config.full_path_timeseries)
-        # replace the demand column in the timeseries file with the total demand calculated here
-        timeseries["Demand"] = total_demand
-        # update the CSV file
-        timeseries.to_csv(config.full_path_timeseries, index=False)
-    else:
-        for area in nodes["surface_area"]:
-            if area <= 0.2 * max_surface_area:
-                nodes["peak_demand"] = 0.01 * area
-            elif area < 0.4 * max_surface_area:
-                nodes["peak_demand"] = 0.02 * area
-            elif area < 0.6 * max_surface_area:
-                nodes["peak_demand"] = 0.03 * area
-            elif area < 0.8 * max_surface_area:
-                nodes["peak_demand"] = 0.04 * area
-            else:
-                nodes["peak_demand"] = 0.05 * area
-        max_peak_demand = max(nodes["peak_demand"])
-        counter = 0
-        for peak_demand in nodes["peak_demand"]:
-            if peak_demand <= 0.2 * max_peak_demand:
-                nodes["average_consumption"] = normalized_demands.iloc[:, 0].sum() * nodes["peak_demand"][counter]
-            elif peak_demand < 0.4 * max_peak_demand:
-                nodes["average_consumption"] = normalized_demands.iloc[:, 1].sum() * nodes["peak_demand"][counter]
-            elif peak_demand < 0.6 * max_peak_demand:
-                nodes["average_consumption"] = normalized_demands.iloc[:, 2].sum() * nodes["peak_demand"][counter]
-            elif peak_demand < 0.8 * max_peak_demand:
-                nodes["average_consumption"] = normalized_demands.iloc[:, 3].sum() * nodes["peak_demand"][counter]
-            else:
-                nodes["average_consumption"] = normalized_demands.iloc[:, 4].sum() * nodes["peak_demand"][counter]
-            counter += 1
-        return nodes
-
-def demand_estimation2(df):
-    max_surface_area = df["surface_area"].max()
-
-    for factor in [0.2, 0.4, 0.6, 0.8]:
-        df.loc[df['surface_area'].between((factor - 0.2) * max_surface_area,
-                                          factor * max_surface_area), 'peak_demand'] = 0.05 * df['surface_area']
-    df.loc[df['surface_area'] >= factor * 0.8 * max_surface_area, 'peak_demand'] = factor / 20 * df['surface_area']
-    normalized_demands = pd.read_csv(config.full_path_demands, delimiter=";", header=None)
-    max_peak_demand = df["peak_demand"].max()
-    for i, factor in enumerate([0.2, 0.4, 0.6, 0.8]):
-        df.loc[df['peak_demand'].between((factor - 0.2) * max_peak_demand,
-                                          factor * max_surface_area), 'average_consumption'] \
-            = normalized_demands.iloc[:, i].sum() * df["peak_demand"]
-
-    df.loc[df['peak_demand'] >= 0.8 * max_peak_demand, 'average_consumption'] \
-        = normalized_demands.iloc[:, 4].sum() * df["peak_demand"]
-    return df
 
 
 async def remove_results(user_id, project_id):
@@ -1073,49 +987,75 @@ async def start_calculation(project_id, request: Request):
 
 @app.post('/waiting_for_results/')
 async def waiting_for_results(request: Request, data: fastapi_app.io.schema.TaskInfo):
-    max_time = 3600 * 24 * 7
-    t_wait = -2E-05 *  data.time + 0.0655 *  data.time + 5.7036 if data.time < 1800 else 60
-    # ToDo: set the time limit based on number of queued tasks and size of the model
-    res = {'time': int(data.time) + t_wait, 'status': '', 'task_id': data.task_id, 'model': data.model}
-    if len(data.task_id) > 12 and max_time > res['time']:
-        if not data.time == 0:
-            await asyncio.sleep(t_wait)
-        status = get_status_of_task(data.task_id)
-        if status in ['success', 'failure', 'revoked']:
-            res['finished'] = True
-        else:
-            res['finished'] = False
-            if status in ['pending', 'received', 'retry']:
-                res['status'] = "task queued, waiting for processing..."
-            else:
-                res['status'] = "spatial grid optimization is running..."
-    else:
-        res['finished'] = True
-    if res['finished'] is True:
-        user = await accounts.get_user_from_cookie(request)
-        if data.model == 'grid' and bool(os.environ.get('DOCKERIZED')):
-            task = task_supply_opt.delay(user.id, data.project_id)
-            user.task_id = task.id
-            await inserts.update_model_by_user_id(user)
-            res['finished'] = False
-            res['status'] = "power supply optimization is running..."
-            res['model'] = 'supply'
-            res[task.id] = task.id
-        else:
-            project_setup = await queries.get_model_instance(models.ProjectSetup, user.id, user.project_id)
-            if project_setup is not None:
-                if 'status' in locals():
-                    if status == 'success':
-                        project_setup.status = "finished"
-                    else:
-                        project_setup.status = status
+    try:
+        max_time = 3600 * 24 * 7
+        t_wait = -2E-05 *  data.time + 0.0655 *  data.time + 5.7036 if data.time < 1800 else 60
+        # ToDo: set the time limit based on number of queued tasks and size of the model
+        res = {'time': int(data.time) + t_wait, 'status': '', 'task_id': data.task_id, 'model': data.model}
+
+        async def pause_until_results_are_available(user_id, project_id):
+            for i in range(12):
+                results = await queries.get_model_instance(models.Results, user.id, project_setup.project_id)
+                if hasattr(results, 'lcoe') and results.lcoe is not None:
+                    break
                 else:
-                    project_setup.status = "finished"
-                await inserts.merge_model(project_setup)
-                user.task_id = ''
-                user.project_id = None
+                    print('wait for results: {}'.format(i))
+                    await asyncio.sleep(1 + i)
+        if len(data.task_id) > 12 and max_time > res['time']:
+            if not data.time == 0:
+                await asyncio.sleep(t_wait)
+            status = get_status_of_task(data.task_id)
+            if status in ['success', 'failure', 'revoked']:
+                res['finished'] = True
+            else:
+                res['finished'] = False
+                if status in ['pending', 'received', 'retry']:
+                    res['status'] = "task queued, waiting for processing..."
+                else:
+                    res['status'] = "spatial grid optimization is running..."
+        else:
+            res['finished'] = True
+        if res['finished'] is True:
+            for i in range(4):
+                user = await accounts.get_user_from_cookie(request)
+                if user is not None:
+                    break
+                await asyncio.sleep(1)
+                if i == 2 and len(data.task_id) > 12 and max_time > res['time']:
+                    user = await queries.get_user_from_task_id(data.task_id)
+                    if user is not None:
+                        break
+                if i == 3:
+                    await pause_until_results_are_available(user.id, data.project_id)
+                    return JSONResponse(res)
+            if data.model == 'grid' and bool(os.environ.get('DOCKERIZED')):
+                task = task_supply_opt.delay(user.id, data.project_id)
+                user.task_id = task.id
                 await inserts.update_model_by_user_id(user)
-    return JSONResponse(res)
+                res['finished'] = False
+                res['status'] = "power supply optimization is running..."
+                res['model'] = 'supply'
+                res[task.id] = task.id
+            else:
+                project_setup = await queries.get_model_instance(models.ProjectSetup, user.id, data.project_id)
+                if project_setup is not None:
+                    if 'status' in locals():
+                        if status == 'success':
+                            project_setup.status = "finished"
+                        else:
+                            project_setup.status = status
+                    else:
+                        project_setup.status = "finished"
+                    await inserts.merge_model(project_setup)
+                    user.task_id = ''
+                    user.project_id = None
+                    await inserts.update_model_by_user_id(user)
+                    await pause_until_results_are_available(user.id, data.project_id)
+        return JSONResponse(res)
+    except Exception as e:
+        print(e)
+        user_name = user.username if hasattr(user, 'username') else 'unknown'
+        error_logger.error_log(e, 'no request', user_name)
 
 
 @app.post('/has_pending_task/{project_id}')
@@ -1229,32 +1169,20 @@ def optimize_grid(user_id, project_id):
 
         # First, the demand for the entire year is read from the CSV file.
         demand_opt_dict = sync_queries.get_model_instance(models.Demand, user_id, project_id).to_dict()
-        try:
-            demand_full_year = queries_demand.get_demand_time_series(nodes, demand_opt_dict).to_frame('Demand')
-            demand_full_year.index = pd.date_range(
-                start=start_datetime, periods=len(demand_full_year), freq="H"
-            )
 
-            # Then the demand for the selected time peroid given by the user will be
-            # obtained.
-            demand_selected_period = demand_full_year.Demand.loc[start_datetime:end_datetime]
+        demand_full_year = queries_demand.get_demand_time_series(nodes, demand_opt_dict).to_frame('Demand')
+        demand_full_year.index = pd.date_range(
+            start=start_datetime, periods=len(demand_full_year), freq="H"
+        )
 
-            # The average consumption of the entire community in kWh for the selected
-            # time period is calculated.
-            average_consumption_selected_period = demand_selected_period.sum()
-        except Exception as e:
-            demand_full_year = pd.read_csv(filepath_or_buffer=config.full_path_timeseries)
-            demand_full_year.index = pd.date_range(
-                start=start_datetime, periods=len(demand_full_year), freq="H"
-            )
+        # Then the demand for the selected time peroid given by the user will be
+        # obtained.
+        demand_selected_period = demand_full_year.Demand.loc[start_datetime:end_datetime]
 
-            # Then the demand for the selected time peroid given by the user will be
-            # obtained.
-            demand_selected_period = demand_full_year.Demand.loc[start_datetime:end_datetime]
+        # The average consumption of the entire community in kWh for the selected
+        # time period is calculated.
+        average_consumption_selected_period = demand_selected_period.sum()
 
-            # The average consumption of the entire community in kWh for the selected
-            # time period is calculated.
-            average_consumption_selected_period = demand_selected_period.sum()
 
         # Total number of consumers that must be considered for calculating the
         # the total number of required SHS tier 1 to 3.
@@ -1312,9 +1240,6 @@ def optimize_grid(user_id, project_id):
                     latitude=nodes.latitude[node_index],
                     node_type=nodes.node_type[node_index],
                     is_connected=nodes.is_connected[node_index],
-                    peak_demand=nodes.peak_demand[node_index],
-                    average_consumption=nodes.average_consumption[node_index],
-                    surface_area=nodes.surface_area[node_index],
                 )
 
         # convert all (long,lat) coordinates to (x,y) coordinates and update
@@ -1350,9 +1275,6 @@ def optimize_grid(user_id, project_id):
         # in a case, that '10' comes before '2'.
         grid.nodes.sort_index(key=lambda x: x.astype("int64"), inplace=True)
 
-        # Create the demand profile for the energy system optimization based on the
-        # number of mini-grid consumers.
-        _demand_estimation(nodes=grid.nodes, update_total_demand=True)
 
         n_poles = opt.find_opt_number_of_poles(grid, df.loc[0, "connection_cable_max_length"], n_mg_consumers)
         opt.determine_poles(grid=grid, min_n_clusters=n_poles)
@@ -1386,8 +1308,9 @@ def optimize_grid(user_id, project_id):
         grid.select_location_of_power_house()
 
         # Calculate the cost of SHS.
-        peak_demand_shs_consumers = grid.nodes[grid.nodes["is_connected"] == False].loc[:, "peak_demand"]
-        cost_shs = epc_shs * peak_demand_shs_consumers.sum()
+        # ToDo: peak demand does not exists anymore
+        peak_demand_shs_consumers = 1# grid.nodes[grid.nodes["is_connected"] == False].loc[:, "peak_demand"]
+        cost_shs = epc_shs * 0 #peak_demand_shs_consumers.sum()
 
         # get all poles obtained by the network relaxation method
         poles = grid.poles().reset_index(drop=True)
@@ -1466,12 +1389,9 @@ def optimize_energy_system(user_id, project_id):
         start = pd.to_datetime(df.loc[0, "start_date"])
         end = start + timedelta(days=int(n_days))
         solar_potential_df = get_dc_feed_in_sync_db_query(lat, lon, start, end)
-        try:
-            nodes = sync_queries.get_df(models.Nodes, user_id, project_id)
-            demand_opt_dict = sync_queries.get_model_instance(models.Demand, user_id, project_id).to_dict()
-            demand_full_year = queries_demand.get_demand_time_series(nodes, demand_opt_dict).to_frame('Demand')
-        except Exception as exc:
-            demand_full_year = None
+        nodes = sync_queries.get_df(models.Nodes, user_id, project_id)
+        demand_opt_dict = sync_queries.get_model_instance(models.Demand, user_id, project_id).to_dict()
+        demand_full_year = queries_demand.get_demand_time_series(nodes, demand_opt_dict).to_frame('Demand')
         ensys_opt = EnergySystemOptimizer(
             start_date=df.loc[0, "start_date"],
             n_days=n_days,
@@ -1480,7 +1400,6 @@ def optimize_energy_system(user_id, project_id):
             tax=0,
             solar_potential=solar_potential_df,
             demand=demand_full_year,
-            path_data=config.full_path_timeseries,
             solver=solver,
             pv=energy_system_design['pv'],
             diesel_genset=energy_system_design['diesel_genset'],
@@ -1527,7 +1446,7 @@ def optimize_energy_system(user_id, project_id):
         df.loc[0, "inverter_capacity"] = ensys_opt.capacity_inverter
         df.loc[0, "rectifier_capacity"] = ensys_opt.capacity_rectifier
         df.loc[0, "diesel_genset_capacity"] = ensys_opt.capacity_genset
-        df.loc[0, "peak_demand"] = ensys_opt.demand_peak
+        df.loc[0, "peak_demand"] = ensys_opt.demand.max()
         df.loc[0, "surplus"] = ensys_opt.sequences_surplus.max()
         # data for sankey diagram - all in MWh
         df.loc[0, "fuel_to_diesel_genset"] = (ensys_opt.sequences_fuel_consumption.sum() * 0.846 *

@@ -166,30 +166,46 @@ function markerOnClick(e){
 }
 
 function update_map_elements(){
-        let longitude= document.getElementById('longitude').value;
-        let latitude = document.getElementById('latitude').value;
-        if (longitude.length > 0 && latitude.length > 0) {
+    let longitude = document.getElementById('longitude').value;
+    let latitude = document.getElementById('latitude').value;
+    let selected_icon;
+
+    if (longitude.length > 0 && latitude.length > 0) {
         marker.longitude = parseFloat(longitude);
         marker.latitude = parseFloat(latitude);
+
         if (document.getElementById('consumer').value === 'H') {
-           marker.consumer_type = 'household';
-           marker.consumer_detail = 'default';
-        }
-        else {
+            marker.consumer_type = 'household';
+            marker.consumer_detail = 'default';
+            selected_icon = markerConsumer;
+        } else {
             marker.consumer_type = 'enterprise';
             let key = document.getElementById('enterprise').value;
             marker.consumer_detail = enterprise_list[key];
+            selected_icon = markerEnterprise;
         }
-    map_elements.push(marker);
-    map.eachLayer(function (layer) {
-        if (layer instanceof L.Marker) {
-        let markerLatLng = layer.getLatLng();
-        if (markerLatLng.lat === old_marker.latitude && markerLatLng.lng === old_marker.longitude) {
-            map.removeLayer(layer);
-            L.marker([marker.latitude, marker.longitude], {icon: markerConsumer,})
-            .on('click', markerOnClick).addTo(map);
+
+        // Add additional conditions for 'public_service' consumer type
+        if (document.getElementById('consumer').value === 'P') {
+            marker.consumer_type = 'public_service';
+            selected_icon = markerPublicservice;
         }
-    }})}}
+
+        map_elements.push(marker);
+
+        map.eachLayer(function (layer) {
+            if (layer instanceof L.Marker) {
+                let markerLatLng = layer.getLatLng();
+                if (markerLatLng.lat === old_marker.latitude && markerLatLng.lng === old_marker.longitude) {
+                    map.removeLayer(layer);
+                    L.marker([marker.latitude, marker.longitude], {icon: selected_icon})
+                      .on('click', markerOnClick).addTo(map);
+                }
+            }
+        });
+    }
+}
+
 
 function move_marker(){
     old_marker = JSON.parse(JSON.stringify(marker));
