@@ -15,7 +15,7 @@
                  onclick="consumer_to_db({{ project_id }})"
                  >Previous</a>
                  <a class="btn btn--medium" style="color: #fff"
-                 href="#"
+                 href="javascript:void(0);"
                  onclick="consumer_to_db({{ project_id }})">
                      Next</a>
              {% elif title == 'Demand Estimation' %}
@@ -41,7 +41,7 @@
                   onclick="save_energy_system_design();">
                      Previous</a>
                  <a class="btn btn--medium" style="color: #fff"
-                 href="#"
+                 href="javascript:void(0);"
                  onclick="save_energy_system_design(); forward_if_no_task_is_pending({{ project_id }});">
                      Optimize</a>
             {% elif title == 'Simulation Results' %}

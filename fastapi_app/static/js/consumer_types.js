@@ -157,6 +157,10 @@ function markerOnClick(e){
             deactivate_large_loads()
 
         }
+        if (marker.shs_options == 0) {document.getElementById('shs_options').value = 'optimize';}
+        else if (marker.shs_options == 1) {document.getElementById('shs_options').value = 'grid';}
+        else if (marker.shs_options == 2) {document.getElementById('shs_options').value ='shs';}
+
         document.getElementById('consumer').disabled = false;
         document.getElementById('longitude').disabled = false;
         document.getElementById('latitude').disabled = false;
@@ -168,28 +172,55 @@ function markerOnClick(e){
 function update_map_elements(){
     let longitude = document.getElementById('longitude').value;
     let latitude = document.getElementById('latitude').value;
+    let shs_options = document.getElementById('shs_options').value;
+    let shs_value;
+
+    switch (shs_options) {
+        case 'optimize':
+            shs_value = 0;
+            break;
+        case 'grid':
+            shs_value = 1;
+            break;
+        case 'shs':
+            shs_value = 2;
+            break;
+        default:
+            console.error("Invalid SHS option: " + shs_options);
+    }
+
+
     let selected_icon;
 
     if (longitude.length > 0 && latitude.length > 0) {
         marker.longitude = parseFloat(longitude);
         marker.latitude = parseFloat(latitude);
+        marker.shs_options = parseInt(shs_value);
 
-        if (document.getElementById('consumer').value === 'H') {
-            marker.consumer_type = 'household';
-            marker.consumer_detail = 'default';
-            selected_icon = markerConsumer;
-        } else {
-            marker.consumer_type = 'enterprise';
-            let key = document.getElementById('enterprise').value;
-            marker.consumer_detail = enterprise_list[key];
-            selected_icon = markerEnterprise;
+
+        let consumerValue = document.getElementById('consumer').value;
+
+        switch (consumerValue) {
+            case 'H':
+                marker.consumer_type = 'household';
+                marker.consumer_detail = 'default';
+                selected_icon = markerConsumer;
+                break;
+            case 'P':
+                marker.consumer_type = 'public_service';
+                selected_icon = markerPublicservice;
+                break;
+            case 'E':
+                marker.consumer_type = 'enterprise';
+                let key = document.getElementById('enterprise').value;
+                marker.consumer_detail = enterprise_list[key];
+                selected_icon = markerEnterprise;
+                break;
+            default:
+                console.error("Invalid consumer value: " + consumerValue);
         }
 
-        // Add additional conditions for 'public_service' consumer type
-        if (document.getElementById('consumer').value === 'P') {
-            marker.consumer_type = 'public_service';
-            selected_icon = markerPublicservice;
-        }
+        if (marker.shs_options == 2) {selected_icon = markerShs;}
 
         map_elements.push(marker);
 

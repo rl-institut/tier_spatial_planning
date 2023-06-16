@@ -19,13 +19,13 @@ def get_consumer_within_boundaries(df):
         if len(res) > 0:
             data = json.loads(res)
         else:
-            return None, None, None
+            return None, None
     # first converting the json file, which is delievered by overpass to geojson,
     # then obtaining coordinates and surface areas of all buildings inside the
     # 'big' rectangle.
     df2 = pd.DataFrame.from_dict(data['elements'])
     if df2.empty:
-        return None, None, None
+        return None, None
     building_coord = obtain_mean_coordinates_from_geojson(df2)
     # excluding the buildings which are outside the drawn boundary
     mask_building_within_boundaries = {key: is_point_in_boundaries(value, df.values.tolist())

@@ -43,33 +43,39 @@ map.addLayer(drawnItems);
 let polygonCoordinates = [];
 let map_elements =[];
 
+
 var markerConsumer = new L.Icon({
   iconUrl: "fastapi_app/static/assets/icons/i_consumer.svg",
   iconSize: [18, 18],
 });
+
 
 var markerEnterprise = new L.Icon({
   iconUrl: "fastapi_app/static/assets/icons/i_enterprise.svg",
   iconSize: [18, 18],
 });
 
+
 var markerPublicservice = new L.Icon({
   iconUrl: "fastapi_app/static/assets/icons/i_public_service.svg",
   iconSize: [18, 18],
 });
+
 
 var markerPowerHouse = new L.Icon({
   iconUrl: "fastapi_app/static/assets/icons/i_power_house.svg",
   iconSize: [12, 12],
 });
 
+
 var markerPole = new L.Icon({
   iconUrl: "fastapi_app/static/assets/icons/i_pole.svg",
   iconSize: [10, 10],
 });
 
+
 var markerShs = new L.Icon({
-  iconUrl: "fastapi_app/static/images/markers/markerShs.png",
+  iconUrl: "fastapi_app/static/assets/icons/i_shs.svg",
   iconSize: [16, 16],
 });
 
@@ -84,6 +90,7 @@ function drawMarker(latitude, longitude, type) {
   }
     L.marker([latitude, longitude], { icon: icon_type }).on('click', markerOnClick).addTo(map)
 }
+
 
 var icons = {
   'consumer': markerConsumer,
@@ -106,7 +113,8 @@ function put_markers_on_map(array, markers_only) {
   for (counter = 0; counter < n; counter++) {
     if (markers_only) {
         if (array[counter]["node_type"] === "consumer") {
-            if (array[counter]["consumer_type"] === "household") {selected_icon= markerConsumer;}
+            if (array[counter]["shs_options"] == 2) {selected_icon= markerShs;}
+            else if (array[counter]["consumer_type"] === "household") {selected_icon= markerConsumer;}
             else if (array[counter]["consumer_type"] === "enterprise") {selected_icon= markerEnterprise;}
             else if (array[counter]["consumer_type"] === "public_service") {selected_icon= markerPublicservice;}
         }}
@@ -114,6 +122,7 @@ function put_markers_on_map(array, markers_only) {
         if (array[counter]["node_type"] === "consumer") {
             if (array[counter]["is_connected"] === false) {selected_icon= markerShs;}
             else {
+
                 if (array[counter]["consumer_type"] === "household") {selected_icon= markerConsumer;}
                 else if (array[counter]["consumer_type"] === "enterprise") {selected_icon= markerEnterprise;}
                 else if (array[counter]["consumer_type"] === "public_service") {selected_icon= markerPublicservice;}

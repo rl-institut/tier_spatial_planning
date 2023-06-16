@@ -52,6 +52,7 @@ async function db_nodes_to_js(project_id, markers_only) {
 }
 
 async function consumer_to_db(project_id) {
+  update_map_elements();
   const url = "/consumer_to_db/" + project_id;
   await fetch(url, {
     method: "POST",

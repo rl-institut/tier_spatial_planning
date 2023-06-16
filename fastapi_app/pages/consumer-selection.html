@@ -161,8 +161,8 @@
                                 <th>Consumer Category</th>
                                 <th>Latitude</th>
                                 <th>Longitude</th>
+                                <th>Grid-/SHS-Options</th>
                                 <th>Delete Consumer</th>
-                                <th></th>
                                 <th></th>
                                 <th></th>
                               </tr>
@@ -215,14 +215,21 @@
                             </div>
                                    </TD>
                                     <TD>
+                                       <div class="input-item" style="margin-right: 30px;">
+                                        <select id="shs_options" class="form-select" style="max-width: 150px">
+                                                <option value="optimize">Optimize</option>
+                                                <option value="grid">Grid</option>
+                                                <option value="shs">SHS</option>
+                                        </select>
+                                        </div>
+                                    </TD>
+                                    <TD>
                                         <a id="submit"
                                            class="btn btn--medium"
                                            style="height: 32px; display: flex; align-items: center; justify-content: center;"
                                            onclick="delete_consumer();"
                                            href="javascript:void(0);">Delete</a>
                                     </TD>
-                                   <TD><span style="float:right;"><a>&nbsp;
-                                   </a></span></TD>
                                    <TD><span style="float:right;"><a>&nbsp;
                                    </a></span></TD>
                                    <TD><span style="float:right;"><a>&nbsp;
