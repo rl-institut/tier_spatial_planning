@@ -200,7 +200,7 @@ function update_map_elements(){
             shs_value = 2;
             break;
         default:
-            console.error("Invalid SHS option: " + shs_options);
+            shs_value = 0;
     }
 
 

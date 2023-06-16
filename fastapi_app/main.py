@@ -9,6 +9,7 @@ from captcha.image import ImageCaptcha
 import pandas as pd
 import numpy as np
 from io import StringIO
+from jose import jwt, JWTError
 import fastapi_app.io.schema
 from celery import group
 from celery_worker import worker
@@ -80,6 +81,22 @@ async def exception_handler(request: Request, exc: Exception):
         user_name = 'unknown username'
     error_logger.error_log(exc, request, user_name)
     return RedirectResponse(url="/?internal_error", status_code=303)
+
+
+@app.post("/renew_token")
+async def renew_token(request: Request):
+    token = request.cookies.get('access_token', None)
+    if token:
+        token = token.replace("Bearer ", "")
+        token_data = jwt.decode(token, config.KEY_FOR_TOKEN, algorithms=[config.TOKEN_ALG])
+        if token_data.get("exp"):
+            time_left = token_data.get("exp") - datetime.utcnow().timestamp()
+            if time_left < 1200:
+                access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
+                new_token = create_access_token(data={"sub": token_data.get("sub")}, expires_delta=access_token_expires)
+                return {"access_token": new_token}
+    return None
+
 
 @app.get('/favicon.ico', include_in_schema=False)
 async def favicon():

@@ -429,6 +429,22 @@ function login() {
             });}
 
 
+async function renewToken() {
+    const response = await fetch('/renew_token', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    if (response.ok) {
+        const data = await response.json();
+        if (data && data.access_token) {
+            localStorage.setItem('token', data.access_token);
+        }
+    }
+}
+
+
 function consent_cookie() {
     $.ajax({url: "consent_cookie/",
             type: "POST",
@@ -825,6 +841,7 @@ async function redirect_if_cookie_is_missing(access_token, consent_cookie){
             {   logout();
                 window.location.href = window.location.origin;}
         })
+        await renewToken();
 }
 
 
@@ -847,6 +864,7 @@ function wait_for_results(project_id, task_id, time, model)
             window.location.href = window.location.origin + '/simulation_results?project_id=' + project_id;
         } else {
             document.querySelector("#statusMsg").innerHTML = res.status;
+            renewToken();
             wait_for_results(project_id, task_id, res.time, res.model);
         }
     });
