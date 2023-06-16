@@ -383,6 +383,9 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
             df = df[df['node_type'] == 'consumer']
         df['latitude'] = df['latitude'].astype(float)
         df['longitude'] = df['longitude'].astype(float)
+        df['shs_options'] = df['shs_options'].fillna(0)
+        df['custom_specification'] = df['custom_specification'].fillna('')
+        df['shs_options'] = df['shs_options'].astype(int)
         nodes_list = df.to_dict('records')
         return nodes_list
     else:

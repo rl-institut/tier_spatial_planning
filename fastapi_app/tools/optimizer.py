@@ -949,13 +949,13 @@ class EnergySystemOptimizer(Optimizer):
         )
         # Make decision about different simulation modes of the PV
         if self.pv["settings"]["is_selected"] == False:
-            pv = solph.Source(
+            pv = solph.components.Source(
                 label="pv",
                 outputs={b_el_dc: solph.Flow(nominal_value=0)},
             )
         elif self.pv["settings"]["design"] == True:
             # DESIGN
-            pv = solph.Source(
+            pv = solph.components.Source(
                 label="pv",
                 outputs={
                     b_el_dc: solph.Flow(
@@ -970,7 +970,7 @@ class EnergySystemOptimizer(Optimizer):
             )
         else:
             # DISPATCH
-            pv = solph.Source(
+            pv = solph.components.Source(
                 label="pv",
                 outputs={
                     b_el_dc: solph.Flow(
@@ -988,7 +988,7 @@ class EnergySystemOptimizer(Optimizer):
             / 0.846
             / self.diesel_genset["parameters"]["fuel_lhv"]
         )
-        fuel_source = solph.Source(
+        fuel_source = solph.components.Source(
             label="fuel_source", outputs={b_fuel: solph.Flow(variable_costs=fuel_cost)}
         )
 
@@ -1003,14 +1003,14 @@ class EnergySystemOptimizer(Optimizer):
         )
 
         if self.diesel_genset["settings"]["is_selected"] == False:
-            diesel_genset = solph.Transformer(
+            diesel_genset = solph.components.Transformer(
                 label="diesel_genset",
                 inputs={b_fuel: solph.Flow()},
                 outputs={b_el_ac: solph.Flow(nominal_value=0)},
             )
         elif self.diesel_genset["settings"]["design"] == True:
             # DESIGN
-            diesel_genset = solph.Transformer(
+            diesel_genset = solph.components.Transformer(
                 label="diesel_genset",
                 inputs={b_fuel: solph.Flow()},
                 outputs={
@@ -1030,7 +1030,7 @@ class EnergySystemOptimizer(Optimizer):
             )
         else:
             # DISPATCH
-            diesel_genset = solph.Transformer(
+            diesel_genset = solph.components.Transformer(
                 label="diesel_genset",
                 inputs={b_fuel: solph.Flow()},
                 outputs={
@@ -1059,14 +1059,14 @@ class EnergySystemOptimizer(Optimizer):
         )
 
         if self.rectifier["settings"]["is_selected"] == False:
-            rectifier = solph.Transformer(
+            rectifier = solph.components.Transformer(
                 label="rectifier",
                 inputs={b_el_ac: solph.Flow(nominal_value=0)},
                 outputs={b_el_dc: solph.Flow()},
             )
         elif self.rectifier["settings"]["design"] == True:
             # DESIGN
-            rectifier = solph.Transformer(
+            rectifier = solph.components.Transformer(
                 label="rectifier",
                 inputs={
                     b_el_ac: solph.Flow(
@@ -1078,13 +1078,13 @@ class EnergySystemOptimizer(Optimizer):
                     )
                 },
                 outputs={b_el_dc: solph.Flow()},
-                conversion_factor={
+                conversion_factors={
                     b_el_dc: self.rectifier["parameters"]["efficiency"],
                 },
             )
         else:
             # DISPATCH
-            rectifier = solph.Transformer(
+            rectifier = solph.components.Transformer(
                 label="rectifier",
                 inputs={
                     b_el_ac: solph.Flow(
@@ -1093,7 +1093,7 @@ class EnergySystemOptimizer(Optimizer):
                     )
                 },
                 outputs={b_el_dc: solph.Flow()},
-                conversion_factor={
+                conversion_factors={
                     b_el_dc: self.rectifier["parameters"]["efficiency"],
                 },
             )
@@ -1109,14 +1109,14 @@ class EnergySystemOptimizer(Optimizer):
         )
 
         if self.inverter["settings"]["is_selected"] == False:
-            inverter = solph.Transformer(
+            inverter = solph.components.Transformer(
                 label="inverter",
                 inputs={b_el_dc: solph.Flow(nominal_value=0)},
                 outputs={b_el_ac: solph.Flow()},
             )
         elif self.inverter["settings"]["design"] == True:
             # DESIGN
-            inverter = solph.Transformer(
+            inverter = solph.components.Transformer(
                 label="inverter",
                 inputs={
                     b_el_dc: solph.Flow(
@@ -1128,13 +1128,13 @@ class EnergySystemOptimizer(Optimizer):
                     )
                 },
                 outputs={b_el_ac: solph.Flow()},
-                conversion_factor={
+                conversion_factors={
                     b_el_ac: self.inverter["parameters"]["efficiency"],
                 },
             )
         else:
             # DISPATCH
-            inverter = solph.Transformer(
+            inverter = solph.components.Transformer(
                 label="inverter",
                 inputs={
                     b_el_dc: solph.Flow(
@@ -1143,7 +1143,7 @@ class EnergySystemOptimizer(Optimizer):
                     )
                 },
                 outputs={b_el_ac: solph.Flow()},
-                conversion_factor={
+                conversion_factors={
                     b_el_ac: self.inverter["parameters"]["efficiency"],
                 },
             )
@@ -1159,7 +1159,7 @@ class EnergySystemOptimizer(Optimizer):
         )
 
         if self.battery["settings"]["is_selected"] == False:
-            battery = solph.GenericStorage(
+            battery = solph.components.GenericStorage(
                 label="battery",
                 nominal_storage_capacity=0,
                 inputs={b_el_dc: solph.Flow()},
@@ -1167,7 +1167,7 @@ class EnergySystemOptimizer(Optimizer):
             )
         elif self.battery["settings"]["design"] == True:
             # DESIGN
-            battery = solph.GenericStorage(
+            battery = solph.components.GenericStorage(
                 label="battery",
                 nominal_storage_capacity=None,
                 investment=solph.Investment(
@@ -1175,7 +1175,7 @@ class EnergySystemOptimizer(Optimizer):
                 ),
                 inputs={b_el_dc: solph.Flow(variable_costs=0)},
                 outputs={b_el_dc: solph.Flow(investment=solph.Investment(ep_costs=0))},
-                initial_storage_capacity=0.0,
+                initial_storage_level=self.battery["parameters"]["soc_min"],
                 min_storage_level=self.battery["parameters"]["soc_min"],
                 max_storage_level=self.battery["parameters"]["soc_max"],
                 balanced=True,
@@ -1188,12 +1188,12 @@ class EnergySystemOptimizer(Optimizer):
             )
         else:
             # DISPATCH
-            battery = solph.GenericStorage(
+            battery = solph.components.GenericStorage(
                 label="battery",
                 nominal_storage_capacity=self.battery["parameters"]["nominal_capacity"],
                 inputs={b_el_dc: solph.Flow(variable_costs=0)},
                 outputs={b_el_dc: solph.Flow()},
-                initial_storage_capacity=0.0,
+                initial_storage_level=self.battery["parameters"]["soc_min"],
                 min_storage_level=self.battery["parameters"]["soc_min"],
                 max_storage_level=self.battery["parameters"]["soc_max"],
                 balanced=True,
@@ -1206,7 +1206,7 @@ class EnergySystemOptimizer(Optimizer):
             )
 
         # -------------------- DEMAND --------------------
-        demand_el = solph.Sink(
+        demand_el = solph.components.Sink(
             label="electricity_demand",
             inputs={
                 b_el_ac: solph.Flow(
@@ -1218,7 +1218,7 @@ class EnergySystemOptimizer(Optimizer):
         )
 
         # -------------------- SURPLUS --------------------
-        surplus = solph.Sink(
+        surplus = solph.components.Sink(
             label="surplus",
             inputs={b_el_ac: solph.Flow()},
         )
@@ -1226,7 +1226,7 @@ class EnergySystemOptimizer(Optimizer):
         # -------------------- SHORTAGE --------------------
         # maximal unserved demand and the variable costs of unserved demand.
         if self.shortage["settings"]["is_selected"]:
-            shortage = solph.Source(
+            shortage = solph.components.Source(
                 label="shortage",
                 outputs={
                     b_el_ac: solph.Flow(
@@ -1240,7 +1240,7 @@ class EnergySystemOptimizer(Optimizer):
                 },
             )
         else:
-            shortage = solph.Source(
+            shortage = solph.components.Source(
                 label="shortage",
                 outputs={
                     b_el_ac: solph.Flow(
