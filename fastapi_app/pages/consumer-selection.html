@@ -266,7 +266,7 @@
                                         <a id="add"
                                            class="btn btn--medium"
                                            style="height: 32px; display: flex; align-items: center; justify-content: center;  margin-bottom: 20px; width: 200px;"
-                                           onclick="addElement();"
+                                           onclick="addElementToLargeLoadList();"
                                            href="javascript:void(0);">Add Load</a>
                                   </div>
                                   <div>
@@ -363,42 +363,6 @@ function delete_consumer() {
     });
 }
 
-
-function addElement() {
-    // Get the dropdown selected value
-    var dropdown = document.getElementById('loads');
-    var selectedValue = dropdown.options[dropdown.selectedIndex].text;
-
-    // Get the value from the input field
-    var inputValue = document.getElementById('number_loads').value;
-
-    // Get the list div
-    var list = document.getElementById('load_list');
-
-    // Create new list item and button
-    var newItem = document.createElement('div');
-    var newButton = document.createElement('button');
-
-    // Add the class to the button
-    newButton.classList.add('right-align');
-
-    // Set button text and click event
-    newButton.textContent = 'Delete';
-    newButton.onclick = function() {
-        list.removeChild(newItem);
-    };
-
-    // Add text and button to the new item
-    newItem.textContent = inputValue + ' x ' + selectedValue + '    ';
-    newItem.appendChild(newButton);
-
-    // Add bottom margin to the new item
-    newItem.style.marginBottom = '10px';
-
-    // Append the new item to the list
-    list.appendChild(newItem);
-    document.getElementById('number_loads').value = '1';
-}
 
 var targetNode = document.getElementById('responseMsg');
 var config = { childList: true, subtree: true, characterData: true };

@@ -109,6 +109,9 @@ document.getElementById('enterprise').disabled = true;
 document.getElementById('consumer').disabled = true;
 document.getElementById('enterprise').value = '';
 document.getElementById('consumer').value = '';
+document.getElementById('shs_options').disabled = true; true;
+document.getElementById('shs_options').value = '';
+
 
 let markerConsumerSelected = new L.Icon({
   iconUrl: "fastapi_app/static/assets/icons/i_consumer_selected.svg",
@@ -151,6 +154,15 @@ function markerOnClick(e){
             document.getElementById('consumer').value = 'E';
             document.getElementById('enterprise').value = 'group1';
             activate_large_loads();
+            if (marker.custom_specification.length > 5) {
+                activate_large_loads(false);
+                fillList(marker.custom_specification);
+                document.getElementById('toggleswitch2').checked = true;
+                  const accordionItem3 = new bootstrap.Collapse(document.getElementById('collapseThree'), {
+                    toggle: false
+                  });
+                accordionItem3.show();
+            }
         }
         else if (marker.consumer_type === 'public_service'){
             dropDownMenu(public_service_list);
@@ -164,6 +176,7 @@ function markerOnClick(e){
         document.getElementById('consumer').disabled = false;
         document.getElementById('longitude').disabled = false;
         document.getElementById('latitude').disabled = false;
+        document.getElementById('shs_options').disabled = false;
     }
   }
 });
@@ -174,6 +187,7 @@ function update_map_elements(){
     let latitude = document.getElementById('latitude').value;
     let shs_options = document.getElementById('shs_options').value;
     let shs_value;
+    let large_load_string = large_loads_to_string();
 
     switch (shs_options) {
         case 'optimize':
@@ -196,6 +210,7 @@ function update_map_elements(){
         marker.longitude = parseFloat(longitude);
         marker.latitude = parseFloat(latitude);
         marker.shs_options = parseInt(shs_value);
+        marker.custom_specification = large_load_string;
 
 
         let consumerValue = document.getElementById('consumer').value;
@@ -221,7 +236,6 @@ function update_map_elements(){
         }
 
         if (marker.shs_options == 2) {selected_icon = markerShs;}
-
         map_elements.push(marker);
 
         map.eachLayer(function (layer) {
@@ -262,8 +276,8 @@ function deleteAllElements() {
 }
 
 
-function activate_large_loads() {
-    deleteAllElements();
+function activate_large_loads(delete_list_elements = true) {
+    if (delete_list_elements == true) {deleteAllElements();}
     document.getElementById('loads').innerHTML = option_load;
     document.getElementById('loads').disabled = false;
     document.getElementById('add').disabled = false;
@@ -278,3 +292,52 @@ function deactivate_large_loads() {
     document.getElementById('add').disabled = true;
     document.getElementById('number_loads').disabled = true;
 }
+
+
+function large_loads_to_string() {
+    let load_list = document.getElementById("load_list");
+    let list_items = load_list.getElementsByTagName("div");
+    let texts = [];
+    for(let i = 0; i < list_items.length; i++) {
+        let text = list_items[i].textContent.trim();
+        text = text.replace('Delete', '').trim();
+        texts.push(text);
+    }
+    let concatenated_text = texts.join(";");
+    return concatenated_text;
+
+}
+
+
+function fillList(concatenated_text) {
+    let texts = concatenated_text.split(";");
+    for(let i = 0; i < texts.length; i++) {
+        addElementToLargeLoadList(texts[i]);
+    }
+}
+
+
+function addElementToLargeLoadList(customText) {
+    var dropdown = document.getElementById('loads');
+    var selectedValue = dropdown.options[dropdown.selectedIndex].text;
+    var inputValue = document.getElementById('number_loads').value;
+    var list = document.getElementById('load_list');
+    var newItem = document.createElement('div');
+    var newButton = document.createElement('button');
+    newButton.classList.add('right-align');
+    newButton.textContent = 'Delete';
+    newButton.onclick = function() {
+        list.removeChild(newItem);
+    };
+    if (customText) {
+        newItem.textContent = customText + '    ';
+    } else {
+        newItem.textContent = inputValue + ' x ' + selectedValue + '    ';
+    }
+    newItem.appendChild(newButton);
+    newItem.style.marginBottom = '10px';
+    list.appendChild(newItem);
+    if (!customText) {
+        document.getElementById('number_loads').value = '1';
+    }
+};
