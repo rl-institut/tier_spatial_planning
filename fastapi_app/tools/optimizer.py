@@ -834,7 +834,7 @@ class EnergySystemOptimizer(Optimizer):
             },
         },
         diesel_genset={
-            "settings": {"is_selected": True, "design": True},
+            "settings": {"is_selected": True, "design": True, "offset": False},
             "parameters": {
                 "nominal_capacity": None,
                 "capex": 1000,
@@ -930,7 +930,8 @@ class EnergySystemOptimizer(Optimizer):
         self.epc = {}
         date_time_index = pd.date_range(start=self.start_date, periods=self.n_days * 24, freq="H")
         self.solar_potential = self.solar_potential[date_time_index]
-        energy_system = solph.EnergySystem(timeindex=date_time_index)
+        energy_system = solph.EnergySystem(timeindex=date_time_index,
+                                           infer_last_interval=True)
 
         # -------------------- BUSES --------------------
         # create electricity and fuel buses
@@ -962,7 +963,8 @@ class EnergySystemOptimizer(Optimizer):
                         fix=self.solar_potential / self.solar_potential_peak,
                         nominal_value=None,
                         investment=solph.Investment(
-                            ep_costs=self.epc["pv"] * self.n_days / 365
+                            ep_costs=self.epc["pv"] * self.n_days / 365,
+                            maximum=self.demand.max() * 20
                         ),
                         variable_costs=0,
                     )
@@ -1010,24 +1012,41 @@ class EnergySystemOptimizer(Optimizer):
             )
         elif self.diesel_genset["settings"]["design"] == True:
             # DESIGN
-            diesel_genset = solph.components.Transformer(
-                label="diesel_genset",
-                inputs={b_fuel: solph.Flow()},
-                outputs={
-                    b_el_ac: solph.Flow(
-                        nominal_value=None,
-                        variable_costs=self.diesel_genset["parameters"][
-                            "variable_cost"
-                        ],
-                        investment=solph.Investment(
-                            ep_costs=self.epc["diesel_genset"] * self.n_days / 365
-                        ),
-                    )
-                },
-                conversion_factors={
-                    b_el_ac: self.diesel_genset["parameters"]["max_efficiency"]
-                },
-            )
+            if self.diesel_genset["settings"]["offset"] is True:
+                diesel_genset = solph.components.Transformer(
+                    label='diesel_genset',
+                    inputs={b_fuel: solph.flows.Flow()},
+                    outputs={
+                        b_el_ac: solph.flows.Flow(
+                            nominal_value=None,
+                            variable_costs=self.diesel_genset["parameters"]["variable_cost"],
+                            min=self.diesel_genset["parameters"]["min_load"],
+                            max=1,
+                            nonconvex=solph.NonConvex(),
+                            investment=solph.Investment(ep_costs=self.epc["diesel_genset"] * self.n_days / 365,
+                                                        maximum=self.demand.max() * 1.2),
+                        )
+                    },
+                    conversion_factors={b_el_ac: self.diesel_genset["parameters"]["max_efficiency"]})
+            else:
+                diesel_genset = solph.components.Transformer(
+                    label="diesel_genset",
+                    inputs={b_fuel: solph.Flow()},
+                    outputs={
+                        b_el_ac: solph.Flow(
+                            nominal_value=None,
+                            variable_costs=self.diesel_genset["parameters"][
+                                "variable_cost"
+                            ],
+                            investment=solph.Investment(
+                                ep_costs=self.epc["diesel_genset"] * self.n_days / 365
+                            ),
+                        )
+                    },
+                    conversion_factors={
+                        b_el_ac: self.diesel_genset["parameters"]["max_efficiency"]
+                    },
+                )
         else:
             # DISPATCH
             diesel_genset = solph.components.Transformer(
@@ -1072,7 +1091,8 @@ class EnergySystemOptimizer(Optimizer):
                     b_el_ac: solph.Flow(
                         nominal_value=None,
                         investment=solph.Investment(
-                            ep_costs=self.epc["rectifier"] * self.n_days / 365
+                            ep_costs=self.epc["rectifier"] * self.n_days / 365,
+                        maximum=self.demand.max() * 1.2
                         ),
                         variable_costs=0,
                     )
@@ -1122,7 +1142,8 @@ class EnergySystemOptimizer(Optimizer):
                     b_el_dc: solph.Flow(
                         nominal_value=None,
                         investment=solph.Investment(
-                            ep_costs=self.epc["inverter"] * self.n_days / 365
+                            ep_costs=self.epc["inverter"] * self.n_days / 365,
+                            maximum=self.demand.max() * 1.2
                         ),
                         variable_costs=0,
                     )
@@ -1171,7 +1192,8 @@ class EnergySystemOptimizer(Optimizer):
                 label="battery",
                 nominal_storage_capacity=None,
                 investment=solph.Investment(
-                    ep_costs=self.epc["battery"] * self.n_days / 365
+                    ep_costs=self.epc["battery"] * self.n_days / 365,
+                    maximum=self.demand.max() * 48
                 ),
                 inputs={b_el_dc: solph.Flow(variable_costs=0)},
                 outputs={b_el_dc: solph.Flow(investment=solph.Investment(ep_costs=0))},
@@ -1235,7 +1257,7 @@ class EnergySystemOptimizer(Optimizer):
                         ],
                         nominal_value=self.shortage["parameters"]["max_shortage_total"]
                         * sum(self.demand),
-                        summed_max=1,
+                        full_load_time_max=1,
                     ),
                 },
             )
@@ -1306,11 +1328,9 @@ class EnergySystemOptimizer(Optimizer):
         # cbc --> 'ratioGap': '0.01'
         solver_option = {"gurobi": {"MipGap": "0.03"}, "cbc": {"ratioGap": "0.03"}}
 
-        model.solve(
-            solver=self.solver,
+        model.solve(solver=self.solver,
             solve_kwargs={"tee": True},
-            cmdline_options=solver_option[self.solver],
-        )
+            cmdline_options=solver_option[self.solver],)
         energy_system.results["meta"] = solph.processing.meta_results(model)
         self.results_main = solph.processing.results(model)
 

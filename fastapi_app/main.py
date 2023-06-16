@@ -1400,6 +1400,8 @@ def optimize_energy_system(user_id, project_id):
         df = sync_queries.get_input_df(user_id, project_id)
         energy_system_design = sync_queries.get_energy_system_design(user_id, project_id)
         solver = 'gurobi' if po.SolverFactory('gurobi').available() else 'cbc'
+        if solver == 'cbc':
+            energy_system_design['diesel_genset']['settings']['offset'] = False
         nodes = sync_queries.get_df(models.Nodes, user_id, project_id)
         if not nodes[nodes['consumer_type'] == 'power_house'].empty:
             lat, lon = nodes[nodes['consumer_type'] == 'power_house']['latitude', 'longitude'].to_list()
