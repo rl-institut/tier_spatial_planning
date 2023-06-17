@@ -1298,6 +1298,7 @@ def optimize_grid(user_id, project_id):
 
         n_poles = opt.find_opt_number_of_poles(grid, df.loc[0, "connection_cable_max_length"], n_mg_consumers)
         opt.determine_poles(grid=grid, min_n_clusters=n_poles)
+
         # ----------------- MAX DISTANCE BETWEEN POLES -----------------
         distribution_cable_max_length = df.loc[0, "distribution_cable_max_length"]
 
@@ -1326,6 +1327,9 @@ def optimize_grid(user_id, project_id):
 
         # Find the location of the power house.
         grid.select_location_of_power_house()
+        grid.set_direction_of_links()
+        grid.add_number_of_distribution_and_connection_cables()
+        grid.label_branches()
 
         # Calculate the cost of SHS.
         # ToDo: peak demand does not exists anymore

@@ -1,3 +1,4 @@
+import copy
 from operator import inv, length_hint
 from turtle import distance
 import numpy as np
@@ -393,7 +394,7 @@ class Grid:
         self.nodes.at[label, "parent"] = parent
         self.nodes.at[label, "distribution_cost"] = distribution_cost
         self.nodes.at[label, "custom_specification"] = custom_specification
-        self.shs_options = shs_options
+        self.nodes.at[label, "shs_options"] = shs_options
 
     def consumers(self):
         """
@@ -673,46 +674,6 @@ class Grid:
         """
         return self.id
 
-    def set_node_type(self, node_label, node_type):
-        """
-        This method set the node type of a given node to the value
-        given as parameter.
-
-        Parameter
-        ---------
-            node_label: str
-                Label of the node contained in grid.
-            node_type: str
-                value the 'node_type' of the given node is set to.
-        """
-        if not self.get_nodes()["type_fixed"][node_label]:
-            self.nodes.at[node_label, "node_type"] = node_type
-            if node_type == "pole" or node_type == "powerhub":
-                self.nodes.at[
-                    node_label, "allocation_capacity"
-                ] = self.pole_max_connection
-            elif node_type == "consumer":
-                self.nodes.at[node_label, "allocation_capacity"] = 0
-
-
-    def set_pole_capacity(self, pole_label, allocation_capacity):
-        """
-        This method sets the allocation capacity of a pole to the value given
-        by the allocation_capacity parameter. If the node is not a pole, the
-        method doesn't do anything.
-
-        Parameters
-        ----------
-        pole_label: str
-            Label of the pole.
-        allocation_capacity: int
-            Value the allocation_capacity of the pole is assigned to.
-        """
-        if pole_label in self.get_poles().index and type(allocation_capacity) == int:
-            self.nodes.at[str(pole_label), "allocation_capacity"] = allocation_capacity
-
-
-
     # ----------------- COMPUTE DISTANCE BETWEEN NODES -----------------#
 
     def get_cable_distance_from_consumers_to_pole(self):
@@ -748,7 +709,6 @@ class Grid:
             # connected with a link to the powerhub
             node_next_neighbours = []
             # add all nodes connected to the pole to the list
-            self.set_direction_of_links()
             links = self.get_links()
             for next_node in links[
                 (links["from_node"] == index_powerhub)
@@ -774,6 +734,51 @@ class Grid:
         return distance_df
 
 
+    def add_number_of_distribution_and_connection_cables(self):
+        poles = self.poles().copy()
+        links = self.get_links().copy()
+        distribution_links = links[links["link_type"] == "distribution"].copy()
+        connection_links = links[links["link_type"] == "connection"].copy()
+        for pole_idx in poles.index:
+            n_distribution = len(distribution_links[distribution_links["from_node"] == pole_idx].index)
+            n_distribution += len(distribution_links[distribution_links["to_node"] == pole_idx].index)
+            self.nodes.loc[pole_idx, "n_distribution_links"] = n_distribution
+            n_connection = len(connection_links[connection_links["from_node"] == pole_idx].index)
+            n_connection += len(connection_links[connection_links["to_node"] == pole_idx].index)
+            self.nodes.loc[pole_idx, "n_connection_links"] = n_connection
+        self.nodes.loc[self.nodes["node_type"] == 'consumer', 'n_connection_links'] = 1
+        self.nodes['n_distribution_links'] = self.nodes['n_distribution_links'].astype(int)
+        self.nodes['n_connection_links'] = self.nodes['n_connection_links'].astype(int)
+
+    def label_branches(self):
+        poles = self.poles().copy()
+        links = self.get_links().copy()
+        distribution_links = links[links["link_type"] == "distribution"].copy()
+        leaf_poles = pd.Series(poles[poles["n_distribution_links"] == 1].index).values
+        split_poles = pd.Series(poles[poles["n_distribution_links"] > 2].index).values
+        power_house = poles[poles["node_type"] == "power-house"].index[0]
+        start_poles = distribution_links[(distribution_links["to_node"] == power_house)]['from_node'].values
+        start_set = set(start_poles)
+        split_set = set(split_poles)
+        diff_set = start_set - split_set
+        start_poles = np.array(list(diff_set))
+        for split_pole in split_poles:
+            for start_pole in distribution_links[(distribution_links["to_node"] == split_pole)]['from_node'].to_list():
+                start_poles = np.append(start_poles, start_pole)
+        start_poles = pd.Series(start_poles).drop_duplicates().values
+        self.nodes['branch'] = None
+        tmp_idxs = self.nodes[self.nodes.index.isin(start_poles)].index
+        self.nodes.loc[start_poles, 'branch'] = pd.Series(tmp_idxs, index=tmp_idxs)
+        for start_pole in start_poles:
+            next_pole = copy.deepcopy(start_pole)
+            for _ in range(len(poles.index)):
+                next_pole = distribution_links[(distribution_links["to_node"] == next_pole)]['from_node'].values[0]
+                self.nodes.loc[next_pole, 'branch'] = start_pole
+                if next_pole in split_poles or next_pole in leaf_poles:
+                    break
+        self.nodes.loc[(self.nodes['branch'].isna()) & (self.nodes['node_type'].isin(['pole', 'power-house'])), 'branch'] \
+            = power_house
+
     def set_direction_of_links(self):
         consumer_to_power_house = True  # if True, direction is from consumer to power-house
         links = self.get_links().copy()
@@ -795,14 +800,22 @@ class Grid:
             new_parent_pole_list = []
             for parent_pole in parent_pole_list:
                 child_pole_list \
-                = distribution_links[distribution_links['poles'].str.contains(parent_pole)]['poles'].str.split(',')
+                = distribution_links[(distribution_links['poles'].str.contains(parent_pole+',')) |
+                                     ((distribution_links['poles'] + '#').str.contains(parent_pole + '#'))]['poles'].str.split(',')
                 for child_pole in child_pole_list:
+
+                    if 'p-6' in child_pole or 'p-10' in child_pole or 'p6' in parent_pole or 'p10' in parent_pole:
+                        t = 4
+
                     if child_pole[0] not in examined_pole_list and child_pole[1] not in examined_pole_list:
                         pos = 0 if consumer_to_power_house else 1
                         if child_pole[pos] == parent_pole:
+                            tmp_parent_pole = copy.deepcopy(child_pole[0])
                             child_pole = child_pole[1]
                         else:
+                            tmp_parent_pole = copy.deepcopy(child_pole[1])
                             child_pole = child_pole[0]
+                        self.nodes.loc[child_pole, 'parent'] = tmp_parent_pole
                         new_parent_pole_list.append(child_pole)
                         links = change_direction_of_links(child_pole, parent_pole, links)
             examined_pole_list += parent_pole_list
@@ -837,6 +850,7 @@ class Grid:
         node more than once.
         Parameters
         ----------
+        index_powerhub
         node_n_minus_1: str
             index corresponding to the node at the base of the branch leading
             to the "node_n" (which is the node whose distance to powerhub
