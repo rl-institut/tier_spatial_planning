@@ -378,6 +378,7 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
                  'consumer_type',
                  'consumer_detail',
                  'custom_specification',
+                 'is_connected',
                  'shs_options']]
         if markers_only is True:
             df = df[df['node_type'] == 'consumer']
@@ -386,6 +387,7 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
         df['shs_options'] = df['shs_options'].fillna(0)
         df['custom_specification'] = df['custom_specification'].fillna('')
         df['shs_options'] = df['shs_options'].astype(int)
+        df['is_connected'] = df['is_connected'].astype(bool)
         nodes_list = df.to_dict('records')
         return nodes_list
     else:
@@ -1329,42 +1331,41 @@ def optimize_grid(user_id, project_id):
         grid.select_location_of_power_house()
         grid.set_direction_of_links()
         grid.add_number_of_distribution_and_connection_cables()
-        grid.label_branches()
+        grid.allocate_poles_to_branches()
+        grid.allocate_subbranches_to_branches()
+        grid.label_branch_of_consumers()
+        grid.determine_cost_per_pole()
+        grid.connection_cost_per_consumer()
+        grid.determine_costs_per_branch()
+        # ToDo: demand of each consumer should be calculated here.
+        consumer_idxs = grid.nodes[grid.nodes['node_type'] == 'consumer'].index
+        grid.nodes.loc[consumer_idxs, 'yearly_consumption'] = demand_selected_period.sum() / len(consumer_idxs)
+        grid.determine_shs_consumers()
+
+
 
         # Calculate the cost of SHS.
         # ToDo: peak demand does not exists anymore
-        peak_demand_shs_consumers = 1# grid.nodes[grid.nodes["is_connected"] == False].loc[:, "peak_demand"]
+        peak_demand_shs_consumers = 1 # grid.nodes[grid.nodes["is_connected"] == False].loc[:, "peak_demand"]
         cost_shs = epc_shs * 0 #peak_demand_shs_consumers.sum()
 
         # get all poles obtained by the network relaxation method
-        poles = grid.poles().reset_index(drop=True)
-
-        # remove the unnecessary columns to make it compatible with the CSV files
+        nodes = grid.nodes.reset_index(drop=True)
         # TODO: When some of these columns are removed in the future, this part here needs to be updated too.
-        poles.drop(labels=["x", "y", "cluster_label", "type_fixed", "n_connection_links", "n_distribution_links"],
+        nodes.drop(labels=["x", "y", "cluster_label", "type_fixed", "n_connection_links", "n_distribution_links",
+                           "cost_per_pole", "branch", "parent_branch", "total_grid_cost_per_consumer_per_a",
+                           "connection_cost_per_consumer", 'cost_per_branch', 'distribution_cost_per_branch',
+                           'yearly_consumption'],
                    axis=1,
                    inplace=True)
-
-
-        # Store the list of poles in the "node" database.
-        sync_inserts.update_nodes_and_links(True, False, poles.to_dict(), user_id, project_id)
-
-        # get all links obtained by the network relaxation method
+        sync_inserts.update_nodes_and_links(True, False, nodes.to_dict(), user_id, project_id)
         links = grid.links.reset_index(drop=True)
-
-        # remove the unnecessary columns to make it compatible with the CSV files
         # TODO: When some of these columns are removed in the future, this part here needs to be updated too.
         links.drop(labels=["x_from", "y_from", "x_to", "y_to", "n_consumers", "total_power", "from_node", "to_node"],
                    axis=1,
                    inplace=True)
-
-        # store the list of poles in the "node" database
         sync_inserts.update_nodes_and_links(False, True, links.to_dict(), user_id, project_id)
-
-        # Grab Currrent Time After Running the Code
         end_execution_time = time.monotonic()
-
-        # store data for showing in the final results
         results = models.Results()
         results.n_consumers = len(grid.consumers())
         results.n_shs_consumers = n_shs_consumers
@@ -1383,14 +1384,7 @@ def optimize_grid(user_id, project_id):
         else:
             results.max_voltage_drop = 0
         df = results.to_df()
-
         sync_inserts.insert_results_df(df, user_id, project_id)
-        #grid.allocate_consumers_and_poles_to_branches()
-        #grid.sum_up_consumers_depending_on_each_pole()
-
-        #grid.find_capacity_of_each_link()
-        # ToDo:  what is with this last operations? It is not stored in the database.
-        #grid.distribute_grid_cost_among_consumers()
     except Exception as exc:
         user_name = 'user with user_id: {}'.format(user_id)
         error_logger.error_log(exc, 'no request', user_name)
@@ -1462,6 +1456,7 @@ def optimize_energy_system(user_id, project_id):
         df.loc[0, "cost_renewable_assets"] = ensys_opt.total_renewable
         df.loc[0, "cost_non_renewable_assets"] = ensys_opt.total_non_renewable
         df.loc[0, "cost_fuel"] = ensys_opt.total_fuel
+        # ToDo: shs cost in lcoe?
         df.loc[0, "lcoe"] = (100 * (ensys_opt.total_revenue + df.loc[0, "cost_grid"]
                                     + df.loc[0, "cost_shs"]) / ensys_opt.total_demand)
         df.loc[0, "res"] = ensys_opt.res

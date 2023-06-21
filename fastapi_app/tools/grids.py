@@ -6,6 +6,7 @@ import pandas as pd
 from configparser import ConfigParser
 import os
 from pyproj import Proj
+from fastapi_app.tools.error_logger import logger as error_logger
 pd.options.mode.chained_assignment = None  # default='warn'
 
 
@@ -159,6 +160,7 @@ class Grid:
                 ),  # [Ohm*mm²/m]
             }
         ),
+        max_levelized_grid_cost = 0.20  # [$ per consumer per year)]
     ):
         self.id = grid_id
         self.nodes = nodes
@@ -173,6 +175,7 @@ class Grid:
         self.epc_connection_cable = epc_connection_cable  # per meter
         self.epc_connection = epc_connection
         self.epc_pole = epc_pole
+        self.max_levelized_grid_cost = max_levelized_grid_cost
 
     # -------------------- NODES -------------------- #
     def get_load_centroid(self):
@@ -750,7 +753,7 @@ class Grid:
         self.nodes['n_distribution_links'] = self.nodes['n_distribution_links'].astype(int)
         self.nodes['n_connection_links'] = self.nodes['n_connection_links'].astype(int)
 
-    def label_branches(self):
+    def allocate_poles_to_branches(self):
         poles = self.poles().copy()
         links = self.get_links().copy()
         distribution_links = links[links["link_type"] == "distribution"].copy()
@@ -769,15 +772,274 @@ class Grid:
         self.nodes['branch'] = None
         tmp_idxs = self.nodes[self.nodes.index.isin(start_poles)].index
         self.nodes.loc[start_poles, 'branch'] = pd.Series(tmp_idxs, index=tmp_idxs)
-        for start_pole in start_poles:
-            next_pole = copy.deepcopy(start_pole)
-            for _ in range(len(poles.index)):
-                next_pole = distribution_links[(distribution_links["to_node"] == next_pole)]['from_node'].values[0]
-                self.nodes.loc[next_pole, 'branch'] = start_pole
-                if next_pole in split_poles or next_pole in leaf_poles:
-                    break
+        try:
+            for start_pole in start_poles:
+                next_pole = copy.deepcopy(start_pole)
+                for _ in range(len(poles.index)):
+                    next_pole = distribution_links[(distribution_links["to_node"] == next_pole)]['from_node']
+                    if len(next_pole.index) == 1:
+                        next_pole = next_pole.values[0]
+                        self.nodes.loc[next_pole, 'branch'] = start_pole
+                        if next_pole in split_poles or next_pole in leaf_poles:
+                            break
+                    else:
+                        break
+        except Exception as e:
+            user_name = 'unknown'
+            error_logger.error_log(e, 'no request', user_name)
         self.nodes.loc[(self.nodes['branch'].isna()) & (self.nodes['node_type'].isin(['pole', 'power-house'])), 'branch'] \
             = power_house
+
+    def label_branch_of_consumers(self):
+        branch_map = self.nodes.loc[self.nodes.node_type.isin(['pole', 'power-house']), 'branch']
+        self.nodes.loc[self.nodes.node_type == 'consumer', 'branch'] \
+            = self.nodes.loc[self.nodes.node_type == 'consumer', 'parent'].map(branch_map)
+
+    def allocate_subbranches_to_branches(self):
+        poles = self.poles().copy()
+        self.nodes['parent_branch'] = None
+        power_house = poles[poles["node_type"] == "power-house"].index[0]
+
+        def determine_parent_branches(start_poles):
+            for pole in start_poles:
+                branch_start_pole = poles[poles.index == pole]['branch'].iat[0]
+                split_pole = self.nodes[self.nodes.index == branch_start_pole]['parent'].iat[0]
+                parent_branch = poles[poles.index == split_pole]['branch'].iat[0]
+                self.nodes.loc[self.nodes['branch'] == branch_start_pole, 'parent_branch'] = parent_branch
+
+        try:
+            if len(poles['branch'].unique()) > 1:
+                leaf_poles = poles[poles["n_distribution_links"] == 1].index
+                determine_parent_branches(leaf_poles)
+                poles_expect_power_house = poles[poles["node_type"] != "power-house"]
+                split_poles = poles_expect_power_house[poles_expect_power_house["n_distribution_links"] > 2]
+                if len(split_poles.index) > 0:
+                    determine_parent_branches(split_poles)
+        except Exception as e:
+            user_name = 'unknown'
+            error_logger.error_log(e, 'no request', user_name)
+        self.nodes.loc[(self.nodes['parent_branch'].isna()) & (self.nodes['node_type'].isin(['pole', 'power-house'])),
+        'parent_branch'] = power_house
+
+    def determine_cost_per_pole(self):
+        poles = self.poles().copy()
+        links = self.get_links().copy()
+        self.nodes['cost_per_pole'] = None
+        self.nodes['cost_per_pole'] = self.nodes['cost_per_pole'].astype(float)
+        power_house = poles[poles["node_type"] == "power-house"].index[0]
+        for pole in poles.index:
+            if pole != power_house:
+                parent_pole = poles[poles.index == pole]['parent'].iat[0]
+                try:
+                    length = links[(links['from_node'] == pole) & (links['to_node'] == parent_pole)]['length'].iat[0]
+                except IndexError:
+                    try:
+                        length = links[(links['from_node'] == parent_pole) & (links['to_node'] == pole)]['length'].iat[0]
+                    except Exception:
+                        length = 20
+                self.nodes.loc[pole, 'cost_per_pole'] = self.epc_pole + length * self.epc_distribution_cable
+            else:
+                self.nodes.loc[pole, 'cost_per_pole'] = self.epc_pole
+
+    def determine_costs_per_branch(self, branch=None):
+        poles = self.poles().copy()
+
+        def _(branch):
+            branch_df = self.nodes[(self.nodes['branch'] == branch) & (self.nodes['is_connected'] == True)].copy()
+            cost_per_branch = self.nodes[self.nodes.index.isin(branch_df.index)]['cost_per_pole'].sum()
+            cost_per_branch += self.nodes[self.nodes.index.isin(branch_df.index)]['connection_cost_per_consumer'].sum()
+            self.nodes.loc[branch_df.index, 'distribution_cost_per_branch'] = cost_per_branch
+            self.nodes.loc[branch_df.index, 'cost_per_branch'] = cost_per_branch
+
+        if branch is None:
+            for branch in poles['branch'].unique():
+                _(branch)
+        else:
+            _(branch)
+
+
+    def connection_cost_per_consumer(self):
+        links = self.get_links()
+        consumers = self.nodes[(self.nodes['node_type'] == 'consumer') &
+                               (self.nodes['is_connected'] == True)].index
+        for consumer in consumers:
+            parent_pole = self.nodes[self.nodes.index == consumer]['parent'].iat[0]
+            length = min(links[(links['from_node'] == consumer) & (links['to_node'] == parent_pole)]['length'].iat[0],
+                         3)
+            connection_cost = self.epc_connection + length * self.epc_connection_cable
+            self.nodes.loc[consumer, 'connection_cost_per_consumer'] = connection_cost
+
+    def get_subbranches(self, branch):
+        subbranches = self.nodes[self.nodes['branch'] == branch].index.tolist()
+        leaf_branches = self.nodes[self.nodes['n_distribution_links'] == 1]['branch'].index
+        next_sub_branches = self.nodes[self.nodes['parent_branch'] == branch]['parent_branch'].tolist()
+        for _ in range(len(self.nodes['branch'].unique())):
+            next_next_sub_branches = []
+            for sub_branch in next_sub_branches:
+                if sub_branch in leaf_branches:
+                    break
+                else:
+                    for b in next_sub_branches:
+                        subbranches.append(b)
+                    next_next_sub_branches.append(sub_branch)
+            next_sub_branches = next_next_sub_branches
+            if len(next_sub_branches) == 0:
+                break
+        return subbranches
+
+    def get_all_consumers_of_subbranches(self, branch):
+        branches = self.get_subbranches(branch)
+        consumers = self.nodes[(self.nodes['node_type'] == 'consumer') &
+                               (self.nodes['branch'].isin(branches)) &
+                               (self.nodes['is_connected'] == True)].index
+        return consumers
+
+    def get_all_consumers_of_branch(self, branch):
+        consumers = self.nodes[(self.nodes['node_type'] == 'consumer') &
+                               (self.nodes['branch'].isin(branch)) &
+                               (self.nodes['is_connected'] == True)].index
+        return consumers
+
+
+    def distribute_cost_among_consumers(self):
+        self.nodes['total_grid_cost_per_consumer_per_a'] = np.nan
+        self.nodes.loc[self.nodes[self.nodes['is_connected'] == True].index, 'total_grid_cost_per_consumer_per_a'] \
+            = self.nodes['connection_cost_per_consumer']
+        leaf_branches = self.nodes[self.nodes['n_distribution_links'] == 1]['branch'].unique()
+        for branch in self.nodes['branch'].unique():
+
+            if branch is not None:
+                if branch in leaf_branches:
+                    poles_of_branch = self.nodes[self.nodes['branch'] == branch]
+                    next_pole = poles_of_branch[poles_of_branch['n_distribution_links'] == 1]
+                    consumers_down_the_line = []
+                    for _ in range(len(poles_of_branch)):
+                        consumers_of_pole = poles_of_branch[(poles_of_branch['node_type'] == 'consumer') &
+                                                            (poles_of_branch['is_connected'] == True) &
+                                                            (poles_of_branch['parent'] == next_pole.index[0])]
+                        for consumer in consumers_of_pole.index:
+                            consumers_down_the_line.append(consumer)
+                        total_consumption = \
+                            self.nodes[self.nodes.index.isin(consumers_down_the_line)]['yearly_consumption'].sum()
+                        cost_of_pole = \
+                            self.nodes.loc[self.nodes[self.nodes.index == next_pole.index[0]].index, 'cost_per_pole'].iat[0]
+                        for consumer in consumers_down_the_line:
+                            self.nodes.loc[consumer, 'total_grid_cost_per_consumer_per_a'] += \
+                                cost_of_pole * self.nodes.loc[consumer, 'yearly_consumption'] / total_consumption
+                        next_pole = self.nodes[self.nodes.index == next_pole['parent'].iat[0]]
+                        if self.nodes[self.nodes.index == next_pole.index[0]]['branch'].iat[0] != branch:
+                            break
+                else:
+                    continue
+                    """
+                    consumers = self.get_all_consumers_of_subbranches(branch)
+                    total_consumption = self.nodes[self.nodes.index.isin(consumers)]['yearly_consumption'].sum()
+                    cost_of_branch = \
+                    self.nodes.loc[self.nodes[self.nodes['branch'] == branch].index, 'distribution_cost_per_branch'].iat[0]
+                    for consumer in consumers:
+                        self.nodes.loc[consumer, 'total_grid_cost_per_consumer_per_a'] += \
+                            cost_of_branch * self.nodes.loc[consumer, 'yearly_consumption'] / total_consumption
+                    """
+        self.nodes['total_grid_cost_per_consumer_per_a'] = \
+            self.nodes['total_grid_cost_per_consumer_per_a'] / self.nodes['yearly_consumption']
+
+    def marginal_cost_per_consumer(self, pole, consumer_of_pole):
+        total_consumption = \
+            self.nodes[self.nodes.index.isin(consumer_of_pole.index)]['yearly_consumption'].sum()
+        cost_of_pole = \
+            self.nodes.loc[self.nodes[self.nodes.index == pole].index, 'cost_per_pole'].iat[0]
+        connection_cost_consumers \
+            = self.nodes[self.nodes.index.isin(consumer_of_pole.index)]['connection_cost_per_consumer'].sum()
+        next_pole = self.nodes[self.nodes.index == pole]['parent'].iat[0]
+        for _ in range(100):
+            if self.nodes[self.nodes.index == next_pole]['n_connection_links'].iat[0] == 0:
+                if self.nodes[self.nodes.index == next_pole]['node_type'].iat[0] == 'power-house':
+                    break
+                cost_of_pole += \
+                    self.nodes.loc[self.nodes[self.nodes.index == next_pole].index, 'cost_per_pole'].iat[0]
+                next_pole = self.nodes[self.nodes.index == next_pole]['parent'].iat[0]
+            else:
+                break
+        marginal_cost_of_pole = (cost_of_pole + connection_cost_consumers) / total_consumption
+        return marginal_cost_of_pole
+
+    def cut_leaf_poles_on_condition(self):
+        exclude_lst = [self.nodes[self.nodes['node_type'] == 'power-house'].index[0]]
+        for _ in range(100):
+            counter = 0
+            leaf_poles = self.nodes[self.nodes['n_distribution_links'] == 1].index
+            for pole in leaf_poles:
+                if pole in exclude_lst:
+                    continue
+                consumer_of_pole = self.nodes[self.nodes['parent'] == pole]
+                branch = self.nodes[self.nodes.index == pole]['branch'].iat[0]
+                consumer_of_branch = self.nodes[self.nodes['branch'] == branch].index
+                average_total_cost_of_pole = consumer_of_pole['total_grid_cost_per_consumer_per_a'].mean()
+                average_marginal_cost_of_pole = self.marginal_cost_per_consumer(pole, consumer_of_pole)
+                self.determine_costs_per_branch(branch)
+                average_marginal_branch_cost_of_pole = self.nodes.loc[consumer_of_branch, 'cost_per_branch'].iat[0] \
+                                                       / self.nodes.loc[consumer_of_branch, 'yearly_consumption'].sum()
+                if average_marginal_cost_of_pole > self.max_levelized_grid_cost:
+                    self._cut_specific_pole(pole)
+                    counter += 1
+                elif average_total_cost_of_pole > self.max_levelized_grid_cost and \
+                     average_marginal_branch_cost_of_pole > self.max_levelized_grid_cost:
+                    self._cut_specific_pole(pole)
+                    counter += 1
+                else:
+                    exclude_lst.append(pole)
+            if counter == 0:
+                break
+
+    def _cut_specific_pole(self, pole):
+        mask = (self.nodes['parent'] == pole) & \
+               (self.nodes['node_type'] == 'consumer')
+        self.nodes.loc[mask, 'is_connected'] = False
+        self.nodes.loc[mask, 'parent'] = np.nan
+        self.nodes.loc[mask, 'branch'] = np.nan
+        self.nodes.loc[mask, 'total_grid_cost_per_consumer_per_a'] = np.nan
+        self.remove_poles_and_links(pole)
+        self.cut_leaf_poles_without_connection()
+
+    def cut_leaf_poles_without_connection(self):
+        exclude_lst = [self.nodes[self.nodes['node_type'] == 'power-house'].index[0]]
+        for _ in range(len(self.nodes[self.nodes['node_type'] == 'pole'])):
+            leaf_poles = self.nodes[self.nodes['n_distribution_links'] == 1].index
+            counter = 0
+            for pole in leaf_poles:
+                if pole in exclude_lst:
+                    continue
+                consumer_of_pole = self.nodes[self.nodes['parent'] == pole]
+                if len(consumer_of_pole.index) == 0:
+                    self.remove_poles_and_links(pole)
+                    counter += 1
+                else:
+                    exclude_lst.append(pole)
+            if counter == 0:
+                break
+
+    def remove_poles_and_links(self, pole):
+        self.correct_n_distribution_links_of_parent_poles(pole)
+        self.nodes = self.nodes.drop(index=pole)
+        drop_idxs = self.links[(self.links['from_node'] == pole) | (self.links['to_node'] == pole)].index
+        self.links = self.links.drop(index=drop_idxs)
+
+    def correct_n_distribution_links_of_parent_poles(self, pole):
+        parent_pole = self.nodes[self.nodes.index == pole]['parent'].iat[0]
+        self.nodes.loc[parent_pole, 'n_distribution_links'] -= 1
+
+
+    def determine_shs_consumers(self, max_iter=20):
+        for _ in range(max_iter):
+            self.distribute_cost_among_consumers()
+            if self.nodes['total_grid_cost_per_consumer_per_a'].max() < self.max_levelized_grid_cost:
+                if self.nodes['n_connection_links'].sum() == 0:
+                    self.nodes = \
+                        self.nodes.drop(index=self.nodes[self.nodes['node_type'].isin(['power-house', 'pole'])].index)
+                    self.links = self.links.drop(index=self.links.index)
+                break
+            self.cut_leaf_poles_on_condition()
+
 
     def set_direction_of_links(self):
         consumer_to_power_house = True  # if True, direction is from consumer to power-house

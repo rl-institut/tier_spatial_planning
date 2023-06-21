@@ -107,7 +107,7 @@ class GridOptimizer(Optimizer):
         grid (~grids.Grid):
             grid object
         """
-
+        links = grid.get_links()
         # Remove all existing connections between poles and consumers
         grid.clear_links(link_type="connection")
 
@@ -129,6 +129,10 @@ class GridOptimizer(Optimizer):
                 # adding consumers
                 if node_label != pole_label:
                     grid.add_links(label_node_from=pole_label, label_node_to=node_label)
+                    if grid.nodes.loc[node_label, "shs_options"] != 2:
+                        grid.nodes.loc[node_label, "parent"] = pole_label
+                    else:
+                        grid.nodes.loc[node_label, "is_connected"] = False
 
     def connect_grid_poles(self, grid: Grid, long_links=[]):
         """
@@ -375,49 +379,7 @@ class GridOptimizer(Optimizer):
         grid_mst = minimum_spanning_tree(graph_matrix)
         grid.grid_mst = grid_mst
 
-    # ------------------- ALLOCATION ALGORITHMS -------------------#
 
-    def connect_consumer_to_nereast_poles(self, grid: Grid):
-        """
-        This method create a link between each consumer
-        and the nereast pole of the same segment.
-
-        Parameters
-        ----------
-        grid (~grids.Grid):
-            Grid object.
-        """
-
-        # Iterate over all segment containing poles
-        for segment in grid.get_poles()["segment"].unique():
-            # Iterate over all consumers and connect each of them
-            # to the closest pole or powerhub in the segment
-            for index_node, row_node in grid.consumers()[
-                grid.consumers()["segment"] == segment
-            ].iterrows():
-                # This variable is a temporary variable that is used to find
-                # the nearest meter pole to a node
-                index_closest_pole = grid.get_poles()[
-                    grid.get_poles()["segment"] == segment
-                ].index[0]
-                shortest_dist_to_pole = grid.distance_between_nodes(
-                    index_node, index_closest_pole
-                )
-                for index_pole, row_pole in grid.get_poles()[
-                    grid.get_poles()["segment"] == segment
-                ].iterrows():
-                    # Store which pole is the clostest and what the
-                    # distance to it is
-                    if (
-                        grid.distance_between_nodes(index_node, index_pole)
-                        < shortest_dist_to_pole
-                    ):
-                        shortest_dist_to_pole = grid.distance_between_nodes(
-                            index_node, index_pole
-                        )
-                        index_closest_pole = index_pole
-                # Finally add the link to the grid
-                grid.add_links(index_node, index_closest_pole)
 
     #  --------------------- K-MEANS CLUSTERING ---------------------#
     def kmeans_clustering(self, grid: Grid, n_clusters: int):
@@ -686,7 +648,7 @@ class EnergySystemOptimizer(Optimizer):
     def import_data(self):
         # ToDo create correct timestamps
         self.demand.index = pd.date_range(start=self.start_datetime, periods=len(self.demand.index), freq='H')
-        self.demand = self.demand.loc[self.start_datetime : self.end_datetime]['Demand'] * 1.5
+        self.demand = self.demand.loc[self.start_datetime : self.end_datetime]['Demand']
         self.solar_potential_peak = self.solar_potential.max()
         self.demand_peak = self.demand.max()
 

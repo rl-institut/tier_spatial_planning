@@ -182,7 +182,7 @@ class Nodes(Base):
     is_connected = Column(Boolean)
     how_added = Column(VARCHAR(55))
     distance_to_load_center = Column(Numeric(10, 6))
-    parent = Column(Numeric(10, 5))
+    parent = Column(VARCHAR(10))
     distribution_cost = Column(Numeric(10, 5))
     custom_specification = Column(VARCHAR(1000))
     shs_options = Column(SMALLINT)
