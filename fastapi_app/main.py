@@ -1351,20 +1351,18 @@ def optimize_grid(user_id, project_id):
 
         # get all poles obtained by the network relaxation method
         nodes = grid.nodes.reset_index(drop=True)
-        # TODO: When some of these columns are removed in the future, this part here needs to be updated too.
         nodes.drop(labels=["x", "y", "cluster_label", "type_fixed", "n_connection_links", "n_distribution_links",
                            "cost_per_pole", "branch", "parent_branch", "total_grid_cost_per_consumer_per_a",
                            "connection_cost_per_consumer", 'cost_per_branch', 'distribution_cost_per_branch',
                            'yearly_consumption'],
                    axis=1,
                    inplace=True)
-        sync_inserts.update_nodes_and_links(True, False, nodes.to_dict(), user_id, project_id)
+        sync_inserts.update_nodes_and_links(True, False, nodes.to_dict(), user_id, project_id, replace=True)
         links = grid.links.reset_index(drop=True)
-        # TODO: When some of these columns are removed in the future, this part here needs to be updated too.
         links.drop(labels=["x_from", "y_from", "x_to", "y_to", "n_consumers", "total_power", "from_node", "to_node"],
                    axis=1,
                    inplace=True)
-        sync_inserts.update_nodes_and_links(False, True, links.to_dict(), user_id, project_id)
+        sync_inserts.update_nodes_and_links(False, True, links.to_dict(), user_id, project_id, replace=True)
         end_execution_time = time.monotonic()
         results = models.Results()
         results.n_consumers = len(grid.consumers())
