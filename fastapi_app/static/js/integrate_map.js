@@ -121,12 +121,9 @@ function put_markers_on_map(array, markers_only) {
     else {
         if (array[counter]["node_type"] === "consumer") {
             if (array[counter]["is_connected"] === false) {selected_icon= markerShs;}
-            else {
-
-                if (array[counter]["consumer_type"] === "household") {selected_icon= markerConsumer;}
-                else if (array[counter]["consumer_type"] === "enterprise") {selected_icon= markerEnterprise;}
-                else if (array[counter]["consumer_type"] === "public_service") {selected_icon= markerPublicservice;}
-            }
+            else if (array[counter]["consumer_type"] === "household") {selected_icon= markerConsumer;}
+            else if (array[counter]["consumer_type"] === "enterprise") {selected_icon= markerEnterprise;}
+            else if (array[counter]["consumer_type"] === "public_service") {selected_icon= markerPublicservice;}
         }
         else {selected_icon= icons[array[counter]["node_type"]];}}
         L.marker([array[counter]["latitude"], array[counter]["longitude"]], {icon: selected_icon,})
@@ -209,3 +206,46 @@ var zoomAllControl = L.Control.extend({
 
 map.addControl(new zoomAllControl());
 
+// Obtain the page name, for example using window.location.pathname
+// Replace it with your own logic for getting the page name
+var pageName = window.location.pathname;
+
+var description = ["Power House", "Consumer", "Pole", "SHS", "Distribution", "Connection"];
+var image = [
+  "fastapi_app/static/assets/icons/i_power_house.svg",
+  "fastapi_app/static/assets/icons/i_consumer.svg",
+  "fastapi_app/static/assets/icons/i_pole.svg",
+  "fastapi_app/static/assets/icons/i_shs.svg",
+  "fastapi_app/static/assets/icons/i_distribution.svg",
+  "fastapi_app/static/assets/icons/i_connection.svg",
+];
+
+// If the pageName matches the 'results' page, adjust the description and image arrays.
+if (pageName !== "/simulation_results") {
+  description = ["Consumer", "Enterprise", "Public Service", "SHS"];
+  image = [
+    "fastapi_app/static/assets/icons/i_consumer.svg",
+    "fastapi_app/static/assets/icons/i_enterprise.svg",
+    "fastapi_app/static/assets/icons/i_public_service.svg",
+    "fastapi_app/static/assets/icons/i_shs.svg",
+  ];
+}
+
+// Add the legend
+var legend = L.control({ position: "bottomright" });
+legend.onAdd = function (map) {
+  var div = L.DomUtil.create("div", "info legend");
+
+  // loop through our density intervals and generate a label with a colored square for each interval
+  for (var i = 0; i < description.length; i++) {
+    div.innerHTML +=
+      " <img src=" +
+      image[i] +
+      " height='12' width='12'>" +
+      "&nbsp" +
+      description[i] +
+      "<br>";
+  }
+  return div;
+};
+legend.addTo(map);
