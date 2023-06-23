@@ -858,14 +858,15 @@ async def add_buildings_inside_boundary(js_data: fastapi_app.io.schema.MapData, 
         return JSONResponse({'executed': False, 'msg': 'In the selected area, no buildings could be identified.'})
     nodes = defaultdict(list)
     for label, coordinates in building_coordidates_within_boundaries.items():
-        nodes["latitude"].append(coordinates[0])
-        nodes["longitude"].append(coordinates[1])
+        nodes["latitude"].append(round(coordinates[0], 6))
+        nodes["longitude"].append(round(coordinates[1], 6))
         nodes["how_added"].append("automatic")
         nodes["node_type"].append("consumer")
         nodes["consumer_type"].append('household')
         nodes["consumer_detail"].append('default')
         nodes['custom_specification'].append('')
         nodes['shs_options'].append(0)
+        nodes['is_connected'].append(True)
     if user.email.split('__')[0] == 'anonymous':
         max_consumer = int(os.environ.get("MAX_CONSUMER_ANONNYMOUS", 150))
     else:
@@ -876,12 +877,12 @@ async def add_buildings_inside_boundary(js_data: fastapi_app.io.schema.MapData, 
                                     'Reduce the number of consumers by selecting a small area, for example.'
                             .format(len(data['elements']), max_consumer)})
     df = pd.DataFrame.from_dict(nodes)
+    df['is_connected'] = df['is_connected']
     df_exisiting = pd.DataFrame.from_records(js_data.map_elements)
-    df = pd.concat([df, df_exisiting], ignore_index=True)
-    df = df.drop_duplicates()
+    df = pd.concat([df_exisiting, df], ignore_index=True)
+    df = df.drop_duplicates(subset=['longitude', 'latitude'], keep='first')
     nodes_list = df.to_dict('records')
     return JSONResponse({'executed': True, 'msg': '', 'new_consumers': nodes_list})
-
 
 @app.post("/remove_buildings_inside_boundary")
 async def remove_buildings_inside_boundary(data: fastapi_app.io.schema.MapData):
@@ -1126,7 +1127,9 @@ def optimize_grid(user_id, project_id):
                             wacc=df.loc[0, "interest_rate"] / 100,
                             tax=0, )
         nodes = sync_queries.get_df(models.Nodes, user_id, project_id)
-
+        nodes['is_connected'] = True
+        nodes.loc[nodes['shs_options'] == 2, 'is_connected'] = False
+        nodes.index = nodes.index.astype(str)
         if len(nodes) == 0:
             return {"code": "success", "message": "Empty grid cannot be optimized!"}
 
@@ -1249,20 +1252,7 @@ def optimize_grid(user_id, project_id):
         grid.clear_all_links()
 
         # exclude solar-home-systems and poles from the grid optimization
-        for node_index in nodes.index:
-            if (
-                    (nodes.is_connected[node_index])
-                    and (not nodes.node_type[node_index] == "pole")
-                    and (not nodes.node_type[node_index] == "power-house")
-            ):
-                # add all consumers which are not served by solar-home-systems
-                grid.add_node(
-                    label=str(node_index),
-                    longitude=nodes.longitude[node_index],
-                    latitude=nodes.latitude[node_index],
-                    node_type=nodes.node_type[node_index],
-                    is_connected=nodes.is_connected[node_index],
-                )
+        grid.nodes = nodes
 
         # convert all (long,lat) coordinates to (x,y) coordinates and update
         # the Grid object, which is necessary for the GridOptimizer
@@ -1277,45 +1267,25 @@ def optimize_grid(user_id, project_id):
         # load of the village
         grid.get_load_centroid()
 
-        # Calculate all distanced from the load centroid
-        grid.get_nodes_distances_from_load_centroid()
 
         # Find the number of SHS consumers (temporarily)
-        shs_share = 0
-        n_total_consumers = grid.nodes.shape[0]
-        n_shs_consumers = int(np.ceil(shs_share * n_total_consumers))
-        n_mg_consumers = n_total_consumers - n_shs_consumers
-
-        # Sort nodes based on their distance to the load center.
-        grid.nodes.sort_values("distance_to_load_center", ascending=False, inplace=True)
-
-        # Convert the first `n_shs_consumer` nodes into candidates for SHS.
-        grid.nodes.loc[grid.nodes.index[0:n_shs_consumers], "is_connected"] = False
-
-        # Sort nodes again based on their index label. Here, since the index is
-        # string, sorting the nodes without changing the type of index would result
-        # in a case, that '10' comes before '2'.
+        n_total_consumers = grid.nodes.index.__len__()
+        n_shs_consumers = nodes[nodes["is_connected"] == False].index.__len__()
+        n_grid_consumers = n_total_consumers - n_shs_consumers
         grid.nodes.sort_index(key=lambda x: x.astype("int64"), inplace=True)
 
 
-        n_poles = opt.find_opt_number_of_poles(grid, df.loc[0, "connection_cable_max_length"], n_mg_consumers)
+        n_poles = opt.find_opt_number_of_poles(grid, df.loc[0, "connection_cable_max_length"], n_grid_consumers)
         opt.determine_poles(grid=grid, min_n_clusters=n_poles)
-
-        # ----------------- MAX DISTANCE BETWEEN POLES -----------------
         distribution_cable_max_length = df.loc[0, "distribution_cable_max_length"]
 
         # Find the connection links in the network with lengths greater than the
         # maximum allowed length for `connection` cables, specified by the user.
-        long_links = grid.find_index_longest_distribution_link(
-            max_distance_dist_links=distribution_cable_max_length,
-        )
+        long_links = grid.find_index_longest_distribution_link(max_distance_dist_links=distribution_cable_max_length)
 
         # Add poles to the identified long `distribution` links, so that the
         # distance between all poles remains below the maximum allowed distance.
-        grid.add_fixed_poles_on_long_links(
-            long_links=long_links,
-            max_allowed_distance=distribution_cable_max_length,
-        )
+        grid.add_fixed_poles_on_long_links(long_links=long_links, max_allowed_distance=distribution_cable_max_length)
 
         # Update the (lon,lat) coordinates based on the newly inserted poles
         # which only have (x,y) coordinates.
@@ -1328,9 +1298,9 @@ def optimize_grid(user_id, project_id):
         grid.get_poles_distances_from_load_centroid()
 
         # Find the location of the power house.
+        grid.add_number_of_distribution_and_connection_cables()
         grid.select_location_of_power_house()
         grid.set_direction_of_links()
-        grid.add_number_of_distribution_and_connection_cables()
         grid.allocate_poles_to_branches()
         grid.allocate_subbranches_to_branches()
         grid.label_branch_of_consumers()
@@ -1341,6 +1311,9 @@ def optimize_grid(user_id, project_id):
         consumer_idxs = grid.nodes[grid.nodes['node_type'] == 'consumer'].index
         grid.nodes.loc[consumer_idxs, 'yearly_consumption'] = demand_selected_period.sum() / len(consumer_idxs)
         grid.determine_shs_consumers()
+        grid.get_poles_distances_from_load_centroid()
+        grid.select_location_of_power_house()
+        grid.set_direction_of_links()
 
 
 

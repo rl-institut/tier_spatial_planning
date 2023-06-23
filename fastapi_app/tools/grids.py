@@ -183,8 +183,9 @@ class Grid:
         This function obtains the ideal location for the power house, which is
         at the load centroid of the village.
         """
-        x_centroid = np.average(self.nodes["x"])
-        y_centroid = np.average(self.nodes["y"])
+        grid_consumers = self.nodes[self.nodes["is_connected"] == True]
+        x_centroid = np.average(grid_consumers["x"])
+        y_centroid = np.average(grid_consumers["y"])
         self.load_centroid = [x_centroid, y_centroid]
 
     def get_nodes_distances_from_load_centroid(self):
@@ -229,7 +230,9 @@ class Grid:
         pole is longer than the maximum allowed distance for distribution links,
         some more poles will be placed on it.
         """
-        min_distance_nearest_pole = self.poles()["distance_to_load_center"].min()
+        poles_with_consumers = self.poles()
+        poles_with_consumers = poles_with_consumers[poles_with_consumers["n_connection_links"] > 0]
+        min_distance_nearest_pole = poles_with_consumers["distance_to_load_center"].min()
         nearest_pole = self.poles()[
             self.poles()["distance_to_load_center"] == min_distance_nearest_pole
         ]
@@ -255,6 +258,15 @@ class Grid:
             axis=0,
         )
 
+    def get_grid_consumers(self):
+        df = self.nodes[(self.nodes["is_connected"] == True) & (self.nodes["node_type"] == 'consumer')]
+        return df.copy()
+
+    def get_shs_consumers(self):
+        df = self.nodes[(self.nodes["is_connected"] == False) & (self.nodes["node_type"] == 'consumer')]
+        return df.copy()
+
+
     def find_index_longest_distribution_link(self, max_distance_dist_links):
         # First select the distribution links from the entire links.
         distribution_links = self.links[self.links["link_type"] == "distribution"]
@@ -265,25 +277,7 @@ class Grid:
         ]
 
         return list(critical_link.index)
-        # if critical_link.length[0] > max_distance_dist_links:
-        #     return critical_link.index[0]
-        # else:
-        #     return ""
 
-        # for index in distribution_links.index:
-        #     if distribution_links.at[index, "length"] > 2 * max_distance_dist_links:
-        #         n_long_links += 1
-        #         index_long_link = index
-
-        # # Only when there is ONE very long connection in the gtid, the link
-        # # label will be given to the optimizer to be ignored. Otherwise, an
-        # # additional pole will be added to the grid.
-        # if n_long_links == 1:
-        #     return index_long_link
-        # elif n_long_links > 1:
-        #     return "many_long_links"
-        # else:
-        #     return ""
 
     def add_fixed_poles_on_long_links(
         self,
@@ -518,10 +512,8 @@ class Grid:
         """
 
         # specify the type of the link which is obtained based on the start/end nodes of the link
-        if (
-            self.nodes.node_type.loc[label_node_from]
-            and self.nodes.node_type.loc[label_node_to]
-        ) == "pole":
+        if (self.nodes.node_type.loc[label_node_from]
+            and self.nodes.node_type.loc[label_node_to]) == "pole":
             # convention: if two poles are getting connected, the begining will be the one with lower number
             (label_node_from, label_node_to) = sorted([label_node_from, label_node_to])
             link_type = "distribution"
@@ -740,6 +732,10 @@ class Grid:
     def add_number_of_distribution_and_connection_cables(self):
         poles = self.poles().copy()
         links = self.get_links().copy()
+        links['from_node'] = pd.Series(links.index.str.split(','), index=links.index)\
+            .str[0].str.replace('(', '', regex=True).str.replace(' ', '', regex=True)
+        links['to_node'] = pd.Series(links.index.str.split(','), index=links.index) \
+            .str[1].str.replace(')', '', regex=True).str.replace(' ', '', regex=True)
         distribution_links = links[links["link_type"] == "distribution"].copy()
         connection_links = links[links["link_type"] == "connection"].copy()
         for pole_idx in poles.index:
@@ -750,8 +746,8 @@ class Grid:
             n_connection += len(connection_links[connection_links["to_node"] == pole_idx].index)
             self.nodes.loc[pole_idx, "n_connection_links"] = n_connection
         self.nodes.loc[self.nodes["node_type"] == 'consumer', 'n_connection_links'] = 1
-        self.nodes['n_distribution_links'] = self.nodes['n_distribution_links'].astype(int)
-        self.nodes['n_connection_links'] = self.nodes['n_connection_links'].astype(int)
+        self.nodes['n_distribution_links'] = self.nodes['n_distribution_links'].fillna(0).astype(int)
+        self.nodes['n_connection_links'] = self.nodes['n_connection_links'].fillna(0).astype(int)
 
     def allocate_poles_to_branches(self):
         poles = self.poles().copy()
@@ -860,9 +856,9 @@ class Grid:
 
     def connection_cost_per_consumer(self):
         links = self.get_links()
-        consumers = self.nodes[(self.nodes['node_type'] == 'consumer') &
+        grid_consumers = self.nodes[(self.nodes['node_type'] == 'consumer') &
                                (self.nodes['is_connected'] == True)].index
-        for consumer in consumers:
+        for consumer in grid_consumers:
             parent_pole = self.nodes[self.nodes.index == consumer]['parent'].iat[0]
             length = min(links[(links['from_node'] == consumer) & (links['to_node'] == parent_pole)]['length'].iat[0],
                          3)
@@ -906,6 +902,7 @@ class Grid:
         self.nodes.loc[self.nodes[self.nodes['is_connected'] == True].index, 'total_grid_cost_per_consumer_per_a'] \
             = self.nodes['connection_cost_per_consumer']
         leaf_branches = self.nodes[self.nodes['n_distribution_links'] == 1]['branch'].unique()
+        next_branch = False
         for branch in self.nodes['branch'].unique():
 
             if branch is not None:
@@ -913,7 +910,10 @@ class Grid:
                     poles_of_branch = self.nodes[self.nodes['branch'] == branch]
                     next_pole = poles_of_branch[poles_of_branch['n_distribution_links'] == 1]
                     consumers_down_the_line = []
+                    next_branch = False
                     for _ in range(len(poles_of_branch)):
+                        if next_branch:
+                            break
                         consumers_of_pole = poles_of_branch[(poles_of_branch['node_type'] == 'consumer') &
                                                             (poles_of_branch['is_connected'] == True) &
                                                             (poles_of_branch['parent'] == next_pole.index[0])]
@@ -927,7 +927,10 @@ class Grid:
                             self.nodes.loc[consumer, 'total_grid_cost_per_consumer_per_a'] += \
                                 cost_of_pole * self.nodes.loc[consumer, 'yearly_consumption'] / total_consumption
                         next_pole = self.nodes[self.nodes.index == next_pole['parent'].iat[0]]
-                        if self.nodes[self.nodes.index == next_pole.index[0]]['branch'].iat[0] != branch:
+                        if next_pole.index.__len__() == 0:
+                            next_branch = True
+                            break
+                        elif self.nodes[self.nodes.index == next_pole.index[0]]['branch'].iat[0]  != branch:
                             break
                 else:
                     continue
@@ -963,8 +966,11 @@ class Grid:
         marginal_cost_of_pole = (cost_of_pole + connection_cost_consumers) / total_consumption
         return marginal_cost_of_pole
 
+
     def cut_leaf_poles_on_condition(self):
         exclude_lst = [self.nodes[self.nodes['node_type'] == 'power-house'].index[0]]
+        for pole in self.nodes[self.nodes['shs_options'] == 1]['parent'].unique():
+            exclude_lst.append(pole)
         for _ in range(100):
             counter = 0
             leaf_poles = self.nodes[self.nodes['n_distribution_links'] == 1].index

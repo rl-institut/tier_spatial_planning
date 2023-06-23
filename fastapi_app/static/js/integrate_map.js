@@ -210,10 +210,13 @@ map.addControl(new zoomAllControl());
 // Replace it with your own logic for getting the page name
 var pageName = window.location.pathname;
 
-var description = ["Power House", "Consumer", "Pole", "SHS", "Distribution", "Connection"];
+var description = ["Power House", "Household", "Enterprise", "Public Service", "Pole", "Solar Home System", "Distribution",
+    "Connection"];
 var image = [
   "fastapi_app/static/assets/icons/i_power_house.svg",
   "fastapi_app/static/assets/icons/i_consumer.svg",
+  "fastapi_app/static/assets/icons/i_enterprise.svg",
+  "fastapi_app/static/assets/icons/i_public_service.svg",
   "fastapi_app/static/assets/icons/i_pole.svg",
   "fastapi_app/static/assets/icons/i_shs.svg",
   "fastapi_app/static/assets/icons/i_distribution.svg",
@@ -222,7 +225,7 @@ var image = [
 
 // If the pageName matches the 'results' page, adjust the description and image arrays.
 if (pageName !== "/simulation_results") {
-  description = ["Consumer", "Enterprise", "Public Service", "SHS"];
+  description = ["Household", "Enterprise", "Public Service", "Solar Home System"];
   image = [
     "fastapi_app/static/assets/icons/i_consumer.svg",
     "fastapi_app/static/assets/icons/i_enterprise.svg",

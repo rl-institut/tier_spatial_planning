@@ -118,9 +118,7 @@ class GridOptimizer(Optimizer):
         # create links between each node and the corresponding centroid
         for cluster in range(n_clusters):
             # first filter the nodes and only select those with cluster labels equal to 'cluster'
-            filtered_nodes = grid.nodes[
-                grid.nodes["cluster_label"] == cluster_labels[cluster]
-            ]
+            filtered_nodes = grid.nodes[grid.nodes["cluster_label"] == cluster_labels[cluster]]
 
             # then obtain the label of the pole which is in this cluster (as the center)
             pole_label = filtered_nodes.index[filtered_nodes["node_type"] == "pole"][0]
@@ -128,11 +126,9 @@ class GridOptimizer(Optimizer):
             for node_label in filtered_nodes.index:
                 # adding consumers
                 if node_label != pole_label:
-                    grid.add_links(label_node_from=pole_label, label_node_to=node_label)
-                    if grid.nodes.loc[node_label, "shs_options"] != 2:
-                        grid.nodes.loc[node_label, "parent"] = pole_label
-                    else:
-                        grid.nodes.loc[node_label, "is_connected"] = False
+                    if grid.nodes.loc[node_label, "is_connected"]:
+                        grid.add_links(label_node_from=str(pole_label), label_node_to=str(node_label))
+                        grid.nodes.loc[node_label, "parent"] = str(pole_label)
 
     def connect_grid_poles(self, grid: Grid, long_links=[]):
         """
@@ -407,10 +403,11 @@ class GridOptimizer(Optimizer):
 
         # first, all poles must be removed from the nodes list
         grid.clear_poles()
+        grid_consumers = grid.get_grid_consumers()
 
         # gets (x,y) coordinates of all nodes in the grid
-        nodes_coord = np.array([[grid.nodes.x.loc[index], grid.nodes.y.loc[index]]
-                                for index in grid.nodes.index if grid.nodes.is_connected.loc[index] == True])
+        nodes_coord = np.array([[grid_consumers.x.loc[index], grid_consumers.y.loc[index]]
+                                for index in grid_consumers.index if grid_consumers.is_connected.loc[index] == True])
 
         # features, true_labels = make_blobs(
         #    n_samples=200,
@@ -437,7 +434,7 @@ class GridOptimizer(Optimizer):
         kmeans.fit(nodes_coord)
 
         # coordinates of the centroids of the clusters
-        grid.nodes["cluster_label"] = kmeans.predict(nodes_coord)
+        grid_consumers["cluster_label"] = kmeans.predict(nodes_coord)
         poles = pd.DataFrame(kmeans.cluster_centers_, columns=["x", "y"])
         poles.index.name = 'cluster_label'
         poles = poles.reset_index(drop=False)
@@ -455,7 +452,7 @@ class GridOptimizer(Optimizer):
         poles['n_distribution_links'] = 0
         poles['parent'] = "unknown"
         poles['distribution_cost'] = 0
-        grid.nodes = pd.concat([grid.nodes, poles], axis=0)
+        grid.nodes = pd.concat([grid_consumers, poles, grid.get_shs_consumers()], axis=0)
 
         # compute (lon,lat) coordinates for the poles
         grid.convert_lonlat_xy(inverse=True)
