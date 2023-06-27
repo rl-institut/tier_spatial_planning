@@ -381,7 +381,11 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
                  'is_connected',
                  'shs_options']]
         if markers_only is True:
-            df = df[df['node_type'].isin(['power-house', 'consumer'])]
+            power_house = df[df['node_type'] == 'power-house']
+            if power_house['how_added'].iat[0] == 'manual':
+                df = df[df['node_type'].isin(['power-house', 'consumer'])]
+            else:
+                df = df[df['node_type'] == 'consumer']
         df['latitude'] = df['latitude'].astype(float)
         df['longitude'] = df['longitude'].astype(float)
         df['shs_options'] = df['shs_options'].fillna(0)
