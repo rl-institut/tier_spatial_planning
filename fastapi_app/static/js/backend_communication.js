@@ -91,7 +91,6 @@ function add_buildings_inside_boundary({ boundariesCoordinates } = {}) {
     });
 }
 
-
 function remove_buildings_inside_boundary(
     {   boundariesCoordinates } = {},) {
     $("*").css("cursor", "wait");
@@ -208,19 +207,6 @@ function save_energy_system_design() {
     );
 }
 
-
-
-// TODO: start date, interest rate, lifetime and wacc that come from another page are not recognized. 
-// Either global parameters must be defined or something else.
-function optimize_grid(project_id) {
-    $.ajax({
-        url: "optimize_grid/" + project_id,
-        type: "POST",
-        contentType: "application/json",
-    });
-
-    // window.open("{{ url_for('simulation_results')}}");
-}
 
 async function load_results(project_id) {
     var xhr = new XMLHttpRequest();
@@ -503,7 +489,6 @@ function save_project_setup(project_id) {
 
 
 function save_grid_design() {
-    let allowshs = document.getElementById("selectShs").checked;
     fetch("save_grid_design/", {
         method: "POST",
         headers: {
@@ -521,13 +506,7 @@ function save_grid_design() {
                 'pole_capex': poleCapex.value,
                 'pole_max_n_connections': poleMaxNumberOfConnections.value,
                 'mg_connection_cost': mgConnectionCost.value,
-                'allow_shs': allowshs,
-                'shs_lifetime': shsLifetime.value,
-                'shs_tier_one_capex': shsTierOneCapex.value,
-                'shs_tier_two_capex': shsTierTwoCapex.value,
-                'shs_tier_three_capex': shsTierThreeCapex.value,
-                'shs_tier_four_capex': shsTierFourCapex.value,
-                'shs_tier_five_capex': shsTierFiveCapex.value,
+                'shs_max_grid_cost': shs_max_grid_cost.value,
             }
         })
     }).then(response => response.json());
@@ -591,15 +570,8 @@ function load_previous_data(page_name){
                     document.getElementById("poleCapex").value = results['pole_capex'];
                     document.getElementById("poleMaxNumberOfConnections").value = results['pole_max_n_connections'];
                     document.getElementById("mgConnectionCost").value = results['mg_connection_cost'];
-                    document.getElementById("selectShs").checked = results['allow_shs'];
-                    document.getElementById("shsLifetime").value = results['shs_lifetime'];
-                    document.getElementById("shsTierOneCapex").value = results['shs_tier_one_capex'];
-                    document.getElementById("shsTierTwoCapex").value = results['shs_tier_two_capex'];
-                    document.getElementById("shsTierThreeCapex").value = results['shs_tier_three_capex'];
-                    document.getElementById("shsTierFourCapex").value = results['shs_tier_four_capex'];
-                    document.getElementById("shsTierFiveCapex").value = results['shs_tier_five_capex'];
+                    document.getElementById("shs_max_grid_cost").value = results['shs_max_grid_cost'];
                 }
-                boxVisibilityShs();
             }
         };
     } else if (page_name.includes("demand_estimation")) {

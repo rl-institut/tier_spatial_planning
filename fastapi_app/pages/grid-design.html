@@ -39,7 +39,7 @@
                     </div>
                     <div class="row">
                       <div class="input-group">
-                        <span class="input-group-text">CAPEX</span>
+                        <span class="input-group-text">CapEx</span>
                         <input
                           type="number"
                           onchange="this.value = Math.max(0, Math.min(100, parseFloat(this.value))).toFixed(1);"
@@ -89,7 +89,7 @@
                     </div>
                     <div class="row">
                       <div class="input-group">
-                        <span class="input-group-text">CAPEX</span>
+                        <span class="input-group-text">CapEx</span>
                         <input
                           type="number"
                           onchange="this.value = Math.max(0, Math.min(100, parseFloat(this.value))).toFixed(1);"
@@ -140,7 +140,7 @@
                     </div>
                     <div class="row">
                       <div class="input-group">
-                        <span class="input-group-text">CAPEX</span>
+                        <span class="input-group-text">CapEx</span>
                         <input
                           type="number"
                           onchange="this.value = Math.max(0, Math.min(3000, parseFloat(this.value))).toFixed(1);"
@@ -194,159 +194,27 @@
               </div>
             </div>
             <div class="col-md-4">
-              <div id="selectShsBox" class="box box--medium box--not-selected">
+              <div id="selectShsBox" class="box box--tiny">
                 <div class="box__header">
-                  <form class="was-validated">
-                    <div class="form-check">
-                      <input
-                        type="checkbox"
-                        class="form-check-input"
-                        id="selectShs"
-                        required
-                        onclick="boxVisibilityShs()"
-                      />
-                      <label class="form-check-label" for="selectShs"
-                        >Solar Home System</label
-                      >
-                    </div>
-                  </form>
+                    <span class="grid-title">Solar Home System</span>
                 </div>
                 <div class="row">
                   <div class="input-group">
                     <span id="lblShsLifetime" class="input-group-text"
-                      >Lifetime</span
+                      >Max. Specific Grid Cost</span
                     >
                     <input
                       type="number"
-                      onchange="this.value = Math.max(0, Math.min(35, parseInt(this.value)));"
+                      onchange="this.value = Math.max(0, Math.min(2, parseFloat(this.value))).toFixed(2);"
                       class="form-control"
-                      id="shsLifetime"
-                      value="10"
+                      id="shs_max_grid_cost"
+                      step="0.01"
+                      value="0.2"
                       required
                     />
                     <span id="shsLifetimeUnit" class="input-group-text"
-                      >Years</span
+                      >USD/kWh</span
                     >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
-                    <span id="lblShsTierOneCapex" class="input-group-text"
-                      >Tier One</span
-                    >
-                    <input
-                      type="number"
-                      onchange="this.value = Math.max(0, Math.min(1500, parseInt(this.value)));"
-                      class="form-control"
-                      id="shsTierOneCapex"
-                      value="100"
-                      required
-                    />
-                    <span id="shsTierOneCapexUnit" class="input-group-text"
-                      >USD</span
-                    >
-                    <span
-                      id="icnShsTierOneTooltip"
-                      class="icon icon-question"
-                      data-bs-toggle="tooltip"
-                      title="List of assets in this tier level (to be updated)"
-                    ></span>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
-                    <span id="lblShsTierTwoCapex" class="input-group-text"
-                      >Tier Two</span
-                    >
-                    <input
-                      type="number"
-                      onchange="this.value = Math.max(0, Math.min(1500, parseInt(this.value)));"
-                      class="form-control"
-                      id="shsTierTwoCapex"
-                      value="350"
-                      required
-                    />
-                    <span id="shsTierTwoCapexUnit" class="input-group-text"
-                      >USD</span
-                    >
-                    <span
-                      id="icnShsTierTwoTooltip"
-                      class="icon icon-question"
-                      data-bs-toggle="tooltip"
-                      title="List of assets in this tier level (to be updated)"
-                    ></span>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
-                    <span id="lblShsTierThreeCapex" class="input-group-text"
-                      >Tier Three</span
-                    >
-                    <input
-                      type="number"
-                      onchange="this.value = Math.max(0, Math.min(1500, parseInt(this.value)));"
-                      class="form-control"
-                      id="shsTierThreeCapex"
-                      value="600"
-                      required
-                    />
-                    <span id="shsTierThreeCapexUnit" class="input-group-text"
-                      >USD</span
-                    >
-                    <span
-                      id="icnShsTierThreeTooltip"
-                      class="icon icon-question"
-                      data-bs-toggle="tooltip"
-                      title="List of assets in this tier level (to be updated)"
-                    ></span>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
-                    <span id="lblShsTierFourCapex" class="input-group-text"
-                      >Tier Four</span
-                    >
-                    <input
-                      type="number"
-                      onchange="this.value = Math.max(0, Math.min(400, parseFloat(this.value))).toFixed(1);"
-                      class="form-control"
-                      id="shsTierFourCapex"
-                      value="20"
-                      required
-                    />
-                    <span id="shsTierFourCapexUnit" class="input-group-text"
-                      >c/kWh</span
-                    >
-                    <span
-                      id="icnShsTierFourTooltip"
-                      class="icon icon-question"
-                      data-bs-toggle="tooltip"
-                      title="List of assets in this tier level (to be updated)"
-                    ></span>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
-                    <span id="lblShsTierFiveCapex" class="input-group-text"
-                      >Tier Five</span
-                    >
-                    <input
-                      type="number"
-                      onchange="this.value = Math.max(0, Math.min(100, parseFloat(this.value))).toFixed(1);"
-                      class="form-control"
-                      id="shsTierFiveCapex"
-                      value="30"
-                      required
-                    />
-                    <span id="shsTierFiveCapexUnit" class="input-group-text"
-                      >c/kWh</span
-                    >
-                    <span
-                      id="icnShsTierFiveTooltip"
-                      class="icon icon-question"
-                      data-bs-toggle="tooltip"
-                      title="List of assets in this tier level (to be updated)"
-                    ></span>
                   </div>
                 </div>
               </div>

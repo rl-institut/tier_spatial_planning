@@ -717,7 +717,6 @@ async def save_grid_design(request: Request, data: fastapi_app.io.schema.SaveGri
     data.grid_design['id'] = user.id
     data.grid_design['project_id'] = project_id
     grid_design = models.GridDesign(**data.grid_design)
-    grid_design.allow_shs = ast.literal_eval(grid_design.allow_shs)
     await inserts.merge_model(grid_design)
 
 
@@ -1230,39 +1229,13 @@ def optimize_grid(user_id, project_id):
         # the total number of required SHS tier 1 to 3.
         n_consumers = nodes[nodes["node_type"] == "consumer"].shape[0]
 
-        epc_shs = (
-                (
-                        opt.crf
-                        * (
-                            Optimizer.capex_multi_investment(
-                                opt,
-                                capex_0=(
-                                                pdf_shs[0] * df.loc[0, "shs_tier_one_capex"]
-                                                + pdf_shs[1] * df.loc[0, "shs_tier_two_capex"]
-                                                + pdf_shs[2] * df.loc[0, "shs_tier_three_capex"]
-                                        )
-                                        * n_consumers
-                                        + (
-                                                pdf_shs[3] * df.loc[0, "shs_tier_four_capex"]
-                                                + pdf_shs[4] * df.loc[0, "shs_tier_five_capex"]
-                                        )
-                                        * average_consumption_selected_period
-                                        / 100,
-                                component_lifetime=df.loc[0, "shs_lifetime"],
-                            )
-                        )
-                )
-                * opt.n_days
-                / 365
-        )
-
         grid = Grid(
             epc_distribution_cable=epc_distribution_cable,
             epc_connection_cable=epc_connection_cable,
             epc_connection=epc_connection,
             epc_pole=epc_pole,
             pole_max_connection=df.loc[0, "pole_max_n_connections"],
-        )
+            max_levelized_grid_cost=df.loc[0, "shs_max_grid_cost"])
 
         # make sure that the new grid object is empty before adding nodes to it
         grid.clear_nodes()
@@ -1344,7 +1317,7 @@ def optimize_grid(user_id, project_id):
         # Calculate the cost of SHS.
         # ToDo: peak demand does not exists anymore
         peak_demand_shs_consumers = 1 # grid.nodes[grid.nodes["is_connected"] == False].loc[:, "peak_demand"]
-        cost_shs = epc_shs * 0 #peak_demand_shs_consumers.sum()
+        cost_shs =  0 #peak_demand_shs_consumers.sum()
 
         # get all poles obtained by the network relaxation method
         nodes = grid.nodes.reset_index(drop=True)
