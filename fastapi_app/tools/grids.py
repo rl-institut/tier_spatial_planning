@@ -1000,7 +1000,7 @@ class Grid:
                 next_pole = self.nodes[self.nodes.index == next_pole]['parent'].iat[0]
             else:
                 break
-        marginal_cost_of_pole = (cost_of_pole + connection_cost_consumers) / total_consumption
+        marginal_cost_of_pole = (cost_of_pole + connection_cost_consumers) / (total_consumption + 0.0000001)
         return marginal_cost_of_pole
 
 
@@ -1021,7 +1021,7 @@ class Grid:
                 average_marginal_cost_of_pole = self.marginal_cost_per_consumer(pole, consumer_of_pole)
                 self.determine_costs_per_branch(branch)
                 average_marginal_branch_cost_of_pole = self.nodes.loc[consumer_of_branch, 'cost_per_branch'].iat[0] \
-                                                       / self.nodes.loc[consumer_of_branch, 'yearly_consumption'].sum()
+                       / (self.nodes.loc[consumer_of_branch, 'yearly_consumption'].sum() + 1e-9)
                 if average_marginal_cost_of_pole > self.max_levelized_grid_cost:
                     self._cut_specific_pole(pole)
                     counter += 1

@@ -1475,8 +1475,12 @@ def optimize_energy_system(user_id, project_id):
         df.loc[0, "pv_to_dc_bus"] = ensys_opt.sequences_pv.sum() / 1000
         df.loc[0, "battery_to_dc_bus"] = ensys_opt.sequences_battery_discharge.sum() / 1000
         df.loc[0, "dc_bus_to_battery"] = ensys_opt.sequences_battery_charge.sum() / 1000
+        if ensys_opt.inverter["parameters"]["efficiency"] > 0:
+            div = ensys_opt.inverter["parameters"]["efficiency"]
+        else:
+            div = 1
         df.loc[0, "dc_bus_to_inverter"] = (ensys_opt.sequences_inverter.sum() /
-                                           ensys_opt.inverter["parameters"]["efficiency"] / 1000)
+                                           div / 1000)
         df.loc[0, "dc_bus_to_surplus"] = ensys_opt.sequences_surplus.sum() / 1000
         df.loc[0, "inverter_to_demand"] = ensys_opt.sequences_inverter.sum() / 1000
         df.loc[0, "time_energy_system_design"] = end_execution_time - start_execution_time
@@ -1514,8 +1518,12 @@ def optimize_energy_system(user_id, project_id):
                                         / ensys_opt.sequences_genset.max())
         df["pv_percentage"] = (100 * np.arange(1, len(ensys_opt.sequences_pv) + 1)
                                / len(ensys_opt.sequences_pv))
+        if ensys_opt.sequences_pv.max() > 0:
+            div = ensys_opt.sequences_pv.max()
+        else:
+            div = 1
         df["pv_duration"] = (
-                100 * np.sort(ensys_opt.sequences_pv)[::-1] / ensys_opt.sequences_pv.max())
+                100 * np.sort(ensys_opt.sequences_pv)[::-1] / div)
         df["rectifier_percentage"] = (100 * np.arange(1, len(ensys_opt.sequences_rectifier) + 1)
                                       / len(ensys_opt.sequences_rectifier))
         if not ensys_opt.sequences_rectifier.abs().sum() == 0:
@@ -1525,16 +1533,27 @@ def optimize_energy_system(user_id, project_id):
             df["rectifier_duration"] = 0
         df["inverter_percentage"] = (100 * np.arange(1, len(ensys_opt.sequences_inverter) + 1)
                                      / len(ensys_opt.sequences_inverter))
+        if ensys_opt.sequences_inverter.max() > 0:
+            div = ensys_opt.sequences_inverter.max()
+        else:
+            div = 1
         df["inverter_duration"] = (100 * np.sort(ensys_opt.sequences_inverter)[::-1]
-                                   / ensys_opt.sequences_inverter.max())
+                                   / div)
         df["battery_charge_percentage"] = (100 * np.arange(1, len(ensys_opt.sequences_battery_charge) + 1)
                                            / len(ensys_opt.sequences_battery_charge))
-        df["battery_charge_duration"] = (100 * np.sort(ensys_opt.sequences_battery_charge)[::-1]
-                                         / ensys_opt.sequences_battery_charge.max())
+        if not ensys_opt.sequences_battery_charge.max() > 0:
+            div = 1
+        else:
+            div = ensys_opt.sequences_battery_charge.max()
+        df["battery_charge_duration"] = (100 * np.sort(ensys_opt.sequences_battery_charge)[::-1] / div)
         df["battery_discharge_percentage"] = (100 * np.arange(1, len(ensys_opt.sequences_battery_discharge) + 1)
                                               / len(ensys_opt.sequences_battery_discharge))
+        if ensys_opt.sequences_battery_discharge.max() > 0:
+            div = ensys_opt.sequences_battery_discharge.max()
+        else:
+            div = 1
         df["battery_discharge_duration"] = (100 * np.sort(ensys_opt.sequences_battery_discharge)[::-1]
-                                            / ensys_opt.sequences_battery_discharge.max())
+                                            / div)
         df['h'] = np.arange(1, len(ensys_opt.sequences_genset) + 1)
         df = df.round(3)
         sync_inserts.insert_df(models.DurationCurve, df, user_id, project_id)
