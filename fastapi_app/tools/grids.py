@@ -1,4 +1,5 @@
 import copy
+import math
 from operator import inv, length_hint
 from turtle import distance
 import numpy as np
@@ -184,41 +185,42 @@ class Grid:
         at the load centroid of the village.
         """
         grid_consumers = self.nodes[self.nodes["is_connected"] == True]
-        x_centroid = np.average(grid_consumers["x"])
-        y_centroid = np.average(grid_consumers["y"])
-        self.load_centroid = [x_centroid, y_centroid]
+        lat = np.average(grid_consumers["latitude"])
+        lon = np.average(grid_consumers["longitude"])
+        self.load_centroid = [lat, lon]
 
-    def get_nodes_distances_from_load_centroid(self):
-        """
-        This function calculates all distances between the nodes and the load
-        centroid of the settlement.
-        """
-        for node_index in self.nodes.index:
-            x_node = self.nodes.x.loc[node_index]
-            y_node = self.nodes.y.loc[node_index]
+    def haversine_distance(self, lat1, lon1, lat2, lon2):
+        R = 6371.0 * 1000
 
-            distance = np.sqrt(
-                (x_node - self.load_centroid[0]) ** 2
-                + (y_node - self.load_centroid[1]) ** 2
-            )
+        # Convert degrees to radians
+        lat1_rad = math.radians(lat1)
+        lon1_rad = math.radians(lon1)
+        lat2_rad = math.radians(lat2)
+        lon2_rad = math.radians(lon2)
 
-            self.nodes.distance_to_load_center.loc[node_index] = distance
+        # Differences
+        dlon = lon2_rad - lon1_rad
+        dlat = lat2_rad - lat1_rad
+
+        # Haversine formula
+        a = math.sin(dlat / 2) ** 2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2) ** 2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+        # Distance
+        distance = R * c
+        return distance
 
     def get_poles_distances_from_load_centroid(self):
         """
         This function calculates all distances between the poles and the load
         centroid of the settlement.
         """
+        self.get_load_centroid()
+        lat2, lon2 = self.load_centroid
         for pole_index in self.poles().index:
-            x_pole = self.poles().x.loc[pole_index]
-            y_node = self.poles().y.loc[pole_index]
-
-            distance = np.sqrt(
-                (x_pole - self.load_centroid[0]) ** 2
-                + (y_node - self.load_centroid[1]) ** 2
-            )
-
-            self.nodes.distance_to_load_center.loc[pole_index] = distance
+            lat1 = self.nodes.latitude.loc[pole_index]
+            lon1 = self.nodes.longitude.loc[pole_index]
+            self.nodes.distance_to_load_center.loc[pole_index] = self.haversine_distance(lat1, lon1, lat2, lon2)
 
     def select_location_of_power_house(self):
         """
@@ -230,13 +232,12 @@ class Grid:
         pole is longer than the maximum allowed distance for distribution links,
         some more poles will be placed on it.
         """
+        self.get_poles_distances_from_load_centroid()
         poles_with_consumers = self.poles()
         poles_with_consumers = poles_with_consumers[poles_with_consumers["n_connection_links"] > 0]
         min_distance_nearest_pole = poles_with_consumers["distance_to_load_center"].min()
-        nearest_pole = self.poles()[
-            self.poles()["distance_to_load_center"] == min_distance_nearest_pole
-        ]
-
+        nearest_pole = self.poles()[self.poles()["distance_to_load_center"] == min_distance_nearest_pole]
+        self.nodes.loc[self.nodes["node_type"] == 'power-house', 'node_type'] = "pole"
         self.nodes.loc[nearest_pole.index, "node_type"] = "power-house"
 
     def connect_power_house_consumer_manually(self, max_length):
@@ -648,12 +649,13 @@ class Grid:
                 self.nodes.at[node_index, "y"] = y
 
             # store reference values for (x,y) to use later when converting (x,y) to (lon,lat)
-            self.ref_node[0] = min(self.nodes.x)
-            self.ref_node[1] = min(self.nodes.y)
+            if self.ref_node[0] != 0 and self.ref_node[1]!= 0:
+                self.ref_node[0] = min(self.nodes.x)
+                self.ref_node[1] = min(self.nodes.y)
 
-            # change absolute (x,y) to relative (x,y) to make them smaller and more readable
-            self.nodes.x -= self.ref_node[0]
-            self.nodes.y -= self.ref_node[1]
+                # change absolute (x,y) to relative (x,y) to make them smaller and more readable
+                self.nodes.x -= self.ref_node[0]
+                self.nodes.y -= self.ref_node[1]
 
     # -------------------- COSTS ------------------------ #
 

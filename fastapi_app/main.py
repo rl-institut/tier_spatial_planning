@@ -1,3 +1,4 @@
+import copy
 import uuid
 import ast
 import asyncio
@@ -1144,6 +1145,8 @@ def optimize_grid(user_id, project_id):
         if power_house.index.__len__() > 0 and power_house['how_added'].iat[0] != 'manual':
             nodes = nodes.drop(index=power_house.index)
             power_house = None
+        elif power_house.index.__len__() == 0:
+            power_house = None
         if len(nodes) == 0:
             return {"code": "success", "message": "Empty grid cannot be optimized!"}
 
@@ -1277,11 +1280,6 @@ def optimize_grid(user_id, project_id):
         # new locations for poles considering the newly added nodes
         grid.clear_poles()
 
-        # Find the location of the power house which corresponds to the centroid
-        # load of the village
-        grid.get_load_centroid()
-
-
         # Find the number of SHS consumers (temporarily)
         n_total_consumers = grid.nodes.index.__len__()
         n_shs_consumers = nodes[nodes["is_connected"] == False].index.__len__()
@@ -1321,26 +1319,27 @@ def optimize_grid(user_id, project_id):
 
         # Find the location of the power house.
         grid.add_number_of_distribution_and_connection_cables()
-        if power_house is None:
-            grid.get_poles_distances_from_load_centroid()
-            grid.select_location_of_power_house()
-        grid.set_direction_of_links()
-        grid.allocate_poles_to_branches()
-        grid.allocate_subbranches_to_branches()
-        grid.label_branch_of_consumers()
-        grid.determine_cost_per_pole()
-        grid.connection_cost_per_consumer()
-        grid.determine_costs_per_branch()
-        # ToDo: demand of each consumer should be calculated here.
-        consumer_idxs = grid.nodes[grid.nodes['node_type'] == 'consumer'].index
-        grid.nodes.loc[consumer_idxs, 'yearly_consumption'] = demand_selected_period.sum() / len(consumer_idxs)
-        grid.determine_shs_consumers()
-        grid.get_poles_distances_from_load_centroid()
-        if power_house is None:
-            grid.select_location_of_power_house()
+        iter = 2 if power_house is None else 1
+        for i in range(iter):
+            if power_house is None and i == 0:
+                grid.select_location_of_power_house()
             grid.set_direction_of_links()
-
-
+            grid.allocate_poles_to_branches()
+            grid.allocate_subbranches_to_branches()
+            grid.label_branch_of_consumers()
+            grid.determine_cost_per_pole()
+            grid.connection_cost_per_consumer()
+            grid.determine_costs_per_branch()
+            # ToDo: demand of each consumer should be calculated here.
+            consumer_idxs = grid.nodes[grid.nodes['node_type'] == 'consumer'].index
+            grid.nodes.loc[consumer_idxs, 'yearly_consumption'] = demand_selected_period.sum() / len(consumer_idxs)
+            grid.determine_shs_consumers()
+            if power_house is None:
+                old_power_house = grid.nodes[grid.nodes["node_type"] == 'power-house'].index[0]
+                grid.select_location_of_power_house()
+                new_power_house = grid.nodes[grid.nodes["node_type"] == 'power-house'].index[0]
+                if old_power_house == new_power_house:
+                    break
 
         # Calculate the cost of SHS.
         # ToDo: peak demand does not exists anymore
