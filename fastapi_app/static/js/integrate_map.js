@@ -87,6 +87,8 @@ function drawMarker(latitude, longitude, type) {
     icon_type = markerPole;
   } else if (type === "shs") {
     icon_type = markerShs;
+  } else if (type === "power-house") {
+    icon_type = markerPowerHouse;
   }
     L.marker([latitude, longitude], { icon: icon_type }).on('click', markerOnClick).addTo(map)
 }
@@ -117,7 +119,9 @@ function put_markers_on_map(array, markers_only) {
             else if (array[counter]["consumer_type"] === "household") {selected_icon= markerConsumer;}
             else if (array[counter]["consumer_type"] === "enterprise") {selected_icon= markerEnterprise;}
             else if (array[counter]["consumer_type"] === "public_service") {selected_icon= markerPublicservice;}
-        }}
+        }
+        else {selected_icon= markerPowerHouse;}
+    }
     else {
         if (array[counter]["node_type"] === "consumer") {
             if (array[counter]["is_connected"] === false) {selected_icon= markerShs;}
@@ -225,8 +229,9 @@ var image = [
 
 // If the pageName matches the 'results' page, adjust the description and image arrays.
 if (pageName !== "/simulation_results") {
-  description = ["Household", "Enterprise", "Public Service", "Solar Home System"];
+  description = ["Power House", "Household", "Enterprise", "Public Service", "Solar Home System"];
   image = [
+    "fastapi_app/static/assets/icons/i_power_house.svg",
     "fastapi_app/static/assets/icons/i_consumer.svg",
     "fastapi_app/static/assets/icons/i_enterprise.svg",
     "fastapi_app/static/assets/icons/i_public_service.svg",

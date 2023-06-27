@@ -8,6 +8,7 @@ from fastapi_app.tools.grids import Grid
 import oemof.solph as solph
 from datetime import datetime, timedelta
 import pyomo.environ as po
+from pyproj import Proj
 from fastapi_app.io.db import sync_queries, queries_demand, models
 
 
@@ -117,6 +118,10 @@ class GridOptimizer(Optimizer):
 
         # create links between each node and the corresponding centroid
         for cluster in range(n_clusters):
+
+            if grid.nodes[grid.nodes["cluster_label"] == cluster].index.__len__() == 1:
+                continue
+
             # first filter the nodes and only select those with cluster labels equal to 'cluster'
             filtered_nodes = grid.nodes[grid.nodes["cluster_label"] == cluster_labels[cluster]]
 
@@ -458,7 +463,7 @@ class GridOptimizer(Optimizer):
         grid.convert_lonlat_xy(inverse=True)
 
 
-    def determine_poles(self, grid: Grid, min_n_clusters: int):
+    def determine_poles(self, grid: Grid, min_n_clusters, power_house_consumers, power_house):
         """
         Computes the cost of grid based on the configuration obtained from
         the k-means clustering algorithm for different numbers of poles, and
@@ -481,16 +486,24 @@ class GridOptimizer(Optimizer):
         # obtain the location of poles using kmeans clustering method
         self.kmeans_clustering(grid=grid, n_clusters=min_n_clusters)
         # create the minimum spanning tree to obtain the optimal links between poles
+        if power_house is not None:
+            cluster_label = grid.nodes.loc['100000', 'cluster_label']
+            power_house_idx = grid.nodes[(grid.nodes["node_type"] == "pole") &
+                                         (grid.nodes["cluster_label"] == cluster_label)].index
+            power_house_consumers['cluster_label'] = cluster_label
+            power_house_consumers['consumer_type'] = np.nan
+            grid.nodes = pd.concat([grid.nodes, power_house_consumers],)
+            grid.placeholder_consumers_for_power_house(remove=True)
+
         self.create_minimum_spanning_tree(grid)
 
         # connect all links in the grid based on the previous calculations
         self.connect_grid_consumers(grid)
         self.connect_grid_poles(grid)
+        if power_house is not None:
+            grid.nodes.loc[grid.nodes.index == power_house_idx[0], "node_type"] = 'power-house'
+            grid.nodes.loc[grid.nodes.index == power_house_idx[0], "how_added"] = 'manual'
 
-        # after the kmeans clustering algorithm, the  number of poles is obtained
-        number_of_poles = grid.poles().shape[0]
-
-        return number_of_poles
 
     def find_opt_number_of_poles(self, grid, connection_cable_max_length, n_mg_consumers):
         # calculate the minimum number of poles based on the

@@ -1,15 +1,20 @@
 let consumer_list = {
-    'H': 'Houshold',
+    'H': 'Household',
     'E': 'Enterprise',
-    'P': 'Public Service'};
+    'P': 'Public Service',
+    'G': 'Power-House' // Add the new element
+};
 let consumer_type = "H";
+
 (function () {
-    let option_consumer =  '';
-    for(let consumer_code in consumer_list){
+    let option_consumer = '';
+    for (let consumer_code in consumer_list) {
         let selected = (consumer_code == consumer_type) ? ' selected' : '';
-        option_consumer += '<option value="'+consumer_code+'"'+selected+'>'+consumer_list[consumer_code]+'</option>';}
+        option_consumer += '<option value="' + consumer_code + '"' + selected + '>' + consumer_list[consumer_code] + '</option>';
+    }
     document.getElementById('consumer').innerHTML = option_consumer;
 })();
+
 
 let public_service_list = {
 'group1' : 'Public Health Centre',
@@ -88,7 +93,7 @@ document.getElementById('loads').value = "";
 document.getElementById('number_loads').disabled = true;
 
 document.getElementById('consumer').addEventListener('change', function() {
-    if (this.value === 'H') {
+    if (this.value === 'H' || this.value === 'G') {
         document.getElementById('enterprise').value = '';
         document.getElementById('enterprise').disabled = true;
         deactivate_large_loads();
@@ -109,7 +114,7 @@ document.getElementById('enterprise').disabled = true;
 document.getElementById('consumer').disabled = true;
 document.getElementById('enterprise').value = '';
 document.getElementById('consumer').value = '';
-document.getElementById('shs_options').disabled = true; true;
+document.getElementById('shs_options').disabled = true;
 document.getElementById('shs_options').value = '';
 
 
@@ -168,6 +173,12 @@ function markerOnClick(e){
             dropDownMenu(public_service_list);
             deactivate_large_loads()
 
+        }
+        else if (marker.consumer_type === 'power-house') {
+           document.getElementById('consumer').value = 'G';
+           document.getElementById('enterprise').disabled = true;
+           document.getElementById('enterprise').value = '';
+           deactivate_large_loads();
         }
         if (marker.shs_options == 0) {document.getElementById('shs_options').value = 'optimize';}
         else if (marker.shs_options == 1) {document.getElementById('shs_options').value = 'grid';}
@@ -231,6 +242,11 @@ function update_map_elements(){
                 marker.consumer_detail = enterprise_list[key];
                 selected_icon = markerEnterprise;
                 break;
+            case 'G':
+                marker.consumer_type = 'power-house';
+                marker.consumer_detail = '';
+                selected_icon = markerPowerHouse;
+                break;
             default:
                 console.error("Invalid consumer value: " + consumerValue);
         }
@@ -251,21 +267,29 @@ function update_map_elements(){
     }
 }
 
-
-function move_marker(){
+function move_marker() {
     old_marker = JSON.parse(JSON.stringify(marker));
     marker.longitude = parseFloat(document.getElementById('longitude').value);
     marker.latitude = parseFloat(document.getElementById('latitude').value);
     map.eachLayer(function (layer) {
         if (layer instanceof L.Marker) {
-        let markerLatLng = layer.getLatLng();
-        if (markerLatLng.lat === old_marker.latitude && markerLatLng.lng === old_marker.longitude) {
-            map.removeLayer(layer);
-            L.marker([marker.latitude, marker.longitude], {icon: markerConsumerSelected,})
-            .on('click', markerOnClick).addTo(map);
+            let markerLatLng = layer.getLatLng();
+            if (markerLatLng.lat === old_marker.latitude && markerLatLng.lng === old_marker.longitude) {
+                map.removeLayer(layer);
+                let markerIcon;
+                if (marker.consumer_type === 'power-house') {
+                    markerIcon = markerPowerHouse;
+                } else {
+                    markerIcon = markerConsumerSelected;
+                }
+                L.marker([marker.latitude, marker.longitude], { icon: markerIcon })
+                    .on('click', markerOnClick)
+                    .addTo(map);
+            }
         }
-    }})
+    });
 }
+
 
 document.getElementById('latitude').addEventListener('change', move_marker);
 document.getElementById('longitude').addEventListener('change', move_marker);

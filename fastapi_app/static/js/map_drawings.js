@@ -27,6 +27,8 @@ document.getElementById('drawPolygon').addEventListener('click', function () {
   polygonDrawer.enable();
 });
 
+let isPowerHouseMarker = false
+
 map.on('draw:created', function (e) {
     var layerType = e.layerType;
     if (layerType === 'marker' || layerType === 'rectangle' || layerType === 'polygon') {
@@ -50,11 +52,28 @@ map.on(L.Draw.Event.CREATED, function (event) {
         const lat = latLng.lat;
         const lng = latLng.lng;
 
-        add_single_consumer_to_array(lat, lng, 'manual', 'consumer');
-        drawMarker(lat, lng, 'consumer');
+
+        if (isPowerHouseMarker) {
+            let existingPowerHouseIndex = map_elements.findIndex(element => element.node_type == 'power-house');
+
+        // If an element is found, remove it
+            if (existingPowerHouseIndex !== -1) {
+                map_elements.splice(existingPowerHouseIndex, 1);
+                remove_marker_from_map();
+                put_markers_on_map(map_elements, true);
+                }
+            add_single_consumer_to_array(lat, lng, 'manual', 'power-house');
+            drawMarker(lat, lng, 'power-house');
+            isPowerHouseMarker = false;  // Reset the flag
+        }
+         else {
+                add_single_consumer_to_array(lat, lng, 'manual', 'consumer');
+                drawMarker(lat, lng, 'consumer');
+                setTimeout(() => drawControl._toolbars.draw._modes.marker.handler.enable(), 100);
+        }
 
         // Add a delay before re-enabling to bypass the default disable action
-        setTimeout(() => markerDrawer.enable(), 10);
+
     }
     else {
         drawnItems.addLayer(layer);
@@ -75,35 +94,90 @@ map.on(L.Draw.Event.CREATED, function (event) {
     }
 });
 
+var myCustomMarker = L.Icon.extend({
+    options: {
+        shadowUrl: null,
+        iconAnchor: new L.Point(12, 12),
+        iconSize: new L.Point(24, 24),
+        iconUrl: "fastapi_app/static/assets/icons/i_consumer.svg"
+    }
+});
 
 
+const iconB = L.icon({
+    iconUrl: "fastapi_app/static/assets/icons/i_power_house.svg",
+    iconSize: [12, 12], // size of the icon
+    iconAnchor: [12, 12], // point of the icon which will correspond to marker's location
+    popupAnchor: [1, -12] // point from which the popup should open relative to the iconAnchor
+});
 
 
-// Configure the drawing options
-const drawControl = new L.Control.Draw({
+L.NewMarker = L.Draw.Marker.extend({
+    options: {
+        icon: iconB
+    }
+});
+
+
+let drawControl = new L.Control.Draw({
     position: 'topleft',
     draw: {
         polyline: false,
         polygon: true,
         circle: false,
         circlemarker: false,
-        marker: true,
-        rectangle: true
+        rectangle: true,
+        marker: {
+            icon: new myCustomMarker
+        }
     }
 });
 
 map.addControl(drawControl);
 
+const CustomMarkerControl = L.Control.extend({
+    options: {
+        position: 'topleft'
+    },
+
+    onAdd: function(map) {
+        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+        L.DomEvent.disableClickPropagation(container);
+
+        const link = L.DomUtil.create('a', 'leaflet-draw-draw-marker', container);
+        link.href = '#';
+        link.title = 'place power-house';
+
+        // add an image inside the link
+        const image = L.DomUtil.create('img', 'my-marker-icon', link);
+        image.src = 'fastapi_app/static/assets/icons/i_power_house_grey.svg';
+        image.alt = 'Marker';
+        image.style.width = '12px';
+        image.style.height = '12px';
+
+        L.DomEvent.on(link, 'click', L.DomEvent.stop)
+            .on(link, 'click', function () {
+                isPowerHouseMarker = true;
+                new L.Draw.Marker(map, { icon: iconB }).enable();
+            });
+
+        return container;
+    }
+});
+
+map.addControl(new CustomMarkerControl());
+
 
 function add_single_consumer_to_array(latitude, longitude, how_added, node_type) {
+  let consumer_type = 'household';
+  if (node_type === 'power-house') {consumer_type = ''}
   map_elements.push({
       latitude: latitude,
       longitude: longitude,
       how_added: how_added,
       node_type: node_type,
-      consumer_type: 'household',
-      consumer_detail: 'deafault',
-      surface_area: 0})
+      consumer_type: consumer_type,
+      consumer_detail: 'default'})
 }
 
 

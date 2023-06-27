@@ -239,6 +239,42 @@ class Grid:
 
         self.nodes.loc[nearest_pole.index, "node_type"] = "power-house"
 
+    def connect_power_house_consumer_manually(self, max_length):
+        power_house = self.nodes.loc[self.nodes['node_type'] == 'power-house']
+        self.convert_lonlat_xy()
+        x2 = power_house['x'].values[0]
+        y2 = power_house['y'].values[0]
+        for consumer in self.nodes[self.nodes["node_type"] == 'consumer'].index:
+            x1 = self.nodes.x.loc[consumer]
+            y1 = self.nodes.y.loc[consumer]
+            distance = np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+            self.nodes.loc[consumer, "distance_to_load_center"] = distance
+        consumers = self.nodes[self.nodes["distance_to_load_center"] <= max_length].copy()
+        if consumers.index.__len__() > 0:
+            self.nodes = self.nodes.drop(index=consumers.index)
+        return consumers
+
+    def placeholder_consumers_for_power_house(self, remove=False):
+        n_max = self.pole_max_connection
+        label_start = 100000
+        power_house = self.nodes.loc[self.nodes['node_type'] == 'power-house']
+        for i in range(n_max):
+            label = str(label_start + i)
+            if remove is True:
+                self.nodes = self.nodes.drop(index=label)
+            else:
+                self.add_node(label,
+                              latitude=power_house['latitude'].values[0],
+                              longitude=power_house['longitude'].values[0],
+                              x = np.nan,
+                              y = np.nan,
+                              cluster_label = np.nan,
+                              n_connection_links = np.nan,
+                              n_distribution_links = np.nan,
+                              parent = np.nan)
+        if remove is False:
+            self.convert_lonlat_xy()
+
     def clear_nodes(self):
         """
         Removes all nodes from the grid.
@@ -253,7 +289,7 @@ class Grid:
             [
                 label
                 for label in self.nodes.index
-                if self.nodes.node_type.loc[label] in ["pole", "power-house"]
+                if self.nodes.node_type.loc[label] in ["pole"]
             ],
             axis=0,
         )
@@ -601,9 +637,8 @@ class Grid:
                 )
                 self.nodes.at[node_index, "longitude"] = lon
                 self.nodes.at[node_index, "latitude"] = lat
-
         else:
-            for node_index in self.consumers().index:
+            for node_index in self.nodes.index:
                 x, y = p(
                     self.nodes.longitude.loc[node_index],
                     self.nodes.latitude.loc[node_index],

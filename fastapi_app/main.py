@@ -381,7 +381,7 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
                  'is_connected',
                  'shs_options']]
         if markers_only is True:
-            df = df[df['node_type'] == 'consumer']
+            df = df[df['node_type'].isin(['power-house', 'consumer'])]
         df['latitude'] = df['latitude'].astype(float)
         df['longitude'] = df['longitude'].astype(float)
         df['shs_options'] = df['shs_options'].fillna(0)
@@ -398,10 +398,15 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
 async def consumer_to_db(project_id: str, map_elements: fastapi_app.io.schema.MapDataRequest, request: Request):
     user = await accounts.get_user_from_cookie(request)
     df = pd.DataFrame.from_records(map_elements.map_elements)
+    df = df.drop_duplicates(subset=['latitude', 'longitude'])
+    df = df.drop(index=df[df['node_type'] == 'power_house'].index)
+    drop_index = df[df['node_type'] == 'power-house'].index
+    if drop_index.__len__() > 1:
+        df = df.drop(index=drop_index[1:])
     if df.empty is True:
         await inserts.remove(models.Nodes, user.id, project_id)
         return
-    df = df[df['node_type'] == 'consumer']
+    df = df[df['node_type'].isin(['power-house', 'consumer'])]
     if df.empty is True:
         await inserts.remove(models.Nodes, user.id, project_id)
         return
@@ -1130,6 +1135,11 @@ def optimize_grid(user_id, project_id):
         nodes['is_connected'] = True
         nodes.loc[nodes['shs_options'] == 2, 'is_connected'] = False
         nodes.index = nodes.index.astype(str)
+        nodes = nodes[nodes['node_type'].isin(['consumer', 'power-house'])]
+        power_house = nodes.loc[nodes['node_type'] == 'power-house']
+        if power_house.index.__len__() > 0 and power_house['how_added'].iat[0] != 'manual':
+            nodes = nodes.drop(index=power_house.index)
+            power_house = None
         if len(nodes) == 0:
             return {"code": "success", "message": "Empty grid cannot be optimized!"}
 
@@ -1274,9 +1284,17 @@ def optimize_grid(user_id, project_id):
         n_grid_consumers = n_total_consumers - n_shs_consumers
         grid.nodes.sort_index(key=lambda x: x.astype("int64"), inplace=True)
 
+        if power_house is not None:
+            power_house_consumers = grid.connect_power_house_consumer_manually(df.loc[0, "connection_cable_max_length"])
+            grid.placeholder_consumers_for_power_house()
+        else:
+            power_house_consumers = None
 
         n_poles = opt.find_opt_number_of_poles(grid, df.loc[0, "connection_cable_max_length"], n_grid_consumers)
-        opt.determine_poles(grid=grid, min_n_clusters=n_poles)
+        opt.determine_poles(grid=grid,
+                            min_n_clusters=n_poles,
+                            power_house_consumers=power_house_consumers,
+                            power_house=power_house)
         distribution_cable_max_length = df.loc[0, "distribution_cable_max_length"]
 
         # Find the connection links in the network with lengths greater than the
@@ -1295,11 +1313,13 @@ def optimize_grid(user_id, project_id):
         opt.connect_grid_poles(grid, long_links=long_links)
 
         # Calculate distances of all poles from the load centroid.
-        grid.get_poles_distances_from_load_centroid()
+
 
         # Find the location of the power house.
         grid.add_number_of_distribution_and_connection_cables()
-        grid.select_location_of_power_house()
+        if power_house is None:
+            grid.get_poles_distances_from_load_centroid()
+            grid.select_location_of_power_house()
         grid.set_direction_of_links()
         grid.allocate_poles_to_branches()
         grid.allocate_subbranches_to_branches()
@@ -1312,8 +1332,9 @@ def optimize_grid(user_id, project_id):
         grid.nodes.loc[consumer_idxs, 'yearly_consumption'] = demand_selected_period.sum() / len(consumer_idxs)
         grid.determine_shs_consumers()
         grid.get_poles_distances_from_load_centroid()
-        grid.select_location_of_power_house()
-        grid.set_direction_of_links()
+        if power_house is None:
+            grid.select_location_of_power_house()
+            grid.set_direction_of_links()
 
 
 
