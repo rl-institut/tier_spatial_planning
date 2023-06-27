@@ -38,7 +38,7 @@ map.on('draw:created', function (e) {
 
 document.getElementById('drawRectangle').addEventListener('click', function () {
     update_map_elements();
-  rectangleDrawer.enable();
+    rectangleDrawer.enable();
     markerDrawer.disable();
     polygonDrawer.disable();
 });
@@ -158,8 +158,17 @@ const CustomMarkerControl = L.Control.extend({
         L.DomEvent.on(link, 'click', L.DomEvent.stop)
             .on(link, 'click', function () {
                 isPowerHouseMarker = true;
+
+                // Disable any active drawing layer.
+                for (let type in drawControl._toolbars.draw._modes) {
+                    if (drawControl._toolbars.draw._modes[type].handler.enabled()) {
+                        drawControl._toolbars.draw._modes[type].handler.disable();
+                    }
+                }
+
                 new L.Draw.Marker(map, { icon: iconB }).enable();
             });
+
 
         return container;
     }
