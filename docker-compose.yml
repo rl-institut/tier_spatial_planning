@@ -3,8 +3,8 @@ services:
   app:
     container_name: 'app'
     build: .
-    # command: gunicorn -w 2 -k uvicorn.workers.UvicornWorker fastapi_app.main:app --bind 0.0.0.0:40000 --timeout 1200  --forwarded-allow-ips='*' --access-logfile - --error-logfile -
-    command: uvicorn fastapi_app.main:app --host 0.0.0.0 --reload --port 40000 --forwarded-allow-ips='*' --proxy-headers
+    command: gunicorn -w 8 -k uvicorn.workers.UvicornWorker fastapi_app.main:app --bind 0.0.0.0:40000 --timeout 1200  --forwarded-allow-ips='*' --access-logfile - --error-logfile -
+    # command: uvicorn fastapi_app.main:app --host 0.0.0.0 --reload --port 40000 --forwarded-allow-ips='*' --proxy-headers
     restart: always
     environment:
       - PYTHONUNBUFFERED=1
@@ -52,9 +52,7 @@ services:
     container_name: 'celery_default'
     build: .
     restart: always
-    ports:
-      - '5555:5555'
-    command: celery -A celery_worker.worker worker --loglevel=DEBUG --pool prefork  --concurrency=16 --queues=default_queue
+    command: celery -A celery_worker.worker worker --loglevel=INFO --pool prefork  --concurrency=16 --queues=default_queue
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
@@ -70,13 +68,11 @@ services:
     container_name: 'celery_milp'
     build: .
     restart: always
-    ports:
-      - '5556:5556'
-    command: celery -A celery_worker.worker worker --loglevel=DEBUG --pool prefork  --concurrency=8 --queues=milp_queue
+    command: celery -A celery_worker.worker worker --loglevel=INFO --pool prefork  --concurrency=8 --queues=milp_queue
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - FLOWER_PORT=5556
+      - FLOWER_PORT=5555
       - PW=/run/secrets/pw
     depends_on:
       - app
