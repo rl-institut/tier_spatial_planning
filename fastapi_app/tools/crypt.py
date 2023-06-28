@@ -41,6 +41,6 @@ class Crypt:
 
 
 if __name__ == '__main__':
-    pw = 'BlAblaBLA'
+    pw = 'cramer@tu-berlin.de'
     s = Crypt(pw).encrypt('saltforpeoplesunsalt4')
     print(s)

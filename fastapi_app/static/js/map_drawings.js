@@ -186,7 +186,11 @@ function add_single_consumer_to_array(latitude, longitude, how_added, node_type)
       how_added: how_added,
       node_type: node_type,
       consumer_type: consumer_type,
-      consumer_detail: 'default'})
+      consumer_detail: 'default',
+      custom_specification: '',
+      shs_options: 0,
+      is_connected: true
+  })
 }
 
 
