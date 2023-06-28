@@ -890,6 +890,9 @@ async def add_buildings_inside_boundary(js_data: fastapi_app.io.schema.MapData, 
     df_exisiting = pd.DataFrame.from_records(js_data.map_elements)
     df = pd.concat([df_exisiting, df], ignore_index=True)
     df = df.drop_duplicates(subset=['longitude', 'latitude'], keep='first')
+    df['shs_options'] = df['shs_options'].fillna(0)
+    df['custom_specification'] = df['custom_specification'].fillna('0')
+    df['is_connected'] = df['is_connected'].fillna(True)
     nodes_list = df.to_dict('records')
     return JSONResponse({'executed': True, 'msg': '', 'new_consumers': nodes_list})
 
@@ -932,13 +935,22 @@ async def remove_results(user_id, project_id):
     await inserts.remove(models.Links, user_id, project_id)
 
 
-@worker.task(name='celery_worker.task_grid_opt', force=True, track_started=True)
+@worker.task(name='celery_worker.task_grid_opt',
+             force=True,
+             track_started=True,
+             autoretry_for=(Exception,),
+             retry_kwargs={'max_retries': 1, 'countdown': 10})
 def task_grid_opt(user_id, project_id):
     result = optimize_grid(user_id, project_id)
     return result
 
 
-@worker.task(name='celery_worker.task_supply_opt', force=True, track_started=True)
+@worker.task(name='celery_worker.task_supply_opt',
+             force=True,
+             track_started=True,
+             autoretry_for=(Exception,),
+             retry_kwargs={'max_retries': 1, 'countdown': 10}
+             )
 def task_supply_opt(user_id, project_id):
     result = optimize_energy_system(user_id, project_id)
     return result
@@ -968,6 +980,16 @@ async def optimization(user_id, project_id):
     else:
         optimize_grid(user_id, project_id)
         optimize_energy_system(user_id, project_id)
+        return 'no_celery_id'
+
+
+@app.get("/optimize_without_celery/{project_id}")
+async def forward_if_consumer_selection_exists(project_id: int, request: Request):
+
+    user = await accounts.get_user_from_cookie(request)
+    if bool(user.is_superuser) is True:
+        optimize_grid(user.id, project_id)
+        optimize_energy_system(user.id, project_id)
         return 'no_celery_id'
 
 
@@ -1025,14 +1047,16 @@ async def waiting_for_results(request: Request, data: fastapi_app.io.schema.Task
         # ToDo: set the time limit based on number of queued tasks and size of the model
         res = {'time': int(data.time) + t_wait, 'status': '', 'task_id': data.task_id, 'model': data.model}
 
-        async def pause_until_results_are_available(user_id, project_id):
-            for i in range(12):
-                results = await queries.get_model_instance(models.Results, user.id, project_setup.project_id)
+        async def pause_until_results_are_available(user_id, project_id, status):
+            iter = 12 if status == 'unknown' else 2
+            for i in range(iter):
+                results = await queries.get_model_instance(models.Results, user_id, project_id)
                 if hasattr(results, 'lcoe') and results.lcoe is not None:
                     break
                 else:
-                    print('wait for results: {}'.format(i))
-                    await asyncio.sleep(1 + i)
+                    await asyncio.sleep(5 + i)
+                    print('Results are not available')
+
         if len(data.task_id) > 12 and max_time > res['time']:
             if not data.time == 0:
                 await asyncio.sleep(t_wait)
@@ -1052,14 +1076,15 @@ async def waiting_for_results(request: Request, data: fastapi_app.io.schema.Task
                 user = await accounts.get_user_from_cookie(request)
                 if user is not None:
                     break
+                else:
+                    print('Could not get user from cookie')
                 await asyncio.sleep(1)
                 if i == 2 and len(data.task_id) > 12 and max_time > res['time']:
                     user = await queries.get_user_from_task_id(data.task_id)
                     if user is not None:
                         break
-                if i == 3:
-                    await pause_until_results_are_available(user.id, data.project_id)
-                    return JSONResponse(res)
+                    else:
+                        print('Could not get user from task id')
             if data.model == 'grid' and bool(os.environ.get('DOCKERIZED')):
                 task = task_supply_opt.delay(user.id, data.project_id)
                 user.task_id = task.id
@@ -1072,22 +1097,24 @@ async def waiting_for_results(request: Request, data: fastapi_app.io.schema.Task
                 project_setup = await queries.get_model_instance(models.ProjectSetup, user.id, data.project_id)
                 if project_setup is not None:
                     if 'status' in locals():
-                        if status == 'success':
+                        if status in ['success', 'failure', 'revoked']:
                             project_setup.status = "finished"
                         else:
                             project_setup.status = status
                     else:
                         project_setup.status = "finished"
+                        status = 'unknown'
                     await inserts.merge_model(project_setup)
                     user.task_id = ''
                     user.project_id = None
                     await inserts.update_model_by_user_id(user)
-                    await pause_until_results_are_available(user.id, data.project_id)
+                    await pause_until_results_are_available(user.id, data.project_id, status)
         return JSONResponse(res)
     except Exception as e:
         print(e)
         user_name = user.username if hasattr(user, 'username') else 'unknown'
-        error_logger.error_log(e, 'no request', user_name)
+        error_logger.error_log(e, request, user_name)
+        raise Exception(e)
 
 
 @app.post('/has_pending_task/{project_id}')
