@@ -29,7 +29,10 @@ from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
 from fastapi.staticfiles import StaticFiles
 from fastapi_app.tools.grids import Grid
-from fastapi_app.tools.optimizer import Optimizer, GridOptimizer, EnergySystemOptimizer, po
+import pyomo.environ as po
+from fastapi_app.tools.grid_opt import GridOptimizer
+from fastapi_app.tools.es_opt import EnergySystemOptimizer
+from fastapi_app.tools.optimizer import Optimizer
 from fastapi_app.tools.account_helpers import Hasher, create_guid, is_valid_credentials, send_activation_link, activate_mail, \
     authenticate_user, create_access_token, send_mail
 from fastapi_app.tools import account_helpers as accounts
@@ -117,20 +120,6 @@ async def captcha(request: Request):
     base64_image = base64.b64encode(captcha_data.getvalue()).decode('utf-8')
     hashed_captcha = captcha_context.hash(captcha_text)
     return JSONResponse({'img': base64_image, 'hashed_captcha': hashed_captcha})
-
-
-@app.get("/test_run")
-async def test_run(request: Request):
-    task = task_grid_opt.delay(9, 1)
-    supply = False
-    for i in range(1000):
-        await asyncio.sleep(20)
-        status = get_status_of_task(task.id)
-        if status in ['success', 'failure', 'revoked']:
-            if supply is True:
-                break
-            task = task_supply_opt.delay(9, 1)
-            supply = True
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -831,6 +820,8 @@ async def get_data_for_sankey_diagram(project_id, request: Request):
 async def get_data_for_energy_flows(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
     df = await queries.get_df(models.EnergyFlow, user.id, project_id)
+    df['battery'] = - df['battery_charge'] + df['battery_discharge']
+    df = df.drop(columns=['battery_charge', 'battery_discharge'])
     df = df.reset_index(drop=True)
     return json.loads(df.to_json())
 
@@ -891,7 +882,7 @@ async def add_buildings_inside_boundary(js_data: fastapi_app.io.schema.MapData, 
     df = pd.concat([df_exisiting, df], ignore_index=True)
     df = df.drop_duplicates(subset=['longitude', 'latitude'], keep='first')
     df['shs_options'] = df['shs_options'].fillna(0)
-    df['custom_specification'] = df['custom_specification'].fillna('0')
+    df['custom_specification'] = df['custom_specification'].fillna('')
     df['is_connected'] = df['is_connected'].fillna(True)
     nodes_list = df.to_dict('records')
     return JSONResponse({'executed': True, 'msg': '', 'new_consumers': nodes_list})
@@ -1048,7 +1039,7 @@ async def waiting_for_results(request: Request, data: fastapi_app.io.schema.Task
         res = {'time': int(data.time) + t_wait, 'status': '', 'task_id': data.task_id, 'model': data.model}
 
         async def pause_until_results_are_available(user_id, project_id, status):
-            iter = 12 if status == 'unknown' else 2
+            iter = 4 if status == 'unknown' else 2
             for i in range(iter):
                 results = await queries.get_model_instance(models.Results, user_id, project_id)
                 if hasattr(results, 'lcoe') and results.lcoe is not None:
@@ -1426,6 +1417,8 @@ def optimize_energy_system(user_id, project_id):
         # Grab Currrent Time After Running the Code
         end_execution_time = time.monotonic()
         # unit for co2_emission_factor is kgCO2 per kWh of produced electricity
+        if ensys_opt.model.solutions.__len__() == 0:
+            return False
         if ensys_opt.capacity_genset < 60:
             co2_emission_factor = 1.580
         elif ensys_opt.capacity_genset < 300:
@@ -1567,103 +1560,11 @@ def optimize_energy_system(user_id, project_id):
             send_mail(user.email, msg, subject=subject)
         project_setup.email_notification = False
         sync_inserts.merge_model(project_setup)
+        return True
     except Exception as exc:
         user_name = 'user with user_id: {}'.format(user_id)
         error_logger.error_log(exc, 'no request', user_name)
         raise exc
-
-
-@app.post("/shs_identification/")
-def identify_shs(shs_identification_request: fastapi_app.io.schema.ShsIdentificationRequest):
-    print("starting shs_identification...")
-    # res = db.execute("select * from nodes")
-    # nodes = res.fetchall()
-    if len(nodes) == 0:
-        return {"code": "success", "message": "No nodes in table, no identification to be performed", }
-    # use latitude of the node that is the most west to set origin of x coordinates
-    ref_latitude = min([node[1] for node in nodes])
-    # use latitude of the node that is the most south to set origin of y coordinates
-    ref_longitude = min([node[2] for node in nodes])
-    nodes_df = shs_ident.create_nodes_df()
-    cable_price_per_meter = (shs_identification_request.cable_price_per_meter_for_shs_mst_identification)
-    additional_price_for_connection_per_node = (shs_identification_request.connection_cost_to_minigrid)
-    for node in nodes:
-        latitude = math.radians(node[1])
-        longitude = math.radians(node[2])
-        x, y = conv.xy_coordinates_from_latitude_longitude(
-            latitude=latitude,
-            longitude=longitude,
-            ref_latitude=ref_latitude,
-            ref_longitude=ref_longitude,
-        )
-        node_label = node[0]
-        required_capacity = node[6]
-        max_power = node[7]
-        # is_connected = node[8]
-        if node[4] == "low-demand":
-            shs_price = shs_identification_request.price_shs_ld
-        elif node[4] == "medium-demand":
-            shs_price = shs_identification_request.price_shs_md
-        elif node[4] == "high-demand":
-            shs_price = shs_identification_request.price_shs_hd
-
-        shs_ident.add_node(
-            nodes_df,
-            node_label,
-            x,
-            y,
-            required_capacity,
-            max_power,
-            shs_price=shs_price,
-        )
-    links_df = shs_ident.mst_links(nodes_df)
-    start_time = time.time()
-    if shs_identification_request.algo == "mst1":
-        nodes_to_disconnect_from_grid = shs_ident.nodes_to_disconnect_from_grid(
-            nodes_df=nodes_df,
-            links_df=links_df,
-            cable_price_per_meter=cable_price_per_meter,
-            additional_price_for_connection_per_node=additional_price_for_connection_per_node,
-        )
-        print(
-            f"execution time for shs identification (mst1): {time.time() - start_time} s"
-        )
-    else:
-        print("issue with version parameter of shs_identification_request")
-        return 0
-
-    # sqliteConnection = sqlite3.connect(grid_db)
-    # conn = sqlite3.connect(grid_db)
-    # cursor = conn.cursor()
-
-    """
-    for index in nodes_df.index:
-        if index in nodes_to_disconnect_from_grid:
-            sql_delete_query = (
-                f""UPDATE nodes
-                SET node_type = 'shs'
-                WHERE  id = {index};
-                "")
-        else:
-            sql_delete_query = (
-                f""UPDATE nodes
-                SET node_type = 'consumer'
-                WHERE  id = {index};
-                "")
-        cursor.execute(sql_delete_query)
-        sqliteConnection.commit()
-    cursor.close()
-
-    # commit the changes to db
-    conn.commit()
-    # close the connection
-    conn.close()
-
-    return {
-        "code": "success",
-        "message": "shs identified"
-    }
-    """
 
 
 # ************************************************************/
@@ -1682,8 +1583,6 @@ async def export_data(project_id: int, file_type:str,  request: Request):
     response = StreamingResponse(excel_file, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     response.headers["Content-Disposition"] = "attachment; filename=output.xlsx"
     return response
-
-
 
 
 @app.post("/import_data/{project_id}")
