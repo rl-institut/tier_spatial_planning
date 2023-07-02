@@ -205,14 +205,13 @@ function makeplot_energy_flows() {
           // push nodes to the map
           energy_flows = this.response;
 
-          var time = [], diesel_genset_production = [], pv_production = [], battery_charge = [], battery_discharge = [], battery_content = [], demand = [], surplus = [];
+          var time = [], diesel_genset_production = [], pv_production = [], battery = [], battery_content = [], demand = [], surplus = [];
               
           for (var i=0; i<Object.keys(energy_flows['diesel_genset_production']).length; i++) {
             time.push( i );
             diesel_genset_production.push( energy_flows['diesel_genset_production'][i] );
             pv_production.push( energy_flows['pv_production'][i] );
-            battery_charge.push( energy_flows['battery_charge'][i] );
-            battery_discharge.push( energy_flows['battery_discharge'][i] );
+            battery.push( energy_flows['battery'][i] );
             battery_content.push( energy_flows['battery_content'][i] );
             demand.push( energy_flows['demand'][i] );
             surplus.push( energy_flows['surplus'][i] );
@@ -224,7 +223,7 @@ function makeplot_energy_flows() {
             y: diesel_genset_production,
             mode: 'lines',
             name: 'Diesel Genset',
-            line: {shape: 'vhv'},
+            line: {shape: 'hv'},
             type: 'scatter',                      
           };
           var trace2 = {
@@ -232,73 +231,84 @@ function makeplot_energy_flows() {
             y: pv_production,
             mode: 'lines',
             name: 'PV',
-            line: {shape: 'vhv'},
+            line: {shape: 'hv'},
             type: 'scatter',          
           };
           var trace3 = {
               x: time,
-              y: battery_charge,
+              y: battery,
               mode: 'lines',
-              name: 'Battery - Charge',
-              line: {shape: 'vhv'},
+              name: 'Battery In-/Output',
+              line: {shape: 'hv'},
               type: 'scatter',            
           };
-          var trace4 = {
-              x: time,
-              y: battery_discharge,
-              mode: 'lines',
-              name: 'Battery - Discharge',
-              line: {shape: 'vhv'},
-              type: 'scatter',        
-          };
+            var trace4 = {
+                x: time,
+                y: battery_content,
+                mode: 'lines',
+                name: 'Battery Content',
+                yaxis: 'y2',  //this makes sure that the trace uses the second y-axis.
+                line: {shape: 'hv'},
+                type: 'scatter',
+                visible: 'legendonly',
+
+            };
           var trace5 = {
-              x: time,
-              y: battery_content,
-              mode: 'lines',
-              name: 'Battery - Content',
-              line: {shape: 'vhv'},
-              type: 'scatter',       
-          };
-          var trace6 = {
               x: time,
               y: demand,
               mode: 'lines',
               name: 'Demand',
-              line: {shape: 'vhv'},
+              line: {shape: 'hv'},
               type: 'scatter',            
           };
-          var trace7 = {
+          var trace6 = {
               x: time,
               y: surplus,
               mode: 'lines',
               name: 'Surplus',
-              line: {shape: 'vhv'},
+              line: {shape: 'hv'},
               type: 'scatter',
           };
         
-          var data = [trace1, trace2, trace3, trace4, trace5, trace6, trace7];
+          var data = [trace1, trace2, trace3, trace4, trace5, trace6];
 
-          var layout = {
-            xaxis: {
-              title: 'Time in [Hour]',
-              titlefont: {
-                size: 16,
-              },
-              tickfont: {
-                size: 14,
-              },
-            },
-            yaxis: {
-              title: 'Energy Flow in [kW]',
-              titlefont: {
-                size: 16,
-              },
-              tickfont: {
-                size: 14,
-              }
-            },
-            // title: 'Energy flows in different components of the system.',
-          };
+            var layout = {
+  xaxis: {
+    title: 'Time in [Hour]',
+    titlefont: {
+      size: 16,
+    },
+    tickfont: {
+      size: 14,
+    },
+  },
+  yaxis: {
+    title: 'Energy Flow in [kW]',
+    titlefont: {
+      size: 16,
+    },
+    tickfont: {
+      size: 14,
+    }
+  },
+  yaxis2: {   // second y-axis
+    title: 'Battery Content in [kWh]',
+    overlaying: 'y',
+    side: 'right',
+    showgrid: false,
+  },
+  legend: {
+    x: 1, // This positions the legend at the right edge of the chart.
+    y: 1, // This positions the legend at the top of the chart.
+    xanchor: 'auto', // The anchor for the x position. The 'auto' value will let Plotly decide the best location.
+    yanchor: 'auto', // The anchor for the y position. The 'auto' value will let Plotly decide the best location.
+    bgcolor: 'rgba(255, 255, 255, 1)', // Fully opaque white background.
+    bordercolor: '#E2E2E2',
+    borderwidth: 2,
+  },
+  autosize: true,
+  // title: 'Energy flows in different components of the system.',
+};
           Plotly.newPlot(energyFlows, data, layout);
       }
   };
