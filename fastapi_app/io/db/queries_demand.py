@@ -24,7 +24,8 @@ def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distributi
                                              num_households = num_households,
                                              distribution_lookup = distribution_lookup,
                                              option = hh_demand_option)
-    df_ent_profiles = combine_ent_profiles(all_profiles, nodes=get_all_enterprise_customer_nodes(nodes))
+    enterprises = get_all_enterprise_customer_nodes(nodes)
+    df_ent_profiles = combine_ent_profiles(all_profiles, enterprises)
     calibrated_profile = combine_and_calibrate_total_profile(
         df_hh_profiles=df_hh_profiles,
         df_ent_profiles=df_ent_profiles,
@@ -49,12 +50,14 @@ def get_calibration_target(demand_par_dict):
 
 
 def get_number_of_households(nodes):
-    num_households = len(nodes[nodes['consumer_type'] == 'household'].index)
+    num_households = len(nodes[(nodes['consumer_type'] == 'household') &
+                               (nodes['is_connected'] == True)].index)
     return num_households
 
 
 def get_number_of_enterprise(nodes):
-    num_enterprise = len(nodes[nodes['consumer_type'] == 'enterprise'].index)
+    num_enterprise = len(nodes[(nodes['consumer_type'] == 'enterprise') &
+                               (nodes['is_connected'] == True)].index)
     return num_enterprise
 
 
@@ -81,7 +84,8 @@ def get_user_calibration_option_selection(demand_par_dict):
 def get_all_enterprise_customer_nodes(nodes):
     #Dummy function
     #Returns a list or dataframe of all of the enterprise node "strings" of the community
-    nodes = nodes
+    nodes = nodes[(nodes['consumer_type'] == 'enterprise') &
+                  (nodes['is_connected'] == True)]
     return nodes
 
 
@@ -124,15 +128,15 @@ def resample_to_hourly(profile):
     
     return resampled_mean, resampled_min, resampled_max
     
-def combine_ent_profiles(all_profiles, nodes):
-    
+def combine_ent_profiles(all_profiles, enterprises):
+    if enterprises is None or enterprises.empty:
+        return pd.DataFrame()
     default_profile_name = "Enterprise_Food_Bar"
     
     ##regex or str.split to parse enterprise users
     ##compile total list of enterprises and heavy loads
-    enterprise_nodes_list = nodes
 
-    node_count = get_number_of_enterprise(nodes)
+    node_count = get_number_of_enterprise(enterprises)
 
     default_ent_profile = all_profiles[default_profile_name]
     
@@ -205,8 +209,12 @@ def combine_hh_profiles(all_profiles, lat, lon, num_households, distribution_loo
     return df_hh_profiles
 
 def combine_and_calibrate_total_profile(df_hh_profiles, df_ent_profiles, calibration_target_value, calibration_option = None):
-    
-    df_total_profile = df_ent_profiles + df_hh_profiles
+    if df_ent_profiles.empty:
+        df_total_profile = df_hh_profiles
+    elif df_hh_profiles.empty:
+        df_total_profile = df_ent_profiles
+    else:
+        df_total_profile = df_hh_profiles + df_ent_profiles
     
     if calibration_option != None:
         if calibration_option == "kWh":
