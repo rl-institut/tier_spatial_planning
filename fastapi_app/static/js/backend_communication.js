@@ -630,7 +630,7 @@ function load_previous_data(page_name){
                     document.getElementById("inverterLifetime").value = results['inverter__parameters__lifetime'];
                     document.getElementById("inverterCapex").value = results['inverter__parameters__capex'];
                     document.getElementById("inverterOpex").value = results['inverter__parameters__opex'];
-                    document.getElementById("inverterEfficiency").value = results['inverter__parameters__efficiency'];
+                    document.getElementById("inverterEfficiency").value = results['inverter__parameters__efficiency'] * 100;
                     document.getElementById("selectRectifier").checked = results['rectifier__settings__is_selected'];
                     document.getElementById("rectifierDesign").checked = results['rectifier__settings__design'];
                     document.getElementById("rectifierNominalCapacity").value = results['rectifier__parameters__nominal_capacity'];
