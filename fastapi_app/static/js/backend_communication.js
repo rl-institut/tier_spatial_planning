@@ -236,7 +236,14 @@ async function load_results(project_id) {
             document.getElementById("time").innerText = results['time'];
             db_nodes_to_js(project_id, false);
             db_links_to_js(project_id);
-            plot();
+            if (results['lcoe'] === null || results['lcoe'] === undefined || results['lcoe'].includes('None'))
+                if (results['responseMsg'].length === 0) {
+                   document.getElementById('responseMsg').innerHTML = 'Something went wrong. There are no results of the energy system optimization.';
+                }
+                else {
+                    document.getElementById('responseMsg').innerHTML = results['responseMsg'];
+                }
+            else {plot();}
         }
         else {
             document.getElementById('dashboard').style.display = 'none';
@@ -654,6 +661,7 @@ function load_previous_data(page_name){
                     document.getElementById("batteryOpex").value = results['battery__parameters__opex'];
                     document.getElementById("batteryCapex").value = results['battery__parameters__capex'];
                     document.getElementById("batteryNominalCapacity").value = results['battery__parameters__nominal_capacity'];
+                    refreshBlocksOnDiagramOnLoad()
                     }
                 }
             }

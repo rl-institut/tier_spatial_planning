@@ -10,7 +10,7 @@ const map = L.map('map', {
   center: [9.8838, 5.9231],
   zoom: 6,
   maxBounds: nigeriaBounds,
-  maxBoundsViscosity: 1.0
+  maxBoundsViscosity: 1.0,
 });
 
 let is_active = false;
@@ -257,3 +257,4 @@ legend.onAdd = function (map) {
   return div;
 };
 legend.addTo(map);
+

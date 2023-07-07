@@ -119,6 +119,7 @@ class EnergySystemOptimizer(Optimizer):
         self.shortage = shortage
         self.solar_potential = solar_potential
         self.demand = demand
+        self.infeasible = False
 
 
     def create_datetime_objects(self):
@@ -533,7 +534,7 @@ class EnergySystemOptimizer(Optimizer):
         # cbc --> 'ratioGap': '0.01'
         solver_option = {"gurobi": {"MipGap": "0.03"}, "cbc": {"ratioGap": "0.03"}}
 
-        model.solve(solver=self.solver,
+        res = model.solve(solver=self.solver,
             solve_kwargs={"tee": True},
             cmdline_options=solver_option[self.solver],)
         self.model = model
@@ -544,6 +545,8 @@ class EnergySystemOptimizer(Optimizer):
             self.process_results()
         else:
             print("No solution found")
+        if list(res['Solver'])[0]['Termination condition'] == 'infeasible':
+            self.infeasible = True
 
     def process_results(self):
         results_pv = solph.views.node(results=self.results_main, node="pv")
