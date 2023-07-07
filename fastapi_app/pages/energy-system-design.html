@@ -27,7 +27,8 @@
                         id="selectDieselGenset"
                         required
                         checked
-                        onclick="check_box_visibility('dieselGenset');refreshBlocksOnDiagram('dieselGenset');"
+                        onclick="check_box_visibility('dieselGenset');refreshBlocksOnDiagram('dieselGenset');
+                        warnningMissingDieselEngine()"
                       />
                       <label class="form-check-label" for="selectDieselGenset"
                         >Diesel Genset</label
@@ -1229,6 +1230,7 @@
             </div>
         </form>
     </div>
+    {% include '_warningBox.html' %}
     </main>
   {% include '_footer.html' %}
   </body>
@@ -1239,4 +1241,16 @@
   <script src="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.umd.js"></script>
   <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
   <script src="{{ url_for('static', path='js/energy-system-design.js') }}"></script>
+<script>    var targetNode = document.getElementById('responseMsg');
+    var config = { childList: true, subtree: true, characterData: true };
+    var callback = function(mutationsList, observer) {
+        for(let mutation of mutationsList) {
+            if ((mutation.type === 'childList' || mutation.type === 'characterData') && targetNode.textContent.trim() !== '') {
+                var modal = document.getElementById('msgBox');
+                modal.style.display = "block";
+            }
+        }
+    };
+    var observer = new MutationObserver(callback);
+    observer.observe(targetNode, config);</script>
 </html>

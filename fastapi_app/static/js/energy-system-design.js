@@ -708,3 +708,13 @@ function refreshBlocksOnDiagram(id){
 function toTitleCase(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
+
+
+function warnningMissingDieselEngine() {
+    is_selected_diesel_engine = document.getElementById("selectDieselGenset").checked;
+    if (!is_selected_diesel_engine) {
+        document.getElementById("responseMsg").innerHTML = "Without a diesel generator, there may be no " +
+            "feasable solution, even if a battery system is selected. To avoid this, choose the diesel generator or " +
+            "allow large shortages.";
+    }
+}
