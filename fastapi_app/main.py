@@ -372,7 +372,7 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
                  'shs_options']]
         if markers_only is True:
             power_house = df[df['node_type'] == 'power-house']
-            if power_house['how_added'].iat[0] == 'manual':
+            if len(power_house) > 0 and power_house['how_added'].iat[0] == 'manual':
                 df = df[df['node_type'].isin(['power-house', 'consumer'])]
             else:
                 df = df[df['node_type'] == 'consumer']
@@ -424,6 +424,7 @@ async def consumer_to_db(project_id: str, map_elements: fastapi_app.io.schema.Ma
 async def load_results(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
     df = await queries.get_df(models.Results, user.id, project_id)
+    infeasible = bool(df.loc[0, 'infeasible'])
     if df.empty:
         return {}
     df["average_length_distribution_cable"] = df["length_distribution_cable"] / df["n_distribution_links"]
@@ -452,6 +453,11 @@ async def load_results(project_id, request: Request):
                 df[col] = df[col].astype(float).round(1).astype(str)
         df[col] = df[col] + ' ' + unit_dict[col]
     results = df.to_dict(orient='records')[0]
+    if infeasible is True:
+        results['responseMsg'] = 'There are no results of the energy system optimization. There were no feasible ' \
+                                 'solution.'
+    else:
+        results['responseMsg'] = ''
     return results
 
 
@@ -820,9 +826,10 @@ async def get_data_for_sankey_diagram(project_id, request: Request):
 async def get_data_for_energy_flows(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
     df = await queries.get_df(models.EnergyFlow, user.id, project_id)
-    df['battery'] = - df['battery_charge'] + df['battery_discharge']
-    df = df.drop(columns=['battery_charge', 'battery_discharge'])
-    df = df.reset_index(drop=True)
+    if not df.empty:
+        df['battery'] = - df['battery_charge'] + df['battery_discharge']
+        df = df.drop(columns=['battery_charge', 'battery_discharge'])
+        df = df.reset_index(drop=True)
     return json.loads(df.to_json())
 
 
@@ -1032,21 +1039,23 @@ async def start_calculation(project_id, request: Request):
 
 @app.post('/waiting_for_results/')
 async def waiting_for_results(request: Request, data: fastapi_app.io.schema.TaskInfo):
+
+    async def pause_until_results_are_available(user_id, project_id, status):
+        iter = 4 if status == 'unknown' else 2
+        for i in range(iter):
+            results = await queries.get_model_instance(models.Results, user_id, project_id)
+            if hasattr(results, 'lcoe') and results.lcoe is not None:
+                break
+            elif hasattr(results, 'infeasible') and bool(results.infeasible) is True:
+                break
+            else:
+                await asyncio.sleep(5 + i)
+                print('Results are not available')
     try:
         max_time = 3600 * 24 * 7
         t_wait = -2E-05 *  data.time + 0.0655 *  data.time + 5.7036 if data.time < 1800 else 60
         # ToDo: set the time limit based on number of queued tasks and size of the model
         res = {'time': int(data.time) + t_wait, 'status': '', 'task_id': data.task_id, 'model': data.model}
-
-        async def pause_until_results_are_available(user_id, project_id, status):
-            iter = 4 if status == 'unknown' else 2
-            for i in range(iter):
-                results = await queries.get_model_instance(models.Results, user_id, project_id)
-                if hasattr(results, 'lcoe') and results.lcoe is not None:
-                    break
-                else:
-                    await asyncio.sleep(5 + i)
-                    print('Results are not available')
 
         if len(data.task_id) > 12 and max_time > res['time']:
             if not data.time == 0:
@@ -1418,6 +1427,10 @@ def optimize_energy_system(user_id, project_id):
         end_execution_time = time.monotonic()
         # unit for co2_emission_factor is kgCO2 per kWh of produced electricity
         if ensys_opt.model.solutions.__len__() == 0:
+            if ensys_opt.infeasible is True:
+                df = sync_queries.get_df(models.Results ,user_id, project_id)
+                df.loc[0, "infeasible"] = ensys_opt.infeasible
+                sync_inserts.insert_results_df(df, user_id, project_id)
             return False
         if ensys_opt.capacity_genset < 60:
             co2_emission_factor = 1.580
@@ -1457,6 +1470,7 @@ def optimize_energy_system(user_id, project_id):
         df.loc[0, "diesel_genset_capacity"] = ensys_opt.capacity_genset
         df.loc[0, "peak_demand"] = ensys_opt.demand.max()
         df.loc[0, "surplus"] = ensys_opt.sequences_surplus.max()
+        df.loc[0, "infeasible"] = ensys_opt.infeasible
         # data for sankey diagram - all in MWh
         df.loc[0, "fuel_to_diesel_genset"] = (ensys_opt.sequences_fuel_consumption.sum() * 0.846 *
                                               ensys_opt.diesel_genset["parameters"]["fuel_lhv"] / 1000)
@@ -1478,6 +1492,7 @@ def optimize_energy_system(user_id, project_id):
         df.loc[0, "inverter_to_demand"] = ensys_opt.sequences_inverter.sum() / 1000
         df.loc[0, "time_energy_system_design"] = end_execution_time - start_execution_time
         df.loc[0, "co2_savings"] = co2_savings
+
         df = df.astype(float).round(3)
         sync_inserts.insert_results_df(df, user_id, project_id)
 

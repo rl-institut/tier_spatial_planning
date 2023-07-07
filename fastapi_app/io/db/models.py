@@ -259,6 +259,7 @@ class Results(Base):
     time = Column(Numeric(10, 3))
     co2_savings = Column(Numeric(10, 3))
     max_voltage_drop = Column(Numeric(3, 1))
+    infeasible = Column(TINYINT(unsigned=True))
 
 
 class DemandCoverage(Base):
