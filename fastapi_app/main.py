@@ -456,6 +456,10 @@ async def load_results(project_id, request: Request):
     if infeasible is True:
         results['responseMsg'] = 'There are no results of the energy system optimization. There were no feasible ' \
                                  'solution.'
+    elif int(results['n_consumers']) == int(results['n_shs_consumers']):
+        results['responseMsg'] = 'Due to high grid costs, all consumers have been equipped with solar home ' \
+                                 'systems. A grid was not built, therefore no optimization of the energy system was ' \
+                                 'carried out.'
     else:
         results['responseMsg'] = ''
     return results
