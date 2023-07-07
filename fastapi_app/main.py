@@ -1048,6 +1048,9 @@ async def waiting_for_results(request: Request, data: fastapi_app.io.schema.Task
                 break
             elif hasattr(results, 'infeasible') and bool(results.infeasible) is True:
                 break
+            elif hasattr(results, 'n_consumers') and hasattr(results, 'n_shs_consumers') and \
+                results.n_consumers == results.n_shs_consumers:
+                break
             else:
                 await asyncio.sleep(5 + i)
                 print('Results are not available')
@@ -1334,12 +1337,14 @@ def optimize_grid(user_id, project_id):
             consumer_idxs = grid.nodes[grid.nodes['node_type'] == 'consumer'].index
             grid.nodes.loc[consumer_idxs, 'yearly_consumption'] = demand_selected_period.sum() / len(consumer_idxs)
             grid.determine_shs_consumers()
-            if power_house is None:
+            if power_house is None and grid.links.index.__len__() > 0:
                 old_power_house = grid.nodes[grid.nodes["node_type"] == 'power-house'].index[0]
                 grid.select_location_of_power_house()
                 new_power_house = grid.nodes[grid.nodes["node_type"] == 'power-house'].index[0]
                 if old_power_house == new_power_house:
                     break
+            else:
+                break
 
         # Calculate the cost of SHS.
         # ToDo: peak demand does not exists anymore
@@ -1363,11 +1368,11 @@ def optimize_grid(user_id, project_id):
         end_execution_time = time.monotonic()
         results = models.Results()
         results.n_consumers = len(grid.consumers())
-        results.n_shs_consumers = n_shs_consumers
+        results.n_shs_consumers = n_shs_consumers = nodes[nodes["is_connected"] == False].index.__len__()
         results.n_poles = len(grid.poles())
         results.length_distribution_cable = int(grid.links[grid.links.link_type == "distribution"]["length"].sum())
         results.length_connection_cable = int(grid.links[grid.links.link_type == "connection"]["length"].sum())
-        results.cost_grid = int(grid.cost())
+        results.cost_grid = int(grid.cost()) if grid.links.index.__len__() > 0 else 0
         results.cost_shs = int(cost_shs)
         results.time_grid_design = round(end_execution_time - start_execution_time, 1)
         results.n_distribution_links = int(grid.links[grid.links["link_type"] == "distribution"].shape[0])
@@ -1396,6 +1401,10 @@ def optimize_energy_system(user_id, project_id):
         if solver == 'cbc':
             energy_system_design['diesel_genset']['settings']['offset'] = False
         nodes = sync_queries.get_df(models.Nodes, user_id, project_id)
+        num_households = len(nodes[(nodes['consumer_type'] == 'household') &
+                                   (nodes['is_connected'] == True)].index)
+        if num_households == 0:
+            return False
         if not nodes[nodes['consumer_type'] == 'power_house'].empty:
             lat, lon = nodes[nodes['consumer_type'] == 'power_house']['latitude', 'longitude'].to_list()
         else:
