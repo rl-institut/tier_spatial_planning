@@ -1,71 +1,104 @@
 
 function makeplot_bar_chart(){
-// BAR DIAGRAM FOR OPTIMAL CAPACITY OF COMPONENTS
-// get optimal capacities from energy system optimizer
-const urlParams = new URLSearchParams(window.location.search);
-project_id = urlParams.get('project_id');
-var yValue = [0, 0, 0, 0, 0, 0, 0];
-var xhr = new XMLHttpRequest();
-url = "get_optimal_capacities/" + project_id;
-xhr.open("GET", url, true);
-xhr.responseType = "json";
-xhr.send();
-xhr.onreadystatechange = function () {
-    if (this.readyState == 4 && this.status == 200) {
-        optimal_capacities = this.response;
-        yValue[0] = Number(optimal_capacities['pv']);
-        yValue[1] = Number(optimal_capacities['battery']);
-        yValue[2] = Number(optimal_capacities['inverter']);
-        yValue[3] = Number(optimal_capacities['rectifier']);
-        yValue[4] = Number(optimal_capacities['diesel_genset']);
-        yValue[5] = Number(optimal_capacities['peak_demand']);
-        yValue[6] = Number(optimal_capacities['surplus']);
-        optimalSizes = document.getElementById('optimalSizes');
+    // BAR DIAGRAM FOR OPTIMAL CAPACITY OF COMPONENTS
+    // get optimal capacities from energy system optimizer
+    const urlParams = new URLSearchParams(window.location.search);
+    project_id = urlParams.get('project_id');
+    var yValue = [0, 0, 0, 0, 0, 0, 0];
+    var yValue2 = [0];
+    var xhr = new XMLHttpRequest();
+    url = "get_optimal_capacities/" + project_id;
+    xhr.open("GET", url, true);
+    xhr.responseType = "json";
+    xhr.send();
+    xhr.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+            optimal_capacities = this.response;
+            yValue[0] = Number(optimal_capacities['pv']);
+            yValue[1] = Number(optimal_capacities['inverter']);
+            yValue[2] = Number(optimal_capacities['rectifier']);
+            yValue[3] = Number(optimal_capacities['diesel_genset']);
+            yValue[4] = Number(optimal_capacities['peak_demand']);
+            yValue[5] = Number(optimal_capacities['surplus']);
+            yValue2 = Number(optimal_capacities['battery']);
+            optimalSizes = document.getElementById('optimalSizes');
 
-        var xValue = ['PV', 'Battery', 'Inverter', 'Rectifier', 'Diesel Genset', 'Peak Demand', 'Surplus'];
-        // var yValue = [61, 71, 36, 10, 65, 100, 29];
-      
-        var data = [
-            {
-              x: xValue,
-              y: yValue,  
-              type: 'bar',
-              text: yValue.map(String),
-              textposition: 'auto',
-              hoverinfo: 'none',
-              opacity: 0.7,
-              marker: {
-                color: ['rgb(8,48,107)', 'rgb(8,48,107)', 'rgb(8,48,107)', 'rgb(8,48,107)', 'rgb(8,48,107)', 'rgb(236,154,41)', 'rgb(236,154,41)'],
-                line: {
-                  color:'black',
-                  width: 1.5
+            var xValue = ['PV', 'Inverter', 'Rectifier', 'Diesel Genset', 'Peak Demand', 'Max. Surplus',
+                'Battery'];
+
+            var data = [
+                {
+                    x: xValue,
+                    y: yValue,
+                    yaxis: 'y1',
+                    type: 'bar',
+                    text: yValue.map(String),
+                    textposition: 'auto',
+                    hoverinfo: 'none',
+                    opacity: 0.7,
+                    marker: {
+                        color: ['rgb(8,48,107)', 'rgb(8,48,107)', 'rgb(8,48,107)', 'rgb(8,48,107)',
+                            'rgb(8,48,107)', 'rgb(8,48,107)', 'rgb(133, 52, 124)'],
+                        line: {
+                            color: 'black',
+                            width: 1.5
+                        }
+                    },
+                    showlegend: false
+                },
+                {
+                    x: ['Battery'],
+                    y: [yValue2],
+                    yaxis: 'y2',
+                    type: 'bar',
+                    marker: {
+                        color: 'rgb(133, 52, 124)'
+                    },
+                    showlegend: false
                 }
-              }    
-            }
-        ];
-      
-        var layout = {
-            xaxis: {tickfont: {
-                size: 14,
-              },
-              tickangle: -30,
-            },
-            yaxis: {
-              title: 'Capacity in [kW] or [kWh]',
-              titlefont: {
-                size: 16,
-              },
-              tickfont: {
-                size: 14,
-              }
-            },
-            barmode: 'stack',
-            bargap: 0.5,
-          };
-      
-        Plotly.newPlot(optimalSizes, data, layout);
-      }
-};}
+            ];
+
+            var layout = {
+                xaxis: {tickfont: {
+                        size: 14,
+                    },
+                    tickangle: -30,
+                },
+                yaxis: {
+                    title: 'Capacity in [kW]',
+                    titlefont: {
+                        color: 'rgb(8,48,107)',
+                        size: 16,
+                    },
+                    tickfont: {
+                        color: 'rgb(8,48,107)',
+                        size: 14,
+                    }
+                },
+                yaxis2: {
+                    title: 'Capacity in [kWh]',
+                    showgrid: false,
+                    titlefont: {
+                        color: 'rgb(133, 52, 124)',
+                        size: 16,
+                    },
+                    tickfont: {
+                        color: 'rgb(133, 52, 124)',
+                        size: 14,
+                    },
+                    overlaying: 'y',
+                    side: 'right'
+                },
+                barmode: 'stack',
+                bargap: 0.5,
+                showlegend: false
+            };
+
+            Plotly.newPlot(optimalSizes, data, layout);
+        }
+    };
+}
+
 
 function makeplot_lcoe_pie() {
 // PIE DIAGRAM FOR BREAKDOWN OF LCOE
@@ -85,6 +118,7 @@ xhr.onreadystatechange = function () {
 
       var data = [{
         type: 'pie',
+        hole: .6,
         values: [cost_renewable_assets, cost_non_renewable_assets, cost_grid, cost_fuel],
         labels: ['Renewable Assets', 'Non-Renewable Assets', 'Grid', 'Fuel'],
         marker: {
@@ -113,6 +147,7 @@ xhr.onreadystatechange = function () {
       Plotly.newPlot(lcoeBreakdown, data, layout)
   }
 };}
+
 
 function makeplot_sankey() {
 // SANKEY DIAGRAM
@@ -205,7 +240,8 @@ function makeplot_energy_flows() {
           // push nodes to the map
           energy_flows = this.response;
 
-          var time = [], diesel_genset_production = [], pv_production = [], battery = [], battery_content = [], demand = [], surplus = [];
+          var time = [], diesel_genset_production = [], pv_production = [], battery = [],
+              battery_content = [], demand = [], surplus = [];
               
           for (var i=0; i<Object.keys(energy_flows['diesel_genset_production']).length; i++) {
             time.push( i );
@@ -417,7 +453,11 @@ function makeplot_duration_curves() {
           // push nodes to the map
           duration_curves = this.response;
 
-          var diesel_genset_percentage = [], diesel_genset_duration = [], pv_percentage = [], pv_duration = [], rectifier_percentage = [], rectifier_duration = [], inverter_percentage = [], inverter_duration = [], battery_charge_percentage = [], battery_charge_duration = [], battery_discharge_percentage = [], battery_discharge_duration = [];
+          var diesel_genset_percentage = [], diesel_genset_duration = [], pv_percentage = [],
+              pv_duration = [], rectifier_percentage = [], rectifier_duration = [],
+              inverter_percentage = [], inverter_duration = [], battery_charge_percentage = [],
+              battery_charge_duration = [], battery_discharge_percentage = [],
+              battery_discharge_duration = [];
               
           for (var i=0; i<Object.keys(duration_curves['diesel_genset_percentage']).length; i++) {
             diesel_genset_percentage.push( duration_curves['diesel_genset_percentage'][i] );
