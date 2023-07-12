@@ -1085,7 +1085,7 @@ class Grid:
         self.remove_power_house_if_no_poles_connected()
 
     def remove_power_house_if_no_poles_connected(self):
-        if self.nodes[self.nodes['node_type'] == 'poles'].empty:
+        if self.nodes[self.nodes['node_type'] == 'pole'].empty:
             self.nodes = self.nodes[self.nodes['node_type'] == 'consumer']
             self.links = self.links.drop(index=self.links.index)
             self.nodes['is_connected'] = False

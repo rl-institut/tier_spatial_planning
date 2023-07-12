@@ -488,7 +488,7 @@ function save_project_setup(project_id) {
                     'interest_rate': interestRate.value,
                     'project_lifetime': projectLifetime.value,
                     'start_date': startDate.value,
-                    'temporal_resolution': temporalResolution.value,
+                    'temporal_resolution': 1,
                     'n_days': nDays.value,
                 }
             }),
@@ -556,7 +556,6 @@ function load_previous_data(page_name){
                     document.getElementById("interestRate").value = results['interest_rate'];
                     document.getElementById("projectLifetime").value = results['project_lifetime'];
                     document.getElementById("startDate").value = results['start_date'];
-                    document.getElementById("temporalResolution").value = results['temporal_resolution'];
                     document.getElementById("nDays").value = results['n_days'];
                 }
             }

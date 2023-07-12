@@ -78,6 +78,7 @@ function makeplot_bar_chart(){
                 yaxis2: {
                     title: 'Capacity in [kWh]',
                     showgrid: false,
+                    zeroline: false,
                     titlefont: {
                         color: 'rgb(133, 52, 124)',
                         size: 16,
@@ -168,10 +169,10 @@ xhr.onreadystatechange = function () {
     battery_to_dc_bus = Number(sankey_data['battery_to_dc_bus'])
     dc_bus_to_battery = Number(sankey_data['dc_bus_to_battery'])
     dc_bus_to_inverter = Number(sankey_data['dc_bus_to_inverter'])
-    dc_bus_to_surplus = Number(sankey_data['dc_bus_to_surplus'])
+    pv_to_surplus = Number(sankey_data['dc_bus_to_surplus'])
     inverter_to_demand = Number(sankey_data['inverter_to_demand'])
 
-    var data = [{
+var data = [{
         type: 'sankey',
         orientation: 'h',
         node: {
@@ -184,31 +185,31 @@ xhr.onreadystatechange = function () {
             width: 0.5
           },
         label: ['Fuel',
-                'Diesel Genset', 
-                'Rectifier', 
-                'PV', 
-                'DC Bus', 
+                'Diesel Genset',
+                'Rectifier',
+                'PV',
+                'DC Bus',
                 'Battery',
                 'Inverter',
                 'Demand',
                 'Surplus'],
         color: 'rgb(23, 64, 92)',
             },
-      
+
         link: {
-            source: [0, 1, 1, 2, 3, 5, 4, 4, 4, 6],
+            source: [0, 1, 1, 2, 3, 5, 4, 4, 3, 6],
             target: [1, 2, 7, 4, 4, 4, 5, 6, 8, 7],
-            value:  [fuel_to_diesel_genset, 
-                     diesel_genset_to_rectifier, 
-                     diesel_genset_to_demand, 
-                     rectifier_to_dc_bus, 
-                     pv_to_dc_bus, 
-                     battery_to_dc_bus, 
-                     dc_bus_to_battery, 
-                     dc_bus_to_inverter, 
-                     dc_bus_to_surplus, 
+            value:  [fuel_to_diesel_genset,
+                     diesel_genset_to_rectifier,
+                     diesel_genset_to_demand,
+                     rectifier_to_dc_bus,
+                     pv_to_dc_bus,
+                     battery_to_dc_bus,
+                     dc_bus_to_battery,
+                     dc_bus_to_inverter,
+                     pv_to_surplus,
                      inverter_to_demand],
-            label:  ['Fuel supplied to the diesel genset', 
+            label:  ['Fuel supplied to the diesel genset',
                     'Diesel genset output sent to the rectifier',
                     'AC demand covered by the diesel genset',
                     'Diesel genset electricity converted to DC',
@@ -218,7 +219,7 @@ xhr.onreadystatechange = function () {
                     'DC electricity sent to the inverter',
                     'DC surplus sink',
                     'AC demand covered by the PV system'],
-            color: 'rgb(168, 181, 192)', 
+            color: 'rgb(168, 181, 192)',
         }
     }]
         
