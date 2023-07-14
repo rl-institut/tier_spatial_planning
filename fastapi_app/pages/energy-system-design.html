@@ -95,7 +95,12 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblDieselGensetLifetime" class="input-group-text"
-                      >Lifetime</span
+                      >Lifetime
+                                      <span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Lifespan of the component, after expiration a replacement investment must be made."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -112,8 +117,12 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblDieselGensetCapex" class="input-group-text"
-                      >CAPEX</span
-                    >
+                      >CapEx
+                        <span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Capital Expenditure (CapEx) is the money that has to be spent to purchase the component."
+                  ></span>
                     <input
                       type="number"
                       class="form-control"
@@ -129,7 +138,13 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblDieselGensetOpex" class="input-group-text"
-                      >OPEX</span
+                      >OpEx
+                    <span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Operating Expense (OpEx) refers to the fixed annual costs incurred in the operation of a component, specifically excluding fuel and other variable expenses."
+                  ></span>
+                    </span
                     >
                     <input
                       type="number"
@@ -139,7 +154,7 @@
                       required
                     />
                     <span id="dieselGensetOpexUnit" class="input-group-text"
-                      >USD/kW.a</span
+                      >USD/(kW•a)</span
                     >
                   </div>
                 </div>
@@ -148,7 +163,12 @@
                     <span
                       id="lblDieselGensetVariableCost"
                       class="input-group-text"
-                      >Variable Cost</span
+                      >Variable Cost
+                        <span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Variable costs per kWh of electricity, excluding fuel costs."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -185,7 +205,11 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblDieselGensetFuelLhv" class="input-group-text"
-                      >Fuel LHV</span
+                      >Fuel LHV<span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Lower Heating Value (LHV) is the heat energy released by a fuel when combusted, excluding the energy contained in evaporated water."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -205,7 +229,11 @@
                     <span
                       id="lblDieselGensetMinEfficiency"
                       class="input-group-text"
-                      >Minimum Efficiency</span
+                      >Minimum Efficiency<span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Efficiency at minimum load."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -226,7 +254,11 @@
                     <span
                       id="lblDieselGensetMaxEfficiency"
                       class="input-group-text"
-                      >Maximum Efficiency</span
+                      >Maximum Efficiency<span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Efficiency at maximum load."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -245,7 +277,11 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblDieselGensetMinLoad" class="input-group-text"
-                      >Minimum Load</span
+                      >Minimum Load<span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Minimum load in percent relative to the installed capacity of the diesel generator."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -262,7 +298,11 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblDieselGensetMaxLoad" class="input-group-text"
-                      >Maximum Load</span
+                      >Maximum Load<span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Maximum load in percent relative to the installed capacity of the diesel generator."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -565,7 +605,12 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblBatteryLifetime" class="input-group-text"
-                      >Lifetime</span
+                      >Lifetime
+                        <span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Lifespan of the component, after expiration a replacement investment must be made."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -582,7 +627,11 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblBatteryCapex" class="input-group-text"
-                      >CAPEX</span
+                      >CapEx<span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Capital Expenditure (CapEx) is the money that has to be spent to purchase the component."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -599,7 +648,11 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblBatteryOpex" class="input-group-text"
-                      >OPEX</span
+                      >OpEx <span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Operating Expense (OpEx) is the cost associated with the operation of the component"
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -609,14 +662,18 @@
                       required
                     />
                     <span id="batteryOpexUnit" class="input-group-text"
-                      >USD/kW.a</span
+                      >USD/(kW•a)</span
                     >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
                     <span id="lblBatterySocMin" class="input-group-text"
-                      >Minimum SOC</span
+                      >Minimum SOC<span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Minimum State of Charge (SOC) of a battery refers to the lowest level at which the battery is allowed to discharge in order to prevent damage and prolong its lifespan."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -633,7 +690,11 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblBatterySocMax" class="input-group-text"
-                      >Maximum SOC</span
+                      >Maximum SOC<span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Maximum State of Charge (SOC) of a battery refers to the highest level at which the battery can be safely charged to prevent overcharging and ensure longevity."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -650,7 +711,11 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblBatteryCrateIn" class="input-group-text"
-                      >C-Rate in</span
+                      >C-Rate in<span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="C-Rate in for a battery refers to the rate at which the battery is charged, calculated as a multiple of the battery's capacity."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -667,7 +732,11 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblBatteryCrateOut" class="input-group-text"
-                      >C-Rate out</span
+                      >C-Rate out<span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="C-Rate out for a battery refers to the rate at which the battery is discharged, calculated as a multiple of the battery's capacity."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -684,7 +753,11 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblBatteryEfficiency" class="input-group-text"
-                      >Roundtrip Efficiency</span
+                      >Roundtrip Efficiency<span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Roundtrip Efficiency of a battery refers to the ratio of energy output to energy input, accounting for losses during charging and discharging cycles."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -778,7 +851,12 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblInverterLifetime" class="input-group-text"
-                      >Lifetime</span
+                      >Lifetime
+                                      <span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Lifespan of the component, after expiration a replacement investment must be made."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -795,7 +873,11 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblInverterCapex" class="input-group-text"
-                      >CAPEX</span
+                      >CapEx<span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Capital Expenditure (CapEx) is the money that has to be spent to purchase the component."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -812,7 +894,11 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblInverterOpex" class="input-group-text"
-                      >OPEX</span
+                      >OpEx <span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Operating Expense (OpEx) is the cost associated with the operation of the component"
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -822,14 +908,18 @@
                       required
                     />
                     <span id="inverterOpexUnit" class="input-group-text"
-                      >USD/kW.a</span
+                      >USD/(kW•a)</span
                     >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
                     <span id="lblInverterEfficiency" class="input-group-text"
-                      >Efficiency</span
+                      >Efficiency<span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Efficiency of an inverter refers to the ratio of output power to input power, representing how effectively the inverter converts DC power to AC power."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -920,7 +1010,12 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblRectifierLifetime" class="input-group-text"
-                      >Lifetime</span
+                      >Lifetime
+                                      <span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Lifespan of the component, after expiration a replacement investment must be made."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -937,7 +1032,11 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblRectifierCapex" class="input-group-text"
-                      >CAPEX</span
+                      >CapEx<span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Capital Expenditure (CapEx) is the money that has to be spent to purchase the component."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -954,7 +1053,11 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblRectifierOpex" class="input-group-text"
-                      >OPEX</span
+                      >OpEx <span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Operating Expense (OpEx) is the cost associated with the operation of the component"
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -964,14 +1067,18 @@
                       required
                     />
                     <span id="rectifierOpexUnit" class="input-group-text"
-                      >USD/kW.a</span
+                      >USD/(kW•a)</span
                     >
                   </div>
                 </div>
                 <div class="row">
                   <div class="input-group">
                     <span id="lblRectifierEfficiency" class="input-group-text"
-                      >Efficiency</span
+                      >Efficiency<span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Efficiency of a rectifier refers to the ratio of output power to input power, indicating how effectively it converts AC power into DC power."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -988,7 +1095,7 @@
               </div>
             </div>
             <div class="col-md-4">
-              <div class="box box--medium" id="selectPvBox">
+              <div class="box box--small" id="selectPvBox">
                 <div class="box__header">
                   <form class="was-validated">
                     <div class="form-check">
@@ -1055,7 +1162,12 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblPvLifetime" class="input-group-text"
-                      >Lifetime</span
+                      >Lifetime
+                    <span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Lifespan of the component, after expiration a replacement investment must be made."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -1071,7 +1183,12 @@
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span id="lblPvCapex" class="input-group-text">CAPEX</span>
+                    <span id="lblPvCapex" class="input-group-text">CapEx
+                    <span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Capital Expenditure (CapEx) is the money that has to be spent to purchase the component."
+                  ></span></span>
                     <input
                       type="number"
                       class="form-control"
@@ -1086,7 +1203,11 @@
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span id="lblPvOpex" class="input-group-text">OPEX</span>
+                    <span id="lblPvOpex" class="input-group-text">OpEx <span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Operating Expense (OpEx) is the cost associated with the operation of the component."
+                  ></span></span>
                     <input
                       type="number"
                       class="form-control"
@@ -1095,44 +1216,13 @@
                       required
                     />
                     <span id="pvOpexUnit" class="input-group-text"
-                      >USD/kW.a</span
+                      >USD/(kW•a)</span
                     >
                   </div>
                 </div>
-                <div class="row">
-                  <label
-                    id="lblPvFileImportSolarPotential"
-                    for="fileImportSolarPotential"
-                    class="form-label import-file"
-                  >
-                    PV potential (1-h resolution)
-                    <span
-                      class="icon icon-question"
-                      data-bs-toggle="tooltip"
-                      title="Annual data with one hour resolution representing the potential for electricity generation from solar PV assets."
-                    >
-                    </span>
-                  </label>
-                  <div class="input-group">
-                    <input
-                      type="file"
-                      class="form-control"
-                      id="pvFileImportSolarPotential"
-                      accept=".xls, .xlsx, .csv"
-                      disabled
-                    />
-                    <button
-                      id="btnPvFileImportSolarPotential"
-                      class="btn"
-                      type="button"
-                      onclick="import_data();"
-                    >
-                      Import
-                    </button>
-                  </div>
-                </div>
+
               </div>
-              <div class="box box--tiny" id="selectShortageBox">
+              <div class="box box--small" id="selectShortageBox">
                 <div class="box__header">
                   <form class="was-validated">
                     <div class="form-check">
@@ -1152,7 +1242,11 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblShortageMaxTotal" class="input-group-text"
-                      >Maximum Total Shortage</span
+                      >Maximum Total Shortage<span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="A parameter indicating the allowable extent of electricity demand under-coverage throughout the entire observation period."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -1170,7 +1264,11 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblShortageMaxTimestep" class="input-group-text"
-                      >Maximum Shortage Each Timestep</span
+                      >Maximum Shortage Each Timestep<span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Parameter defining the maximum permitted deficit in electricity supply during any single model time step."
+                  ></span></span
                     >
                     <input
                       type="number"
@@ -1188,7 +1286,11 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblShortagePenaltyCost" class="input-group-text"
-                      >Shortage Penalty Cost</span
+                      >Shortage Penalty Cost<span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="These costs are added to the objective function in case of a shortfall in demand. This ensures that the shortfall in demand is only utilized when the cost of meeting the demand exceeds the defined threshold value."
+                  ></span></span
                     >
                     <input
                       type="number"

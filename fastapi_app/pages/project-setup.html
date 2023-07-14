@@ -17,12 +17,6 @@
               <div class="input-item">
                 <label for="projectName" class="form-label">
                   Project name
-                  <span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Maximum of 50 characters"
-                  >
-                  </span>
                 </label>
                 <input
                   type="text"
@@ -37,11 +31,6 @@
               <div class="input-item optional">
                 <label for="projectDescription" class="form-label"
                   >Project description
-                  <span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Maximum of 300 characters"
-                  >
                   </span>
                 </label>
                 <textarea
@@ -50,7 +39,7 @@
                   id="projectDescription"
                   placeholder="Description"
                 >
- Simulation and optimization of power supply and grid layout for an off-grid system in a rural settlement.
+            Simulation and optimization of power supply and grid layout for an off-grid system in a rural settlement.
                 </textarea>
               </div>
             </form>
@@ -65,7 +54,8 @@
                   <span
                     class="icon icon-question"
                     data-bs-toggle="tooltip"
-                    title="A guess of what the interest rate will be in during the project lifetime. Could be provided as constant or timeseries"
+                    title="
+                    The interest rate in investment calculations signifies the cost of capital and the potential return from an alternative investment of similar risk. It helps express the time value of money, crucial for determining the present value of future cash flows. This assists in evaluating and comparing investment opportunities."
                   ></span>
                 </label>
                 <div class="input-group">
@@ -88,7 +78,7 @@
                   <span
                     class="icon icon-question"
                     data-bs-toggle="tooltip"
-                    title="Simulation time"
+                    title="The period during which the off grid will be in operation. Components whose lifetime is below that of the project lifetime must be replaced during operation, and this replacement must be taken into account in the cost calculation. In addition, the residual value of the components is determined at the end of the project lifetime."
                   ></span>
                 </label>
                 <div class="input-group">
@@ -108,7 +98,13 @@
               </div>
               <div class="input-item">
                 <div>
-                  <label for="startDate" class="form-label">Start date</label>
+                  <label for="startDate" class="form-label">Start date
+                                    <span
+                    class="icon icon-question"
+                    data-bs-toggle="tooltip"
+                    title="Starting point of the modeling period for the unit commitment of the generation plants."
+                  ></span>
+                  </label>
                   <input
                     type="date"
                     class="form-control"
@@ -122,36 +118,12 @@
                 </div>
               </div>
               <div class="input-item">
-                <label for="temporalResolution" class="form-label"
-                  >Temporal resolution
-                  <span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Time step of the simulation. A higher resolution requires more data and can lead to longer simulation times."
-                  ></span>
-                </label>
-                <div class="input-group">
-                  <input
-                    type="number"
-                    class="form-control"
-                    id="temporalResolution"
-                    placeholder="Time step"
-                    value="1"
-                    min="1"
-                    max="1"
-                    step="1"
-                    required
-                  />
-                  <span class="input-group-text">Hour</span>
-                </div>
-              </div>
-              <div class="input-item">
                 <label for="nDays" class="form-label"
                   >Number of days
                   <span
                     class="icon icon-question"
                     data-bs-toggle="tooltip"
-                    title="Number of days used in the simulation."
+                    title="Number of days in the modeling period for the unit commitment of the generation plants."
                   ></span>
                 </label>
                 <div class="input-group">

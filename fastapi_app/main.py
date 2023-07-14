@@ -424,7 +424,7 @@ async def consumer_to_db(project_id: str, map_elements: fastapi_app.io.schema.Ma
 async def load_results(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
     df = await queries.get_df(models.Results, user.id, project_id)
-    infeasible = bool(df.loc[0, 'infeasible'])
+    infeasible = bool(df.loc[0, 'infeasible']) if df.columns.__contains__('infeasible') else False
     if df.empty:
         return {}
     df["average_length_distribution_cable"] = df["length_distribution_cable"] / df["n_distribution_links"]
