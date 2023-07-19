@@ -131,6 +131,12 @@ let markerPowerHouseSelected = new L.Icon({
 let marker
 let old_marker
 
+function getKeyByValue(object, value) {
+  return Object.keys(object).find(key => object[key] === value);
+}
+
+
+
 function markerOnClick(e){
     L.DomEvent.stopPropagation(e);
     if (marker) {
@@ -178,7 +184,8 @@ function markerOnClick(e){
         else if (marker.consumer_type === 'enterprise'){
             dropDownMenu(enterprise_list);
             document.getElementById('consumer').value = 'E';
-            document.getElementById('enterprise').value = 'group1';
+            let key = getKeyByValue(enterprise_list, marker.consumer_detail);
+            document.getElementById('enterprise').value = key;
             document.getElementById('shs_options').disabled = false;
             document.getElementById('consumer').disabled = false;
             activate_large_loads();
@@ -194,17 +201,19 @@ function markerOnClick(e){
         }
         else if (marker.consumer_type === 'public_service'){
             document.getElementById('shs_options').disabled = false;
+            document.getElementById('consumer').value = 'P';
+            document.getElementById('consumer').disabled = false;
+            let key = getKeyByValue(enterprise_list, marker.consumer_detail);
+            document.getElementById('enterprise').value = key;
             document.getElementById('consumer').disabled = false;
             dropDownMenu(public_service_list);
             deactivate_large_loads()
-
         }
         if (marker.node_type !== 'power-house') {
             if (marker.shs_options == 0) {document.getElementById('shs_options').value = 'optimize';}
             else if (marker.shs_options == 1) {document.getElementById('shs_options').value = 'grid';}
             else if (marker.shs_options == 2) {document.getElementById('shs_options').value ='shs';}
         }
-
         document.getElementById('longitude').disabled = false;
         document.getElementById('latitude').disabled = false;
 
@@ -254,6 +263,7 @@ function update_map_elements(){
                 break;
             case 'P':
                 marker.consumer_type = 'public_service';
+                marker.consumer_detail = document.getElementById('enterprise').value;
                 selected_icon = markerPublicservice;
                 break;
             case 'E':

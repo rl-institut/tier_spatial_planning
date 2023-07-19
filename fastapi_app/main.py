@@ -404,7 +404,8 @@ async def consumer_to_db(project_id: str, map_elements: fastapi_app.io.schema.Ma
     if df.empty is True:
         await inserts.remove(models.Nodes, user.id, project_id)
         return
-    df = df[['latitude', 'longitude', 'how_added', 'node_type', 'consumer_type', 'custom_specification', 'shs_options']]
+    df = df[['latitude', 'longitude', 'how_added', 'node_type', 'consumer_type', 'custom_specification', 'shs_options',
+             'consumer_detail']]
     df['consumer_type'] = df['consumer_type'].fillna('household')
     df['custom_specification'] = df['custom_specification'].fillna('')
     df['shs_options'] = df['shs_options'].fillna(0)
