@@ -845,6 +845,13 @@ async def get_data_for_duration_curves(project_id, request: Request):
     return json.loads(df.to_json())
 
 
+@app.get("/get_demand_time_series/{project_id}")
+async def get_demand_time_series(project_id, request: Request):
+    df = pd.DataFrame({'x': np.random.rand(100),
+                       'y': np.random.rand(100)})
+    return df.to_dict('list')  # converts dataframe to dict format with lists as values
+
+
 @app.get("/get_co2_emissions_data/{project_id}")
 async def get_co2_emissions_data(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)

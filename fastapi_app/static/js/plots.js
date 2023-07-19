@@ -116,8 +116,7 @@ xhr.onreadystatechange = function () {
       cost_non_renewable_assets = Number(lcoe_breakdown['non_renewable_assets']);
       cost_grid = Number(lcoe_breakdown['grid']);
       cost_fuel = Number(lcoe_breakdown['fuel']);
-
-      var data = [{
+      let data = [{
         type: 'pie',
         hole: .6,
         values: [cost_renewable_assets, cost_non_renewable_assets, cost_grid, cost_fuel],
@@ -135,7 +134,7 @@ xhr.onreadystatechange = function () {
         opacity: 0.9,
       }]
       
-      var layout = {
+      let layout = {
         // height: 400,
         // width: 400,
         margin: {'t': 0, 'b': 0, 'l': 0, 'r': 0},

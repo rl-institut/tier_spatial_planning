@@ -37,7 +37,8 @@
   </head>
   <body onload="redirect_if_cookie_is_missing(true, true);
                 load_previous_data('demand_estimation?project_id={{ project_id }}');
-                show_user_email_in_navbar();">
+                show_user_email_in_navbar();
+                demand_ts({{ project_id }});">
   {% include '_navbar.html' %}
   {% include '_wizard.html' %}
     <main>
@@ -53,24 +54,34 @@
                         </h2>
                         <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
                           <div class="accordion-body">
-                            <div class="btn-group-vertical btn-group-toggle" data-toggle="buttons">
-                                <label class="btn btn-custom active d-flex align-items-center">
-                                    <input type="radio" name="options" id="option1" autocomplete="off" checked> National Distribution
-                                </label>
-                                <label class="btn btn-custom d-flex align-items-center">
-                                    <input type="radio" name="options" id="option2" autocomplete="off"> South-South Distribution
-                                </label>
-                                <label class="btn btn-custom d-flex align-items-center">
-                                    <input type="radio" name="options" id="option3" autocomplete="off"> North-West Distribution
-                                </label>
-                                <label class="btn btn-custom d-flex align-items-center">
-                                    <input type="radio" name="options" id="option5" autocomplete="off"> North-Central Distribution
-                                </label>
-                                <label class="btn btn-custom d-flex align-items-center">
-                                    <input type="radio" name="options" id="option6" autocomplete="off"> Location-Based Estimate (NB*)
-                                </label>
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <div class="btn-group-vertical btn-group-toggle" data-toggle="buttons">
+                                        <label class="btn btn-custom active d-flex align-items-center">
+                                            <input type="radio" name="options" id="option1" autocomplete="off" checked> National Distribution
+                                        </label>
+                                        <label class="btn btn-custom d-flex align-items-center">
+                                            <input type="radio" name="options" id="option2" autocomplete="off"> South-South Distribution
+                                        </label>
+                                        <label class="btn btn-custom d-flex align-items-center">
+                                            <input type="radio" name="options" id="option3" autocomplete="off"> North-West Distribution
+                                        </label>
+                                        <label class="btn btn-custom d-flex align-items-center">
+                                            <input type="radio" name="options" id="option5" autocomplete="off"> North-Central Distribution
+                                        </label>
+                                        <label class="btn btn-custom d-flex align-items-center">
+                                            <input type="radio" name="options" id="option6" autocomplete="off"> Location-Based Estimate (NB*)
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="chart__plot">
+                                        <div id="demand_plot"></div>
+                                    </div>
+                                </div>
                             </div>
-                          </div>
+                        </div>
+
                             </div>
                               <span style="padding: 2rem">
                               <a>Show advanced Options</a>
@@ -129,8 +140,6 @@
         </div>
     </label>
 </div>
-
-
                               </div>
                           </div>
                         </div>
@@ -144,42 +153,8 @@
   {% include '_footer.html' %}
   </body>
     {% include '_scripts.html' %}
-  <script>
-document.getElementById('toggleswitch').addEventListener('change', function (event) {
-  const accordionItem2 = new bootstrap.Collapse(document.getElementById('collapseTwo'), {
-    toggle: false
-  });
-  if (event.target.checked) {
-    accordionItem2.show();
-  } else {
-    accordionItem2.hide();
-  }
-});
-
-$(function() {
-    $("input[name='options2']").change(function() {
-        if ($("#option7").is(':checked')) {
-            $("#average_daily_energy").prop('disabled', false);
-            $("#maximum_peak_load").prop('disabled', true).val('');
-        } else {
-            $("#average_daily_energy").prop('disabled', true).val('');
-            $("#maximum_peak_load").prop('disabled', false);
-        }
-    });
-});
-
-const radioButtons = document.getElementsByName("options");
-let selectedValue = -1; // Default value if no selection is made
-
-document.addEventListener('DOMContentLoaded', function() {
-  for (let i = 0; i < radioButtons.length; i++) {
-    radioButtons[i].addEventListener("change", function() {
-      if (this.checked) {
-        selectedValue = i;
-      }
-    });
-  }
-});
-
-</script>
+  <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script src="https://cdn.plot.ly/plotly-2.0.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.0/jspdf.umd.min.js"></script>
+<script src="{{ url_for('static', path='js/demand_estimation.js') }}"></script>
 </html>
