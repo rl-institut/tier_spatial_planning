@@ -992,6 +992,8 @@ class Grid:
             = self.nodes[self.nodes.index.isin(consumer_of_pole.index)]['connection_cost_per_consumer'].sum()
         next_pole = self.nodes[self.nodes.index == pole]['parent'].iat[0]
         for _ in range(100):
+            if next_pole == 'unknown':
+                continue
             if self.nodes[self.nodes.index == next_pole]['n_connection_links'].iat[0] == 0:
                 if self.nodes[self.nodes.index == next_pole]['node_type'].iat[0] == 'power-house':
                     break
@@ -1113,12 +1115,9 @@ class Grid:
             for parent_pole in parent_pole_list:
                 child_pole_list \
                 = distribution_links[(distribution_links['poles'].str.contains(parent_pole+',')) |
-                                     ((distribution_links['poles'] + '#').str.contains(parent_pole + '#'))]['poles'].str.split(',')
+                                     ((distribution_links['poles'] + '#').str.contains(parent_pole + '#'))]\
+                ['poles'].str.split(',')
                 for child_pole in child_pole_list:
-
-                    if 'p-6' in child_pole or 'p-10' in child_pole or 'p6' in parent_pole or 'p10' in parent_pole:
-                        t = 4
-
                     if child_pole[0] not in examined_pole_list and child_pole[1] not in examined_pole_list:
                         pos = 0 if consumer_to_power_house else 1
                         if child_pole[pos] == parent_pole:
@@ -1138,6 +1137,8 @@ class Grid:
                 parent_pole_list, links, examined_pole_list \
                     = check_all_child_poles(parent_pole_list, links, examined_pole_list)
             else:
+                self.nodes.loc[self.nodes['node_type'] == 'power-house', 'parent'] = \
+                    self.nodes[self.nodes['node_type'] == 'power-house'].index[0]
                 break
 
         links['from_node'] = pd.Series(links.index.str.split(','), index=links.index)\

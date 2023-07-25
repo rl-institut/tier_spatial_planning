@@ -393,7 +393,6 @@ async def consumer_to_db(project_id: str, map_elements: fastapi_app.io.schema.Ma
     user = await accounts.get_user_from_cookie(request)
     df = pd.DataFrame.from_records(map_elements.map_elements)
     df = df.drop_duplicates(subset=['latitude', 'longitude'])
-    df = df.drop(index=df[df['node_type'] == 'power_house'].index)
     drop_index = df[df['node_type'] == 'power-house'].index
     if drop_index.__len__() > 1:
         df = df.drop(index=drop_index[1:])
@@ -419,6 +418,7 @@ async def consumer_to_db(project_id: str, map_elements: fastapi_app.io.schema.Ma
         if 'parent' in df.columns:
             df['parent'] = df['parent'].replace('unknown', None)
     await inserts.insert_nodes_df(df, user.id, project_id)
+    return JSONResponse(status_code=200, content={"message": "Success"})
 
 
 @app.get("/load_results/{project_id}")
@@ -718,6 +718,7 @@ async def save_grid_design(request: Request, data: fastapi_app.io.schema.SaveGri
     data.grid_design['project_id'] = project_id
     grid_design = models.GridDesign(**data.grid_design)
     await inserts.merge_model(grid_design)
+    return JSONResponse(status_code=200, content={"message": "Success"})
 
 
 @app.post("/save_demand_estimation/")
@@ -744,6 +745,7 @@ async def save_demand_estimation(request: Request, data: fastapi_app.io.schema.S
                   'average_daily_energy': average_daily_energy}
     demand_estimation = models.Demand(**dictionary)
     await inserts.merge_model(demand_estimation)
+    return JSONResponse(status_code=200, content={"message": "Success"})
 
 
 @app.post("/save_project_setup/{project_id}")
@@ -757,6 +759,7 @@ async def save_project_setup(project_id, request: Request, data: fastapi_app.io.
     data.page_setup['project_id'] = project_id
     project_setup = models.ProjectSetup(**data.page_setup)
     await inserts.merge_model(project_setup)
+    return JSONResponse(status_code=200, content={"message": "Success"})
 
 
 @app.post("/save_energy_system_design/")
