@@ -6,7 +6,6 @@
   </head>
   <body onload="redirect_if_cookie_is_missing(true, true);
                 load_previous_data('grid_design?project_id={{ project_id }}');
-                boxVisibilityShs();
                 show_user_email_in_navbar();">
     <!-- don't forget 'navbar--scenario' CSS class -->
   {% include '_navbar.html' %}
@@ -288,5 +287,4 @@
   </body>
   {% include '_scripts.html' %}
   <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=Promise"></script>
-  <script src="{{ url_for('static', path='js/grid_design.js') }}"></script>
 </html>

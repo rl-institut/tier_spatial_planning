@@ -90,8 +90,7 @@ function change_box_visibility(id) {
         ],
         'pv': [
             'Design', 'Dispatch',
-            'NominalCapacity', 'Lifetime', 'Capex', 'Opex', 
-            'FileImportSolarPotential',
+            'NominalCapacity', 'Lifetime', 'Capex', 'Opex',
         ],
         'inverter': [
             'Design', 'Dispatch',

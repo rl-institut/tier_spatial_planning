@@ -5,44 +5,51 @@
              {% if title == 'Project Setup' %}
                  <a class="btn btn--medium btn--hollow btn--previous"
                  href="/">Previous</a>
-                 <a class="btn btn--medium" style="color: #fff"
-                 href='consumer_selection?project_id={{ project_id }}'
-                 onclick="save_project_setup({{ project_id }});"
-                >Next</a>
+                <a class="btn btn--medium" style="color: #fff"
+                   href="javascript:void(0);"
+                   onclick="save_project_setup({{ project_id }}, 'consumer_selection?project_id={{ project_id }}');">
+                   Next
+                </a>
              {% elif title == 'Consumer Selection' %}
-                 <a class="btn btn--medium btn--hollow btn--previous"
-                 href="project_setup?project_id={{ project_id }}"
-                 onclick="consumer_to_db({{ project_id }})"
-                 >Previous</a>
-                 <a class="btn btn--medium" style="color: #fff"
-                 href="javascript:void(0);"
-                 onclick="consumer_to_db({{ project_id }})">
-                     Next</a>
+                <a class="btn btn--medium btn--hollow btn--previous"
+                   href="javascript:void(0);"
+                   onclick="consumer_to_db({{ project_id }}, 'project_setup?project_id={{ project_id }}')">
+                   Previous
+                </a>
+                <a class="btn btn--medium" style="color: #fff"
+                   href="javascript:void(0);"
+                   onclick="consumer_to_db({{ project_id }});">
+                   Next
+                </a>
              {% elif title == 'Demand Estimation' %}
-                 <a class="btn btn--medium btn--hollow btn--previous"
-                 href="consumer_selection?project_id={{ project_id }}"
-                 onclick="save_demand_estimation();"
-                 >Previous</a>
-                 <a class="btn btn--medium" style="color: #fff"
-                 href="grid_design?project_id={{ project_id }}"
-                 onclick="save_demand_estimation();">
-                     Next</a>
+                <a class="btn btn--medium btn--hollow btn--previous"
+                    href="javascript:void(0);"
+                    onclick="save_demand_estimation('consumer_selection?project_id={{ project_id }}')">
+                    Previous
+                </a>
+                <a class="btn btn--medium" style="color: #fff"
+                    href="javascript:void(0);"
+                    onclick="save_demand_estimation('grid_design?project_id={{ project_id }}')">
+                    Next
+                </a>
              {% elif title == 'Grid Design' %}
                  <a class="btn btn--medium btn--hollow btn--previous"
-                 href="demand_estimation?project_id={{ project_id }}"
-                 onclick="save_grid_design();">
+                 href="javascript:void(0);"
+                 onclick="save_grid_design('demand_estimation?project_id={{ project_id }}');">
                      Previous</a>
                  <a class="btn btn--medium" style="color: #fff"
-                 href="energy_system_design?project_id={{ project_id }}"
-                 onclick="save_grid_design();">Next</a>
+                   href="javascript:void(0);"
+                   onclick="save_grid_design('energy_system_design?project_id={{ project_id }}');">
+                   Next
+                </a>
             {% elif title == 'Energy System Design' %}
                  <a class="btn btn--medium btn--hollow btn--previous"
-                 href="grid_design?project_id={{ project_id }}"
-                  onclick="save_energy_system_design();">
+                 href="javascript:void(0);"
+                  onclick="save_energy_system_design('grid_design?project_id={{ project_id }}');">
                      Previous</a>
                  <a class="btn btn--medium" style="color: #fff"
                  href="javascript:void(0);"
-                 onclick="save_energy_system_design(); forward_if_no_task_is_pending({{ project_id }});">
+                 onclick="save_energy_system_design(''); forward_if_no_task_is_pending({{ project_id }});">
                      Optimize</a>
             {% elif title == 'Simulation Results' %}
                  <a class="btn btn--medium" style="color: #fff"

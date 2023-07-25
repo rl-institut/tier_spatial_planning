@@ -51,14 +51,20 @@ async function db_nodes_to_js(project_id, markers_only) {
   })
 }
 
-async function consumer_to_db(project_id) {
-  update_map_elements();
-  const url = "/consumer_to_db/" + project_id;
-  await fetch(url, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({map_elements: map_elements})
-  }).then(() => forward_if_consumer_selection_exists(project_id))
+async function consumer_to_db(project_id, href) {
+    update_map_elements();
+    const url = "/consumer_to_db/" + project_id;
+    await fetch(url, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({map_elements: map_elements})
+    }).then(() => {
+        if (!href) {
+            forward_if_consumer_selection_exists(project_id);
+        } else {
+            window.location.href = href;
+        }
+    });
 }
 
 function add_buildings_inside_boundary({ boundariesCoordinates } = {}) {
@@ -116,95 +122,115 @@ function remove_buildings_inside_boundary(
 /************************************************************/
 
 
-function save_energy_system_design() {
-        $.ajax({
-        url: "save_energy_system_design/",
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify({
-            pv: {
-                'settings': {
-                    'is_selected': selectPv.checked,
-                     'design': pvDesign.checked,
-                },
-                 'parameters': {
-                    'nominal_capacity': pvNominalCapacity.value,
-                    'lifetime': pvLifetime.value,
-                    'capex': pvCapex.value,
-                    'opex': pvOpex.value,
-                }
+async function save_energy_system_design(href) {
+    const url = "save_energy_system_design/";
+    const data = {
+        pv: {
+            'settings': {
+                'is_selected': selectPv.checked,
+                 'design': pvDesign.checked,
             },
-            diesel_genset: {
-                'settings': {
-                    'is_selected': selectDieselGenset.checked,
-                     'design': dieselGensetDesign.checked,
-                },
-                'parameters': {
-                    'nominal_capacity': dieselGensetNominalCapacity.value,
-                    'lifetime': dieselGensetLifetime.value,
-                    'capex': dieselGensetCapex.value,
-                    'opex': dieselGensetOpex.value,
-                    'variable_cost': dieselGensetVariableCost.value,
-                    'fuel_cost': dieselGensetFuelCost.value,
-                    'fuel_lhv': dieselGensetFuelLhv.value,
-                    'min_load': dieselGensetMinLoad.value/100,
-                    'max_efficiency': dieselGensetMaxEfficiency.value/100,
-                    'max_load': dieselGensetMaxLoad.value/100,
-                    'min_efficiency': dieselGensetMinEfficiency.value/100,
-                }
+             'parameters': {
+                'nominal_capacity': pvNominalCapacity.value,
+                'lifetime': pvLifetime.value,
+                'capex': pvCapex.value,
+                'opex': pvOpex.value,
+            }
+        },
+        diesel_genset: {
+            'settings': {
+                'is_selected': selectDieselGenset.checked,
+                 'design': dieselGensetDesign.checked,
             },
-            battery: {
-                'settings': {
-                    'is_selected': selectBattery.checked,
-                     'design': batteryDesign.checked,
-                },
-                'parameters':{
-                    'nominal_capacity': batteryNominalCapacity.value,
-                    'lifetime': batteryLifetime.value, 'capex': batteryCapex.value, 'opex': batteryOpex.value,
-                    'soc_min': batterySocMin.value/100, 'soc_max': batterySocMax.value/100, 'c_rate_in': batteryCrateIn.value,
-                    'c_rate_out': batteryCrateOut.value, 'efficiency': batteryEfficiency.value/100,
-                }
+            'parameters': {
+                'nominal_capacity': dieselGensetNominalCapacity.value,
+                'lifetime': dieselGensetLifetime.value,
+                'capex': dieselGensetCapex.value,
+                'opex': dieselGensetOpex.value,
+                'variable_cost': dieselGensetVariableCost.value,
+                'fuel_cost': dieselGensetFuelCost.value,
+                'fuel_lhv': dieselGensetFuelLhv.value,
+                'min_load': dieselGensetMinLoad.value/100,
+                'max_efficiency': dieselGensetMaxEfficiency.value/100,
+                'max_load': dieselGensetMaxLoad.value/100,
+                'min_efficiency': dieselGensetMinEfficiency.value/100,
+            }
+        },
+        battery: {
+            'settings': {
+                'is_selected': selectBattery.checked,
+                 'design': batteryDesign.checked,
             },
-            inverter: {
-                'settings': {
-                    'is_selected': selectInverter.checked,
-                    'design': inverterDesign.checked,
-                },
-                'parameters': {
-                    'nominal_capacity': inverterNominalCapacity.value,
-                    'lifetime': inverterLifetime.value,
-                    'capex': inverterCapex.value,
-                    'opex': inverterOpex.value,
-                    'efficiency': inverterEfficiency.value/100,
-                },
+            'parameters':{
+                'nominal_capacity': batteryNominalCapacity.value,
+                'lifetime': batteryLifetime.value,
+                'capex': batteryCapex.value,
+                'opex': batteryOpex.value,
+                'soc_min': batterySocMin.value/100,
+                'soc_max': batterySocMax.value/100,
+                'c_rate_in': batteryCrateIn.value,
+                'c_rate_out': batteryCrateOut.value,
+                'efficiency': batteryEfficiency.value/100,
+            }
+        },
+        inverter: {
+            'settings': {
+                'is_selected': selectInverter.checked,
+                'design': inverterDesign.checked,
             },
-            rectifier: {
-                'settings': {
-                    'is_selected': selectRectifier.checked,
-                    'design': rectifierDesign.checked,
-                },
-                'parameters': {
-                    'nominal_capacity': rectifierNominalCapacity.value,
-                    'lifetime': rectifierLifetime.value,
-                    'capex': rectifierCapex.value,
-                    'opex': rectifierOpex.value,
-                    'efficiency': rectifierEfficiency.value/100
-                },
+            'parameters': {
+                'nominal_capacity': inverterNominalCapacity.value,
+                'lifetime': inverterLifetime.value,
+                'capex': inverterCapex.value,
+                'opex': inverterOpex.value,
+                'efficiency': inverterEfficiency.value/100,
             },
-            shortage: {
-                'settings': {
-                    'is_selected': selectShortage.checked,
-                },
-                'parameters': {
-                    'max_shortage_total': shortageMaxTotal.value/100,
-                    'max_shortage_timestep': shortageMaxTimestep.value/100,
-                    'shortage_penalty_cost': shortagePenaltyCost.value
-                },
+        },
+        rectifier: {
+            'settings': {
+                'is_selected': selectRectifier.checked,
+                'design': rectifierDesign.checked,
             },
-        }),
-        dataType: "json",
+            'parameters': {
+                'nominal_capacity': rectifierNominalCapacity.value,
+                'lifetime': rectifierLifetime.value,
+                'capex': rectifierCapex.value,
+                'opex': rectifierOpex.value,
+                'efficiency': rectifierEfficiency.value/100
+            },
+        },
+        shortage: {
+            'settings': {
+                'is_selected': selectShortage.checked,
+            },
+            'parameters': {
+                'max_shortage_total': shortageMaxTotal.value/100,
+                'max_shortage_timestep': shortageMaxTimestep.value/100,
+                'shortage_penalty_cost': shortagePenaltyCost.value
+            },
+        },
+    };
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            throw new Error("HTTP error " + response.status);
+        }
+
+        await response.json(); // Wait for response to be parsed
+        if (href.length > 0) {
+        window.location.href = href; // navigate after fetch request is complete
+        }
+    } catch (err) {
+        console.log("An error occurred while saving the energy system design.");
     }
-    );
 }
 
 
@@ -475,51 +501,68 @@ function logout()  {
 }
 
 
-function save_project_setup(project_id) {
-    $.ajax({
-        url: "save_project_setup/" + project_id,
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify(
-            {
-                page_setup: {
-                    'project_name': projectName.value,
-                    'project_description': projectDescription.value.trim(),
-                    'interest_rate': interestRate.value,
-                    'project_lifetime': projectLifetime.value,
-                    'start_date': startDate.value,
-                    'temporal_resolution': 1,
-                    'n_days': nDays.value,
-                }
-            }),
-        dataType: "json",});}
-
-
-function save_grid_design() {
-    fetch("save_grid_design/", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            grid_design: {
-                'distribution_cable_lifetime': distributionCableLifetime.value,
-                'distribution_cable_capex': distributionCableCapex.value,
-                'distribution_cable_max_length': distributionCableMaxLength.value,
-                'connection_cable_lifetime': connectionCableLifetime.value,
-                'connection_cable_capex': connectionCableCapex.value,
-                'connection_cable_max_length': connectionCableMaxLength.value,
-                'pole_lifetime': poleLifetime.value,
-                'pole_capex': poleCapex.value,
-                'pole_max_n_connections': poleMaxNumberOfConnections.value,
-                'mg_connection_cost': mgConnectionCost.value,
-                'shs_max_grid_cost': shs_max_grid_cost.value,
-            }
-        })
-    }).then(response => response.json());
+async function save_project_setup(project_id, href) {
+    event.preventDefault(); // prevent the link from navigating immediately
+    const url = "save_project_setup/" + project_id;
+    const data = {
+        page_setup: {
+            'project_name': projectName.value,
+            'project_description': projectDescription.value.trim(),
+            'interest_rate': interestRate.value,
+            'project_lifetime': projectLifetime.value,
+            'start_date': startDate.value,
+            'temporal_resolution': 1,
+            'n_days': nDays.value,
+        }
+    };
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data),
+        });
+        if (!response.ok) {
+            throw new Error("HTTP error " + response.status);
+        }
+        window.location.href = href; // navigate after fetch request is complete
+    } catch (err) {
+        console.log("An error occurred while saving the project setup:", err);
+    }
 }
 
-function save_demand_estimation() {
+async function save_grid_design(href) {
+    try {
+        await fetch("save_grid_design/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                grid_design: {
+                    'distribution_cable_lifetime': distributionCableLifetime.value,
+                    'distribution_cable_capex': distributionCableCapex.value,
+                    'distribution_cable_max_length': distributionCableMaxLength.value,
+                    'connection_cable_lifetime': connectionCableLifetime.value,
+                    'connection_cable_capex': connectionCableCapex.value,
+                    'connection_cable_max_length': connectionCableMaxLength.value,
+                    'pole_lifetime': poleLifetime.value,
+                    'pole_capex': poleCapex.value,
+                    'pole_max_n_connections': poleMaxNumberOfConnections.value,
+                    'mg_connection_cost': mgConnectionCost.value,
+                    'shs_max_grid_cost': shs_max_grid_cost.value,
+                }
+            })
+        });
+
+        window.location.href = href; // navigate after fetch request is complete
+    } catch (err) {
+        console.log('Fetch API error -', err);
+    }
+}
+
+function save_demand_estimation(href) {
     let custom_calibration = document.getElementById("toggleswitch").checked;
     fetch("save_demand_estimation/", {
         method: "POST",
@@ -534,11 +577,11 @@ function save_demand_estimation() {
                 'custom_calibration': custom_calibration,
             }
         })
-    }).then(response => response.json());
+    }).then(r => window.location.href = href)
 }
 
 
-function load_previous_data(page_name){
+function  load_previous_data(page_name){
     var xhr = new XMLHttpRequest();
     url = "load_previous_data/" + page_name;
     xhr.open("GET", url, true);
@@ -831,23 +874,38 @@ function remove_project(project_id) {
         .done(function () {window.location.href = window.location.origin;})}
 
 
-function wait_for_results(project_id, task_id, time, model)
-{   $.ajax({
-        url: "waiting_for_results/",
-        type: "POST",
-        data: JSON.stringify({'project_id': project_id, 'task_id': task_id, 'time': time, 'model': model}),
-        contentType: "application/json",
-    })
-    .done(function (res) {
-        if (res.finished === true) {
-            window.location.href = window.location.origin + '/simulation_results?project_id=' + project_id;
-        } else {
-            document.querySelector("#statusMsg").innerHTML = res.status;
-            renewToken();
-            wait_for_results(project_id, task_id, res.time, res.model);
-        }
-    });
+let shouldStop = false;
+
+function wait_for_results(project_id, task_id, time, model) {
+    // Get the current URL
+    var url = window.location.href;
+
+    // If the url includes /calculating, proceed with the request
+    if (url.includes("/calculating") && !shouldStop) {
+        $.ajax({
+            url: "waiting_for_results/",
+            type: "POST",
+            data: JSON.stringify({ 'project_id': project_id, 'task_id': task_id, 'time': time, 'model': model }),
+            contentType: "application/json",
+        })
+            .done(function (res) {
+                if (res.finished === true) {
+                    window.location.href = window.location.origin + '/simulation_results?project_id=' + project_id;
+                } else if (!shouldStop) {
+                    document.querySelector("#statusMsg").innerHTML = res.status;
+                    renewToken();
+                    wait_for_results(project_id, task_id, res.time, res.model);
+                }
+            })
+            .fail(function (jqXHR, textStatus, errorThrown) {
+                if (jqXHR.status === 303 || jqXHR.status === 422) {
+                    shouldStop = true;
+                    window.location.href = "/?internal_error";
+                }
+            });
+    }
 }
+
 
 
 function forward_if_no_task_is_pending(project_id) {
