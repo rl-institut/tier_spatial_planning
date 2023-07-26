@@ -168,10 +168,10 @@ xhr.onreadystatechange = function () {
     battery_to_dc_bus = Number(sankey_data['battery_to_dc_bus'])
     dc_bus_to_battery = Number(sankey_data['dc_bus_to_battery'])
     dc_bus_to_inverter = Number(sankey_data['dc_bus_to_inverter'])
-    pv_to_surplus = Number(sankey_data['dc_bus_to_surplus'])
+    pv_to_surplus = 0
     inverter_to_demand = Number(sankey_data['inverter_to_demand'])
 
-var data = [{
+    var data = [{
         type: 'sankey',
         orientation: 'h',
         node: {
@@ -196,8 +196,8 @@ var data = [{
             },
 
         link: {
-            source: [0, 1, 1, 2, 3, 5, 4, 4, 3, 6],
-            target: [1, 2, 7, 4, 4, 4, 5, 6, 8, 7],
+            source: [0, 1, 1, 2, 3, 5, 4, 4, 3, 6], // Modified
+            target: [1, 2, 7, 4, 4, 4, 5, 6, 8, 7], // Modified
             value:  [fuel_to_diesel_genset,
                      diesel_genset_to_rectifier,
                      diesel_genset_to_demand,
@@ -216,11 +216,13 @@ var data = [{
                     'Battery discharge',
                     'Battery charge',
                     'DC electricity sent to the inverter',
-                    'DC surplus sink',
+                    'Surplus PV electricity',
                     'AC demand covered by the PV system'],
             color: 'rgb(168, 181, 192)',
         }
     }]
+
+
         
     var layout = {font: {size: 16, color: 'black' } }
     Plotly.react(sankeyDiagram, data, layout)
