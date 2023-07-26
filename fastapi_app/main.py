@@ -504,8 +504,9 @@ async def load_previous_data(page_name, request: Request):
         demand_estimation.average_daily_energy = str(demand_estimation.average_daily_energy) \
             if demand_estimation.average_daily_energy is not None else ''
         demand_estimation.custom_calibration = True \
-            if len(demand_estimation.maximum_peak_load) > 0 or len(demand_estimation.average_daily_energy) \
+            if len(demand_estimation.maximum_peak_load) > 0 or len(demand_estimation.average_daily_energy) > 0 \
             else False
+        demand_estimation.calibration_options = 2 if len(demand_estimation.maximum_peak_load) > 0 else 1
         return demand_estimation
     elif page_name == 'energy_system_design':
         try:

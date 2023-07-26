@@ -635,12 +635,20 @@ function  load_previous_data(page_name){
                     let accordionItem2 = new bootstrap.Collapse(document.getElementById('collapseTwo'),
                         {toggle: false});
                     if (results['custom_calibration'] == true){
-                        accordionItem2.show();}
+                        accordionItem2.show();
+                        const radioButton2 = document.querySelector(`input[name="options2"][id="option${results['calibration_options'] + 6}"]`);
+                        if (radioButton2) {
+                          radioButton2.checked = true;
+                          if (results['calibration_options'] === 2) {
+                            document.getElementById("maximum_peak_load").disabled = false;
+                            document.getElementById("average_daily_energy").disabled = true;
+                        }
+                        }
+                    }
                     else {
                         accordionItem2.hide();
                     }
                   const radioButton = document.querySelector(`input[name="options"][id="option${results['household_option'] + 1}"]`);
-
                   if (radioButton) {
                     radioButton.checked = true;
                   }

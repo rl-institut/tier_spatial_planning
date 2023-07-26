@@ -21,4 +21,4 @@ def send_mail(to_adress, msg, subject='Activate your PeopleSun-Account'):
             server.login(smtp_username, smtp_password)
             server.sendmail(config.MAIL_ADRESS, to_adress, message.as_string())
         except smtplib.SMTPAuthenticationError as e:
-            raise Exception(config.MAIL_ADRESS.replace('@', ''), MAIL_PW)
+            raise Exception(config.MAIL_ADRESS.replace('@', ''))
