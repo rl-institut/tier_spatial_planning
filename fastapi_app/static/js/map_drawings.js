@@ -269,7 +269,7 @@ var customControl = L.Control.extend({
         // Create the form
         var form = L.DomUtil.create('form', 'my-form', container);
         var label = L.DomUtil.create('label', '', form);
-        label.textContent = 'Remove Markers: ';
+        label.textContent = 'Remove Consumers: ';
         var input = L.DomUtil.create('input', '', form);
         input.type = 'checkbox';
 

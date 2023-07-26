@@ -69,6 +69,11 @@
   {% include '_navbar.html' %}
   {% include '_wizard.html' %}
     <main>
+        <div id="fixed-symbol" style="position: fixed; bottom: 20px; left: 20px;">
+<img src="{{ url_for('static', path='/assets/icons/qm.svg') }}" alt="Icon" style="width: 100px; cursor: pointer;" onclick="document.getElementById('videoTutorial').style.display='block'">
+
+
+        </div>
         <section id="section" class="dashboard">
             <div class="row">
                 <div class="chart" style="height: auto">
@@ -224,6 +229,18 @@
             </div>
         </section>
      {% include '_warningBox.html' %}
+    <div id="videoTutorial" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999; text-align: left">
+        <form class="modal-content" style="width: 750px; height: 700px;">
+            <div class="container">
+                <h1 style="margin-bottom: 0;">Video Tutorial</h1>
+                <video width="720" height="580" controls>
+                   <source src="{{ url_for('static', path='/videos/tut_consumer_selection.mp4') }}" type="video/mp4">
+                   Your browser does not support the video tag.
+                </video>
+                <button onclick="document.getElementById('videoTutorial').style.display='none'" type="button" class="deletebtn">OK</button>
+            </div>
+        </form>
+    </div>
     </main>
 
   {% include '_footer.html' %}
