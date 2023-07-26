@@ -11,21 +11,7 @@ var rectangleDrawer = new L.Draw.Rectangle(map, {
   }
 });
 
-var markerDrawer = new L.Draw.Marker(map);
-document.getElementById('drawMarker').addEventListener('click', function () {
-    update_map_elements();
-  markerDrawer.enable();
-    rectangleDrawer.disable();
-  polygonDrawer.disable();
-});
 
-// Enable polygon drawing when the button is clicked
-document.getElementById('drawPolygon').addEventListener('click', function () {
-    update_map_elements();
-  markerDrawer.disable();
-  rectangleDrawer.disable();
-  polygonDrawer.enable();
-});
 
 let isPowerHouseMarker = false
 
@@ -36,12 +22,6 @@ map.on('draw:created', function (e) {
     }
 });
 
-document.getElementById('drawRectangle').addEventListener('click', function () {
-    update_map_elements();
-    rectangleDrawer.enable();
-    markerDrawer.disable();
-    polygonDrawer.disable();
-});
 
 // Add a listener that responds to the 'draw:created' event
 map.on(L.Draw.Event.CREATED, function (event) {
@@ -270,15 +250,6 @@ function isLatLngInMapBounds(lat, lng) {
 
 let input = document.getElementById('toggleswitch');
 
-input.addEventListener('change',function(){
-    if(this.checked) {
-        is_active = true;
-        }
-    else {
-        is_active = false;
-        }
-    });
-
 
 function removeBoundaries() {
         drawnItems.clearLayers();
@@ -286,6 +257,34 @@ function removeBoundaries() {
 }
 
 
+
+var customControl = L.Control.extend({
+    options: {
+        position: 'bottomleft'
+    },
+
+    onAdd: function (map) {
+        var container = L.DomUtil.create('div', 'my-custom-control');
+
+        // Create the form
+        var form = L.DomUtil.create('form', 'my-form', container);
+        var label = L.DomUtil.create('label', '', form);
+        label.textContent = 'Remove Markers: ';
+        var input = L.DomUtil.create('input', '', form);
+        input.type = 'checkbox';
+
+        // When the input changes, toggle your feature
+        L.DomEvent.on(input, 'change', function () {
+            is_active = !is_active;  // Toggle the is_active variable
+            // TODO: Add your code here to do something with the map when the toggle changes
+        });
+
+        return container;
+    }
+});
+
+// Add the control to the map
+map.addControl(new customControl());
 
 
 

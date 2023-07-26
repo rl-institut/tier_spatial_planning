@@ -74,76 +74,12 @@
                 <div class="chart" style="height: auto">
                     <div class="accordion" id="accordionExample" style="margin-top: 12px">
                       <div class="accordion-item">
-                        <h2 class="accordion-header" id="headingOne">
-                          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                            Select Geolocation of Consumers
-                          </button>
-                        </h2>
-                        <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
-                          <div class="accordion-body">
-                              <p></p>
-                            <strong>Draw a boundary around an area in which buildings should be automatically identified as consumers</strong>
-                              <p></p>
-                              <p>
-                              <span>
-                              <a>Remove Markers inside Boundary</a>
-                              <label class="switch">
-                              <input type="checkbox" id="toggleswitch">
-                              <span class="slider round"></span>
-                              </label>
-                              </span>
-                              </p>
-                              <a id="drawPolygon" class="btn btn--medium"  href="javascript:void(0);" style="height: 32px; display: flex; justify-content: center; align-items: center; max-width: 180px; margin-bottom: 10px;">Draw Polygon</a>
-                            <a id="drawRectangle" class="btn btn--medium"  href="javascript:void(0);" style="height: 32px; display: flex; justify-content: center; align-items: center; max-width: 180px">Draw Rectangle</a>
-                              <p></p>
-                            <p><strong>Define individual consumer manually on the map by mouse click</strong></p>
-                              <p></p>
-                            <a id="drawMarker" class="btn btn--medium" href="javascript:void(0);" style="height: 32px; display: flex; justify-content: center; align-items: center; max-width: 180px">Mark Consumers</a>
-                              <p></p>
-                            <p><strong>Define individual consumer manually by specifying the geocoordinates</strong></p>
-                              <p></p>
-                              <div style="display: flex">
-                                <div class="input-group" style="max-width: 200px">
-                                  <input
-                                    type="number"
-                                    class="form-control"
-                                    id="latitude2"
-                                    placeholder="Latitude"
-                                    value=""
-                                    min="2"
-                                    max="16"
-                                    step="0.00001"
-                                    required
-                                  />
-                                  <span class="input-group-text" style="margin-right: 8px;">Degree</span>
-                                </div>
-                                  <div class="input-group" style="max-width: 200px">
-                                  <input
-                                    type="number"
-                                    class="form-control"
-                                    id="longitude2"
-                                    placeholder="Longitude"
-                                    value=""
-                                    min="2"
-                                    max="16"
-                                    step="0.00001"
-                                    required
-                                  />
-                                  <span class="input-group-text" style="margin-right: 8px;">Degree</span>
-                                </div>
-                                <a id="submit" class="btn btn--medium"  href="javascript:void(0);" onclick="add_consumer();" style="height: 32px; display: flex; align-items: center; justify-content: center;">Submit</a>
-                              </div>
-                          </div>
-                            </div>
-                        </div>
-                      </div>
-                      <div class="accordion-item">
                         <h2 class="accordion-header" id="headingTwo">
-                          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
                             Set Consumer Properties
                           </button>
                         </h2>
-                        <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
+                        <div id="collapseTwo" class="accordion-collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
                           <div class="accordion-body" style="border-bottom: none;">
                              <p>
                               <span>
@@ -239,7 +175,6 @@
                           </div>
                         </div>
                       </div>
-
                     <div class="accordion-item" style="border-top: none">
                         <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree">
                           <div class="accordion-body">

@@ -4223,3 +4223,7 @@ nav.navbar .dropdown-menu li {
     .dashboard {
       animation: loadingEffect 0.3s;
     }
+
+.leaflet-control:hover {
+    font-weight: normal !important;
+}
