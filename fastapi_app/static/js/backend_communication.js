@@ -1038,3 +1038,21 @@ function reset_pw(guid) {
         });
     }
 }
+
+function show_video_tutorial() {
+        fetch("/show_video_tutorial/")
+  .then(response => response.json())
+  .then(res => {
+    let show_tutorial = res;
+    if (show_tutorial === true) {
+        document.getElementById('videoTutorial').style.display='block';
+        }
+    else {
+        document.getElementById('videoTutorial').style.display='none';
+    }
+  })
+}
+
+function deactivate_video_tutorial() {
+  fetch("/deactivate_video_tutorial/")
+}

@@ -60,6 +60,7 @@ class User(Base):
     is_superuser = Column(Boolean(), default=False)
     task_id = Column(VARCHAR(80))
     project_id = Column(SMALLINT(unsigned=True), default=False, nullable=True)
+    show_tutorial = Column(SMALLINT(unsigned=True), default=True, nullable=True)
 
 
 class ProjectSetup(Base):
@@ -81,6 +82,7 @@ class ProjectSetup(Base):
     n_days = Column(SMALLINT(unsigned=True), nullable=False, server_default="365")
     status = Column(VARCHAR(25), default="not yet started")
     email_notification = Column(Boolean(), default=False)
+
 
 class GridDesign(Base):
 

@@ -466,6 +466,23 @@ async def load_results(project_id, request: Request):
     return results
 
 
+@app.get("/show_video_tutorial")
+async def show_video_tutorial(request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    if pd.isna(user.show_tutorial):
+        show_tutorial = True
+    else:
+        show_tutorial = bool(user.show_tutorial)
+    return show_tutorial
+
+
+@app.get("/deactivate_video_tutorial")
+async def deactivate_video_tutorial(request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    user.show_tutorial = False
+    await inserts.merge_model(user)
+
+
 @app.get("/load_previous_data/{page_name}")
 async def load_previous_data(page_name, request: Request):
     user = await accounts.get_user_from_cookie(request)
