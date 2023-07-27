@@ -1,3 +1,4 @@
+pillow==9.5.0
 fastapi==0.92.0
 uvicorn==0.20.0
 gunicorn==20.1.0
@@ -41,3 +42,4 @@ descartes==1.1.0
 h3==3.7.6
 plotly==5.15.0
 pyarrow==12.0.0
+xarray==2023.1.0

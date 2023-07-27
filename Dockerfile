@@ -10,7 +10,7 @@ ENV PATH /opt/conda/envs/py38/bin:$PATH
 COPY requirements.txt .
 COPY no_deps_requirements.txt .
 RUN pip install --upgrade pip || true
-RUN pip install --no-cache-dir --upgrade -r requirements.txt || true
-RUN pip install --no-deps --no-cache-dir -r no_deps_requirements.txt || true
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-deps --no-cache-dir -r no_deps_requirements.txt
 RUN conda config --set channel_priority false
 COPY . .
