@@ -6,6 +6,15 @@
     {% include '_style_msg_box.html' %}
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+      <style>
+    .item__name {
+        height: 80px;
+        font-weight: bold;
+    }
+    .chart {
+      max-height: 9999px;
+    }
+</style>
   </head>
   <body onload="redirect_if_cookie_is_missing(true, true);
                 load_results({{ project_id }});
@@ -56,78 +65,57 @@
                   <span class="title">Summary of Results</span>
                 </div>
                 <div class="chart__content">
-                  <span class="subtitle">GRID</span>
+                  <span class="subtitle"></span>
+                    <div class="row">
+                        <div class="item item--best">
+                            <div class="item__name">Levelized Cost of Electricity (w/o SHS)</div>
+                            <div id="lcoe" class="item__value"></div>
+                        </div>
+                        <div class="item item--best">
+                            <div class="item__name">Total upfront Investment Cost</div>
+                            <div id="totalUpfrontInvestmentCost" class="item__value"></div>
+                        </div>
+                        <div class="item item--best">
+                            <div class="item__name">Share of Generation-Related Costs in LCOE</div>
+                            <div id="esLcoe" class="item__value"></div>
+                        </div>
+                        <div class="item item--best">
+                            <div class="item__name">Share of Grid-Related Costs in the LCOE</div>
+                            <div id="gridLcoe" class="item__value"></div>
+                        </div>
+                    </div>
+                  <span class="subtitle"></span>
                   <div class="row">
                     <div class="item item--best">
-                      <div class="item__name">Number of Consumers</div>
-                      <div id="nConsumers" class="item__value"></div>
+                      <div class="item__name">Capacity PV</div>
+                      <div id="capPV" class="item__value"></div>
                     </div>
                     <div class="item item--best">
-                      <div class="item__name">Number of SHS Consumers</div>
-                      <div id="nShsConsumers" class="item__value"></div>
+                      <div class="item__name">Capacity Battery</div>
+                      <div id="capBattery" class="item__value"></div>
                     </div>
                     <div class="item item--best">
-                      <div class="item__name">Number of Poles</div>
-                      <div id="nPoles" class="item__value"></div>
+                      <div class="item__name">Capacity Diesel Generator</div>
+                      <div id="capDiesel" class="item__value"></div>
                     </div>
-                    <div class="item item--best">
-                      <div class="item__name">Maximum Voltage Drop</div>
-                      <div id="maxVoltageDrop" class="item__value"></div>
-                    </div>
-                  </div>
-                  <div class="row">
-                    <div class="item item--best">
-                      <div class="item__name">Distribution Cable Length</div>
-                      <div
-                        id="lengthDistributionCable"
-                        class="item__value"
-                      ></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Average Length Distribution</div>
-                      <div
-                        id="averageLengthDistributionCable"
-                        class="item__value"
-                      ></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Connection Cable Length</div>
-                      <div id="lengthConnectionCable" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Average Length Connection</div>
-                      <div
-                        id="averageLengthConnectionCable"
-                        class="item__value"
-                      ></div>
-                    </div>
-                  </div>
-                  <span class="subtitle">ENERGY SYSTEM</span>
-                  <div class="row">
                     <div class="item item--best">
                       <div class="item__name">Renewable Energy Share</div>
                       <div id="res" class="item__value"></div>
                     </div>
-                    <div class="item item--best">
-                      <div class="item__name">Surplus Electricity</div>
-                      <div id="surplusRate" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Total Amount of Shortage</div>
-                      <div id="shortageTotal" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Total CO2 Savings</div>
-                      <div id="co2Savings" class="item__value"></div>
-                    </div>
                   </div>
-                  <span class="subtitle">TOTAL</span>
-                  <div class="row">
-                    <div class="item item--worst">
-                      <div class="item__name">
-                        Levelized Cost of Electricity
-                      </div>
-                      <div id="lcoe" class="item__value"></div>
+                  <span class="subtitle"></span>
+                    <div class="row">
+                    <div class="item item--best">
+                        <div class="item__name">Number of grid-connected Consumers</div>
+                        <div id="nGridConsumers" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Total annual Consumption (w/o SHS)</div>
+                      <div id="totalConsumption" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Annual average Demand per Consumer</div>
+                      <div id="consumptionPerConsumer" class="item__value"></div>
                     </div>
                     <div class="item item--worst">
                       <div class="item__name">Calculation Time</div>
@@ -144,18 +132,17 @@
           style="height: 32px; display: flex; align-items: center; justify-content: center"
           href="#">Download results (xlsx-format)</a>
           </div>
-
           <div class="row">
             <div class="col"   style="display: flex; justify-content: center;">
-              <div class="chart">
+              <div class="chart" style="height: auto;">
                 <div class="chart__header">
-                  <span class="title">Summary of Results</span>
+                  <span class="title">Results</span>
                 </div>
-                <div class="chart__content">
+                <div class="chart__content" style="height: auto;">
                   <span class="subtitle">GRID</span>
                   <div class="row">
                     <div class="item item--best">
-                      <div class="item__name">Number of Consumers</div>
+                      <div class="item__name">Number of grid-connected Consumers</div>
                       <div id="nConsumers" class="item__value"></div>
                     </div>
                     <div class="item item--best">
@@ -165,10 +152,6 @@
                     <div class="item item--best">
                       <div class="item__name">Number of Poles</div>
                       <div id="nPoles" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Maximum Voltage Drop</div>
-                      <div id="maxVoltageDrop" class="item__value"></div>
                     </div>
                     <div class="item item--best">
                       <div class="item__name">Distribution Cable Length</div>
@@ -195,12 +178,16 @@
                         class="item__value"
                       ></div>
                     </div>
+                    <div class="item item--best">
+                      <div class="item__name">Maximum Voltage Drop</div>
+                      <div id="maxVoltageDrop" class="item__value"></div>
+                    </div>
                   </div>
-                  <span class="subtitle">ENERGY SYSTEM</span>
+                  <span class="subtitle">ENERGY CONVERTERS</span>
                   <div class="row">
                     <div class="item item--best">
                       <div class="item__name">Renewable Energy Share</div>
-                      <div id="res" class="item__value"></div>
+                      <div id="res2" class="item__value"></div>
                     </div>
                     <div class="item item--best">
                       <div class="item__name">Surplus Electricity</div>
@@ -211,23 +198,168 @@
                       <div id="shortageTotal" class="item__value"></div>
                     </div>
                     <div class="item item--best">
-                      <div class="item__name">Total CO2 Savings</div>
-                      <div id="co2Savings" class="item__value"></div>
+                      <div class="item__name">Capacity PV</div>
+                      <div id="capPV2" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Capacity Battery</div>
+                      <div id="capBattery2" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Capacity Inverter</div>
+                      <div id="capInverter" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Capacity Diesel Generator</div>
+                      <div id="capDiesel2" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Capacity Rectifier</div>
+                      <div id="capRect" class="item__value"></div>
                     </div>
                   </div>
-                  <span class="subtitle">TOTAL</span>
+
+                <div class="row">
+                    <div class="item item--best">
+                      <div class="item__name">Annual Fuel Consumption</div>
+                      <div id="fuelConsumption" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Annual CO<sub>2</sub> Emissions</div>
+                      <div id="coTwoEmissions" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Annual CO<sub>2</sub> Savings due to PV</div>
+                      <div id="coTwoSavings" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name"></div>
+                    </div>
+                  </div>
+
+                  <span class="subtitle">DEMAND</span>
                   <div class="row">
-                    <div class="item item--worst">
-                      <div class="item__name">
-                        Levelized Cost of Electricity
-                      </div>
-                      <div id="lcoe" class="item__value"></div>
+                    <div class="item item--best">
+                      <div class="item__name">Total annual Consumption</div>
+                      <div id="totalConsumption2" class="item__value"></div>
                     </div>
-                    <div class="item item--worst">
-                      <div class="item__name">Calculation Time</div>
-                      <div id="time" class="item__value"></div>
+                    <div class="item item--best">
+                      <div class="item__name">Peak Demand</div>
+                      <div id="peakDemand" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Base Load</div>
+                      <div id="baseLoad" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Annual average Demand per Consumer</div>
+                      <div id="consumptionPerConsumer2" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Total annual Shortage</div>
+                      <div id="shortage" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Max. Shortage per Time Step</div>
+                      <div id="max_shortage" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Total annual Surplus</div>
+                      <div
+                        id="surplus"
+                        class="item__value"
+                      ></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name"></div>
                     </div>
                   </div>
+                  <span class="subtitle">ECONOMIC DATA</span>
+                  <div class="row">
+                   <div class="item item--best">
+                      <div class="item__name">Total upfront Investment Cost</div>
+                      <div id="totalUpfrontInvestmentCost2" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Grid upfront Investment Cost</div>
+                      <div id="GridUpfrontInvestmentCost" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">PV upfront Investment Cost</div>
+                      <div id="PVUpfrontInvestmentCost" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Battery upfront Investment Cost</div>
+                      <div id="BatteryUpfrontInvestmentCost" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Inverter upfront Investment Cost</div>
+                      <div id="InverterUpfrontInvestmentCost" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Diesel Generator upfront Investment Cost</div>
+                      <div id="DieselUpfrontInvestmentCost" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Rectifier Investment Cost</div>
+                      <div id="RectifierUpfrontInvestmentCost" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Annual Fuel Cost</div>
+                        <div id="fuelCost" class="item__value"></div>
+                      <div
+                        id="averageLengthConnectionCable"
+                        class="item__value"
+                      ></div>
+                    </div>
+                  </div>
+                  <div class="row">
+                   <div class="item item--best">
+                      <div class="item__name">Total annualized Cost</div>
+                      <div id="epc_total" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Grid's annualized Cost</div>
+                      <div id="cost_grid" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">PV's annualized Cost</div>
+                      <div id="epc_pv" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Battery's annualized Cost</div>
+                      <div id="epc_battery" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Inverter's annualized Cost</div>
+                      <div id="epc_inverter" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Diesel Generator's annualized Cost</div>
+                      <div id="epc_diesel_genset" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Rectifier's annualized Cost</div>
+                      <div id="epc_rectifier" class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                      <div class="item__name">Levelized Cost of Electricity (w/o SHS)</div>
+                        <div id="LCOE" class="item__value"></div>
+                    </div>
+                  </div>
+
                 </div>
               </div>
             </div>
@@ -421,7 +553,7 @@
               <div class="chart">
                 <div class="chart__header">
                   <div>
-                    <span class="title">Cumulative CO2 Emissions</span>
+                    <span class="title">Cumulative CO<sub>2</sub> Emissions</span>
                   </div>
                   <div class="dropdown">
                     <button

@@ -606,7 +606,7 @@ function makeplot_co2_emissions() {
               },
             },
             yaxis: {
-              title: 'CO2 Emissions [ton]',
+              title: 'CO<sub>2</sub> Emissions [ton]',
               titlefont: {
                 size: 16,
               },

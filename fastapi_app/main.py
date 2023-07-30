@@ -431,6 +431,9 @@ async def load_results(project_id, request: Request):
     df["average_length_distribution_cable"] = df["length_distribution_cable"] / df["n_distribution_links"]
     df["average_length_connection_cable"] = df["length_connection_cable"] / df["n_connection_links"]
     df["time"] = df["time_grid_design"] + df["time_energy_system_design"]
+    df["gridLcoe"] = df['cost_grid'].astype(float) / df["epc_total"].astype(float) * 100
+    df["esLcoe"] = (df["epc_total"].astype(float) - df['cost_grid'].astype(float)) \
+                   / df["epc_total"].astype(float) * 100
     unit_dict = {'n_poles': '',
                  'n_consumers': '',
                  'n_shs_consumers': '',
@@ -439,19 +442,53 @@ async def load_results(project_id, request: Request):
                  'length_connection_cable': 'm',
                  'average_length_connection_cable': 'm',
                  'cost_grid': 'USD/a',
-                 'lcoe': 'c/kWh',
+                 'lcoe': '',
+                 'gridLcoe': '%',
+                 'esLcoe': '%',
                  'res': '%',
                  'max_voltage_drop': '%',
                  'shortage_total': '%',
                  'surplus_rate': '%',
                  'time': 's',
-                 'co2_savings': 't/a'}
+                 'co2_savings': 't/a',
+                 'total_annual_consumption': 'kWh/a',
+                 'average_annual_demand_per_consumer': 'W',
+                 'upfront_invest_grid': 'USD',
+                 'upfront_invest_diesel_gen': 'USD',
+                 'upfront_invest_inverter': 'USD',
+                 'upfront_invest_rectifier': 'USD',
+                 'upfront_invest_battery': 'USD',
+                 'upfront_invest_pv': 'USD',
+                 'upfront_invest_converters': 'USD',
+                 'upfront_invest_total': 'USD',
+                 'battery_capacity': 'kWh',
+                 'pv_capacity': 'kW',
+                 'diesel_genset_capacity': 'kW',
+                 'inverter_capacity': 'kW',
+                 'rectifier_capacity': 'kW',
+                 'co2_emissions': 't/a',
+                 'fuel_consumption': 'kWh',
+                 'peak_demand': 'kW',
+                 'base_load': 'kW',
+                 'max_shortage': '%',
+                 'cost_fuel': 'USD/a',
+                 'epc_pv': 'USD/a',
+                 'epc_diesel_genset': 'USD/a',
+                 'epc_inverter': 'USD/a',
+                 'epc_rectifier': 'USD/a',
+                 'epc_battery': 'USD/a',
+                 'epc_total': 'USD/a'
+                 }
+    df['upfront_invest_converters'] = sum(df[col].iat[0] for col in df.columns if 'upfront' in col and 'grid' not in col)
+    df['upfront_invest_total'] = df['upfront_invest_converters'] + df['upfront_invest_grid']
     df = df[list(unit_dict.keys())].round(1).astype(str)
     for col in df.columns:
-        if unit_dict[col] in ['%', 's']:
+        if unit_dict[col] in ['%', 's', 'kW', 'kWh']:
             df[col] = df[col].where(df[col] != 'None', 0)
             if df[col].isna().sum() == 0:
                 df[col] = df[col].astype(float).round(1).astype(str)
+        elif unit_dict[col] in ['USD', 'kWh/a', 'USD/a']:
+            df[col] = "{:,}".format(df[col].astype(float).astype(int).iat[0])
         df[col] = df[col] + ' ' + unit_dict[col]
     results = df.to_dict(orient='records')[0]
     if infeasible is True:
@@ -1482,26 +1519,22 @@ def optimize_energy_system(user_id, project_id):
             co2_emission_factor = 0.699
         # store fuel co2 emissions (kg_CO2 per L of fuel)
         df = pd.DataFrame()
-        df["non_renewable_electricity_production"] = (
-                np.cumsum(ensys_opt.demand) * co2_emission_factor / 1000
-        )  # tCO2 per year
-        df["hybrid_electricity_production"] \
-            = np.cumsum(ensys_opt.sequences_genset) * co2_emission_factor / 1000  # tCO2 per year
+        df["non_renewable_electricity_production"] = (np.cumsum(ensys_opt.demand) * co2_emission_factor / 1000)  # tCO2 per year
+        df["hybrid_electricity_production"]  = np.cumsum(ensys_opt.sequences_genset) * co2_emission_factor / 1000  # tCO2 per year
         df["co2_savings"] = \
             df.loc[:, "non_renewable_electricity_production"] - df.loc[:, "hybrid_electricity_production"]  # tCO2 per year
         df['h'] = np.arange(1, len(ensys_opt.demand) + 1)
         df = df.round(3)
         sync_inserts.insert_df(models.Emissions, df, user_id, project_id)
-        # TODO: -2 must actually be -1, but for some reason, the co2-emission csv file has an additional empty row
-        co2_savings = df.loc[:, "co2_savings"][-2]  # takes the last element of the cumulative sum
+        co2_savings = df.loc[:, "co2_savings"].max()
         # store data for showing in the final results
         df = sync_queries.get_df(models.Results, user_id, project_id)
         df.loc[0, "cost_renewable_assets"] = ensys_opt.total_renewable
         df.loc[0, "cost_non_renewable_assets"] = ensys_opt.total_non_renewable
-        df.loc[0, "cost_fuel"] = ensys_opt.total_fuel
-        # ToDo: shs cost in lcoe?
-        df.loc[0, "lcoe"] = (100 * (ensys_opt.total_revenue + df.loc[0, "cost_grid"]
-                                    + df.loc[0, "cost_shs"]) / ensys_opt.total_demand)
+        df.loc[0, "cost_fuel"] = ensys_opt.total_fuel / n_days * 365
+        df.loc[0, "epc_total"] = (ensys_opt.total_revenue + df.loc[0, "cost_grid"]) / n_days * 365
+        df.loc[0, "lcoe"] = (100 * (ensys_opt.total_revenue + df.loc[0, "cost_grid"]) / ensys_opt.total_demand)
+        df.loc[0, "cost_grid"] = df.loc[0, "cost_grid"] / n_days * 365
         df.loc[0, "res"] = ensys_opt.res
         df.loc[0, "shortage_total"] = ensys_opt.shortage
         df.loc[0, "surplus_rate"] = ensys_opt.surplus_rate
@@ -1533,7 +1566,40 @@ def optimize_energy_system(user_id, project_id):
         df.loc[0, "dc_bus_to_surplus"] = ensys_opt.sequences_surplus.sum() / 1000
         df.loc[0, "inverter_to_demand"] = ensys_opt.sequences_inverter.sum() / 1000
         df.loc[0, "time_energy_system_design"] = end_execution_time - start_execution_time
-        df.loc[0, "co2_savings"] = co2_savings
+        df.loc[0, "co2_savings"] = co2_savings  / n_days * 365
+        df.loc[0, "total_annual_consumption"] = demand_full_year.iloc[:, 0].sum()
+        df.loc[0, "average_annual_demand_per_consumer"] = demand_full_year.iloc[:, 0].mean() / num_households * 1000
+        df.loc[0, "base_load"] = demand_full_year.iloc[:, 0].quantile(0.1)
+        df.loc[0, "max_shortage"] = (ensys_opt.sequences_shortage / ensys_opt.demand).max() * 100
+        n_poles = nodes[nodes['node_type'] == 'pole'].__len__()
+        links = sync_queries.get_df(models.Links, user_id, project_id)
+        length_dist_cable = links[links['link_type'] == 'distribution']['length'].sum()
+        length_conn_cable = links[links['link_type'] == 'connection']['length'].sum()
+        grid_input_parameter = sync_queries.get_input_df(user_id, project_id)
+        df.loc[0, "upfront_invest_grid"] \
+            = n_poles * grid_input_parameter.loc[0, "pole_capex"] + \
+              length_dist_cable * grid_input_parameter.loc[0, "distribution_cable_capex"] + \
+              length_conn_cable * grid_input_parameter.loc[0, "connection_cable_capex"] + \
+              num_households * grid_input_parameter.loc[0, "mg_connection_cost"]
+        df.loc[0, "upfront_invest_diesel_gen"] = df.loc[0, "diesel_genset_capacity"] \
+                                                 * energy_system_design['diesel_genset']['parameters']['capex']
+        df.loc[0, "upfront_invest_pv"] =  df.loc[0, "pv_capacity"] \
+                                          * energy_system_design['pv']['parameters']['capex']
+        df.loc[0, "upfront_invest_inverter"] = df.loc[0, "inverter_capacity"] \
+                                               * energy_system_design['inverter']['parameters']['capex']
+        df.loc[0, "upfront_invest_rectifier"] = df.loc[0, "rectifier_capacity"] \
+                                                * energy_system_design['rectifier']['parameters']['capex']
+        df.loc[0, "upfront_invest_battery"] = df.loc[0, "battery_capacity"] \
+                                              * energy_system_design['battery']['parameters']['capex']
+        df.loc[0, "co2_emissions"] = ensys_opt.sequences_genset.sum() * co2_emission_factor / 1000 / n_days * 365
+        df.loc[0, "fuel_consumption"] = ensys_opt.sequences_fuel_consumption_kWh.sum() / n_days * 365
+        df.loc[0, "epc_pv"] = ensys_opt.epc['pv'] * ensys_opt.capacity_pv
+        df.loc[0, "epc_diesel_genset"] = (ensys_opt.epc["diesel_genset"] * ensys_opt.capacity_genset) \
+                                         + ensys_opt.diesel_genset["parameters"]["variable_cost"] \
+                                         * ensys_opt.sequences_genset.sum(axis=0) * 365 / n_days
+        df.loc[0, "epc_inverter"] = ensys_opt.epc['inverter']  * ensys_opt.capacity_inverter
+        df.loc[0, "epc_rectifier"] = ensys_opt.epc["rectifier"] * ensys_opt.capacity_rectifier
+        df.loc[0, "epc_battery"] = ensys_opt.epc['battery']  * ensys_opt.capacity_battery
 
         df = df.astype(float).round(3)
         sync_inserts.insert_results_df(df, user_id, project_id)

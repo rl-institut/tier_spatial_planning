@@ -584,6 +584,9 @@ class EnergySystemOptimizer(Optimizer):
             / 0.846
         )  # conversion: kWh -> kg -> l
 
+        self.sequences_fuel_consumption_kWh \
+            = (results_fuel_source["sequences"][(("fuel_source", "fuel"), "flow")])  # conversion: kWh
+
         self.sequences_genset = results_diesel_genset["sequences"][
             (("diesel_genset", "electricity_ac"), "flow")
         ]
