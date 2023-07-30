@@ -8,10 +8,10 @@ def send_mail(to_adress, msg, subject='Activate your PeopleSun-Account'):
     from fastapi_app.io.db.config import MAIL_PW
     smtp_server = config.MAIL_HOST
     smtp_port = config.MAIL_PORT
-    smtp_username = config.MAIL_ADRESS
+    smtp_username = config.MAIL_ADDRESS
     smtp_password = MAIL_PW
     message = MIMEMultipart()
-    message["From"] = config.MAIL_ADRESS
+    message["From"] = config.MAIL_ADDRESS
     message["To"] = to_adress
     message["Subject"] = subject
     message.attach(MIMEText(msg, "plain"))
@@ -19,6 +19,6 @@ def send_mail(to_adress, msg, subject='Activate your PeopleSun-Account'):
         server.starttls()
         try:
             server.login(smtp_username, smtp_password)
-            server.sendmail(config.MAIL_ADRESS, to_adress, message.as_string())
+            server.sendmail(config.MAIL_ADDRESS, to_adress, message.as_string())
         except smtplib.SMTPAuthenticationError as e:
-            raise Exception(config.MAIL_ADRESS.replace('@', ''))
+            raise Exception(config.MAIL_ADDRESS.replace('@', ''))

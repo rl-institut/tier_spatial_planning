@@ -152,7 +152,7 @@ function change_box_visibility(id) {
             if (document.getElementById("lbl"+toTitleCase(id)+property)) {
                 document.getElementById("lbl"+toTitleCase(id)+property).classList.add('disabled');
             }
-            
+
             // All units and in case of PV, the button for impoting solar potential.
             if (document.getElementById(id+property+"Unit")) {
                 document.getElementById(id+property+"Unit").classList.add('disabled');
@@ -181,7 +181,10 @@ function refreshBlocksOnDiagramOnLoad(){
         // if (component[i] !== 'shortage' && component [i] !== 'surplus'){
             check_box_visibility(component[i]);
             check_optimization_strategy(component[i]);
-        };
+        }
+        else {
+            change_box_visibility(component[i]);
+        }
     }
     refreshBlocksOnDiagram('demand');
 }
@@ -349,7 +352,6 @@ function styleLine(id){
             line2.classList.add('components-flow--dispatch');
         }
     }
-    
 }
 
 function drawArrow(id, arrowOutPoints1, arrowInPoints1, arrowOutPoints2, arrowInPoints2) {

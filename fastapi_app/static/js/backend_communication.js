@@ -751,7 +751,8 @@ function  load_previous_data(page_name){
                     document.getElementById("batteryOpex").value = results['battery__parameters__opex'];
                     document.getElementById("batteryCapex").value = results['battery__parameters__capex'];
                     document.getElementById("batteryNominalCapacity").value = results['battery__parameters__nominal_capacity'];
-                    refreshBlocksOnDiagramOnLoad()
+                    refreshBlocksOnDiagramOnLoad();
+                    check_box_visibility();
                     }
                 }
             }
