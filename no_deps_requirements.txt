@@ -1,2 +1,2 @@
 feedinlib==0.1.0rc4
-xarray==2023.4.2
+xarray==2023.0.1
