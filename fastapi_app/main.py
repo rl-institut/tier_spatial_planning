@@ -44,8 +44,6 @@ from fastapi_app.tools.error_logger import logger as error_logger
 
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 
-
-
 app = FastAPI()
 
 app.mount("/fastapi_app/static", StaticFiles(directory="fastapi_app/static"), name="static")
@@ -370,8 +368,8 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
                  'custom_specification',
                  'is_connected',
                  'shs_options']]
+        power_house = df[df['node_type'] == 'power-house']
         if markers_only is True:
-            power_house = df[df['node_type'] == 'power-house']
             if len(power_house) > 0 and power_house['how_added'].iat[0] == 'manual':
                 df = df[df['node_type'].isin(['power-house', 'consumer'])]
             else:
@@ -383,7 +381,10 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
         df['shs_options'] = df['shs_options'].astype(int)
         df['is_connected'] = df['is_connected'].astype(bool)
         nodes_list = df.to_dict('records')
-        return nodes_list
+        is_load_center = True
+        if len(power_house.index) > 0 and power_house['how_added'].iat[0] =='manual':
+            is_load_center = False
+        return JSONResponse(status_code=200, content={'is_load_center': is_load_center, "map_elements": nodes_list})
     else:
         return None
 
@@ -479,8 +480,12 @@ async def load_results(project_id, request: Request):
                  'epc_battery': 'USD/a',
                  'epc_total': 'USD/a'
                  }
-    df['upfront_invest_converters'] = sum(df[col].iat[0] for col in df.columns if 'upfront' in col and 'grid' not in col)
-    df['upfront_invest_total'] = df['upfront_invest_converters'] + df['upfront_invest_grid']
+    if int(df['n_consumers'].iat[0]) != int(df['n_shs_consumers'].iat[0]):
+        df['upfront_invest_converters'] = sum(df[col].iat[0] for col in df.columns if 'upfront' in col and 'grid' not in col)
+        df['upfront_invest_total'] = df['upfront_invest_converters'] + df['upfront_invest_grid']
+    else:
+        df['upfront_invest_converters'] = None
+        df['upfront_invest_total'] = None
     df = df[list(unit_dict.keys())].round(1).astype(str)
     for col in df.columns:
         if unit_dict[col] in ['%', 's', 'kW', 'kWh']:
@@ -488,7 +493,8 @@ async def load_results(project_id, request: Request):
             if df[col].isna().sum() == 0:
                 df[col] = df[col].astype(float).round(1).astype(str)
         elif unit_dict[col] in ['USD', 'kWh/a', 'USD/a']:
-            df[col] = "{:,}".format(df[col].astype(float).astype(int).iat[0])
+            if df[col].isna().sum() == 0 and df.loc[0, col] != 'None':
+                df[col] = "{:,}".format(df[col].astype(float).astype(int).iat[0])
         df[col] = df[col] + ' ' + unit_dict[col]
     results = df.to_dict(orient='records')[0]
     if infeasible is True:
@@ -837,8 +843,10 @@ def get_project_id_from_request(request: Request):
     return project_id
 
 
-@app.get("/get_optimal_capacities/{project_id}")
-async def get_optimal_capacities(project_id, request: Request):
+
+
+
+def get_optimal_capacities(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
     df = await queries.get_df(models.Results, user.id, project_id)
     optimal_capacities = {}
@@ -1529,8 +1537,8 @@ def optimize_energy_system(user_id, project_id):
         co2_savings = df.loc[:, "co2_savings"].max()
         # store data for showing in the final results
         df = sync_queries.get_df(models.Results, user_id, project_id)
-        df.loc[0, "cost_renewable_assets"] = ensys_opt.total_renewable
-        df.loc[0, "cost_non_renewable_assets"] = ensys_opt.total_non_renewable
+        df.loc[0, "cost_renewable_assets"] = ensys_opt.total_renewable / n_days * 365
+        df.loc[0, "cost_non_renewable_assets"] = ensys_opt.total_non_renewable / n_days * 365
         df.loc[0, "cost_fuel"] = ensys_opt.total_fuel / n_days * 365
         df.loc[0, "epc_total"] = (ensys_opt.total_revenue + df.loc[0, "cost_grid"]) / n_days * 365
         df.loc[0, "lcoe"] = (100 * (ensys_opt.total_revenue + df.loc[0, "cost_grid"]) / ensys_opt.total_demand)

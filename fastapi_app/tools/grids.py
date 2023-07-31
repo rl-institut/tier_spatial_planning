@@ -933,6 +933,10 @@ class Grid:
                                (self.nodes['is_connected'] == True)].index
         return consumers
 
+    def determine_distribution_links(self):
+        idxs = self.links[self.links.index.to_series().str.count('p') == 2].index
+        self.links.loc[idxs, 'link_type'] = 'distribution'
+        return idxs
 
     def distribute_cost_among_consumers(self):
         self.nodes['total_grid_cost_per_consumer_per_a'] = np.nan
@@ -1095,6 +1099,7 @@ class Grid:
 
     def set_direction_of_links(self):
         consumer_to_power_house = True  # if True, direction is from consumer to power-house
+        self.determine_distribution_links()
         links = self.get_links().copy()
         links["poles"] = links.index.str.replace('[\(\) ]', '', regex=True)
         distribution_links = links[links["link_type"] == "distribution"].copy()
@@ -1104,7 +1109,9 @@ class Grid:
         examined_pole_list = []
 
         def change_direction_of_links(from_pole, to_pole, links):
-            row_idxs = links[(links['poles'].str.contains(from_pole)) & links['poles'].str.contains(to_pole)].index[0]
+            row_idxs = '({}, {})'.format(from_pole, to_pole)
+            if row_idxs not in links.index:
+                row_idxs = '({}, {})'.format(to_pole, from_pole)
             if from_pole in row_idxs.split(',')[1]:
                 new_row_idxs = '({}, {})'.format(from_pole, to_pole)
                 links = links.rename(index={row_idxs: new_row_idxs})
@@ -1132,14 +1139,47 @@ class Grid:
             examined_pole_list += parent_pole_list
             return new_parent_pole_list, links, examined_pole_list
 
-        for i in range(len(links.index)):
+        def check_all_parent_poles(child_pole_list, links, examined_pole_list):
+            new_child_pole_list = []
+            for child_pole in child_pole_list:
+                parent_pole_list = distribution_links[(distribution_links['poles'].str.contains(child_pole + ',')) | \
+                                    ((distribution_links['poles'] + '#').str.contains(child_pole + '#'))] \
+                ['poles'].str.split(',')
+                for parent_pole in parent_pole_list:
+                    if parent_pole[0] not in examined_pole_list and parent_pole[1] not in examined_pole_list:
+                        pos = 0 if consumer_to_power_house else 1
+                        if parent_pole[pos] == child_pole:
+                            tmp_child_pole = copy.deepcopy(parent_pole[0])
+                            parent_pole = parent_pole[1]
+                        else:
+                            tmp_child_pole = copy.deepcopy(parent_pole[1])
+                            parent_pole = parent_pole[0]
+                        self.nodes.loc[tmp_child_pole, 'parent'] = parent_pole
+                        new_child_pole_list.append(parent_pole)
+                        links = change_direction_of_links(child_pole, parent_pole, links)
+            examined_pole_list += child_pole_list
+            return new_child_pole_list, links, examined_pole_list
+
+        for _ in range(len(links.index)):
             if len(parent_pole_list) > 0:
                 parent_pole_list, links, examined_pole_list \
                     = check_all_child_poles(parent_pole_list, links, examined_pole_list)
             else:
                 self.nodes.loc[self.nodes['node_type'] == 'power-house', 'parent'] = \
                     self.nodes[self.nodes['node_type'] == 'power-house'].index[0]
-                break
+                if self.nodes['parent'][self.nodes['parent'] == 'unknown'].__len__() == 0:
+                    break
+                else:
+                    child_pole_list = self.nodes[(self.nodes['parent'] == 'unknown') &
+                                                 (self.nodes['n_distribution_links'] == 1) &
+                                                 (self.nodes['node_type'] == 'pole')].index.tolist()
+                    for __ in range(len(links.index)):
+                        if len(child_pole_list) > 0 and \
+                                self.nodes['parent'][self.nodes['parent'] == 'unknown'].__len__() > 0:
+                            child_pole_list, links, examined_pole_list \
+                                = check_all_parent_poles(child_pole_list, links, examined_pole_list)
+                        else:
+                            break
 
         links['from_node'] = pd.Series(links.index.str.split(','), index=links.index)\
             .str[0].str.replace('(', '', regex=True).str.replace(' ', '', regex=True)
