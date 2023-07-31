@@ -79,6 +79,12 @@ async def exception_handler(request: Request, exc: Exception):
     try:
         user = await accounts.get_user_from_cookie(request)
         user_name = user.email
+        projects = await queries.get_project_of_user(user.id)
+        for project in projects:
+            if project.status == "in progress":
+                project.status = "failed"
+                await inserts.merge_model(project)
+                break
     except:
         user_name = 'unknown username'
     error_logger.error_log(exc, request, user_name)
@@ -1662,6 +1668,7 @@ def optimize_energy_system(user_id, project_id):
         user_name = 'user with user_id: {}'.format(user_id)
         error_logger.error_log(exc, 'no request', user_name)
         raise exc
+
 
 
 # ************************************************************/
