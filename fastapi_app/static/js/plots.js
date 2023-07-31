@@ -1,19 +1,10 @@
 
-function makeplot_bar_chart(){
-    // BAR DIAGRAM FOR OPTIMAL CAPACITY OF COMPONENTS
-    // get optimal capacities from energy system optimizer
-    const urlParams = new URLSearchParams(window.location.search);
-    project_id = urlParams.get('project_id');
+function makeplot_bar_chart(data){
+
     var yValue = [0, 0, 0, 0, 0, 0, 0];
     var yValue2 = [0];
-    var xhr = new XMLHttpRequest();
-    url = "get_optimal_capacities/" + project_id;
-    xhr.open("GET", url, true);
-    xhr.responseType = "json";
-    xhr.send();
-    xhr.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            optimal_capacities = this.response;
+
+            optimal_capacities = data;
             yValue[0] = Number(optimal_capacities['pv']);
             yValue[1] = Number(optimal_capacities['inverter']);
             yValue[2] = Number(optimal_capacities['rectifier']);
@@ -97,21 +88,9 @@ function makeplot_bar_chart(){
 
             Plotly.newPlot(optimalSizes, data, layout);
         }
-    };
-}
 
 
-function makeplot_lcoe_pie() {
-// PIE DIAGRAM FOR BREAKDOWN OF LCOE
-lcoeBreakdown = document.getElementById('lcoeBreakdown');
-var xhr = new XMLHttpRequest();
-url = "get_lcoe_breakdown/"  + project_id;;
-xhr.open("GET", url, true);
-xhr.responseType = "json";
-xhr.send();
-xhr.onreadystatechange = function () {
-    if (this.readyState == 4 && this.status == 200) {
-      lcoe_breakdown = this.response;
+function makeplot_lcoe_pie(lcoe_breakdown) {
       cost_renewable_assets = Number(lcoe_breakdown['renewable_assets']);
       cost_non_renewable_assets = Number(lcoe_breakdown['non_renewable_assets']);
       cost_grid = Number(lcoe_breakdown['grid']);
@@ -146,20 +125,11 @@ xhr.onreadystatechange = function () {
       }
       Plotly.newPlot(lcoeBreakdown, data, layout)
   }
-};}
 
 
-function makeplot_sankey() {
-// SANKEY DIAGRAM
-sankeyDiagram = document.getElementById('sankeyDiagram');
-var xhr = new XMLHttpRequest();
-url = "get_data_for_sankey_diagram/" + project_id;;
-xhr.open("GET", url, true);
-xhr.responseType = "json";
-xhr.send();
-xhr.onreadystatechange = function () {
-  if (this.readyState == 4 && this.status == 200) {
-    sankey_data = this.response;
+function makeplot_sankey(data) {
+
+    sankey_data = data;
     fuel_to_diesel_genset = Number(sankey_data['fuel_to_diesel_genset'])
     diesel_genset_to_rectifier = Number(sankey_data['diesel_genset_to_rectifier'])
     diesel_genset_to_demand = Number(sankey_data['diesel_genset_to_demand'])
@@ -227,20 +197,11 @@ xhr.onreadystatechange = function () {
     var layout = {font: {size: 16, color: 'black' } }
     Plotly.react(sankeyDiagram, data, layout)
   }
-};}
+
 
 // ENERGY FLOWS PLOT
-function makeplot_energy_flows() {
-  var xhr = new XMLHttpRequest();
-  url = 'get_data_for_energy_flows/' + project_id;
-  xhr.open("GET", url, true);
-  xhr.responseType = "json";
-  xhr.send()
+function makeplot_energy_flows(energy_flows) {
 
-  xhr.onreadystatechange = function () {
-      if (this.readyState == 4 && this.status == 200) {
-          // push nodes to the map
-          energy_flows = this.response;
 
           var time = [], diesel_genset_production = [], pv_production = [], battery = [],
               battery_content = [], demand = [], surplus = [];
@@ -348,24 +309,13 @@ function makeplot_energy_flows() {
   // title: 'Energy flows in different components of the system.',
 };
           Plotly.newPlot(energyFlows, data, layout);
-      }
-  };
-
-}
+  }
 
 
 // DEMAND COVERAGE PLOT
-function makeplot_demand_coverage() {
-  var xhr = new XMLHttpRequest();
-  url = 'get_demand_coverage_data/' + project_id;
-  xhr.open("GET", url, true);
-  xhr.responseType = "json";
-  xhr.send()
+function makeplot_demand_coverage(demand_coverage) {
 
-  xhr.onreadystatechange = function () {
-      if (this.readyState == 4 && this.status == 200) {
           // push nodes to the map
-          demand_coverage = this.response;
           var time = [], renewable = [], non_renewable = [], demand = [], surplus = [];
               
           for (var i=0; i<Object.keys(demand_coverage['demand']).length; i++) {
@@ -436,24 +386,15 @@ function makeplot_demand_coverage() {
           var data = [trace1, trace2, trace3, trace4];
       
           Plotly.newPlot(demandCoverage, data, layout);
-      }
-  };
-}
+  }
 
 
 
 // DURATION CURVES
-function makeplot_duration_curves() {
-  var xhr = new XMLHttpRequest();
-  url = 'get_data_for_duration_curves/' + project_id;
-  xhr.open("GET", url, true);
-  xhr.responseType = "json";
-  xhr.send()
+function makeplot_duration_curves(data) {
 
-  xhr.onreadystatechange = function () {
-      if (this.readyState == 4 && this.status == 200) {
           // push nodes to the map
-          duration_curves = this.response;
+          duration_curves = data;
 
           var diesel_genset_percentage = [], diesel_genset_duration = [], pv_percentage = [],
               pv_duration = [], rectifier_percentage = [], rectifier_duration = [],
@@ -543,23 +484,13 @@ function makeplot_duration_curves() {
             },
           };
           Plotly.newPlot(durationCurves, data, layout);
-      }
-  };
-}
-
+  }
 
 // DEMAND COVERAGE PLOT
-function makeplot_co2_emissions() {
-  var xhr = new XMLHttpRequest();
-  url = 'get_co2_emissions_data/' + project_id;
-  xhr.open("GET", url, true);
-  xhr.responseType = "json";
-  xhr.send()
+function makeplot_co2_emissions(data) {
 
-  xhr.onreadystatechange = function () {
-      if (this.readyState == 4 && this.status == 200) {
           // push nodes to the map
-          co2_emissions = this.response;
+          co2_emissions = data;
 
           var time = [], non_renewable = [], hybrid = [];
               
@@ -616,16 +547,23 @@ function makeplot_co2_emissions() {
             },
           };
           Plotly.newPlot(co2Emissions, data, layout);
-      }
-  };
-
-}
+  }
 
 function plot() {
-    makeplot_bar_chart();
-    makeplot_lcoe_pie();
-    makeplot_sankey();
-    makeplot_duration_curves();
-    makeplot_co2_emissions();
-    makeplot_energy_flows();
-    makeplot_demand_coverage();}
+    const urlParams = new URLSearchParams(window.location.search);
+    project_id = urlParams.get('project_id');
+    fetch('/get_plot_data/' + project_id)
+    .then(response => response.json())
+    .then(data => {
+        makeplot_bar_chart(data.optimal_capacities);
+        makeplot_lcoe_pie(data.lcoe_breakdown);
+        makeplot_sankey(data.sankey_data);
+        makeplot_duration_curves(data.duration_curve);
+        makeplot_co2_emissions(data.emissions);
+        makeplot_energy_flows(data.energy_flow);
+        makeplot_demand_coverage(data.demand_coverage);
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+    }

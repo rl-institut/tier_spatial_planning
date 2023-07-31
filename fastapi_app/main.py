@@ -337,14 +337,6 @@ async def set_email_notification(project_id: int, is_active: bool, request: Requ
     await inserts.merge_model(project_setup)
 
 
-@app.get("/get_demand_coverage_data/{project_id}")
-async def get_demand_coverage_data(project_id, request: Request):
-    user = await accounts.get_user_from_cookie(request)
-    df = await queries.get_df(models.DemandCoverage, user.id, project_id, is_timeseries=True)
-    df = df.reset_index(drop=True)
-    return json.loads(df.to_json())
-
-
 @app.get("/db_links_to_js/{project_id}")
 async def db_links_to_js(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
@@ -843,10 +835,8 @@ def get_project_id_from_request(request: Request):
     return project_id
 
 
-
-
-
-def get_optimal_capacities(project_id, request: Request):
+@app.get("/get_plot_data/{project_id}")
+async def get_plot_data(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
     df = await queries.get_df(models.Results, user.id, project_id)
     optimal_capacities = {}
@@ -857,28 +847,12 @@ def get_optimal_capacities(project_id, request: Request):
     optimal_capacities["diesel_genset"] = str(df.loc[0, "diesel_genset_capacity"])
     optimal_capacities["peak_demand"] = str(df.loc[0, "peak_demand"])
     optimal_capacities["surplus"] = str(df.loc[0, "surplus"])
-    # importing nodes and links from the csv files to the map
-    return optimal_capacities
-
-
-@app.get("/get_lcoe_breakdown/{project_id}")
-async def get_lcoe_breakdown(project_id, request: Request):
-    user = await accounts.get_user_from_cookie(request)
-    df = await queries.get_df(models.Results, user.id, project_id)
     lcoe_breakdown = {}
     lcoe_breakdown["renewable_assets"] = str(df.loc[0, "cost_renewable_assets"])
     lcoe_breakdown["non_renewable_assets"] = str(df.loc[0, "cost_non_renewable_assets"])
     lcoe_breakdown["grid"] = str(df.loc[0, "cost_grid"])
     lcoe_breakdown["fuel"] = str(df.loc[0, "cost_fuel"])
-    # importing nodes and links from the csv files to the map
-    return lcoe_breakdown
-
-
-@app.get("/get_data_for_sankey_diagram/{project_id}")
-async def get_data_for_sankey_diagram(project_id, request: Request):
     sankey_data = {}
-    user = await  accounts.get_user_from_cookie(request)
-    df = await queries.get_df(models.Results, user.id, project_id)
     sankey_data["fuel_to_diesel_genset"] = str(df.loc[0, "fuel_to_diesel_genset"])
     sankey_data["diesel_genset_to_rectifier"] = str(df.loc[0, "diesel_genset_to_rectifier"])
     sankey_data["diesel_genset_to_demand"] = str(df.loc[0, "diesel_genset_to_demand"])
@@ -889,26 +863,25 @@ async def get_data_for_sankey_diagram(project_id, request: Request):
     sankey_data["dc_bus_to_inverter"] = str(df.loc[0, "dc_bus_to_inverter"])
     sankey_data["dc_bus_to_surplus"] = str(df.loc[0, "dc_bus_to_surplus"])
     sankey_data["inverter_to_demand"] = str(df.loc[0, "inverter_to_demand"])
-    # importing nodes and links from the csv files to the map
-    return sankey_data
-
-
-@app.get("/get_data_for_energy_flows/{project_id}")
-async def get_data_for_energy_flows(project_id, request: Request):
-    user = await accounts.get_user_from_cookie(request)
-    df = await queries.get_df(models.EnergyFlow, user.id, project_id)
-    if not df.empty:
-        df['battery'] = - df['battery_charge'] + df['battery_discharge']
-        df = df.drop(columns=['battery_charge', 'battery_discharge'])
-        df = df.reset_index(drop=True)
-    return json.loads(df.to_json())
-
-
-@app.get("/get_data_for_duration_curves/{project_id}")
-async def get_data_for_duration_curves(project_id, request: Request):
-    user = await accounts.get_user_from_cookie(request)
-    df = await queries.get_df(models.DurationCurve, user.id, project_id)
-    return json.loads(df.to_json())
+    energy_flow = await queries.get_df(models.EnergyFlow, user.id, project_id)
+    energy_flow['battery'] = - energy_flow['battery_charge'] + energy_flow['battery_discharge']
+    energy_flow = energy_flow.drop(columns=['battery_charge', 'battery_discharge'])
+    energy_flow = energy_flow.reset_index(drop=True)
+    energy_flow = json.loads(energy_flow.to_json())
+    duration_curve = await queries.get_df(models.DurationCurve, user.id, project_id)
+    duration_curve = json.loads(duration_curve.to_json())
+    emissions = await queries.get_df(models.Emissions, user.id, project_id)
+    emissions = json.loads(emissions.to_json())
+    demand_coverage = await queries.get_df(models.DemandCoverage, user.id, project_id, is_timeseries=True)
+    demand_coverage = demand_coverage.reset_index(drop=True)
+    demand_coverage =  json.loads(demand_coverage.to_json())
+    return JSONResponse(status_code=200, content={"optimal_capacities": optimal_capacities,
+                                                  "lcoe_breakdown": lcoe_breakdown,
+                                                  "sankey_data": sankey_data,
+                                                  "energy_flow": energy_flow,
+                                                  "duration_curve": duration_curve,
+                                                  "demand_coverage": demand_coverage,
+                                                  "emissions": emissions,})
 
 
 @app.get("/get_demand_time_series/{project_id}")
@@ -916,13 +889,6 @@ async def get_demand_time_series(project_id, request: Request):
     df = pd.DataFrame({'x': np.random.rand(100),
                        'y': np.random.rand(100)})
     return df.to_dict('list')  # converts dataframe to dict format with lists as values
-
-
-@app.get("/get_co2_emissions_data/{project_id}")
-async def get_co2_emissions_data(project_id, request: Request):
-    user = await accounts.get_user_from_cookie(request)
-    df = await queries.get_df(models.Emissions, user.id, project_id)
-    return json.loads(df.to_json())
 
 
 @app.post("/add_buildings_inside_boundary")
