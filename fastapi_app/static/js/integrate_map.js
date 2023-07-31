@@ -1,5 +1,7 @@
 // Create the map and set the center and zoom level
 
+var is_load_center = true;
+
 const nigeriaBounds = [
   [4.2, 2.7], // Southwest corner
   [13.9, 14.7] // Northeast corner
@@ -210,51 +212,52 @@ var zoomAllControl = L.Control.extend({
 
 map.addControl(new zoomAllControl());
 
-// Obtain the page name, for example using window.location.pathname
-// Replace it with your own logic for getting the page name
-var pageName = window.location.pathname;
 
-var description = ["Power House", "Household", "Enterprise", "Public Service", "Pole", "Solar Home System", "Distribution",
-    "Connection"];
+
 var image = [
-  "fastapi_app/static/assets/icons/i_power_house.svg",
-  "fastapi_app/static/assets/icons/i_consumer.svg",
-  "fastapi_app/static/assets/icons/i_enterprise.svg",
-  "fastapi_app/static/assets/icons/i_public_service.svg",
-  "fastapi_app/static/assets/icons/i_pole.svg",
-  "fastapi_app/static/assets/icons/i_shs.svg",
-  "fastapi_app/static/assets/icons/i_distribution.svg",
-  "fastapi_app/static/assets/icons/i_connection.svg",
+      "fastapi_app/static/assets/icons/i_power_house.svg",
+      "fastapi_app/static/assets/icons/i_consumer.svg",
+      "fastapi_app/static/assets/icons/i_enterprise.svg",
+      "fastapi_app/static/assets/icons/i_public_service.svg",
+      "fastapi_app/static/assets/icons/i_pole.svg",
+      "fastapi_app/static/assets/icons/i_shs.svg",
+      "fastapi_app/static/assets/icons/i_distribution.svg",
+      "fastapi_app/static/assets/icons/i_connection.svg",
 ];
 
-// If the pageName matches the 'results' page, adjust the description and image arrays.
-if (pageName !== "/simulation_results") {
-  description = ["Power House", "Household", "Enterprise", "Public Service", "Solar Home System"];
-  image = [
-    "fastapi_app/static/assets/icons/i_power_house.svg",
-    "fastapi_app/static/assets/icons/i_consumer.svg",
-    "fastapi_app/static/assets/icons/i_enterprise.svg",
-    "fastapi_app/static/assets/icons/i_public_service.svg",
-    "fastapi_app/static/assets/icons/i_shs.svg",
-  ];
-}
-
-// Add the legend
 var legend = L.control({ position: "bottomright" });
-legend.onAdd = function (map) {
-  var div = L.DomUtil.create("div", "info legend");
 
-  // loop through our density intervals and generate a label with a colored square for each interval
-  for (var i = 0; i < description.length; i++) {
-    div.innerHTML +=
-      " <img src=" +
-      image[i] +
-      " height='12' width='12'>" +
-      "&nbsp" +
-      description[i] +
-      "<br>";
-  }
-  return div;
-};
-legend.addTo(map);
+function load_legend() {
+    // Obtain the page name, for example using window.location.pathname
+    // Replace it with your own logic for getting the page name
+        // If there's already a legend, remove it
+    if (legend) {
+        map.removeControl(legend);
+    }
+    var pageName = window.location.pathname;
 
+    var description = ["Load Center", "Household", "Enterprise", "Public Service", "Pole", "Solar Home System", "Distribution", "Connection"];
+
+    if (pageName === "/simulation_results" && is_load_center === false) {
+        description[0] = "Power House";
+    }
+    // Add the legend
+
+    legend.onAdd = function (map) {
+      var div = L.DomUtil.create("div", "info legend");
+
+      // loop through our density intervals and generate a label with a colored square for each interval
+      for (var i = 0; i < description.length; i++) {
+        div.innerHTML +=
+          " <img src=" +
+          image[i] +
+          " height='12' width='12'>" +
+          "&nbsp" +
+          description[i] +
+          "<br>";
+      }
+      return div;
+    };
+    legend.addTo(map);
+}
+load_legend();
