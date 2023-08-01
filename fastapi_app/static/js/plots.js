@@ -1,93 +1,113 @@
 
 function makeplot_bar_chart(data){
-
     var yValue = [0, 0, 0, 0, 0, 0, 0];
     var yValue2 = [0];
 
-            optimal_capacities = data;
-            yValue[0] = Number(optimal_capacities['pv']);
-            yValue[1] = Number(optimal_capacities['inverter']);
-            yValue[2] = Number(optimal_capacities['rectifier']);
-            yValue[3] = Number(optimal_capacities['diesel_genset']);
-            yValue[4] = Number(optimal_capacities['peak_demand']);
-            yValue[5] = Number(optimal_capacities['surplus']);
-            yValue2 = Number(optimal_capacities['battery']);
-            optimalSizes = document.getElementById('optimalSizes');
+    optimal_capacities = data;
+    yValue[0] = Number(optimal_capacities['pv']);
+    yValue[1] = Number(optimal_capacities['inverter']);
+    yValue[2] = Number(optimal_capacities['rectifier']);
+    yValue[3] = Number(optimal_capacities['diesel_genset']);
+    yValue[4] = Number(optimal_capacities['peak_demand']);
+    yValue[5] = Number(optimal_capacities['surplus']);
+    yValue2 = Number(optimal_capacities['battery']);
+    optimalSizes = document.getElementById('optimalSizes');
 
-            var xValue = ['PV', 'Inverter', 'Rectifier', 'Diesel Genset', 'Peak Demand', 'Max. Surplus',
-                'Battery'];
+    var xValue = ['PV  ', 'Inverter  ', 'Rectifier  ', 'Diesel Genset  ', 'Peak Demand  ', 'Max. Surplus  ',
+        'Battery  '];
 
-            var data = [
-                {
-                    x: xValue,
-                    y: yValue,
-                    yaxis: 'y1',
-                    type: 'bar',
-                    text: yValue.map(String),
-                    textposition: 'auto',
-                    hoverinfo: 'none',
-                    opacity: 0.7,
-                    marker: {
-                        color: ['rgb(8,48,107)', 'rgb(8,48,107)', 'rgb(8,48,107)', 'rgb(8,48,107)',
-                            'rgb(8,48,107)', 'rgb(8,48,107)', 'rgb(133, 52, 124)'],
-                        line: {
-                            color: 'black',
-                            width: 1.5
-                        }
-                    },
-                    showlegend: false
-                },
-                {
-                    x: ['Battery'],
-                    y: [yValue2],
-                    yaxis: 'y2',
-                    type: 'bar',
-                    marker: {
-                        color: 'rgb(133, 52, 124)'
-                    },
-                    showlegend: false
+    // Reverse the arrays
+    xValue = xValue.reverse();
+    yValue = yValue.reverse();
+
+    var colors = ['rgb(8,48,107)', 'rgb(8,48,107)', 'rgb(8,48,107)', 'rgb(8,48,107)',
+                  'rgb(8,48,107)', 'rgb(8,48,107)', 'rgb(133, 52, 124)'];
+    colors = colors.reverse();  // Reverse the color array
+
+    var data = [
+        {
+            y: xValue,
+            x: yValue,
+            xaxis: 'x1',
+            type: 'bar',
+            orientation: 'h',
+            text: yValue.map(String),
+            textposition: 'auto',
+            hoverinfo: 'none',
+            opacity: 0.7,
+            marker: {
+                color: colors,
+                line: {
+                    color: 'black',
+                    width: 1.5
                 }
-            ];
-
-            var layout = {
-                xaxis: {tickfont: {
-                        size: 14,
-                    },
-                    tickangle: -30,
-                },
-                yaxis: {
-                    title: 'Capacity in [kW]',
-                    titlefont: {
-                        color: 'rgb(8,48,107)',
-                        size: 16,
-                    },
-                    tickfont: {
-                        color: 'rgb(8,48,107)',
-                        size: 14,
-                    }
-                },
-                yaxis2: {
-                    title: 'Capacity in [kWh]',
-                    showgrid: false,
-                    zeroline: false,
-                    titlefont: {
-                        color: 'rgb(133, 52, 124)',
-                        size: 16,
-                    },
-                    tickfont: {
-                        color: 'rgb(133, 52, 124)',
-                        size: 14,
-                    },
-                    overlaying: 'y',
-                    side: 'right'
-                },
-                barmode: 'stack',
-                bargap: 0.5,
-                showlegend: false
-            };
-
-            Plotly.newPlot(optimalSizes, data, layout);
+            },
+            showlegend: false
+        },
+        {
+            y: ['Battery  '],
+            x: [yValue2],
+            xaxis: 'x2',
+            type: 'bar',
+            orientation: 'h',
+            marker: {
+                color: 'rgb(133, 52, 124)'
+            },
+            showlegend: false
         }
+    ];
+
+    var layout = {
+    yaxis: {tickfont: {
+                size: 14,
+            },
+            tickangle: -30,
+    },
+    xaxis: {
+        title: 'Capacity in [kW]',
+        titlefont: {
+            color: 'rgb(8,48,107)',
+            size: 16,
+        },
+        tickfont: {
+            color: 'rgb(8,48,107)',
+            size: 14,
+        },
+        side: 'top'
+    },
+    xaxis2: {
+        title: 'Capacity in [kWh]',
+        showgrid: false,
+        zeroline: false,
+        titlefont: {
+            color: 'rgb(133, 52, 124)',
+            size: 16,
+        },
+        tickfont: {
+            color: 'rgb(133, 52, 124)',
+            size: 14,
+        },
+        overlaying: 'x',
+        side: 'bottom'
+    },
+    barmode: 'stack',
+    bargap: 0.5,
+    showlegend: false,
+    autosize: false,
+    margin: {
+        l: 150,  // Increase left margin
+        r: 50,
+        b: 100,
+        t: 100,
+        pad: 4
+    },
+};
+
+
+    Plotly.newPlot(optimalSizes, data, layout);
+}
+
+
 
 
 function makeplot_lcoe_pie(lcoe_breakdown) {
@@ -314,6 +334,7 @@ function makeplot_energy_flows(energy_flows) {
 
 // DEMAND COVERAGE PLOT
 function makeplot_demand_coverage(demand_coverage) {
+
 
           // push nodes to the map
           var time = [], renewable = [], non_renewable = [], demand = [], surplus = [];
