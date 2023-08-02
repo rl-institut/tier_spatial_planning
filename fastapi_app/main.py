@@ -248,6 +248,15 @@ async def account_overview(request: Request):
         return templates.TemplateResponse("account_overview.html", {"request": request,
                                                                     'email': user.email})
 
+@app.get("/contact")
+async def contact(request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    if user is None or 'anonymous__' in user.email:
+        email = ''
+    else:
+        email = user.email
+    return templates.TemplateResponse("contact_form.html", {"request": request, 'email': email})
+
 
 @app.get("/consumer_selection")
 async def consumer_selection(request: Request):
@@ -592,6 +601,7 @@ async def add_user_to_db(data: Dict[str, str]):
     if res[0] is True:
         if captcha_context.verify(captcha_input, hashed_captcha):
             guid = create_guid()
+            send_activation_link(email, guid)
             user = models.User(email=email,
                                hashed_password=Hasher.get_password_hash(password),
                                guid=guid,
@@ -599,7 +609,6 @@ async def add_user_to_db(data: Dict[str, str]):
                                is_active=False,
                                is_superuser=False)
             await inserts.merge_model(user)
-            send_activation_link(user.email, guid)
         else:
             res = [False, 'Please enter a valid captcha']
     return fastapi_app.io.schema.ValidRegistration(validation=res[0], msg=res[1])
@@ -804,6 +813,14 @@ async def save_demand_estimation(request: Request, data: fastapi_app.io.schema.S
                   'average_daily_energy': average_daily_energy}
     demand_estimation = models.Demand(**dictionary)
     await inserts.merge_model(demand_estimation)
+    return JSONResponse(status_code=200, content={"message": "Success"})
+
+
+@app.post("/consumer_to_db/")
+async def consumer_to_db(mail: fastapi_app.io.schema.Mail):
+    body = 'offgridplanner.org contact form. email from: {}'.format(mail.from_address) + '/n' + mail.body
+    subject = 'offgridplanner.org contact form: {}'.format(mail.subject)
+    send_mail('internal', body, subject)
     return JSONResponse(status_code=200, content={"message": "Success"})
 
 

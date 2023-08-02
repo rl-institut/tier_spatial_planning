@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    {% set title= 'Account' %}
+    {% include '_head.html' %}
+    {% include '_style_msg_box.html' %}
+  </head>
+  <body onload=" redirect_if_cookie_is_missing(true, true); show_user_email_in_navbar();">
+      {% include '_navbar.html' %}
+    <main>
+     <section class="dashboard" style="width: 500px; display: block;  margin-left: auto;  margin-right: auto;">
+        <div >
+          <div class="row">
+            <div class="col">
+              <div class="chart" style="border: 15px solid #FAFAFA; height: auto;">
+                <div class="chart__header">
+                  <a class="title">Contact Form</a>
+                </div>
+                  <hr>
+                <div class="input-item" style="text-align: left">
+                <p style="display:inline">
+                   Your Mail Address
+                </p>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="from_address"
+                  placeholder="Enter your new mail address"
+                  value="{{ email }}"
+                  required
+                />
+                <p style="display:inline">
+                   Subject
+                </p>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="subject"
+                  placeholder="Subject of your Message"
+                  value=""
+                  required
+                />
+                <div class="input-item optional">
+                <label for="projectDescription" class="form-label"> Message</label>
+                <textarea
+                  class="form-control"
+                  maxlength="1000"
+                  id="body"
+                  placeholder="Write your message here..."
+                  style="height: 350px;"
+                ></textarea>
+              </div>
+              </div>
+                  <p></p>
+                  <p id="responseMsg" style="text-align: center;"></p>
+                  <p></p>
+                <div class="clearfix" style="text-align: center;">
+                  <button onclick="sendMail()" type="button" class="deletebtn">Send Mail</button>
+                  <button onclick="window.location.href='/'" type="button" class="cancelbtn">Cancel</button>
+                </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  {% include '_footer.html' %}
+  </body>
+{% include '_scripts.html' %}
+<script>
+function handleError() {
+  const responseMsgElement = document.getElementById("responseMsg");
+  responseMsgElement.innerText = "Something went wrong";
+  responseMsgElement.style.color = "red";
+}
+
+async function sendMail() {
+  // Getting values from the HTML elements
+  const from_address = document.getElementById("from_address").value;
+  const subject = document.getElementById("subject").value;
+  const body = document.getElementById("body").value;
+
+  // Creating the mail object
+  const mail = {
+    from_address: from_address,
+    subject: subject,
+    body: body
+  };
+
+  // Reference to the responseMsg element
+  const responseMsgElement = document.getElementById("responseMsg");
+
+  // Sending the mail object to the FastAPI route
+  try {
+    const response = await fetch("/consumer_to_db/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(mail)
+    });
+
+    if (response.status === 200) {
+      const result = await response.json();
+      if (result.message === "Success") {
+        responseMsgElement.innerText = "Email successfully sent";
+        responseMsgElement.style.color = "green";
+
+        // Redirect to the base URL after 1.5 seconds
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 2500);
+      } else {
+        handleError();
+      }
+    } else {
+      handleError();
+    }
+  } catch (error) {
+    handleError();
+  }
+}
+
+</script>
+</html>

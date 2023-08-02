@@ -26,6 +26,12 @@ class ValidRegistration(BaseModel):
     msg: str
 
 
+class Mail(BaseModel):
+    body: str
+    subject: str
+    from_address: str
+
+
 class Password(BaseModel):
     password: str
 
