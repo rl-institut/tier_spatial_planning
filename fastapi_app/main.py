@@ -818,7 +818,7 @@ async def save_demand_estimation(request: Request, data: fastapi_app.io.schema.S
 
 @app.post("/consumer_to_db/")
 async def consumer_to_db(mail: fastapi_app.io.schema.Mail):
-    body = 'offgridplanner.org contact form. email from: {}'.format(mail.from_address) + '/n' + mail.body
+    body = 'offgridplanner.org contact form. email from: {}'.format(mail.from_address) + '\n' + mail.body
     subject = 'offgridplanner.org contact form: {}'.format(mail.subject)
     send_mail('internal', body, subject)
     return JSONResponse(status_code=200, content={"message": "Success"})
