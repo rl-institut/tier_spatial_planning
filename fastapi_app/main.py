@@ -400,6 +400,9 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
 async def consumer_to_db(project_id: str, map_elements: fastapi_app.io.schema.MapDataRequest, request: Request):
     user = await accounts.get_user_from_cookie(request)
     df = pd.DataFrame.from_records(map_elements.map_elements)
+    if df.empty is True:
+        await inserts.remove(models.Nodes, user.id, project_id)
+        return
     df = df.drop_duplicates(subset=['latitude', 'longitude'])
     drop_index = df[df['node_type'] == 'power-house'].index
     if drop_index.__len__() > 1:
@@ -816,8 +819,8 @@ async def save_demand_estimation(request: Request, data: fastapi_app.io.schema.S
     return JSONResponse(status_code=200, content={"message": "Success"})
 
 
-@app.post("/consumer_to_db/")
-async def consumer_to_db(mail: fastapi_app.io.schema.Mail):
+@app.post("/send_mail_route/")
+async def send_mail_route(mail: fastapi_app.io.schema.Mail):
     body = 'offgridplanner.org contact form. email from: {}'.format(mail.from_address) + '\n' + mail.body
     subject = 'offgridplanner.org contact form: {}'.format(mail.subject)
     send_mail('internal', body, subject)
