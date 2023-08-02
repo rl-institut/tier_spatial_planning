@@ -9,6 +9,8 @@
   {% set func_name = 'save_grid_design(' %}
 {% elif title == 'Energy System Design' %}
   {% set func_name = 'save_energy_system_design(' %}
+{% elif title == 'Simulation Results' %}
+  {% set func_name = 'redirect(' %}
 {% endif %}
 
 
@@ -36,7 +38,8 @@
             onclick="{{ func_name }}'energy_system_design?project_id={{ project_id }}');">
           <a href="javascript:void(0);">Energy System Design</a>
         </li>
-        <li onclick="{{ func_name }}'simulation_results?project_id={{ project_id }}');">
+        <li {% if title == 'Simulation Results' %}class="active"{% endif %}
+            onclick="{{ func_name }}'simulation_results?project_id={{ project_id }}');">
           <a href="javascript:void(0);">Simulation Results</a>
         </li>
       </ul>

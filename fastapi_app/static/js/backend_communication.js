@@ -1114,3 +1114,7 @@ function show_video_tutorial() {
 function deactivate_video_tutorial() {
   fetch("/deactivate_video_tutorial/")
 }
+
+function redirect(url) {
+    window.location.href = url;
+}
