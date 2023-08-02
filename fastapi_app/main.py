@@ -32,7 +32,7 @@ from fastapi_app.tools.grids import Grid
 import pyomo.environ as po
 from fastapi_app.tools.grid_opt import GridOptimizer
 from fastapi_app.tools.es_opt import EnergySystemOptimizer
-from fastapi_app.tools.optimizer import Optimizer
+from fastapi_app.tools.optimizer import Optimizer, check_data_availability
 from fastapi_app.tools.account_helpers import Hasher, create_guid, is_valid_credentials, send_activation_link, activate_mail, \
     authenticate_user, create_access_token, send_mail
 from fastapi_app.tools import account_helpers as accounts
@@ -1100,11 +1100,14 @@ async def start_calculation(project_id, request: Request):
     if project_id is None:
         project_id = request.query_params.get('project_id')
     user = await accounts.get_user_from_cookie(request)
+    forward, redirect = await check_data_availability(user.id, project_id)
+    if forward is False:
+        return JSONResponse({'task_id': '', 'redirect': redirect})
     task_id = await optimization(user.id, project_id)
     user.task_id = task_id
     user.project_id = int(project_id)
     await inserts.update_model_by_user_id(user)
-    return JSONResponse({'task_id': task_id})
+    return JSONResponse({'task_id': task_id, 'redirect': ''})
 
 
 @app.post('/waiting_for_results/')
@@ -1483,7 +1486,6 @@ def optimize_energy_system(user_id, project_id):
         start = pd.to_datetime(df.loc[0, "start_date"])
         end = start + timedelta(days=int(n_days))
         solar_potential_df = get_dc_feed_in_sync_db_query(lat, lon, start, end)
-        nodes = sync_queries.get_df(models.Nodes, user_id, project_id)
         demand_opt_dict = sync_queries.get_model_instance(models.Demand, user_id, project_id).to_dict()
         demand_full_year = queries_demand.get_demand_time_series(nodes, demand_opt_dict).to_frame('Demand')
         ensys_opt = EnergySystemOptimizer(

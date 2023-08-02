@@ -8,7 +8,7 @@ from sqlalchemy.sql import text
 import flatten_dict
 from flatten_dict.splitters import make_splitter
 from jose import jwt, JWTError
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, NoResultFound
 from fastapi_app.io.db import models
 from fastapi_app.io.db import config
 from fastapi_app.io.db.database import get_async_session_maker, async_engine
@@ -110,10 +110,16 @@ async def get_df(model, user_id, project_id, is_timeseries=True):
 async def _get_df(query, is_timeseries=True):
     if is_timeseries:
         results = await _execute_with_retry(query, which='all')
-        results = [result.to_dict() for result in results]
+        if results is not None:
+            results = [result.to_dict() for result in results]
+        else:
+            return None
     else:
         results = await _execute_with_retry(query, which='one')
-        results = [results.to_dict()]
+        if results is not None:
+            results = [results.to_dict()]
+        else:
+            return None
     df = pd.DataFrame.from_records(results)
 
     if not df.empty:
@@ -195,4 +201,6 @@ async def _execute_with_retry(query, which='first'):
                 await asyncio.sleep(RETRY_DELAY)
             else:
                 print(f"Failed to execute query after {RETRY_COUNT} retries")
-                raise e
+                return None
+        except NoResultFound:
+            return None

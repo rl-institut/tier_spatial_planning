@@ -625,13 +625,13 @@
           </div>
         </div>
       </section>
-    <div id=noResults class="modal">
-        <span  class="close" title="Close Modal">&times;</span>
+        <div id="noResults" class="modal">
+        <span class="close" title="Close Modal">&times;</span>
         <form class="modal-content" action="/action_page.php">
             <div class="container">
                 <h1>No results</h1>
                 <p id="pendingTaskMSG"></p>
-                <a href="/" class="btn btn--long text-right">Back to projects overview</a>
+                <a href="javascript:void(0);" onclick="window.history.back();" class="btn btn--long text-right">OK</a>
             </div>
         </form>
     </div>

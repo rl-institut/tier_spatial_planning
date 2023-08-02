@@ -1,4 +1,29 @@
 from __future__ import division
+import pandas as pd
+from fastapi_app.io.db import queries
+import fastapi_app.io.db.models as models
+
+
+async def check_data_availability(user_id, project_id):
+    project_setup = await queries.get_model_instance(models.ProjectSetup, user_id, project_id)
+    if project_setup is None:
+        return False, '/project_setup/?project_id=' + str(project_id)
+    nodes = await queries.get_df(models.Nodes, user_id, project_id)
+    if nodes is None or nodes.empty or nodes[nodes['node_type'] == 'consumer'].index.__len__() == 0:
+        return False, '/consumer_selection/?project_id=' + str(project_id)
+    demand_opt_dict = await queries.get_model_instance(models.Demand, user_id, project_id)
+    if demand_opt_dict is not None:
+        demand_opt_dict = demand_opt_dict.to_dict()
+    if demand_opt_dict is None or demand_opt_dict['household_option'] is None:
+        return False, '/demand_estimation/?project_id=' + str(project_id)
+    grid_design = await queries.get_df(models.GridDesign, user_id, project_id, is_timeseries=False)
+    if grid_design is None or grid_design.empty or pd.isna(grid_design['pole_lifetime'].iat[0]):
+        return False, '/grid_design/?project_id=' + str(project_id)
+    energy_system_design = await queries.get_energy_system_design(user_id, project_id)
+    if grid_design is None or energy_system_design['battery']['parameters']['c_rate_in'] is None:
+        return False, '/energy_system_design/?project_id=' + str(project_id)
+    else:
+        return True, None
 
 
 class Optimizer:

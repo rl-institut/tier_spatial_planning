@@ -982,16 +982,30 @@ function revoke_users_task() {
         })}
 
 
-function start_calculation(project_id)
-    {   $.ajax({
-            url: "start_calculation/" + project_id,
-            type: "POST",
-            contentType: "application/json",
-        })
-        .done(function (res) {
+function start_calculation(project_id) {
+    fetch("start_calculation/" + project_id, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        }
+    })
+    .then(response => response.json())
+    .then(res => {
+        if (res.redirect && res.redirect.length > 0) {
+            document.getElementById('responseMsg').innerHTML =
+                'Input data is missing for the models. It appears that you have not gone through all the pages to ' +
+                'enter the input data. You will be redirected to the corresponding page.';
+            const baseURL = window.location.origin;
+            document.getElementById('redirectLink').href = baseURL + res.redirect;
+            document.getElementById('msgBox').style.display = 'block';
+        } else {
             wait_for_results(project_id, res.task_id, 0, 'grid');
-        });
-    }
+        }
+    })
+    .catch(error => console.error('There was an error!', error));
+}
+
+
 
 function forward_if_consumer_selection_exists(project_id) {
     $.ajax({
