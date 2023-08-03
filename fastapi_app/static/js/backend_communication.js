@@ -1118,3 +1118,12 @@ function deactivate_video_tutorial() {
 function redirect(url) {
     window.location.href = url;
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('.icon[data-bs-toggle="tooltip"]'));
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl, {
+      trigger: 'hover click'
+    });
+  });
+});
