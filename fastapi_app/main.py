@@ -1112,7 +1112,6 @@ async def start_calculation(project_id, request: Request):
 
 @app.post('/waiting_for_results/')
 async def waiting_for_results(request: Request, data: fastapi_app.io.schema.TaskInfo):
-
     async def pause_until_results_are_available(user_id, project_id, status):
         iter = 4 if status == 'unknown' else 2
         for i in range(iter):
@@ -1226,6 +1225,7 @@ async def revoke_users_task(request: Request):
 
 def optimize_grid(user_id, project_id):
     try:
+        print('start grid opt')
         # Grab Currrent Time Before Running the Code
         project_setup = sync_queries.get_project_setup_of_user(user_id, project_id)
         project_setup.status = "in progress"
@@ -1466,6 +1466,7 @@ def optimize_grid(user_id, project_id):
 
 def optimize_energy_system(user_id, project_id):
     try:
+        print('start es opt')
         # Grab Currrent Time Before Running the Code
         start_execution_time = time.monotonic()
         df = sync_queries.get_input_df(user_id, project_id)

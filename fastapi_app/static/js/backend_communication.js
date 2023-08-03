@@ -331,8 +331,7 @@ async function load_results(project_id) {
                 else
                 {
                     document.getElementById("pendingTaskMSG").innerText = 'There is no ongoing calculation.' +
-                        ' If you want to run the optimization for this project, go to projects overview and click on ' +
-                        '\"Edit Project\"';
+                        ' Do you want to start a new calculation?';
                 }
             });
     }}
@@ -1127,3 +1126,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
+
+
