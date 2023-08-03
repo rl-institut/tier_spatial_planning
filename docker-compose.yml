@@ -9,7 +9,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - PW=/run/secrets/pw
-      - MAX_DAYS=14
+      - MAX_DAYS=365
       - MAX_CONSUMER=2000
       - MAX_CONSUMER_ANONYMOUS=150
       - MAX_LAT_LON_DIST=0.15
