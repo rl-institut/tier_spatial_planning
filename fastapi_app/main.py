@@ -1706,22 +1706,8 @@ async def export_data(project_id: int, file_type:str,  request: Request):
     energy_flow_df = await queries.get_df(models.EnergyFlow, user.id, project_id)
     nodes_df = await queries.get_df(models.Nodes, user.id, project_id)
     links_df = await queries.get_df(models.Links, user.id, project_id)
-    excel_file = df_to_xlsx(input_parameters_df, energy_flow_df, results_df, nodes_df, links_df)
+    energy_system_design = await queries.get_df(models.EnergySystemDesign, user.id, project_id)
+    excel_file = df_to_xlsx(input_parameters_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df)
     response = StreamingResponse(excel_file, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    response.headers["Content-Disposition"] = "attachment; filename=output.xlsx"
+    response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_results.xlsx"
     return response
-
-
-@app.post("/import_data/{project_id}")
-async def import_data(project_id, request: Request, import_files: import_structure = None):
-    # add nodes from the 'nodes' sheet of the excel file to the 'nodes.csv' file
-    # TODO: update the template for adding nodes
-    nodes = import_files["nodes_to_import"]
-    links = import_files["links_to_import"]
-    user = await accounts.get_user_from_cookie(request)
-    user_id = user.id
-    if len(nodes) > 0:
-        await inserts.update_nodes_and_links(True, False, nodes, user_id, project_id)
-
-    if len(links) > 0:
-        await inserts.update_nodes_and_links(False, True, links, user_id, project_id)

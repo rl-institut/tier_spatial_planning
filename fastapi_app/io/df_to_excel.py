@@ -4,51 +4,33 @@ import pandas as pd
 import io
 
 
-def df_to_xlsx(input_df, energy_flow_df, results_df, nodes_df, links_df):
-    input_df = input_df.T
+def df_to_xlsx(input_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df):
+    input_df = pd.concat([input_df.T, energy_system_design.T])
     input_df.columns = ["User specified input parameters"]
-    input_df['Unit'] = ''
     input_df.index.name = ""
-    input_df = input_df.T[['project_name',
-    'project_description',
-    'created_at',
-    'updated_at',
-    'start_date',
-    'n_days',
-    'temporal_resolution',
-    'interest_rate',
-    'project_lifetime',
-    'connection_cable_capex',
-    'connection_cable_lifetime',
-    'connection_cable_max_length',
-    'distribution_cable_capex',
-    'distribution_cable_lifetime',
-    'distribution_cable_max_length',
-    'mg_connection_cost',
-    'pole_capex',
-    'pole_lifetime',
-    'pole_max_n_connections',
-    'allow_shs',
-    'shs_lifetime',
-    'shs_tier_five_capex',
-    'shs_tier_four_capex',
-    'shs_tier_one_capex',
-    'shs_tier_three_capex',
-    'shs_tier_two_capex'
-    ]].T.fillna('')
-    input_df.loc['project_lifetime', 'unit'] = 'years'
-    input_df.loc['n_days', 'unit'] = 'days'
-    input_df.loc['temporal_resolution', 'unit'] ='hours'
-    input_df.loc['interest_rate', 'unit'] = '%'
-    input_df.loc[['distribution_cable_capex', 'pole_capex', 'connection_cable_capex'], 'unit'] = 'USD/m'
+    input_df = input_df.rename(index = {'shs_max_grid_cost': 'shs_max_specific_marginal_grid_cost'})
+    input_df['Unit'] = ''
+    input_df = input_df.drop(['status', 'temporal_resolution'])
+    input_df.index.str.replace('__parameters__', '_parameter: ')
+    input_df.index.str.replace('__settings__', '_settings: ')
+    input_df.loc['n_days', 'Unit'] = 'days'
+    input_df.loc['interest_rate', 'Unit'] = '%'
+    input_df.loc[['distribution_cable_capex', 'pole_capex', 'connection_cable_capex'], 'Unit'] = 'USD/m'
     input_df.loc[['distribution_cable_lifetime', 'pole_lifetime', 'connection_cable_lifetime', 'project_lifetime',
-                  'shs_lifetime'], 'unit'] = 'years'
-    input_df.loc[['distribution_cable_max_length', 'pole_lifetime', 'connection_cable_max_length'], 'unit'] = 'm'
-    input_df.loc[['shs_tier_one_capex', 'shs_tier_two_capex', 'shs_tier_three_capex', 'mg_connection_cost'], 'unit'] = 'USD'
-    input_df.loc[['shs_tier_four_capex', 'shs_tier_five_capex'], 'unit'] = 'c/kWh'
+                  ], 'Unit'] = 'years'
+    input_df.loc[input_df.index.str.contains('lifetime'), 'Unit'] = 'years'
+    input_df.loc[input_df.index.str.contains('length'), 'Unit'] = 'm'
+    input_df.loc[input_df.index.str.contains('__capex'), 'Unit'] = 'USD/kWh'
+    input_df.loc[input_df.index.str.contains('__opex'), 'Unit'] = 'USD/(kW a)'
+    input_df.loc[input_df.index.str.contains('__fuel'), 'Unit'] = 'USD/l'
+    input_df.loc[input_df.index.str.contains('__fuel_cost'), 'Unit'] = 'USD/l'
+    input_df.loc[input_df.index.str.contains('__fuel_lhv'), 'Unit'] = 'kWh/kg'
+    input_df.loc[input_df.index.str.contains('_capacity'), 'Unit'] = 'kWh'
+    input_df.loc[['battery__parameters__capex'], 'Unit'] = 'USD/kWh'
+    input_df.loc[['mg_connection_cost'], 'Unit'] = 'USD'
+    input_df.loc[['shs_max_specific_marginal_grid_cost'], 'Unit'] = 'c/kWh'
     input_df = input_df.reset_index()
     input_df = format_first_col(input_df)
-
     cols = [col.replace('_', ' ').capitalize() + ' [kW]'
             if 'content' not in col
             else col.replace('_', ' ').capitalize() + ' [kWh]' for col in energy_flow_df.columns]
@@ -59,39 +41,28 @@ def df_to_xlsx(input_df, energy_flow_df, results_df, nodes_df, links_df):
     results_df.columns = ['', 'Value', 'Unit']
     results_df = format_first_col(results_df)
     results_df = results_df.set_index('')
-    results_df.loc[['Average length connection cable', 'Average length distribution cable', 'Length connection cable',
-                    'Length distribution cable'], 'Unit'] = 'm'
-    results_df.loc[['CO2 savings'], 'Unit'] = 'tons'
-    results_df.loc[['Cost fuel', 'Cost grid', 'Cost non renewable assets', 'Cost grid', 'Cost renewable assets',
-                    'Cost shs'], 'Unit'] = 'USD'
-    results_df.loc[['Diesel genset capacity', 'Inverter capacity', 'PV capacity', 'Rectifier capacity',
-                    'Battery capacity', 'Surplus'], 'Unit'] = 'kWh'
-    results_df = results_df.drop(['Time', 'Time grid design', 'Time energy system design', 'Battery to DC bus',
-                                  'PV to DC bus', 'Rectifier to DC bus', 'Dc bus to battery', 'Dc bus to inverter',
-                                  'Dc bus to surplus', 'Diesel genset to demand', 'Diesel genset to rectifier',
-                                  'Fuel to diesel genset', 'Inverter to demand'])
+    results_df.loc[results_df.index.str.contains('ength'), 'Unit'] = 'm'
+    results_df.loc[results_df.index.str.contains('CO2'), 'Unit'] = 't/a'
+    results_df.loc[results_df.index.str.contains('Upfront'), 'Unit'] = 'USD'
+    results_df.loc[results_df.index.str.contains('Cost'), 'Unit'] = 'USD/a'
+    results_df.loc[results_df.index.str.contains('Epc'), 'Unit'] = 'USD/a'
+    results_df.loc[results_df.index.str.contains('capacity'), 'Unit'] = 'USD/kW'
+    results_df.loc[['Battery capacity'], 'Unit'] = 'USD/kWh'
+    results_df.loc[['Max voltage drop', 'RES share', 'Surplus rate', 'Shortage total', 'Max shortage'], 'Unit'] = '%'
+    results_df.loc[['Average annual demand per consumer', 'Fuel consumption' , 'Total annual consumption', 'Surplus'],
+    'Unit'] = 'kWh/a'
+    results_df = results_df[~results_df.index.str.contains('Time')]
+    results_df = results_df[~results_df.index.str.contains(' to ')]
+    results_df = results_df.drop('Infeasible')
     results_df.loc[['LCOE'], 'Unit'] = 'c/kWh'
+    results_df.loc[['Base load', 'Peak demand'], 'Unit'] = 'kW'
     results_df = results_df.T
-    results_df = results_df[['LCOE', 'Cost fuel', 'Cost grid', 'Cost non renewable assets', 'Cost grid',
-                             'Cost renewable assets', 'Cost shs',
-                             'PV capacity', 'Diesel genset capacity', 'Inverter capacity', 'Rectifier capacity',
-                             'Battery capacity',
-                             'Surplus', 'Surplus rate', 'Shortage total', 'Max voltage drop', 'RES share',
-                             'Average length connection cable', 'Average length distribution cable',
-                             'Length connection cable',
-                             'Length distribution cable',
-                             'N connection links', 'N consumers', 'N distribution links', 'N poles', 'N shs consumers',
-                             'RES share', 'Surplus rate', 'Shortage total', 'Max voltage drop'
-                             ]]
     results_df = results_df.T.reset_index()
 
-    nodes_df = nodes_df.drop(columns=['surface_area', 'distribution_cost'])
+    nodes_df = nodes_df.drop(columns=['distribution_cost', 'parent'])
     nodes_df = format_column_names(nodes_df)
     links_df = links_df[['link_type', 'length', 'lat_from', 'lon_from', 'lat_to', 'lon_to']]
     links_df = format_column_names(links_df)
-
-
-
     excel_file = io.BytesIO()
     with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
         workbook = writer.book
