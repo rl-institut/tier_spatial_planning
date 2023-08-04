@@ -127,10 +127,19 @@
             </div>
           </div>
           <div class="row" style="padding: 12px">
-          <a id="downloadCSV"
-          class="btn btn--medium"
-          style="height: 32px; display: flex; align-items: center; justify-content: center"
-          href="#">Download results (xlsx-format)</a>
+<div style="display: flex; width: 100%; padding: 0; margin: 0;">
+  <a id="downloadCSV"
+     class="btn btn--medium"
+     style="height: 32px; display: flex; align-items: center; justify-content: center; width: 50%; margin-right: 10px;"
+     href="#">Download Results (xlsx-format)</a>
+  <a id="rerunCalculation"
+     class="btn btn--medium"
+     style="height: 32px; display: flex; align-items: center; justify-content: center; width: 50%; margin-left: 10px;"
+     href="javascript:void(0);"
+     onclick="forward_if_no_task_is_pending({{ project_id }});">Recalculate</a>
+</div>
+
+
           </div>
           <div class="row">
             <div class="col"   style="display: flex; justify-content: center;">

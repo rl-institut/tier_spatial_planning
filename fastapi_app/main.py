@@ -332,7 +332,7 @@ async def calculating(request: Request):
                                                                'project_id': project_id,
                                                                'msg': msg,
                                                                'task_id': user.task_id,
-                                                               'time': 0,
+                                                               'time': 3,
                                                                'email_opt': True})
     else:
         msg = 'You will be forwarded after the model calculation is completed. You can also close the window and view' \
