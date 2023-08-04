@@ -153,7 +153,7 @@ def insert_results_df(df, user_id, project_id):
         _insert_df('results', df, if_exists='update')
 
 
-def insert_df(model_class, df, user_id=None, project_id=None):
+def insert_df(model_class, df, user_id=None, project_id=None, ts=True):
     if user_id is not None and project_id is not None:
         user_id, project_id = int(user_id), int(project_id)
     df = df.dropna(how='all', axis=0)

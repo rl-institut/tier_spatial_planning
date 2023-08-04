@@ -889,18 +889,18 @@ async def get_plot_data(project_id, request: Request):
     sankey_data["dc_bus_to_inverter"] = str(df.loc[0, "dc_bus_to_inverter"])
     sankey_data["dc_bus_to_surplus"] = str(df.loc[0, "dc_bus_to_surplus"])
     sankey_data["inverter_to_demand"] = str(df.loc[0, "inverter_to_demand"])
-    energy_flow = await queries.get_df(models.EnergyFlow, user.id, project_id)
+    energy_flow = await queries.get_model_instance(models.EnergyFlow, user.id, project_id)
+    energy_flow = pd.read_json(energy_flow.data)
     energy_flow['battery'] = - energy_flow['battery_charge'] + energy_flow['battery_discharge']
     energy_flow = energy_flow.drop(columns=['battery_charge', 'battery_discharge'])
     energy_flow = energy_flow.reset_index(drop=True)
     energy_flow = json.loads(energy_flow.to_json())
-    duration_curve = await queries.get_df(models.DurationCurve, user.id, project_id)
-    duration_curve = json.loads(duration_curve.to_json())
-    emissions = await queries.get_df(models.Emissions, user.id, project_id)
-    emissions = json.loads(emissions.to_json())
-    demand_coverage = await queries.get_df(models.DemandCoverage, user.id, project_id, is_timeseries=True)
-    demand_coverage = demand_coverage.reset_index(drop=True)
-    demand_coverage =  json.loads(demand_coverage.to_json())
+    duration_curve = await queries.get_model_instance(models.DurationCurve, user.id, project_id)
+    duration_curve = json.loads(duration_curve.data)
+    emissions = await queries.get_model_instance(models.Emissions, user.id, project_id)
+    emissions = json.loads(emissions.data)
+    demand_coverage = await queries.get_model_instance(models.DemandCoverage, user.id, project_id)
+    demand_coverage =  json.loads(demand_coverage.data)
     return JSONResponse(status_code=200, content={"optimal_capacities": optimal_capacities,
                                                   "lcoe_breakdown": lcoe_breakdown,
                                                   "sankey_data": sankey_data,
@@ -1528,7 +1528,11 @@ def optimize_energy_system(user_id, project_id):
             df.loc[:, "non_renewable_electricity_production"] - df.loc[:, "hybrid_electricity_production"]  # tCO2 per year
         df['h'] = np.arange(1, len(ensys_opt.demand) + 1)
         df = df.round(3)
-        sync_inserts.insert_df(models.Emissions, df, user_id, project_id)
+        emissions = models.Emissions()
+        emissions.id = user_id
+        emissions.project_id = project_id
+        emissions.data = df.reset_index(drop=True).to_json()
+        sync_inserts.merge_model(emissions)
         co2_savings = df.loc[:, "co2_savings"].max()
         # store data for showing in the final results
         df = sync_queries.get_df(models.Results, user_id, project_id)
@@ -1617,7 +1621,12 @@ def optimize_energy_system(user_id, project_id):
         df["demand"] = ensys_opt.sequences_demand
         df["surplus"] = ensys_opt.sequences_surplus
         df = df.round(3)
-        sync_inserts.insert_df(models.EnergyFlow, df, user_id, project_id)
+
+        energy_flow = models.EnergyFlow()
+        energy_flow.id = user_id
+        energy_flow.project_id = project_id
+        energy_flow.data = df.reset_index(drop=True).to_json()
+        sync_inserts.merge_model(energy_flow)
 
         df = pd.DataFrame()
         df["demand"] = ensys_opt.sequences_demand
@@ -1627,7 +1636,13 @@ def optimize_energy_system(user_id, project_id):
         df.index.name = "dt"
         df = df.reset_index()
         df = df.round(3)
-        sync_inserts.insert_demand_coverage_df(df, user_id, project_id)
+
+
+        demand_coverage = models.DemandCoverage()
+        demand_coverage.id = user_id
+        demand_coverage.project_id = project_id
+        demand_coverage.data = df.reset_index(drop=True).to_json()
+        sync_inserts.merge_model(demand_coverage)
 
         # store duration curves
         df = pd.DataFrame()
@@ -1675,7 +1690,12 @@ def optimize_energy_system(user_id, project_id):
                                             / div)
         df['h'] = np.arange(1, len(ensys_opt.sequences_genset) + 1)
         df = df.round(3)
-        sync_inserts.insert_df(models.DurationCurve, df, user_id, project_id)
+
+        demand_curve = models.DurationCurve()
+        demand_curve.id = user_id
+        demand_curve.project_id = project_id
+        demand_curve.data = df.reset_index(drop=True).to_json()
+        sync_inserts.merge_model(demand_curve)
         project_setup = sync_queries.get_model_instance(models.ProjectSetup, user_id, project_id)
         project_setup.status = "finished"
         if project_setup.email_notification is True:

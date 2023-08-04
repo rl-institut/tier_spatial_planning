@@ -8,6 +8,7 @@ import inspect
 import pandas as pd
 from typing import Any
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
+from sqlalchemy.dialects.mysql.json import JSON
 
 
 
@@ -290,11 +291,7 @@ class DemandCoverage(Base):
 
     id = Column(SMALLINT, primary_key=True, index=True)
     project_id = Column(SMALLINT, primary_key=True, index=True)
-    dt = Column(DateTime, primary_key=True, index=True)
-    demand = Column(Numeric(10, 3))
-    renewable = Column(Numeric(10, 3))
-    non_renewable = Column(Numeric(10, 3))
-    surplus = Column(Numeric(10, 3))
+    data = Column(JSON)
 
 
 class EnergyFlow(Base):
@@ -305,14 +302,7 @@ class EnergyFlow(Base):
 
     id = Column(SMALLINT, primary_key=True, index=True)
     project_id = Column(SMALLINT, primary_key=True, index=True)
-    dt = Column(DateTime, primary_key=True, index=True)
-    diesel_genset_production = Column(Numeric(10, 3))
-    pv_production = Column(Numeric(10, 3))
-    battery_charge = Column(Numeric(10, 3))
-    battery_discharge = Column(Numeric(10, 3))
-    battery_content = Column(Numeric(10, 3))
-    demand = Column(Numeric(10, 3))
-    surplus = Column(Numeric(10, 3))
+    data = Column(JSON)
 
 
 class DurationCurve(Base):
@@ -323,19 +313,7 @@ class DurationCurve(Base):
 
     id = Column(SMALLINT, primary_key=True, index=True)
     project_id = Column(SMALLINT, primary_key=True, index=True)
-    h = Column(SMALLINT, primary_key=True, index=True)
-    diesel_genset_percentage = Column(Numeric(10, 3))
-    diesel_genset_duration = Column(Numeric(10, 3))
-    pv_percentage = Column(Numeric(10, 3))
-    pv_duration = Column(Numeric(10, 3))
-    rectifier_percentage = Column(Numeric(10, 3))
-    rectifier_duration = Column(Numeric(10, 3))
-    inverter_percentage = Column(Numeric(10, 3))
-    inverter_duration = Column(Numeric(10, 3))
-    battery_charge_percentage = Column(Numeric(10, 3))
-    battery_charge_duration = Column(Numeric(10, 3))
-    battery_discharge_percentage = Column(Numeric(10, 3))
-    battery_discharge_duration = Column(Numeric(10, 3))
+    data = Column(JSON)
 
 
 class Emissions(Base):
@@ -346,10 +324,7 @@ class Emissions(Base):
 
     id = Column(SMALLINT, primary_key=True, index=True)
     project_id = Column(SMALLINT, primary_key=True, index=True)
-    h = Column(SMALLINT, primary_key=True, index=True)
-    non_renewable_electricity_production = Column(Numeric(10, 3))
-    hybrid_electricity_production = Column(Numeric(10, 3))
-    co2_savings = Column(Numeric(10, 3))
+    data = Column(JSON)
 
 
 class WeatherData(Base):
