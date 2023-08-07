@@ -14,6 +14,15 @@
     .chart {
       max-height: 9999px;
     }
+.chart-wrapper {
+  display: flex;          /* Enable flexbox layout */
+  align-items: center;    /* Center vertically */
+  justify-content: center;/* Center horizontally */
+  width: 100%;            /* Width of the container */
+  height: 400px;          /* Height of the container */
+  position: relative;     /* Set position to relative */
+}
+
 </style>
   </head>
   <body onload="redirect_if_cookie_is_missing(true, true);
@@ -594,11 +603,12 @@
                   </div>
                 </div>
                 <div class="chart__plot">
-                  <div id="co2Emissions"></div>
+                    <div id="co2Emissions" ></div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+
           <div class="row">
             <div class="col">
               <div class="chart">

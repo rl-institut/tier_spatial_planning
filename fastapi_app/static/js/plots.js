@@ -58,50 +58,52 @@ function makeplot_bar_chart(data){
     ];
 
     var layout = {
-    yaxis: {tickfont: {
-                size: 14,
+            plot_bgcolor: '#FAFAFA',
+            paper_bgcolor: '#FAFAFA',
+            yaxis: {tickfont: {
+                        size: 14,
+                    },
+                    tickangle: -30,
             },
-            tickangle: -30,
-    },
-    xaxis: {
-        title: 'Capacity in [kW]',
-        titlefont: {
-            color: 'rgb(8,48,107)',
-            size: 16,
-        },
-        tickfont: {
-            color: 'rgb(8,48,107)',
-            size: 14,
-        },
-        side: 'top'
-    },
-    xaxis2: {
-        title: 'Capacity in [kWh]',
-        showgrid: false,
-        zeroline: false,
-        titlefont: {
-            color: 'rgb(133, 52, 124)',
-            size: 16,
-        },
-        tickfont: {
-            color: 'rgb(133, 52, 124)',
-            size: 14,
-        },
-        overlaying: 'x',
-        side: 'bottom'
-    },
-    barmode: 'stack',
-    bargap: 0.5,
-    showlegend: false,
-    autosize: false,
-    margin: {
-        l: 150,  // Increase left margin
-        r: 50,
-        b: 100,
-        t: 100,
-        pad: 4
-    },
-};
+            xaxis: {
+                title: 'Capacity in [kW]',
+                titlefont: {
+                    color: 'rgb(8,48,107)',
+                    size: 16,
+                },
+                tickfont: {
+                    color: 'rgb(8,48,107)',
+                    size: 14,
+                },
+                side: 'top'
+            },
+            xaxis2: {
+                title: 'Capacity in [kWh]',
+                showgrid: false,
+                zeroline: false,
+                titlefont: {
+                    color: 'rgb(133, 52, 124)',
+                    size: 16,
+                },
+                tickfont: {
+                    color: 'rgb(133, 52, 124)',
+                    size: 14,
+                },
+                overlaying: 'x',
+                side: 'bottom'
+            },
+            barmode: 'stack',
+            bargap: 0.5,
+            showlegend: false,
+            autosize: false,
+            margin: {
+                l: 150,  // Increase left margin
+                r: 50,
+                b: 100,
+                t: 100,
+                pad: 4
+            },
+        };
 
 
     Plotly.newPlot(optimalSizes, data, layout);
@@ -134,6 +136,8 @@ function makeplot_lcoe_pie(lcoe_breakdown) {
       }]
       
       let layout = {
+        plot_bgcolor: '#FAFAFA',
+        paper_bgcolor: '#FAFAFA',
         // height: 400,
         // width: 400,
         margin: {'t': 0, 'b': 0, 'l': 0, 'r': 0},
@@ -214,7 +218,11 @@ function makeplot_sankey(data) {
 
 
         
-    var layout = {font: {size: 16, color: 'black' } }
+    var layout = {
+            plot_bgcolor: '#FAFAFA',
+            paper_bgcolor: '#FAFAFA',
+            font: {size: 16, color: 'black' }
+    }
     Plotly.react(sankeyDiagram, data, layout)
   }
 
@@ -292,42 +300,44 @@ function makeplot_energy_flows(energy_flows) {
           var data = [trace1, trace2, trace3, trace4, trace5, trace6];
 
             var layout = {
-  xaxis: {
-    title: 'Time in [Hour]',
-    titlefont: {
-      size: 16,
-    },
-    tickfont: {
-      size: 14,
-    },
-  },
-  yaxis: {
-    title: 'Energy Flow in [kW]',
-    titlefont: {
-      size: 16,
-    },
-    tickfont: {
-      size: 14,
-    }
-  },
-  yaxis2: {   // second y-axis
-    title: 'Battery Content in [kWh]',
-    overlaying: 'y',
-    side: 'right',
-    showgrid: false,
-  },
-  legend: {
-    x: 1, // This positions the legend at the right edge of the chart.
-    y: 1, // This positions the legend at the top of the chart.
-    xanchor: 'auto', // The anchor for the x position. The 'auto' value will let Plotly decide the best location.
-    yanchor: 'auto', // The anchor for the y position. The 'auto' value will let Plotly decide the best location.
-    bgcolor: 'rgba(255, 255, 255, 1)', // Fully opaque white background.
-    bordercolor: '#E2E2E2',
-    borderwidth: 2,
-  },
-  autosize: true,
-  // title: 'Energy flows in different components of the system.',
-};
+            plot_bgcolor: '#FAFAFA',
+            paper_bgcolor: '#FAFAFA',
+              xaxis: {
+                title: 'Time in [Hour]',
+                titlefont: {
+                  size: 16,
+                },
+                tickfont: {
+                  size: 14,
+                },
+              },
+              yaxis: {
+                title: 'Energy Flow in [kW]',
+                titlefont: {
+                  size: 16,
+                },
+                tickfont: {
+                  size: 14,
+                }
+              },
+              yaxis2: {   // second y-axis
+                title: 'Battery Content in [kWh]',
+                overlaying: 'y',
+                side: 'right',
+                showgrid: false,
+              },
+              legend: {
+                x: 1, // This positions the legend at the right edge of the chart.
+                y: 1, // This positions the legend at the top of the chart.
+                xanchor: 'auto', // The anchor for the x position. The 'auto' value will let Plotly decide the best location.
+                yanchor: 'auto', // The anchor for the y position. The 'auto' value will let Plotly decide the best location.
+                bgcolor: 'rgba(255, 255, 255, 1)', // Fully opaque white background.
+                bordercolor: '#E2E2E2',
+                borderwidth: 2,
+              },
+              autosize: true,
+              // title: 'Energy flows in different components of the system.',
+            };
           Plotly.newPlot(energyFlows, data, layout);
   }
 
@@ -384,6 +394,8 @@ function makeplot_demand_coverage(demand_coverage) {
           };
         
           var layout = {
+            plot_bgcolor: '#FAFAFA',
+            paper_bgcolor: '#FAFAFA',
             xaxis: {
               title: 'Time in [Hour]',
               titlefont: {
@@ -485,6 +497,8 @@ function makeplot_duration_curves(data) {
           var data = [trace1, trace2, trace3, trace4, trace5, trace6];
 
           var layout = {
+            plot_bgcolor: '#FAFAFA',
+            paper_bgcolor: '#FAFAFA',
             xaxis: {
               title: 'Percentage of Operation in [%]',
               titlefont: {
@@ -548,6 +562,8 @@ function makeplot_co2_emissions(data) {
           var data = [trace1, trace2, trace3];
       
           var layout = {
+            plot_bgcolor: '#FAFAFA',
+            paper_bgcolor: '#FAFAFA',
             xaxis: {
               title: 'Time in [hour]',
               titlefont: {
