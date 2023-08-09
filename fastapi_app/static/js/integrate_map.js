@@ -142,10 +142,10 @@ function put_markers_on_map(array, markers_only) {
         L.marker([array[counter]["latitude"], array[counter]["longitude"]], {icon: selected_icon,})
             .on('click', markerOnClick).addTo(map);
     }
-
     // Update the element with the count of consumers
+    if (document.getElementById("n_consumers")) {
     document.getElementById("n_consumers").innerText = num_consumers;
-
+    }
     zoomAll(map);
 }
 

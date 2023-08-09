@@ -103,7 +103,7 @@ class GridDesign(Base):
     pole_capex = Column(FLOAT(precision=5, scale=1, unsigned=True))
     pole_max_n_connections = Column(TINYINT(unsigned=True))
     mg_connection_cost = Column(FLOAT(precision=5, scale=1, unsigned=True))
-    shs_max_grid_cost = Column(FLOAT(precision=5, scale=1, unsigned=True))
+    shs_max_grid_cost = Column(FLOAT(precision=5, scale=2, unsigned=True))
 
 class EnergySystemDesign(Base):
 

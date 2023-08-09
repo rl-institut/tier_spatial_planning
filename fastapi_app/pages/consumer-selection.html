@@ -72,8 +72,6 @@
     <main>
         <div id="fixed-symbol" style="position: fixed; bottom: 60px; left: 20px;">
 <img src="{{ url_for('static', path='/assets/icons/qm.svg') }}" alt="Icon" style="width: 100px; cursor: pointer;" onclick="document.getElementById('videoTutorial').style.display='block'">
-
-
         </div>
         <section id="section" class="dashboard">
             <div class="row">
@@ -251,14 +249,14 @@
         <div class="container">
             <h1 style="margin-bottom: 0;">Video Tutorial</h1>
             <div style="padding: 15px;">
-                <video width="568" height="360" controls>
+                <video id="tutorialVideo" width="568" height="360" controls>
                    <source src="{{ url_for('static', path='/videos/tut_consumer_selection.mp4') }}" type="video/mp4">
                    Your browser does not support the video tag.
                 </video>
             </div>
-            <button onclick="document.getElementById('videoTutorial').style.display='none'"
+            <button onclick="stopVideo(); document.getElementById('videoTutorial').style.display='none'"
                     type="button" class="deletebtn">OK</button>
-            <button onclick="document.getElementById('videoTutorial').style.display='none';
+            <button onclick="stopVideo(); document.getElementById('videoTutorial').style.display='none';
                 deactivate_video_tutorial();" type="button" class="cancelbtn">Don't Show Again</button>
         </div>
     </form>
@@ -360,6 +358,10 @@ var callback = function(mutationsList, observer) {
 };
 var observer = new MutationObserver(callback);
 observer.observe(targetNode, config);
+
+function stopVideo() {
+        var video = document.getElementById("tutorialVideo");
+        video.pause();}
 
 </script>
 </html>

@@ -3,6 +3,7 @@
   <head>
     {% set title='Grid Design' %}
     {% include '_head.html' %}
+    {% include '_style_msg_box.html' %}
   </head>
   <body onload="redirect_if_cookie_is_missing(true, true);
                 load_previous_data('grid_design?project_id={{ project_id }}');
@@ -254,9 +255,7 @@
                 </div>
                 <div class="row">
                   <div class="input-group">
-                    <span id="lblShsLifetime" class="input-group-text"
-                      >Max. Specific Grid Cost
-                        <span
+                    <span id="lblShsLifetime" class="input-group-text">Max. Specific Grid Cost<span
                     class="icon icon-question"
                     data-bs-toggle="tooltip"
                     title="For each consumer, specific costs of grid connection are calculated and related to the consumer's consumption. If the threshold value is exceeded, a grid connection is forgone and instead a solar home system is recommended."
@@ -276,6 +275,9 @@
                       >USD/kWh</span
                     >
                   </div>
+
+                    <img src="{{ url_for('static', path='/assets/icons/qm.svg') }}" alt="Icon" style="width: 100px; cursor: pointer; padding-top: 0.5rem; padding-bottom: 0.5rem" onclick="document.getElementById('videoTutorial').style.display='block'">
+                    <p style="margin-bottom: 5px; color: #8B0000;"><i>Watch video tutorial for further explanation of this parameter</i></p>
                 </div>
               </div>
             </div>
@@ -286,10 +288,37 @@
             </p>
             </div>
         </div>
+
+                          <video id="tutorialVideo3" width="568" height="360" controls>
+                   <source src="{{ url_for('static', path='/videos/test.mp4') }}" type="video/mp4">
+                   Your browser does not support the video tag.
+                </video>
+
       </section>
+        <div id="videoTutorial" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999; text-align: left">
+    <form class="modal-content" style="width: 700px; height: 520px;">
+        <div class="container">
+            <h1 style="margin-bottom: 0;">Video Tutorial</h1>
+            <div style="padding: 15px;">
+                <video id="tutorialVideo" width="568" height="360" controls>
+                   <source src="{{ url_for('static', path='/videos/tut_shs.mp4') }}" type="video/mp4">
+                   Your browser does not support the video tag.
+                </video>
+            </div>
+            <button onclick="stopVideo(); document.getElementById('videoTutorial').style.display='none'"
+                    type="button" class="deletebtn">OK</button>
+        </div>
+    </form>
+</div>
     </main>
   {% include '_footer.html' %}
   </body>
   {% include '_scripts.html' %}
   <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=Promise"></script>
+<script>
+    function stopVideo() {
+        var video = document.getElementById("tutorialVideo");
+        video.pause();
+    }
+</script>
 </html>
