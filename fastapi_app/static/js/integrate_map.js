@@ -111,31 +111,44 @@ function zoomAll(map) {
 
 
 function put_markers_on_map(array, markers_only) {
-  const n = array.length;
-  let counter;
-  let selected_icon;
-  for (counter = 0; counter < n; counter++) {
-    if (markers_only) {
+    const n = array.length;
+    let counter;
+    let selected_icon;
+
+    // Initialize the consumer counter
+    let num_consumers = 0;
+
+    for (counter = 0; counter < n; counter++) {
         if (array[counter]["node_type"] === "consumer") {
-            if (array[counter]["shs_options"] == 2) {selected_icon= markerShs;}
-            else if (array[counter]["consumer_type"] === "household") {selected_icon= markerConsumer;}
-            else if (array[counter]["consumer_type"] === "enterprise") {selected_icon= markerEnterprise;}
-            else if (array[counter]["consumer_type"] === "public_service") {selected_icon= markerPublicservice;}
+            num_consumers++;  // Increase the consumer counter
+
+            if (markers_only) {
+                if (array[counter]["shs_options"] == 2) {selected_icon = markerShs;}
+                else if (array[counter]["consumer_type"] === "household") {selected_icon = markerConsumer;}
+                else if (array[counter]["consumer_type"] === "enterprise") {selected_icon = markerEnterprise;}
+                else if (array[counter]["consumer_type"] === "public_service") {selected_icon = markerPublicservice;}
+            } else {
+                if (array[counter]["is_connected"] === false) {selected_icon = markerShs;}
+                else if (array[counter]["consumer_type"] === "household") {selected_icon = markerConsumer;}
+                else if (array[counter]["consumer_type"] === "enterprise") {selected_icon = markerEnterprise;}
+                else if (array[counter]["consumer_type"] === "public_service") {selected_icon = markerPublicservice;}
+            }
+        } else if (markers_only) {
+            selected_icon = markerPowerHouse;
+        } else {
+            selected_icon = icons[array[counter]["node_type"]];
         }
-        else {selected_icon= markerPowerHouse;}
-    }
-    else {
-        if (array[counter]["node_type"] === "consumer") {
-            if (array[counter]["is_connected"] === false) {selected_icon= markerShs;}
-            else if (array[counter]["consumer_type"] === "household") {selected_icon= markerConsumer;}
-            else if (array[counter]["consumer_type"] === "enterprise") {selected_icon= markerEnterprise;}
-            else if (array[counter]["consumer_type"] === "public_service") {selected_icon= markerPublicservice;}
-        }
-        else {selected_icon= icons[array[counter]["node_type"]];}}
+
         L.marker([array[counter]["latitude"], array[counter]["longitude"]], {icon: selected_icon,})
-            .on('click', markerOnClick).addTo(map);}
-  zoomAll(map);
+            .on('click', markerOnClick).addTo(map);
+    }
+
+    // Update the element with the count of consumers
+    document.getElementById("n_consumers").innerText = num_consumers;
+
+    zoomAll(map);
 }
+
 
 
 function removeLinksFromMap(map) {

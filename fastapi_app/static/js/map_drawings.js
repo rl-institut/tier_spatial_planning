@@ -158,19 +158,25 @@ map.addControl(new CustomMarkerControl());
 
 
 function add_single_consumer_to_array(latitude, longitude, how_added, node_type) {
-  let consumer_type = 'household';
-  if (node_type === 'power-house') {consumer_type = ''}
-  map_elements.push({
-      latitude: latitude,
-      longitude: longitude,
-      how_added: how_added,
-      node_type: node_type,
-      consumer_type: consumer_type,
-      consumer_detail: 'default',
-      custom_specification: '',
-      shs_options: 0,
-      is_connected: true
-  })
+    let consumer_type = 'household';
+    if (node_type === 'power-house') { consumer_type = ''; }
+
+    map_elements.push({
+        latitude: latitude,
+        longitude: longitude,
+        how_added: how_added,
+        node_type: node_type,
+        consumer_type: consumer_type,
+        consumer_detail: 'default',
+        custom_specification: '',
+        shs_options: 0,
+        is_connected: true
+    });
+
+    // Fetch the current value of n_consumers, increment it, and set it back
+    let nConsumerElem = document.getElementById("n_consumers");
+    let currentCount = parseInt(nConsumerElem.innerText, 10);
+    nConsumerElem.innerText = currentCount + 1;
 }
 
 
