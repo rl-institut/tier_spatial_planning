@@ -8,7 +8,7 @@ import pvlib
 from feedinlib import era5
 from fastapi_app.io.db import models
 from fastapi_app.io.db.database import get_sync_session_maker, sync_engine
-from fastapi_app.io.db.sync_queries import get_df
+from fastapi_app.io.db.sync_queries import get_df, get_model_instance
 from fastapi_app.io.db.inserts import df_2_sql
 from fastapi_app.io.db.config import RETRY_COUNT, RETRY_DELAY
 
@@ -56,12 +56,13 @@ def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, proje
     user_id, project_id = int(user_id), int(project_id)
     if nodes:
         nodes = inlet
-        try:
-            df = pd.DataFrame.from_dict(nodes).round(decimals=6)
-        except ValueError:
-            df = pd.DataFrame(nodes, index=[0]).round(decimals=6)
+        df = nodes.round(decimals=6)
         if add and replace:
-            df_existing = get_df(models.Nodes, user_id, project_id)
+            nodes_existing = get_model_instance(models.Nodes, user_id, project_id)
+            if nodes_existing is not None:
+                df_existing = pd.read_json(nodes_existing.data)
+            else:
+                df_existing = pd.DataFrame()
             if not df_existing.empty:
                 df_existing = df_existing[(df_existing["node_type"] != "pole") &
                                           (df_existing["node_type"] != "power-house")]
@@ -83,7 +84,11 @@ def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, proje
             if len(df_total.index) != 0:
                 if 'parent' in df_total.columns:
                     df_total['parent'] = df_total['parent'].where(df_total['parent'] != 'unknown', None)
-                insert_nodes_df(df_total, user_id, project_id, replace=replace)
+                nodes = models.Nodes()
+                nodes.id = user_id
+                nodes.project_id = project_id
+                nodes.data = df_total.reset_index(drop=True).to_json()
+                merge_model(nodes)
     if links:
         links = inlet
         # defining the precision of data
@@ -96,6 +101,7 @@ def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, proje
         if len(df.index) != 0:
             insert_links_df(df, user_id, project_id)
 
+
 def insert_links_df(df, user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     model_class = models.Links
@@ -103,16 +109,6 @@ def insert_links_df(df, user_id, project_id):
     df['id'] = int(user_id)
     df['project_id'] = int(project_id)
     _insert_df(table='links', df=df, if_exists='update')
-
-
-def insert_nodes_df(df, user_id, project_id, replace=True):
-    user_id, project_id = int(user_id), int(project_id)
-    model_class = models.Nodes
-    if replace:
-        remove(model_class, user_id, project_id)
-    df['id'] = int(user_id)
-    df['project_id'] = int(project_id)
-    _insert_df('nodes', df, if_exists='update')
 
 
 def _insert_df(table: str, df, if_exists='update', chunk_size=None):
@@ -166,17 +162,6 @@ def insert_df(model_class, df, user_id=None, project_id=None, ts=True):
             df.index.name = 'dt'
             df = df.reset_index()
         _insert_df(model_class.__name__.lower(), df, if_exists='update')
-
-
-def insert_demand_coverage_df(df, user_id, project_id):
-    user_id, project_id = int(user_id), int(project_id)
-    df = df.dropna(how='all', axis=0)
-    if not df.empty:
-        model_class = models.DemandCoverage
-        remove(model_class, user_id, project_id)
-        df['id'] = int(user_id)
-        df['project_id'] = int(project_id)
-        _insert_df('demandcoverage', df, if_exists='update')
 
 
 def dump_weather_data_into_db(file_name):

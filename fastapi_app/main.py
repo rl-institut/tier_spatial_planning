@@ -372,7 +372,8 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
     user = await accounts.get_user_from_cookie(request)
     if project_id == 'undefined':
         project_id = get_project_id_from_request(request)
-    df = await queries.get_df(models.Nodes, user.id, project_id)
+    nodes = await queries.get_model_instance(models.Nodes, user.id, project_id)
+    df = pd.read_json(nodes.data)
     if not df.empty:
         df = df[['latitude',
                  'longitude',
@@ -436,7 +437,11 @@ async def consumer_to_db(project_id: str, map_elements: fastapi_app.io.schema.Ma
     if len(df.index) != 0:
         if 'parent' in df.columns:
             df['parent'] = df['parent'].replace('unknown', None)
-    await inserts.insert_nodes_df(df, user.id, project_id)
+    nodes = models.Nodes()
+    nodes.id = user.id
+    nodes.project_id = project_id
+    nodes.data = df.reset_index(drop=True).to_json()
+    await inserts.merge_model(nodes)
     return JSONResponse(status_code=200, content={"message": "Success"})
 
 
@@ -990,7 +995,8 @@ async def database_add_remove_manual(add_remove: str, project_id, add_node_reque
     user = await accounts.get_user_from_cookie(request)
     nodes = models.Nodes(**dict(add_node_request)).to_dict()
     if add_remove == "remove":
-        df = await queries.get_df(models.Nodes, user.id, project_id)
+        nodes = queries.get_model_instance(models.Nodes, user.id, project_id)
+        df = pd.read_json(nodes.data)
         df = df[(df["node_type"] != "pole") & (df["node_type"] != "power-house")]
         for index in df.index:
             if (round(add_node_request.latitude, 6) == df.to_dict()["latitude"][index]) and \
@@ -1096,7 +1102,8 @@ async def forward_if_no_task_is_pending(request: Request):
 async def forward_if_consumer_selection_exists(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
     nodes = await queries.get_model_instance(models.Nodes, user.id, project_id)
-    if nodes is not None and len(nodes.to_json()['consumer_type']) > 0:
+    df = pd.read_json(nodes.data)
+    if df is not None and len(df['consumer_type']) > 0:
         res = {'forward': True}
     else:
         res = {'forward': False}
@@ -1246,7 +1253,8 @@ def optimize_grid(user_id, project_id):
                             project_lifetime=df.loc[0, "project_lifetime"],
                             wacc=df.loc[0, "interest_rate"] / 100,
                             tax=0, )
-        nodes = sync_queries.get_df(models.Nodes, user_id, project_id)
+        nodes = sync_queries.get_model_instance(models.Nodes, user_id, project_id)
+        nodes = pd.read_json(nodes.data)
         nodes['is_connected'] = True
         nodes.loc[nodes['shs_options'] == 2, 'is_connected'] = False
         nodes.index = nodes.index.astype(str)
@@ -1440,7 +1448,7 @@ def optimize_grid(user_id, project_id):
                            'yearly_consumption'],
                    axis=1,
                    inplace=True)
-        sync_inserts.update_nodes_and_links(True, False, nodes.to_dict(), user_id, project_id, replace=True)
+        sync_inserts.update_nodes_and_links(True, False, nodes, user_id, project_id, replace=True)
         links = grid.links.reset_index(drop=True)
         links.drop(labels=["x_from", "y_from", "x_to", "y_to", "n_consumers", "total_power", "from_node", "to_node"],
                    axis=1,
@@ -1482,7 +1490,8 @@ def optimize_energy_system(user_id, project_id):
         solver = 'gurobi' if po.SolverFactory('gurobi').available() else 'cbc'
         if solver == 'cbc':
             energy_system_design['diesel_genset']['settings']['offset'] = False
-        nodes = sync_queries.get_df(models.Nodes, user_id, project_id)
+        nodes = sync_queries.get_model_instance(models.Nodes, user_id, project_id)
+        nodes = pd.read_json(nodes.data)
         num_households = len(nodes[(nodes['consumer_type'] == 'household') &
                                    (nodes['is_connected'] == True)].index)
         if num_households == 0:

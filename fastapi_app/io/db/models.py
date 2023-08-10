@@ -171,18 +171,7 @@ class Nodes(Base):
 
     id = Column(SMALLINT, primary_key=True, index=True)
     project_id = Column(SMALLINT, primary_key=True, index=True)
-    latitude = Column(Numeric(9, 6), primary_key=True)
-    longitude = Column(Numeric(9, 6), primary_key=True)
-    node_type = Column(VARCHAR(55), primary_key=True)
-    consumer_type = Column(VARCHAR(55))
-    consumer_detail = Column(VARCHAR(55))
-    is_connected = Column(Boolean)
-    how_added = Column(VARCHAR(55))
-    distance_to_load_center = Column(Numeric(10, 6))
-    parent = Column(VARCHAR(10))
-    distribution_cost = Column(Numeric(10, 5))
-    custom_specification = Column(VARCHAR(1000))
-    shs_options = Column(SMALLINT)
+    data = Column(JSON)
 
 
 class Links(Base):

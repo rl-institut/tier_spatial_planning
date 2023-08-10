@@ -62,16 +62,6 @@ async def insert_links_df(df, user_id, project_id):
     await _insert_df(table='links', df=df, if_exists='update')
 
 
-async def insert_nodes_df(df, user_id, project_id, replace=True):
-    user_id, project_id = int(user_id), int(project_id)
-    model_class = models.Nodes
-    if replace:
-        await remove(model_class, user_id, project_id)
-    df['id'] = int(user_id)
-    df['project_id'] = int(project_id)
-    await _insert_df('nodes', df, if_exists='update')
-
-
 async def insert_energysystemdesign_df(df, user_id, project_id, replace=True):
     user_id, project_id = int(user_id), int(project_id)
     model_class = models.EnergySystemDesign
@@ -91,17 +81,6 @@ async def insert_results_df(df, user_id, project_id):
         df['id'] = int(user_id)
         df['project_id'] = int(project_id)
         await _insert_df('results', df, if_exists='update')
-
-
-async def insert_demand_coverage_df(df, user_id, project_id):
-    user_id, project_id = int(user_id), int(project_id)
-    df = df.dropna(how='all', axis=0)
-    if not df.empty:
-        model_class = models.DemandCoverage
-        await remove(model_class, user_id, project_id)
-        df['id'] = int(user_id)
-        df['project_id'] = int(project_id)
-        await _insert_df('demandcoverage', df, if_exists='update')
 
 
 async def insert_df(model_class, df, user_id=None, project_id=None):
@@ -179,7 +158,11 @@ async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id,
             if len(df_total.index) != 0:
                 if 'parent' in df_total.columns:
                     df_total['parent'] = df_total['parent'].where(df_total['parent'] != 'unknown', None)
-                await insert_nodes_df(df_total, user_id, project_id, replace=replace)
+                nodes = models.Nodes()
+                nodes.id = user_id
+                nodes.project_id = project_id
+                nodes.data = df_total.reset_index(drop=True).to_json()
+                await merge_model(nodes)
     if links:
         links = inlet
         # defining the precision of data
@@ -274,4 +257,3 @@ async def insert_example_project(user_id):
                 new_e = model_class(**data)
                 new_e.id = user_id
                 await merge_model(new_e)
-
