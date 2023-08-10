@@ -104,6 +104,7 @@ async def remove_account(user_email, user_id):
                         models.Links,
                         models.Results,
                         models.DemandCoverage,
+                        models.Demand,
                         models.EnergyFlow,
                         models.Emissions,
                         models.DurationCurve]:
@@ -243,7 +244,7 @@ async def insert_example_project(user_id):
     if example is not None and hasattr(example, 'id') and len(projects) == 0:
         for model_class in [models.Nodes, models.Links, models.Results, models.DemandCoverage, models.EnergyFlow,
                             models.Emissions, models.DurationCurve, models.ProjectSetup, models.EnergySystemDesign,
-                            models.GridDesign]:
+                            models.GridDesign, models.Demand]:
             model_instance = await get_model_instance(model_class, example.id, 0, 'all')
             if model_class == models.ProjectSetup:
                 time_now = datetime.datetime.now()

@@ -9,7 +9,7 @@ async def check_data_availability(user_id, project_id):
     if project_setup is None:
         return False, '/project_setup/?project_id=' + str(project_id)
     nodes = await queries.get_model_instance(models.Nodes, user_id, project_id)
-    nodes_df = pd.read_json(nodes.data)
+    nodes_df = pd.read_json(nodes.data) if nodes is not None else None
     if nodes_df is None or nodes_df.empty or nodes_df[nodes_df['node_type'] == 'consumer'].index.__len__() == 0:
         return False, '/consumer_selection/?project_id=' + str(project_id)
     demand_opt_dict = await queries.get_model_instance(models.Demand, user_id, project_id)
