@@ -86,10 +86,10 @@ async def get_links_json(user_id, project_id):
     return nodes_json
 
 
-async def get_model_instance(model, user_id, project_id):
+async def get_model_instance(model, user_id, project_id, which='first'):
     user_id, project_id = int(user_id), int(project_id)
     query = select(model).where(model.id == user_id, model.project_id == project_id)
-    model_instance = await _execute_with_retry(query, which='first')
+    model_instance = await _execute_with_retry(query, which=which)
     return model_instance
 
 

@@ -258,6 +258,14 @@ async def contact(request: Request):
     return templates.TemplateResponse("contact_form.html", {"request": request, 'email': email})
 
 
+@app.get("/example_model")
+async def example_model(request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    if user is not None:
+        await inserts.insert_example_project(user.id)
+    return JSONResponse(status_code=200, content={'success': True})
+
+
 @app.get("/consumer_selection")
 async def consumer_selection(request: Request):
     project_id = request.query_params.get('project_id')

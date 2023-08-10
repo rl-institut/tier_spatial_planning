@@ -4,7 +4,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy import delete, text
 from fastapi_app.io.db import models
 from fastapi_app.io.db.database import get_async_session_maker, async_engine
-from fastapi_app.io.db.queries import get_df
+from fastapi_app.io.db.queries import get_df, get_model_instance, get_user_by_username, get_project_of_user
 from sqlalchemy import update
 from fastapi_app.io.db.config import RETRY_COUNT, RETRY_DELAY
 
@@ -252,3 +252,19 @@ def handle_duplicates(if_exists, query, col_names):
                                                                                         .replace(')', '')))
         query = ''.join([query1, query2])
         return query
+
+
+async def insert_example_project(user_id):
+    example = await get_user_by_username('default_example')
+    projects = await get_project_of_user(user_id)
+    if example is not None and hasattr(example, 'id') and len(projects) == 0:
+        for model_class in [models.Nodes, models.Links, models.Results, models.DemandCoverage, models.EnergyFlow,
+                            models.Emissions, models.DurationCurve, models.ProjectSetup, models.EnergySystemDesign,
+                            models.GridDesign]:
+            model_instance = await get_model_instance(model_class, example.id, 0, 'all')
+            for e in model_instance:
+                data = {key: value for key, value in e.__dict__.items() if not key.startswith('_')}
+                new_e = model_class(**data)
+                new_e.id = user_id
+                await merge_model(new_e)
+

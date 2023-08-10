@@ -1096,6 +1096,21 @@ function reset_pw(guid) {
     }
 }
 
+function create_example_project() {
+    fetch("/example_model/")
+        .then(res => {
+            if (res.ok) {  // Check if the fetch was successful
+                window.location.reload();  // Reload the page
+            } else {
+                console.error('Failed to fetch example model. Status:', res.status);
+            }
+        })
+        .catch(err => {
+            console.error('Error fetching example model:', err);
+        });
+}
+
+
 function show_video_tutorial() {
         fetch("/show_video_tutorial/")
   .then(response => response.json())
@@ -1127,4 +1142,17 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
+
+function show_modal_example_model() {
+    // Select the table by its ID 'projectTable'
+    var table = document.getElementById('projectTable');
+
+    // The table rows, excluding the header
+    var rows = table.querySelectorAll('tr:not(:first-child)');
+
+    // If there are no rows (excluding the header), it means there are no projects
+    if (rows.length == 1 && rows[0].innerText.includes("You do not yet have any saved projects")) {
+        document.getElementById('projectExample').style.cssText = "display: block !important;";
+    }
+}
 

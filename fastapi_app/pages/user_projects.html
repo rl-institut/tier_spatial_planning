@@ -11,6 +11,7 @@
 </style>
   </head>
   <body onload="redirect_if_cookie_is_missing(true, true);
+                show_modal_example_model();
                 show_user_email_in_navbar();
                 set_and_show_error_msg();">
 {% include '_navbar.html' %}
@@ -28,7 +29,7 @@
                   </a></span>
                 </div>
                   <span class="title"></span>
-                <table>
+                <table id="projectTable">
                   <tr style="border-bottom:1px solid black">
                     <th>ID</th>
                     <th>Project Name</th>
@@ -98,6 +99,16 @@
             {% endfor %}
         {% endif %}
     {% include '_warningBox.html' %}
+        <div id="projectExample" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999; text-align: left">
+            <form class="modal-content" style="max-width: 24rem">
+                <div class="container">
+                    <h1>Warning</h1>
+                    <p>You have not created any projects yet. Would you like a sample project to be set up for you?</p>
+                        <button onclick="create_example_project()" type="button" class="deletebtn">Yes</button>
+                        <button onclick="document.getElementById('projectExample').style.display='none'" type="button" class="deletebtn">No</button>
+                </div>
+            </form>
+        </div>
     </main>
   {% include '_footer.html' %}
   </body>
