@@ -76,7 +76,11 @@ def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, proje
                 df_links = get_df(models.Links, user_id, project_id)
                 if not df_links.empty:
                     df_links.drop(labels=df_links.index, axis=0, inplace=True)
-                    insert_links_df(df_links, user_id, project_id)
+                    links = models.Links()
+                    links.id = user_id
+                    links.project_id = project_id
+                    links.data = df_links.reset_index(drop=True).to_json()
+                    merge_model(links)
         if not df_total.empty:
             df_total.latitude = df_total.latitude.map(lambda x: "%.6f" % x)
             df_total.longitude = df_total.longitude.map(lambda x: "%.6f" % x)
@@ -99,16 +103,11 @@ def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, proje
         df.lon_to = df.lon_to.map(lambda x: "%.6f" % x)
         # adding the links to the existing csv file
         if len(df.index) != 0:
-            insert_links_df(df, user_id, project_id)
-
-
-def insert_links_df(df, user_id, project_id):
-    user_id, project_id = int(user_id), int(project_id)
-    model_class = models.Links
-    remove(model_class, user_id, project_id)
-    df['id'] = int(user_id)
-    df['project_id'] = int(project_id)
-    _insert_df(table='links', df=df, if_exists='update')
+            links = models.Links()
+            links.id = user_id
+            links.project_id = project_id
+            links.data = df.reset_index(drop=True).to_json()
+            merge_model(links)
 
 
 def _insert_df(table: str, df, if_exists='update', chunk_size=None):

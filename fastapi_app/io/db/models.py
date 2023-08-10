@@ -182,12 +182,7 @@ class Links(Base):
 
     id = Column(SMALLINT, primary_key=True, index=True)
     project_id = Column(SMALLINT, primary_key=True, index=True)
-    lat_from = Column(Numeric(9, 6), primary_key=True)
-    lon_from = Column(Numeric(9, 6), primary_key=True)
-    lat_to = Column(Numeric(9, 6), primary_key=True)
-    lon_to = Column(Numeric(9, 6), primary_key=True)
-    link_type = Column(VARCHAR(50), primary_key=True)
-    length = Column(SMALLINT(unsigned=True))
+    data = Column(JSON)
 
 
 class Demand(Base):

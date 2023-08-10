@@ -79,13 +79,6 @@ async def get_energy_system_design(user_id, project_id):
     return energy_system_design
 
 
-async def get_links_json(user_id, project_id):
-    user_id, project_id = int(user_id), int(project_id)
-    df = await get_df(models.Links, user_id, project_id)
-    nodes_json = json.loads(df.to_json())
-    return nodes_json
-
-
 async def get_model_instance(model, user_id, project_id, which='first'):
     user_id, project_id = int(user_id), int(project_id)
     query = select(model).where(model.id == user_id, model.project_id == project_id)

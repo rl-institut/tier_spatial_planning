@@ -53,15 +53,6 @@ async def update_model_by_user_id(model):
     await execute_stmt(stmt)
 
 
-async def insert_links_df(df, user_id, project_id):
-    user_id, project_id = int(user_id), int(project_id)
-    model_class = models.Links
-    await remove(model_class, user_id, project_id)
-    df['id'] = int(user_id)
-    df['project_id'] = int(project_id)
-    await _insert_df(table='links', df=df, if_exists='update')
-
-
 async def insert_energysystemdesign_df(df, user_id, project_id, replace=True):
     user_id, project_id = int(user_id), int(project_id)
     model_class = models.EnergySystemDesign
@@ -150,7 +141,11 @@ async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id,
                 df_links = await get_df(models.Links, user_id, project_id)
                 if not df_links.empty:
                     df_links.drop(labels=df_links.index, axis=0, inplace=True)
-                    await insert_links_df(df_links, user_id, project_id)
+                    links = models.Links()
+                    links.id = user_id
+                    links.project_id = project_id
+                    links.data = df_links.reset_index(drop=True).to_json()
+                    await merge_model(links)
         if not df_total.empty:
             df_total.latitude = df_total.latitude.map(lambda x: "%.6f" % x)
             df_total.longitude = df_total.longitude.map(lambda x: "%.6f" % x)
@@ -173,7 +168,11 @@ async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id,
         df.lon_to = df.lon_to.map(lambda x: "%.6f" % x)
         # adding the links to the existing csv file
         if len(df.index) != 0:
-            await insert_links_df(df, user_id, project_id)
+            links = models.Links()
+            links.id = user_id
+            links.project_id = project_id
+            links.data = df.reset_index(drop=True).to_json()
+            await merge_model(links)
 
 
 async def sql_str_2_db(sql):

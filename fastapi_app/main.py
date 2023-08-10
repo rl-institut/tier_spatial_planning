@@ -363,7 +363,8 @@ async def set_email_notification(project_id: int, is_active: bool, request: Requ
 @app.get("/db_links_to_js/{project_id}")
 async def db_links_to_js(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
-    links_json = await queries.get_links_json(user.id, project_id)
+    links = await queries.get_model_instance(models.Links, user.id, project_id)
+    links_json = json.loads(links.data) if links is not None else json.loads('{}')
     return links_json
 
 
@@ -373,7 +374,7 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
     if project_id == 'undefined':
         project_id = get_project_id_from_request(request)
     nodes = await queries.get_model_instance(models.Nodes, user.id, project_id)
-    df = pd.read_json(nodes.data)
+    df = pd.read_json(nodes.data) if nodes is not None else pd.DataFrame()
     if not df.empty:
         df = df[['latitude',
                  'longitude',
@@ -1596,7 +1597,8 @@ def optimize_energy_system(user_id, project_id):
         df.loc[0, "base_load"] = demand_full_year.iloc[:, 0].quantile(0.1)
         df.loc[0, "max_shortage"] = (ensys_opt.sequences_shortage / ensys_opt.demand).max() * 100
         n_poles = nodes[nodes['node_type'] == 'pole'].__len__()
-        links = sync_queries.get_df(models.Links, user_id, project_id)
+        links = sync_queries.get_model_instance(models.Links, user_id, project_id)
+        links = pd.read_json(links.data)
         length_dist_cable = links[links['link_type'] == 'distribution']['length'].sum()
         length_conn_cable = links[links['link_type'] == 'connection']['length'].sum()
         grid_input_parameter = sync_queries.get_input_df(user_id, project_id)
@@ -1741,8 +1743,10 @@ async def export_data(project_id: int, file_type:str,  request: Request):
     input_parameters_df = await queries.get_input_df(user.id, project_id)
     results_df = await queries.get_df(models.Results, user.id, project_id)
     energy_flow_df = await queries.get_df(models.EnergyFlow, user.id, project_id)
-    nodes_df = await queries.get_df(models.Nodes, user.id, project_id)
-    links_df = await queries.get_df(models.Links, user.id, project_id)
+    nodes = await queries.get_model_instance(models.Nodes, user.id, project_id)
+    links = await queries.get_model_instance(models.Links, user.id, project_id)
+    nodes_df = pd.read_json(nodes.data) if nodes is not None else pd.DataFrame()
+    links_df = pd.read_json(links.data) if links is not None else pd.DataFrame()
     energy_system_design = await queries.get_df(models.EnergySystemDesign, user.id, project_id)
     excel_file = df_to_xlsx(input_parameters_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df)
     response = StreamingResponse(excel_file, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
