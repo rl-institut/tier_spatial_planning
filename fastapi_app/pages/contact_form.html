@@ -94,7 +94,7 @@ async function sendMail() {
 
   // Sending the mail object to the FastAPI route
   try {
-    const response = await fetch("/consumer_to_db/", {
+    const response = await fetch("/send_mail_route/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

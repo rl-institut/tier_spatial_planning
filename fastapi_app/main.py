@@ -1598,7 +1598,7 @@ def optimize_energy_system(user_id, project_id):
         df.loc[0, "max_shortage"] = (ensys_opt.sequences_shortage / ensys_opt.demand).max() * 100
         n_poles = nodes[nodes['node_type'] == 'pole'].__len__()
         links = sync_queries.get_model_instance(models.Links, user_id, project_id)
-        links = pd.read_json(links.data)
+        links = pd.read_json(links.data) if links is not None else pd.DataFrame()
         length_dist_cable = links[links['link_type'] == 'distribution']['length'].sum()
         length_conn_cable = links[links['link_type'] == 'connection']['length'].sum()
         grid_input_parameter = sync_queries.get_input_df(user_id, project_id)
