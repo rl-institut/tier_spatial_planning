@@ -1,5 +1,6 @@
 import pandas as pd
 import asyncio
+import datetime
 from sqlalchemy.exc import OperationalError
 from sqlalchemy import delete, text
 from fastapi_app.io.db import models
@@ -262,6 +263,12 @@ async def insert_example_project(user_id):
                             models.Emissions, models.DurationCurve, models.ProjectSetup, models.EnergySystemDesign,
                             models.GridDesign]:
             model_instance = await get_model_instance(model_class, example.id, 0, 'all')
+            if model_class == models.ProjectSetup:
+                time_now = datetime.datetime.now()
+                time_now \
+                    = datetime.datetime(time_now.year, time_now.month, time_now.day, time_now.hour, time_now.minute)
+                model_instance[0].created_at = time_now
+                model_instance[0].updated_at = time_now
             for e in model_instance:
                 data = {key: value for key, value in e.__dict__.items() if not key.startswith('_')}
                 new_e = model_class(**data)
