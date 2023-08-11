@@ -96,12 +96,12 @@ def df_to_xlsx(input_df, energy_system_design, energy_flow_df, results_df, nodes
         sheet4 = 'nodes'
         nodes_df.to_excel(writer, sheet_name=sheet4, index=False)
         writer.sheets[sheet4] = set_column_width(writer.sheets[sheet4],
-                                                 energy_flow_df,
+                                                 nodes_df,
                                                  workbook.add_format({'align': 'right'}))
         sheet5 = 'links'
         links_df.to_excel(writer, sheet_name=sheet5, index=False)
         writer.sheets[sheet5] = set_column_width(writer.sheets[sheet5],
-                                                 energy_flow_df,
+                                                 links_df,
                                                  workbook.add_format({'align': 'right'}))
         writer.save()
     xlsx_data = excel_file.getvalue()
@@ -112,6 +112,7 @@ def set_column_width(worksheet, df, format=None):
     for i, col in enumerate(df.columns):
         column_len = df[col].astype(str).str.len().max()
         column_len = max(column_len, len(col)) + 2
+        column_len = min(column_len, 150)
         if format:
             worksheet.set_column(i, i, column_len, format)
         else:
