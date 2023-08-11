@@ -659,6 +659,28 @@
                 </div>
             </form>
         </div>
+        <div id=pendingTask class="modal">
+        <span  class="close" title="Close Modal">&times;</span>
+        <form class="modal-content" action="/action_page.php">
+            <div class="container">
+                <h1>Revoke pending calculation?</h1>
+                <p>You have a calculation in progress that has not yet been completed. Therefore, you cannot start
+                    another calculation. You can either revoke the pending calculation or wait for it to be finished</p>
+                <div class="clearfix">
+                    <button onclick="revoke_users_task();"
+                            type="button"
+                            class="deletebtn"
+                    >Revoke
+                    </button>
+                    <button onclick="document.getElementById('pendingTask').style.display='none';"
+                            type="button"
+                            class="cancelbtn"
+                    >Wait
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
         {% include '_warningBox.html' %}
     </main>
     {% include '_footer.html' %}
