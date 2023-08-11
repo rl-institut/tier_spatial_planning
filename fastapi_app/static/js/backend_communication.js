@@ -250,19 +250,22 @@ async function save_energy_system_design(href) {
     }
 }
 
+let hasRetried = false;
 
 async function load_results(project_id) {
-    const url = "load_results/" + project_id;
-    let results;
     try {
-        const response = await fetch(url);
+            const url = "load_results/" + project_id;
+            const response = await fetch(url);
 
-        if (!response.ok) {
-            throw new Error("Network response was not ok");
-        }
-        results = await response.json();
-        if (results['n_consumers'] > 0) {
-            document.getElementById('noResults').style.display='none';
+    if (!response.ok) {
+        console.error("Network response was not ok");
+        return;
+    }
+
+    const results = await response.json();
+
+    if (results['n_consumers'] > 0) {
+                    document.getElementById('noResults').style.display='none';
             document.getElementById("nConsumers").innerText = Number(results['n_consumers']) - Number(results['n_shs_consumers']);
             document.getElementById("nGridConsumers").innerText = Number(results['n_consumers']) - Number(results['n_shs_consumers']);
             document.getElementById("nShsConsumers").innerText = results['n_shs_consumers'];
@@ -320,46 +323,51 @@ async function load_results(project_id) {
             db_nodes_to_js(project_id, false);
             db_links_to_js(project_id);
 
-            if (results['lcoe'] === null || results['lcoe'] === undefined || results['lcoe'].includes('None')) {
-                if (results['responseMsg'].length === 0) {
-                    document.getElementById('responseMsg').innerHTML = 'Something went wrong. There are no results of the energy system optimization.';
-                } else {
-                    document.getElementById('responseMsg').innerHTML = results['responseMsg'];
-                }
+        if (results['lcoe'] === null || results['lcoe'] === undefined || results['lcoe'].includes('None')) {
+            if (results['responseMsg'].length === 0) {
+                document.getElementById('responseMsg').innerHTML = 'Something went wrong. There are no results of the energy system optimization.';
             } else {
-                plot();
+                document.getElementById('responseMsg').innerHTML = results['responseMsg'];
             }
-
         } else {
-            document.getElementById('dashboard').style.display = 'none';
-            document.getElementById('map').style.display = 'none';
-            document.getElementById('noResults').style.display = 'block';
-
-            try {
-                const res = await fetch("has_pending_task/" + project_id, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                const data = await res.json();
-
-                if (data.has_pending_task === true) {
-                    document.getElementById("pendingTaskMSG").innerText = 'Calculation is still running.';
-                } else {
-                    document.getElementById("pendingTaskMSG").innerText = 'There is no ongoing calculation.\n' +
-                        'Do you want to start a new calculation?';
-                }
-            } catch (error) {
-                console.error("There was a problem checking for pending tasks:", error.message);
-            }
+            plot();
         }
 
+    } else {
+        document.getElementById('dashboard').style.display = 'none';
+        document.getElementById('map').style.display = 'none';
+        document.getElementById('noResults').style.display = 'block';
+
+        const res = await fetch("has_pending_task/" + project_id, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await res.json();
+
+        if (data.has_pending_task === true) {
+            document.getElementById("pendingTaskMSG").innerText = 'Calculation is still running.';
+        } else {
+            document.getElementById("pendingTaskMSG").innerText = 'There is no ongoing calculation.\n' +
+                'Do you want to start a new calculation?';
+        }
+    }
+
     } catch (error) {
-        console.error("There was a problem with the fetch operation:", error.message);
+        console.error("An error occurred:", error);
+
+        if (!hasRetried) {
+            hasRetried = true;
+            console.log("Retrying function load_results");
+            await load_results(project_id);
+        } else {
+            console.log("Already retried once. Not retrying again.");
+        }
     }
 }
+
 
 
 /************************************************************/

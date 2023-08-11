@@ -365,7 +365,7 @@ async def db_links_to_js(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
     links = await queries.get_model_instance(models.Links, user.id, project_id)
     links_json = json.loads(links.data) if links is not None else json.loads('{}')
-    return links_json
+    return JSONResponse(content=links_json, status_code=200)
 
 
 @app.get("/db_nodes_to_js/{project_id}/{markers_only}")
@@ -452,7 +452,10 @@ async def load_results(project_id, request: Request):
     df = await queries.get_df(models.Results, user.id, project_id)
     infeasible = bool(df.loc[0, 'infeasible']) if df.columns.__contains__('infeasible') else False
     if df.empty:
-        return {}
+        await asyncio.sleep(1)
+        df = await queries.get_df(models.Results, user.id, project_id)
+        if df.empty:
+            return JSONResponse(content={})
     df["average_length_distribution_cable"] = df["length_distribution_cable"] / df["n_distribution_links"]
     df["average_length_connection_cable"] = df["length_connection_cable"] / df["n_connection_links"]
     df["time"] = df["time_grid_design"] + df["time_energy_system_design"]
@@ -530,7 +533,8 @@ async def load_results(project_id, request: Request):
                                  'carried out.'
     else:
         results['responseMsg'] = ''
-    return results
+    return JSONResponse(content=results, status_code=200)
+
 
 
 @app.get("/show_video_tutorial")
