@@ -238,16 +238,16 @@ async function save_energy_system_design(href) {
 
 
 async function load_results(project_id) {
-    var xhr = new XMLHttpRequest();
-    url = "load_results/" + project_id;
-    xhr.open("GET", url, true);
-    xhr.responseType = "json";
-    xhr.send();
-    xhr.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            // push nodes to the map
-            results = this.response;
-            if (results['n_consumers'] > 0) {
+    const url = "load_results/" + project_id;
+    let results;
+    try {
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error("Network response was not ok");
+        }
+        results = await response.json();
+        if (results['n_consumers'] > 0) {
             document.getElementById('noResults').style.display='none';
             document.getElementById("nConsumers").innerText = Number(results['n_consumers']) - Number(results['n_shs_consumers']);
             document.getElementById("nGridConsumers").innerText = Number(results['n_consumers']) - Number(results['n_shs_consumers']);
@@ -305,37 +305,47 @@ async function load_results(project_id) {
             document.getElementById('LCOE').innerHTML = results['lcoe'].toString() + " ¢<sub class='sub'>USD</sub>/kWh";
             db_nodes_to_js(project_id, false);
             db_links_to_js(project_id);
-            if (results['lcoe'] === null || results['lcoe'] === undefined || results['lcoe'].includes('None'))
+
+            if (results['lcoe'] === null || results['lcoe'] === undefined || results['lcoe'].includes('None')) {
                 if (results['responseMsg'].length === 0) {
-                   document.getElementById('responseMsg').innerHTML = 'Something went wrong. There are no results of the energy system optimization.';
-                }
-                else {
+                    document.getElementById('responseMsg').innerHTML = 'Something went wrong. There are no results of the energy system optimization.';
+                } else {
                     document.getElementById('responseMsg').innerHTML = results['responseMsg'];
                 }
-            else {plot();}
-        }
-        else {
+            } else {
+                plot();
+            }
+
+        } else {
             document.getElementById('dashboard').style.display = 'none';
             document.getElementById('map').style.display = 'none';
-            document.getElementById('noResults').style.display='block';
-            $.ajax({
-            url: "has_pending_task/" + project_id,
-            type: "POST",
-            contentType: "application/json",
-            })
-            .done(function (res) {
-                if (res.has_pending_task === true)
-                {
+            document.getElementById('noResults').style.display = 'block';
+
+            try {
+                const res = await fetch("has_pending_task/" + project_id, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await res.json();
+
+                if (data.has_pending_task === true) {
                     document.getElementById("pendingTaskMSG").innerText = 'Calculation is still running.';
-                }
-                else
-                {
+                } else {
                     document.getElementById("pendingTaskMSG").innerText = 'There is no ongoing calculation.\n' +
                         'Do you want to start a new calculation?';
                 }
-            });
-    }}
-}}
+            } catch (error) {
+                console.error("There was a problem checking for pending tasks:", error.message);
+            }
+        }
+
+    } catch (error) {
+        console.error("There was a problem with the fetch operation:", error.message);
+    }
+}
 
 
 /************************************************************/
