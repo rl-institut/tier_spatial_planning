@@ -410,33 +410,42 @@ async function change_email() {
     if (userEmail1.value !== userEmail2.value) {
         document.getElementById("responseMsg1").innerHTML = 'The emails do not match';
         document.getElementById("responseMsg1").style.color = 'red';
-    }
-    else {
-    $("*").css("cursor", "wait");
-    $.ajax({url: "change_email/",
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({email: userEmail1.value,
-                                        password: userPassword.value,
-                                        remember_me: false}),
-            dataType: "json",})
-        .done(async function (response) {
-            document.getElementById("responseMsg1").innerHTML = response.msg;
-            let fontcolor;
-            if (response.validation === true)
-                {fontcolor = 'green';}
-            else
-                {fontcolor = 'red';};
-            document.getElementById("responseMsg1").style.color = fontcolor;
-            if (response.validation === true)
-            {
-            await new Promise(r => setTimeout(r, 3000))
-            logout()
-            }
-        });
-    $("*").css("cursor", "auto");
-    }
+    } else {
+        $("*").css("cursor", "wait");
 
+        try {
+            const response = await fetch("change_email/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    email: userEmail1.value,
+                    password: userPassword.value,
+                    remember_me: false
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const responseData = await response.json();
+            document.getElementById("responseMsg1").innerHTML = responseData.msg;
+            const fontcolor = responseData.validation ? 'green' : 'red';
+            document.getElementById("responseMsg1").style.color = fontcolor;
+
+            if (responseData.validation === true) {
+                await new Promise(r => setTimeout(r, 3000));
+                logout();
+            }
+
+        } catch (error) {
+            console.error("There was a problem with the fetch operation:", error.message);
+        } finally {
+            $("*").css("cursor", "auto");
+        }
+    }
 }
 
 
@@ -444,80 +453,114 @@ async function change_pw() {
     if (newUserPassword1.value != newUserPassword2.value) {
         document.getElementById("responseMsg2").innerHTML = 'The passwords do not match';
         document.getElementById("responseMsg2").style.color = 'red';
-    }
-    else {
-    $("*").css("cursor", "wait");
-    $.ajax({url: "change_pw/",
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({new_password: newUserPassword1.value,
-                                        old_password: oldUserPassword.value}),
-            dataType: "json",})
-        .done(async function (response) {
+    } else {
+        $("*").css("cursor", "wait");
 
-            document.getElementById("responseMsg2").innerHTML = response.msg;
-            let fontcolor;
-            if (response.validation === true)
-                {fontcolor = 'green';}
-            else
-                {fontcolor = 'red';};
+        try {
+            const response = await fetch("change_pw/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    new_password: newUserPassword1.value,
+                    old_password: oldUserPassword.value
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const responseData = await response.json();
+            document.getElementById("responseMsg2").innerHTML = responseData.msg;
+            const fontcolor = responseData.validation ? 'green' : 'red';
             document.getElementById("responseMsg2").style.color = fontcolor;
-            if (response.validation === true)
-            {
-            await new Promise(r => setTimeout(r, 3000))
-            logout()
+
+            if (responseData.validation === true) {
+                await new Promise(r => setTimeout(r, 3000));
+                logout();
             }
-        });
-    $("*").css("cursor", "auto");
+
+        } catch (error) {
+            console.error("There was a problem with the fetch operation:", error.message);
+        } finally {
+            $("*").css("cursor", "auto");
+        }
     }
 }
 
 
-function delete_account() {
+async function delete_account() {
     $("*").css("cursor", "wait");
-    $.ajax({url: "delete_account/",
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({password: Password.value}),
-            dataType: "json",})
-        .done(async function (response) {
-            document.getElementById("responseMsg3").innerHTML = response.msg;
-            let fontcolor;
-            if (response.validation === true)
-                {fontcolor = 'green';}
-            else
-                {fontcolor = 'red';};
-            document.getElementById("responseMsg3").style.color = fontcolor;
-            if (response.validation === true)
-            {
-            await new Promise(r => setTimeout(r, 3000))
-            logout()
-            }
+
+    try {
+        const response = await fetch("delete_account/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                password: Password.value
+            }),
         });
-    $("*").css("cursor", "auto");
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const responseData = await response.json();
+        document.getElementById("responseMsg3").innerHTML = responseData.msg;
+        const fontcolor = responseData.validation ? 'green' : 'red';
+        document.getElementById("responseMsg3").style.color = fontcolor;
+
+        if (responseData.validation === true) {
+            await new Promise(r => setTimeout(r, 3000));
+            logout();
+        }
+
+    } catch (error) {
+        console.error("There was a problem with the fetch operation:", error.message);
+    } finally {
+        $("*").css("cursor", "auto");
+    }
 }
 
 
-function login() {
-    $.ajax({url: "login/",
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({email: userEmail.value,
-                                       password: userPassword.value, remember_me: isEnabled.value}),
-            dataType: "json",})
-        .done(function (response) {
-            document.getElementById("userPassword").value = '';
-            if (response.validation === true)
-                {
-                    document.getElementById("userEmail").value = '';
-                    location.reload();
-                }
-            else
-                {
-                    document.getElementById("responseMsg").innerHTML = response.msg;
-                    document.getElementById("responseMsg").style.color = 'red';
-                }
-            });}
+
+async function login() {
+    try {
+        const response = await fetch("login/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                email: userEmail.value,
+                password: userPassword.value,
+                remember_me: isEnabled.value
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const responseData = await response.json();
+
+        document.getElementById("userPassword").value = '';
+        if (responseData.validation === true) {
+            document.getElementById("userEmail").value = '';
+            location.reload();
+        } else {
+            document.getElementById("responseMsg").innerHTML = responseData.msg;
+            document.getElementById("responseMsg").style.color = 'red';
+        }
+
+    } catch (error) {
+        console.error("There was a problem with the fetch operation:", error.message);
+    }
+}
 
 
 async function renewToken() {
@@ -536,41 +579,76 @@ async function renewToken() {
 }
 
 
-function consent_cookie() {
-    $.ajax({url: "consent_cookie/",
-            type: "POST",
-            contentType: "application/json",
-            dataType: "json",})
-        .done(function () {document.getElementById('consentCookie').style.display='none'});}
-
-
-function anonymous_login () {
-    $.ajax({url: "anonymous_login/",
-            type: "POST",
-            data: JSON.stringify({'captcha_input': captcha_input3.value,
-                                  'hashed_captcha': hashedCaptcha}),
-            contentType: "application/json",
-            dataType: "json",})
-        .done(async function (response) {
-            document.getElementById("responseMsg3").innerHTML = response.msg;
-            if (response.validation === true)
-            {window.location.href=window.location.origin;}
-            else
-            {
-             document.getElementById("responseMsg3").style.color = 'red';
+async function consent_cookie() {
+    try {
+        const response = await fetch("consent_cookie/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
             }
         });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        document.getElementById('consentCookie').style.display = 'none';
+
+    } catch (error) {
+        console.error("There was a problem with the fetch operation:", error.message);
+    }
 }
 
 
-function logout()  {
-    $.ajax({url: "logout/",
-            type: "POST",
-            contentType: "application/json",
-            dataType: "json"})
-        .done(function () {window.location.href=window.location.origin;});
+async function anonymous_login() {
+    try {
+        const response = await fetch("anonymous_login/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                'captcha_input': captcha_input3.value,
+                'hashed_captcha': hashedCaptcha
+            })
+        });
 
+        const data = await response.json();
+
+        document.getElementById("responseMsg3").innerHTML = data.msg;
+        if (data.validation === true) {
+            window.location.href = window.location.origin;
+        } else {
+            document.getElementById("responseMsg3").style.color = 'red';
+        }
+
+    } catch (error) {
+        console.error("There was a problem with the fetch operation:", error.message);
+    }
 }
+
+
+
+async function logout() {
+    try {
+        const response = await fetch("logout/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+        });
+
+        if (response.ok) {
+            window.location.href = window.location.origin;
+        } else {
+            console.error("Failed to log out");
+        }
+
+    } catch (error) {
+        console.error("There was a problem with the fetch operation:", error.message);
+    }
+}
+
 
 
 async function save_project_setup(project_id, href) {
@@ -862,57 +940,6 @@ function export_data(project_id) {
 }
 
 
-/************************************************************/
-/*                   IMPORT DATA AS XLSX                    */
-/************************************************************/
-
-function import_data(project_id) {
-    // Choose the selected file in the web app.
-    var selected_file = document.getElementById("fileImport").files[0];
-    let file_reader = new FileReader();
-    file_reader.readAsBinaryString(selected_file);
-    
-    // In case that the file can be loaded without any problem, this will be 
-    // executed.
-    file_reader.onload = function (event) {
-        let import_data = event.target.result;
-        let workbook = XLSX.read(import_data, { type: "binary" });
-
-        // TODO: must be finalized later
-        // // import settings to the web app
-        // let settings_row_object = XLSX.utils.sheet_to_row_object_array(workbook.Sheets['settings'], {
-        //     blankrows: false,
-        //     header: 1,
-        //     raw: true,
-        //     rawNumbers: true
-        // });
-        // settings_row_object.shift(); // remove the first array only containing the sheet name ("settings") and "value"
-        // settings_dict = settings_row_object.reduce((dict, [key, value]) => Object.assign(dict, { [key]: value }), {}); // convert the array to dictionary
-        // import_settings_to_webapp(settings_dict);
-
-        // copy nodes and links into the existing *.csv files (Databases)
-        let nodes_to_import = XLSX.utils.sheet_to_row_object_array(workbook.Sheets['Nodes']);
-        let links_to_import = XLSX.utils.sheet_to_row_object_array(workbook.Sheets['Links']);
-        $.ajax({
-            url: "import_data/" + project_id,
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({
-            nodes_to_import,
-            links_to_import
-            }),
-            dataType: "json",
-            statusCode: {
-            200: function () {
-                db_links_to_js(nodes_or_links = 'nodes', map_or_export = 'map', project_id);
-                db_links_to_js(nodes_or_links = 'links', map_or_export = 'map', project_id);
-            },
-            },
-        });
-    }
-  }
-
-
 
 function show_user_email_in_navbar() {
     fetch("query_account_data/", {
@@ -931,45 +958,79 @@ function show_user_email_in_navbar() {
 }
 
 
+async function redirect_if_cookie_is_missing(access_token, consent_cookie) {
+    let has_access_token = (access_token === true || access_token === 'true');
+    let has_consent_cookie = (consent_cookie === true || consent_cookie === 'true');
 
-async function redirect_if_cookie_is_missing(access_token, consent_cookie){
-        let has_access_token = (access_token === true || access_token === 'true');
-        let has_consent_cookie = (consent_cookie === true || consent_cookie === 'true');
-        $.ajax({url: "has_cookie/",
-            type: "POST",
-            data: JSON.stringify({'access_token': has_access_token, 'consent_cookie': has_consent_cookie}),
-            contentType: "application/json",})
-        .done(function (response) {
-            if (response == false)
-            {   logout();
-                window.location.href = window.location.origin;}
-        })
+    try {
+        const response = await fetch("has_cookie/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                'access_token': has_access_token,
+                'consent_cookie': has_consent_cookie
+            }),
+        });
+
+        const responseData = await response.json();
+
+        if (!responseData) {
+            logout();
+            window.location.href = window.location.origin;
+        }
+
         await renewToken();
+
+    } catch (error) {
+        console.error("There was a problem with the fetch operation:", error.message);
+    }
 }
 
 
-function remove_project(project_id) {
-        $.ajax({url: "remove_project/" + project_id,
-            type: "POST",
-            contentType: "application/json",})
-        .done(function () {window.location.href = window.location.origin;})}
+async function remove_project(project_id) {
+    try {
+        const response = await fetch("remove_project/" + project_id, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+
+        if (response.ok) {
+            window.location.href = window.location.origin;
+        } else {
+            console.error("Failed to remove the project. Status:", response.status);
+        }
+    } catch (error) {
+        console.error("There was a problem with the fetch operation:", error.message);
+    }
+}
+
 
 
 let shouldStop = false;
 
-function wait_for_results(project_id, task_id, time, model) {
+
+async function wait_for_results(project_id, task_id, time, model) {
     // Get the current URL
     var url = window.location.href;
 
     // If the url includes /calculating, proceed with the request
     if (url.includes("/calculating") && !shouldStop) {
-        $.ajax({
-            url: "waiting_for_results/",
-            type: "POST",
-            data: JSON.stringify({ 'project_id': project_id, 'task_id': task_id, 'time': time, 'model': model }),
-            contentType: "application/json",
-        })
-            .done(function (res) {
+        try {
+            const response = await fetch("waiting_for_results/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ 'project_id': project_id, 'task_id': task_id, 'time': time, 'model': model })
+            });
+
+            if (response.ok) {
+                const res = await response.json();
+
                 if (res.finished === true) {
                     window.location.href = window.location.origin + '/simulation_results?project_id=' + project_id;
                 } else if (!shouldStop) {
@@ -977,38 +1038,65 @@ function wait_for_results(project_id, task_id, time, model) {
                     renewToken();
                     wait_for_results(project_id, task_id, res.time, res.model);
                 }
-            })
-            .fail(function (jqXHR, textStatus, errorThrown) {
-                if (jqXHR.status === 303 || jqXHR.status === 422) {
+            } else {
+                if (response.status === 303 || response.status === 422) {
                     shouldStop = true;
                     window.location.href = "/?internal_error";
                 }
-            });
+            }
+        } catch (error) {
+            console.error("There was a problem with the fetch operation:", error.message);
+        }
+    }
+}
+
+
+async function forward_if_no_task_is_pending(project_id) {
+    try {
+        const response = await fetch("forward_if_no_task_is_pending/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+        });
+
+        if (response.ok) {
+            const res = await response.json();
+
+            if (res.forward === true) {
+                window.location.href = window.location.origin + '/calculating?project_id=' + project_id;
+            } else {
+                document.getElementById('pendingTask').style.display = 'block';
+            }
+        } else {
+            console.error("Server responded with a status:", response.status);
+        }
+    } catch (error) {
+        console.error("There was a problem with the fetch operation:", error.message);
     }
 }
 
 
 
-function forward_if_no_task_is_pending(project_id) {
-        $.ajax({
-            url: "forward_if_no_task_is_pending/",
-            type: "POST",
-            contentType: "application/json",})
-        .done(function (res) {
-        if (res.forward === true) {
-            window.location.href = window.location.origin + '/calculating?project_id=' + project_id;
+async function revoke_users_task() {
+    try {
+        const response = await fetch("revoke_users_task/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+
+        if (response.ok) {
+            document.getElementById('pendingTask').style.display = 'none';
         } else {
-            document.getElementById('pendingTask').style.display='block'
-        }})}
+            console.error("Server responded with a status:", response.status);
+        }
+    } catch (error) {
+        console.error("There was a problem with the fetch operation:", error.message);
+    }
+}
 
-
-function revoke_users_task() {
-    $.ajax({
-        url: "revoke_users_task/",
-        type: "POST",
-        contentType: "application/json"})
-        .done(function () {document.getElementById('pendingTask').style.display='none';
-        })}
 
 
 function start_calculation(project_id) {
@@ -1036,95 +1124,143 @@ function start_calculation(project_id) {
 
 
 
-function forward_if_consumer_selection_exists(project_id) {
-    $.ajax({
-        url: "forward_if_consumer_selection_exists/" + project_id,
-        type: "POST",
-        contentType: "application/json",})
-            .done(function (res) {
-        if (res.forward === true) {
-            window.location.href = window.location.origin + '/demand_estimation?project_id=' + project_id;
-        } else {
-            document.getElementById('responseMsg').innerHTML = 'No consumers are selected. You must select the geolocation of the consumers before you go\n' +
-                '                    to the next page.';
-        }})}
-
-
-
-function send_email_notification(project_id, is_active) {
-    $.ajax({
-        url: "/set_email_notification/" + project_id + '/' + is_active,
-        type: "POST",
-        contentType: "application/json",
-    });
-}
-
-function show_cookie_consent(){
-        $.ajax({url: "has_cookie/",
-            type: "POST",
-            data: JSON.stringify({'access_token': false, 'consent_cookie': true}),
-            contentType: "application/json",})
-        .done(function (response) {
-            if (response == false)
-            {
-                document.getElementById('consentCookie').style.display='block'}
-            else
-            {document.getElementById('consentCookie').style.display='none'}
-        })
-}
-
-
-function send_reset_password_email(){
-        $.ajax({url: "send_reset_password_email/",
-            type: "POST",
-            data: JSON.stringify({'email': userEmail4.value,
-                                        'captcha_input': captcha_input.value,
-                                        'hashed_captcha': hashedCaptcha}),
-            contentType: "application/json",})
-        .done(async function (response) {
-            document.getElementById("responseMsg4").innerHTML = response.msg;
-            let fontcolor;
-            if (response.validation === true)
-                {fontcolor = 'green';}
-            else
-                {fontcolor = 'red';};
-            document.getElementById("responseMsg4").style.color = fontcolor;
-            if (response.validation === true)
-            {
-            await new Promise(r => setTimeout(r, 3000))
-            document.getElementById('forgotPassword').style.display='none'
+async function forward_if_consumer_selection_exists(project_id) {
+    try {
+        const response = await fetch("forward_if_consumer_selection_exists/" + project_id, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
             }
         });
+
+        if (response.ok) {
+            const res = await response.json();
+            if (res.forward === true) {
+                window.location.href = window.location.origin + '/demand_estimation?project_id=' + project_id;
+            } else {
+                document.getElementById('responseMsg').innerHTML = 'No consumers are selected. You must select the geolocation of the consumers before you go to the next page.';
+            }
+        } else {
+            console.error("Server responded with a status:", response.status);
+        }
+    } catch (error) {
+        console.error("There was a problem with the fetch operation:", error.message);
+    }
 }
+
+
+async function send_email_notification(project_id, is_active) {
+    try {
+        const response = await fetch("/set_email_notification/" + project_id + '/' + is_active, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+
+        if (!response.ok) {
+            console.error("Server responded with a status:", response.status);
+        }
+    } catch (error) {
+        console.error("There was a problem with the fetch operation:", error.message);
+    }
+}
+
+
+async function show_cookie_consent() {
+    try {
+        const response = await fetch("has_cookie/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ 'access_token': false, 'consent_cookie': true })
+        });
+
+        const data = await response.json();
+
+        if (data == false) {
+            document.getElementById('consentCookie').style.display = 'block';
+        } else {
+            document.getElementById('consentCookie').style.display = 'none';
+        }
+
+    } catch (error) {
+        console.error("There was a problem with the fetch operation:", error.message);
+    }
+}
+
+
+async function send_reset_password_email() {
+    try {
+        const response = await fetch("send_reset_password_email/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                'email': userEmail4.value,
+                'captcha_input': captcha_input.value,
+                'hashed_captcha': hashedCaptcha
+            })
+        });
+
+        const data = await response.json();
+
+        document.getElementById("responseMsg4").innerHTML = data.msg;
+        let fontcolor;
+        if (data.validation === true) {
+            fontcolor = 'green';
+        } else {
+            fontcolor = 'red';
+        }
+        document.getElementById("responseMsg4").style.color = fontcolor;
+
+        if (data.validation === true) {
+            await new Promise(r => setTimeout(r, 3000));
+            document.getElementById('forgotPassword').style.display = 'none';
+        }
+
+    } catch (error) {
+        console.error("There was a problem with the fetch operation:", error.message);
+    }
+}
+
 
 function reset_pw(guid) {
     if (newUserPassword1.value !== newUserPassword2.value) {
         document.getElementById("responseMsg2").innerHTML = 'The passwords do not match';
         document.getElementById("responseMsg2").style.color = 'red';
+        return;
     }
-    else {
-    $.ajax({url: "reset_password",
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({guid: guid, password: newUserPassword1.value}),
-            dataType: "json",})
-        .done(async function (response) {
 
-            document.getElementById("responseMsg2").innerHTML = response.msg;
-            let fontcolor;
-            if (response.validation === true)
-                {fontcolor = 'green';}
-            else
-                {fontcolor = 'red';};
-            document.getElementById("responseMsg2").style.color = fontcolor;
-            if (response.validation === true)
-            {
-            await new Promise(r => setTimeout(r, 3000))
-            window.location.href=window.location.origin;
-            }
-        });
-    }
+    fetch("reset_password", {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            guid: guid,
+            password: newUserPassword1.value
+        })
+    })
+    .then(response => response.json())
+    .then(async (data) => {
+        document.getElementById("responseMsg2").innerHTML = data.msg;
+        let fontcolor = data.validation ? 'green' : 'red';
+        document.getElementById("responseMsg2").style.color = fontcolor;
+
+        if (data.validation) {
+            await new Promise(r => setTimeout(r, 3000));
+            window.location.href = window.location.origin;
+        }
+    })
+    .catch(error => {
+        console.error("There was an error:", error);
+    });
 }
+
+
 
 function create_example_project() {
     fetch("/example_model/")
