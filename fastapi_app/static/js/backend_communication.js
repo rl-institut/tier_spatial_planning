@@ -100,23 +100,37 @@ function add_buildings_inside_boundary({ boundariesCoordinates } = {}) {
     });
 }
 
-function remove_buildings_inside_boundary(
-    {   boundariesCoordinates } = {},) {
+async function remove_buildings_inside_boundary({ boundariesCoordinates } = {}) {
     $("*").css("cursor", "wait");
-    $.ajax({
-        url: "/remove_buildings_inside_boundary",
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify({
-            boundary_coordinates: boundariesCoordinates,
-            map_elements: map_elements,
-        }),
-        dataType: "json",
-    }).done(function (res) {
-        $("*").css('cursor','auto');
+
+    try {
+        const response = await fetch("/remove_buildings_inside_boundary", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                boundary_coordinates: boundariesCoordinates,
+                map_elements: map_elements,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const res = await response.json();
+
         map_elements = res.map_elements;
         remove_marker_from_map();
-        put_markers_on_map(map_elements, true)})}
+        put_markers_on_map(map_elements, true);
+    } catch (error) {
+        console.error("There was a problem with the fetch operation:", error.message);
+    } finally {
+        $("*").css('cursor','auto');
+    }
+}
+
 
 
 
@@ -353,37 +367,43 @@ async function load_results(project_id) {
 /************************************************************/
 
 
-async function add_user_to_db()
-{    $("*").css('cursor','wait');
-     const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-     await sleep(3000); // Pause for 3 seconds (3000 milliseconds)
+async function add_user_to_db() {
+    $("*").css('cursor', 'wait');
 
-    if (userPassword2.value !== userPassword3.value)
-    {
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    await sleep(3000); // Pause for 3 seconds (3000 milliseconds)
+
+    if (userPassword2.value !== userPassword3.value) {
         document.getElementById("responseMsg2").innerHTML = 'The passwords do not match';
         document.getElementById("responseMsg2").style.color = 'red';
+    } else {
+        try {
+            const response = await fetch("add_user_to_db/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    'email': userEmail2.value,
+                    'password': userPassword2.value,
+                    'captcha_input': captcha_input2.value,
+                    'hashed_captcha': hashedCaptcha
+                }),
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            const responseData = await response.json();
+            document.getElementById("responseMsg2").innerHTML = responseData.msg;
+            const fontcolor = responseData.validation ? 'green' : 'red';
+            document.getElementById("responseMsg2").style.color = fontcolor;
+        } catch (error) {
+            console.error("There was a problem with the fetch operation:", error.message);
+        }
     }
-    else
-    {
-    $.ajax({url: "add_user_to_db/",
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({'email': userEmail2.value,
-                                       'password': userPassword2.value,
-                                         'captcha_input': captcha_input2.value,
-                                       'hashed_captcha': hashedCaptcha}),
-            dataType: "json",})
-        .done(function (response) {
-            document.getElementById("responseMsg2").innerHTML = response.msg;
-            let fontcolor;
-            if (response.validation === true)
-                {fontcolor = 'green';}
-            else
-                {fontcolor = 'red';};
-            document.getElementById("responseMsg2").style.color = fontcolor;});
-    }
-    $("*").css('cursor','auto');
+    $("*").css('cursor', 'auto');
 }
+
 
 
 async function change_email() {
