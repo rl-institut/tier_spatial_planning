@@ -232,22 +232,31 @@ const searchInput = document.getElementById('search-input');
 
 searchInput.addEventListener('keypress', async (event) => {
   if (event.key === 'Enter') {
-    const query = searchInput.value;
-    if (query) {
-      const results = await searchProvider.search({ query });
-      if (results && results.length > 0) {
-        const { x: lng, y: lat } = results[0];
+    let query = searchInput.value;
+    if (!query) return;
 
-        if (isLatLngInMapBounds(lat, lng)) {
-      map.setView([lat, lng], 13);
-    } else {
+    let results = await searchProvider.search({ query });
+
+    // Retry if no results found or if the result is outside Nigeria without having 'Nigeria' in the query
+    if ((!results || results.length === 0 || !isLatLngInMapBounds(results[0].y, results[0].x)) && !query.toLowerCase().includes("nigeria")) {
+      query += ", Nigeria";
+      results = await searchProvider.search({ query });
+    }
+
+    if (results && results.length > 0) {
+      const { x: lng, y: lat } = results[0];
+
+      if (isLatLngInMapBounds(lat, lng)) {
+        map.setView([lat, lng], 13);
+      } else {
         const responseMsg = document.getElementById("responseMsg");
         responseMsg.innerHTML = 'Location is outside of Nigeria';
-      }} else {
-        alert('No results found');
       }
+    } else {
+      alert('No results found');
+    }
   }
-}});
+});
 
 function isLatLngInMapBounds(lat, lng) {
   const latLng = L.latLng(lat, lng);
