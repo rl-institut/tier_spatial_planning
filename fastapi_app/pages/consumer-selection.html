@@ -290,8 +290,6 @@ document.getElementById('toggleswitch2').addEventListener('change', function (ev
   }
 });
 
-
-
   // Uncheck 'toggleswitch2' when 'collapseTwo' is hidden
   $('#collapseTwo').on('hidden.bs.collapse', function () {
     document.getElementById('toggleswitch2').checked = false;
@@ -343,6 +341,7 @@ function delete_consumer() {
     document.getElementById('latitude').value = '';
     document.getElementById('longitude').disabled = true;
     document.getElementById('latitude').disabled = true;
+    count_consumers();
 }
 
 
@@ -365,3 +364,4 @@ function stopVideo() {
 
 </script>
 </html>
+

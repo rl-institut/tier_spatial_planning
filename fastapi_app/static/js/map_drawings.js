@@ -71,8 +71,10 @@ map.on(L.Draw.Event.CREATED, function (event) {
             remove_buildings_inside_boundary({boundariesCoordinates: polygonCoordinates });
         }
         removeBoundaries();
-    }
-});
+    };
+    count_consumers();
+}
+)
 
 var myCustomMarker = L.Icon.extend({
     options: {
@@ -186,6 +188,7 @@ function remove_marker_from_map() {
       map.removeLayer(layer);
     }
   });
+  document.getElementById("n_consumers").innerText = 0;
 }
 L.Control.Trashbin = L.Control.extend({
   options: {
@@ -302,4 +305,29 @@ var customControl = L.Control.extend({
 map.addControl(new customControl());
 
 
+function unique_map_elements() {
+    const uniqueLocations = new Set();
+    const uniqueMapElements = [];
+    for (let element of map_elements) {
+        const locationKey = `${element.latitude},${element.longitude}`;
+        if (!uniqueLocations.has(locationKey)) {
+            uniqueLocations.add(locationKey);
+            uniqueMapElements.push(element);
+        }
+    }
+    map_elements = uniqueMapElements;
+}
+
+function count_consumers() {
+    update_map_elements();
+    unique_map_elements()
+    const n = map_elements.length;
+    let num_consumers = 0;  // Initialize the consumer counter
+    for (let counter = 0; counter < n; counter++) {
+        if (map_elements[counter]["node_type"] === "consumer") {
+            num_consumers++;  // Increase the consumer counter
+        }
+    }
+    document.getElementById("n_consumers").innerText = num_consumers;
+}
 

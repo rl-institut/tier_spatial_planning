@@ -94,6 +94,7 @@ function add_buildings_inside_boundary({ boundariesCoordinates } = {}) {
         Array.prototype.push.apply(map_elements, res.new_consumers);
         put_markers_on_map(res.new_consumers, true);
       }
+      unique_map_elements();
     })
     .catch((error) => {
       console.error("Error fetching data:", error);
