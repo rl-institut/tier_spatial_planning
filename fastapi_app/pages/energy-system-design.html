@@ -194,7 +194,7 @@
                       class="form-control"
                       id="dieselGensetFuelCost"
                       placeholder="Fuel cost"
-                      value="1.21"
+                      value="1.671"
                       step="0.01"
                       required
                     />
@@ -638,7 +638,7 @@
                       type="number"
                       class="form-control"
                       id="batteryCapex"
-                      value="598"
+                      value="314"
                       required
                     />
                     <span id="batteryCapexUnit" class="input-group-text"
@@ -680,7 +680,7 @@
                       type="number"
                       class="form-control"
                       id="batterySocMin"
-                      value="30"
+                      value="0"
                       required
                     />
                     <span id="batterySocMinUnit" class="input-group-text"
@@ -863,7 +863,7 @@
                       type="number"
                       class="form-control"
                       id="inverterLifetime"
-                      value="15"
+                      value="25"
                       required
                     />
                     <span id="inverterLifetimeUnit" class="input-group-text"
@@ -884,7 +884,7 @@
                       type="number"
                       class="form-control"
                       id="inverterCapex"
-                      value="450"
+                      value="415"
                       required
                     />
                     <span id="inverterCapexUnit" class="input-group-text"
@@ -905,7 +905,7 @@
                       type="number"
                       class="form-control"
                       id="inverterOpex"
-                      value="0"
+                      value="9"
                       required
                     />
                     <span id="inverterOpexUnit" class="input-group-text"
@@ -1022,7 +1022,7 @@
                       type="number"
                       class="form-control"
                       id="rectifierLifetime"
-                      value="15"
+                      value="25"
                       required
                     />
                     <span id="rectifierLifetimeUnit" class="input-group-text"
@@ -1043,7 +1043,7 @@
                       type="number"
                       class="form-control"
                       id="rectifierCapex"
-                      value="450"
+                      value="415"
                       required
                     />
                     <span id="rectifierCapexUnit" class="input-group-text"
@@ -1194,7 +1194,7 @@
                       type="number"
                       class="form-control"
                       id="pvCapex"
-                      value="883"
+                      value="441"
                       required
                     />
                     <span id="pvCapexUnit" class="input-group-text"
@@ -1213,7 +1213,7 @@
                       type="number"
                       class="form-control"
                       id="pvOpex"
-                      value="14.4"
+                      value="8.82"
                       required
                     />
                     <span id="pvOpexUnit" class="input-group-text"
@@ -1311,7 +1311,13 @@
           </div>
           <div class="row">
             <p style="font-size: 12px;">
-                Sources: <a href="https://www.nrel.gov/docs/fy18osti/69044.pdf">Tariff Considerations for Micro-Grids in Sub-Saharan Africa</a>, <i>National Renewable Energy Laboratory</i>, 2018. The PV modules are simulated via <a href="https://pvlib-python.readthedocs.io/en/">pvlib</a>, incorporating the
+                Sources: <br>
+                <a href="https://openknowledge.worldbank.org/server/api/core/bitstreams/32287154-1ccb-46ce-83af-08facf7a3b49/content">Mini Grids for Half a Billion People: Market Outlook and Handbook for Decision Makers</a>, <i>ESMAP - World Bank</i>, 2022 <br>
+                <a href="https://www.nrel.gov/docs/fy18osti/69044.pdf">Tariff Considerations for Micro-Grids in Sub-Saharan Africa</a>, <i>National Renewable Energy Laboratory</i>, 2018 <br>
+                <a href="https://rmi.org/wp-content/uploads/2018/12/rmi-seeds-minigrid-report.pdf"> Minigrids in the Money: Six Ways to Reduce Minigrid Costs by 60% for Rural Electrification</a>, <i>Rocky Mountain Institute</i>, 2018 <br>
+                <a href="https://www.globalpetrolprices.com/Nigeria/diesel_prices/"> Nigeria Diesel prices, litre, 04-Sep-2023 </a>, <i>GlobalPetrolPrices.com - with +50% markup for logistics and losses/theft</i>, September 2022<br>
+
+              The PV modules are simulated via <a href="https://pvlib-python.readthedocs.io/en/">pvlib</a>, incorporating the
                 <a href="https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview">ERA5 radiation data</a>.
             </p>
             </div>

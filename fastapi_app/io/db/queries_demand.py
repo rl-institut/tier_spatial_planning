@@ -218,9 +218,9 @@ def combine_and_calibrate_total_profile(df_hh_profiles, df_ent_profiles, calibra
     
     if calibration_option != None:
         if calibration_option == "kWh":
-            ##TODO: calibrate to daily kWh total
-            #This doesn't do anything yet, the version below does
-            calibration_factor = 1
+            uncalibrated_profile_total = df_total_profile.sum() / 1000
+            calibration_factor = calibration_target_value / uncalibrated_profile_total
+
             df_total_profile = df_total_profile * calibration_factor
             
         elif calibration_option == "kW":

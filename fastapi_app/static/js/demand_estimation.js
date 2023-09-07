@@ -48,22 +48,129 @@ function demand_ts(project_id ) {
           var data = this.response;
           var x = data['x'];
           var y = data['y'];
+          var Very_High = data['Very High Consumption'];
+          var High = data['High Consumption'];
+          var Middle = data['Middle Consumption'];
+          var Low = data['Low Consumption'];
+          var Very_Low = data['Very Low Consumption'];
+          var National = data['National'];
+          var South_South = data['South South'];
+          var North_West = data['North West'];
+          var North_Central = data['North Central'];
 
           var plotElement = document.getElementById("demand_plot");
-          var trace = {
+
+          var trace1 = {
               x: x,
-              y: y,
+              y: Very_Low,
               mode: 'line',
-              name: 'Random Data',
+              name: 'Very Low Consumption (Category)',
+              line: {
+                    color: 'red',
+                    width: 1,
+                    shape: 'spline'
+              },
+          };
+
+          var trace2 = {
+              x: x,
+              y: Low,
+              mode: 'line',
+              name: 'Low Consumption (Category)',
+              line: {
+                    color: 'orange',
+                    width: 1,
+                    shape: 'spline'
+              },
+          };
+          var trace3 = {
+              x: x,
+              y: Middle,
+              mode: 'line',
+              name: 'Middle Consumption (Category)',
+              line: {
+                    color: 'black',
+                    width: 1,
+                    shape: 'spline'
+              },
+          };
+          var trace4 = {
+              x: x,
+              y: High,
+              mode: 'line',
+              name: 'High Consumption (Category)',
+              line: {
+                    color: 'green',
+                    width: 1,
+                    shape: 'spline'
+              },
+          };
+          var trace5 = {
+              x: x,
+              y: Very_High,
+              mode: 'line',
+              name: 'Very High Consumption (Category)',
               line: {
                     color: 'blue',
-                    width: 2.5
+                    width: 1,
+                    shape: 'spline'
+              },
+          };
+          var trace6 = {
+              x: x,
+              y: National,
+              mode: 'line',
+              name: 'National (Combination)',
+              line: {
+                    color: 'black',
+                    width: 3,
+                    shape: 'spline'
+              },
+          };
+          var trace7 = {
+              x: x,
+              y: South_South,
+              mode: 'line',
+              name: 'South-South (Combination)',
+              line: {
+                    color: 'purple',
+                    width: 3,
+                    shape: 'spline'
+              },
+          };
+          var trace8 = {
+              x: x,
+              y: North_West,
+              mode: 'line',
+              name: 'North-West (Combination)',
+              line: {
+                    color: 'light-blue',
+                    width: 3,
+                    shape: 'spline'
+              },
+          };
+          var trace9 = {
+              x: x,
+              y: North_Central,
+              mode: 'line',
+              name: 'North-Central (Combination)',
+              line: {
+                    color: 'dark-red',
+                    width: 3,
+                    shape: 'spline'
               },
           };
 
           var layout = {
+            title: "<b>Typical Modelled Household Daily Electrical Demand Profiles</b><br>'Average days' estimating <i>average contributions of each household</i> (to be scaled by community size)<br>365 days are modelled and included in profiles for simulation with full variability",
+            font : {size: 14},
+            autosize: false,
+            width: 1100,
+            height: 500,
+
             xaxis: {
-              title: 'X',
+              title: 'Hour of the day',
+              hoverformat: '.1f',
               titlefont: {
                 size: 16,
               },
@@ -72,7 +179,8 @@ function demand_ts(project_id ) {
               },
             },
             yaxis: {
-              title: 'Y',
+              title: 'Demand (W)',
+              hoverformat: '.1f',
               titlefont: {
                 size: 16,
               },
@@ -82,7 +190,7 @@ function demand_ts(project_id ) {
             },
           };
 
-          var data = [trace];
+          var data = [trace9, trace8, trace7, trace6, trace5, trace4, trace3, trace2, trace1];
 
           Plotly.newPlot(plotElement, data, layout);
       }
