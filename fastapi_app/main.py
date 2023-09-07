@@ -1164,13 +1164,14 @@ async def forward_if_no_task_is_pending(request: Request):
 async def forward_if_consumer_selection_exists(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
     nodes = await queries.get_model_instance(models.Nodes, user.id, project_id)
-    df = pd.read_json(nodes.data)
-
-
-    if df is not None and len(df['consumer_type']) > 0:
-        res = {'forward': True}
-    else:
+    if nodes is None:
         res = {'forward': False}
+    else:
+        df = pd.read_json(nodes.data)
+        if df is not None and len(df['consumer_type']) > 0:
+            res = {'forward': True}
+        else:
+            res = {'forward': False}
     return JSONResponse(res)
 
 
