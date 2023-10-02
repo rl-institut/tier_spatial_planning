@@ -51,7 +51,7 @@ async def next_project_id_of_user(user_id):
     return next_project_id
 
 
-async def get_project_of_user(user_id):
+async def get_projects_of_user(user_id):
     user_id = int(user_id)
     query = select(models.ProjectSetup).where(models.ProjectSetup.id == user_id)
     projects = await _execute_with_retry(query, which='all')

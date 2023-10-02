@@ -79,7 +79,7 @@ async def exception_handler(request: Request, exc: Exception):
     try:
         user = await accounts.get_user_from_cookie(request)
         user_name = user.email
-        projects = await queries.get_project_of_user(user.id)
+        projects = await queries.get_projects_of_user(user.id)
         for project in projects:
             if project.status == "in progress":
                 project.status = "failed"
@@ -137,7 +137,7 @@ async def home(request: Request):
                                            'MAX_CONSUMER_ANONYMOUS': int(
                                                os.environ.get('MAX_CONSUMER_ANONYMOUS', 150))})
     else:
-        projects = await queries.get_project_of_user(user.id)
+        projects = await queries.get_projects_of_user(user.id)
         for project in projects:
             project.created_at = project.created_at.date()
             project.updated_at = project.updated_at.date()
@@ -265,6 +265,16 @@ async def example_model(request: Request):
         await inserts.insert_example_project(user.id)
     return JSONResponse(status_code=200, content={'success': True})
 
+
+@app.get("/copy_project")
+async def copy_project(request: Request):
+    user = await accounts.get_user_from_cookie(request)
+    project_id = request.query_params.get('project_id')
+    if user is not None and project_id is not None:
+        await inserts.copy_project(user.id, project_id)
+        return JSONResponse(status_code=200, content={'success': True})
+    else:
+        return JSONResponse(status_code=400, content={'success': False})
 
 @app.get("/consumer_selection")
 async def consumer_selection(request: Request):

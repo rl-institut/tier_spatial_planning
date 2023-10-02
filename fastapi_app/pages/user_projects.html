@@ -29,49 +29,60 @@
                   </a></span>
                 </div>
                   <span class="title"></span>
-                <table id="projectTable">
-                  <tr style="border-bottom:1px solid black">
-                    <th>ID</th>
-                    <th>Project Name</th>
-                    <th>Creation Date</th>
-                    <th>Last Update</th>
-                    <th>Model Status</th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                  </tr>
-                {% if projects|length > 0 %}
-                    {% for project in projects %}
-                    <TR>
-                       <TD>{{ project.project_id }}</TD>
-                       <TD>{{ project.project_name }}</TD>
-                       <TD>{{ project.created_at }}</TD>
-                       <TD>{{ project.updated_at }}</TD>
-                        <TD>{{ project.status }}</TD>
-                       <TD><span style="float:right;"><a>&nbsp;
-                       <a onclick="document.getElementById('projectID{{ project.project_id }}').style.display='block'"
-                          class="grey_button" style="color:white"
-                       >Delete Project</a>
-                       </a></span></TD>
-                       <TD><span style="float:right;"><a>&nbsp;
-                       <a href="{{ url_for('project_setup') }}?project_id={{ project.project_id }}"
-                          class="grey_button">Edit Project</a>
-                       </a></span></TD>
-                       <TD><span style="float:right;"><a>&nbsp;
-                       <a href="{{ url_for('simulation_results') }}?project_id={{ project.project_id }}"
-                          class="grey_button">Show Results</a>
-                       </a></span></TD>
-                    </TR>
-                    {% endfor %}
-                {% else %}
-                    <TR>
-                     <TD>You do not yet have any saved projects</TD>
-                     <TD></TD>
-                     <TD> </TD>
-                     <TD> </TD>
-                    </TR>
-                {% endif %}
-                </table>
+<table id="projectTable">
+  <tr style="border-bottom:1px solid black">
+    <th>ID</th>
+    <th>Project Name</th>
+    <th>Creation Date</th>
+    <th>Last Update</th>
+    <th>Model Status</th>
+    <th></th>  <!-- Added an empty header for the new column -->
+    <th></th>
+    <th></th>
+    <th></th>
+  </tr>
+{% if projects|length > 0 %}
+    {% for project in projects %}
+    <TR>
+       <TD>{{ project.project_id }}</TD>
+       <TD>{{ project.project_name }}</TD>
+       <TD>{{ project.created_at }}</TD>
+       <TD>{{ project.updated_at }}</TD>
+       <TD>{{ project.status }}</TD>
+       <TD><span style="float:right;"><a>&nbsp;
+       <a href="javascript:void(0);"
+          onclick="copyProject('{{ url_for('copy_project') }}?project_id={{ project.project_id }}')"
+          class="grey_button">Duplicate Project</a>
+       </a>
+
+       </span></TD>
+       <TD><span style="float:right;"><a>&nbsp;
+       <a onclick="document.getElementById('projectID{{ project.project_id }}').style.display='block'"
+          class="grey_button" style="color:white"
+       >Delete Project</a>
+       </a></span></TD>
+       <TD><span style="float:right;"><a>&nbsp;
+       <a href="{{ url_for('project_setup') }}?project_id={{ project.project_id }}"
+          class="grey_button">Edit Project</a>
+       </a></span></TD>
+       <TD><span style="float:right;"><a>&nbsp;
+       <a href="{{ url_for('simulation_results') }}?project_id={{ project.project_id }}"
+          class="grey_button">Show Results</a>
+       </a></span></TD>
+    </TR>
+    {% endfor %}
+{% else %}
+    <TR>
+     <TD>You do not yet have any saved projects</TD>
+     <TD></TD>
+     <TD> </TD>
+     <TD> </TD>
+     <TD> </TD>  <!-- Added an empty cell for the new column -->
+    </TR>
+{% endif %}
+</table>
+``
+
                   <span class="subtitle"></span>
                     </div>
                   </div>

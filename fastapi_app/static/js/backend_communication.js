@@ -1331,3 +1331,20 @@ function show_modal_example_model() {
     }
 }
 
+
+function copyProject(url) {
+    fetch(url)
+    .then(response => response.json())
+    .then(data => {
+        if(data.success) {
+            location.reload();
+        } else {
+            alert('Failed to copy project');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred');
+    });
+}
+

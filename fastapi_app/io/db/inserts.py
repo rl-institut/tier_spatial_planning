@@ -5,7 +5,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy import delete, text
 from fastapi_app.io.db import models
 from fastapi_app.io.db.database import get_async_session_maker, async_engine
-from fastapi_app.io.db.queries import get_df, get_model_instance, get_user_by_username, get_project_of_user
+from fastapi_app.io.db.queries import get_df, get_model_instance, get_user_by_username, get_projects_of_user
 from sqlalchemy import update
 from fastapi_app.io.db.config import RETRY_COUNT, RETRY_DELAY
 
@@ -240,20 +240,31 @@ def handle_duplicates(if_exists, query, col_names):
 
 async def insert_example_project(user_id):
     example = await get_user_by_username('default_example')
-    projects = await get_project_of_user(user_id)
+    projects = await get_projects_of_user(user_id)
     if example is not None and hasattr(example, 'id') and len(projects) == 0:
-        for model_class in [models.Nodes, models.Links, models.Results, models.DemandCoverage, models.EnergyFlow,
-                            models.Emissions, models.DurationCurve, models.ProjectSetup, models.EnergySystemDesign,
-                            models.GridDesign, models.Demand]:
-            model_instance = await get_model_instance(model_class, example.id, 0, 'all')
-            if model_class == models.ProjectSetup:
-                time_now = datetime.datetime.now()
-                time_now \
-                    = datetime.datetime(time_now.year, time_now.month, time_now.day, time_now.hour, time_now.minute)
-                model_instance[0].created_at = time_now
-                model_instance[0].updated_at = time_now
-            for e in model_instance:
-                data = {key: value for key, value in e.__dict__.items() if not key.startswith('_')}
-                new_e = model_class(**data)
-                new_e.id = user_id
-                await merge_model(new_e)
+        await _copy_project(example.id, user_id, 0, 0)
+
+
+async def copy_project(user_id, project_id):
+    projects = await get_projects_of_user(user_id)
+    next_project_id = max(project.project_id for project in projects) + 1 if len(projects) > 0 else 0
+    await _copy_project(user_id, user_id, project_id, next_project_id)
+
+
+async def _copy_project(user_from_id, user_to_id, project_from_id, project_to_id):
+    for model_class in [models.Nodes, models.Links, models.Results, models.DemandCoverage, models.EnergyFlow,
+                        models.Emissions, models.DurationCurve, models.ProjectSetup, models.EnergySystemDesign,
+                        models.GridDesign, models.Demand]:
+        model_instance = await get_model_instance(model_class, user_from_id, project_from_id, 'all')
+        if model_class == models.ProjectSetup:
+            time_now = datetime.datetime.now()
+            time_now \
+                = datetime.datetime(time_now.year, time_now.month, time_now.day, time_now.hour, time_now.minute)
+            model_instance[0].created_at = time_now
+            model_instance[0].updated_at = time_now
+        for e in model_instance:
+            data = {key: value for key, value in e.__dict__.items() if not key.startswith('_')}
+            new_e = model_class(**data)
+            new_e.id = user_to_id
+            new_e.project_id = project_to_id
+            await merge_model(new_e)
