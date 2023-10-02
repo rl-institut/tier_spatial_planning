@@ -693,6 +693,13 @@ async function save_project_setup(project_id, href) {
 
 async function save_grid_design(href) {
     try {
+        let shs_max_grid_cost_value;
+        if(document.getElementById('shs_max_grid_cost').disabled) {
+            shs_max_grid_cost_value = 999;
+        } else {
+            shs_max_grid_cost_value = document.getElementById('shs_max_grid_cost').value;
+        }
+
         await fetch("save_grid_design/", {
             method: "POST",
             headers: {
@@ -710,7 +717,7 @@ async function save_grid_design(href) {
                     'pole_capex': poleCapex.value,
                     'pole_max_n_connections': poleMaxNumberOfConnections.value,
                     'mg_connection_cost': mgConnectionCost.value,
-                    'shs_max_grid_cost': shs_max_grid_cost.value,
+                    'shs_max_grid_cost': shs_max_grid_cost_value,
                 }
             })
         });
@@ -720,6 +727,8 @@ async function save_grid_design(href) {
         console.log('Fetch API error -', err);
     }
 }
+
+
 
 function save_demand_estimation(href) {
     let custom_calibration = document.getElementById("toggleswitch").checked;
@@ -779,6 +788,21 @@ function  load_previous_data(page_name){
                     document.getElementById("poleMaxNumberOfConnections").value = results['pole_max_n_connections'];
                     document.getElementById("mgConnectionCost").value = results['mg_connection_cost'];
                     document.getElementById("shs_max_grid_cost").value = results['shs_max_grid_cost'];
+                if (results['shs_max_grid_cost'] === 999 || isNaN(results['shs_max_grid_cost']) || results['shs_max_grid_cost'] === null) {
+                    document.getElementById('shs_max_grid_cost').value = '';
+                    document.getElementById('selectShsBox').classList.add('box--not-selected');
+                    document.getElementById('selectShs').checked = false;
+                    document.getElementById('lblShsLifetime').classList.add('disabled');
+                    document.getElementById('shsLifetimeUnit').classList.add('disabled');
+                    document.getElementById('shs_max_grid_cost').disabled = true;
+                } else {
+                    document.getElementById('shs_max_grid_cost').value = results['shs_max_grid_cost'];
+                    document.getElementById('selectShsBox').classList.remove('box--not-selected');
+                    document.getElementById('selectShs').checked = true;
+                    document.getElementById('lblShsLifetime').classList.remove('disabled');
+                    document.getElementById('shsLifetimeUnit').classList.remove('disabled');
+                    document.getElementById('shs_max_grid_cost').disabled = false;
+                }
                 }
             }
         };
@@ -1348,3 +1372,17 @@ function copyProject(url) {
     });
 }
 
+function change_shs_box_visibility() {
+    if (document.getElementById("selectShs").checked) {
+        document.getElementById('selectShsBox').classList.remove('box--not-selected');
+        document.getElementById('shs_max_grid_cost').disabled = false;
+        document.getElementById('lblShsLifetime').classList.remove('disabled');
+        document.getElementById('shsLifetimeUnit').classList.remove('disabled');
+    } else {
+        document.getElementById('selectShsBox').classList.add('box--not-selected');
+        document.getElementById('shs_max_grid_cost').disabled = true;
+        document.getElementById('lblShsLifetime').classList.add('disabled');
+        document.getElementById('shsLifetimeUnit').classList.add('disabled');
+        document.getElementById('shs_max_grid_cost').value = '';
+    }
+}

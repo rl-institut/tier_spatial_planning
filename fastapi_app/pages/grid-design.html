@@ -7,8 +7,8 @@
   </head>
   <body onload="redirect_if_cookie_is_missing(true, true);
                 load_previous_data('grid_design?project_id={{ project_id }}');
-                show_user_email_in_navbar();">
-    <!-- don't forget 'navbar--scenario' CSS class -->
+                show_user_email_in_navbar();
+                change_shs_box_visibility();">
   {% include '_navbar.html' %}
   {% include '_wizard.html' %}
     <main>
@@ -249,38 +249,61 @@
               </div>
             </div>
             <div class="col-md-4">
-              <div id="selectShsBox" class="box box--tiny">
-                <div class="box__header">
-                    <span class="grid-title">Solar Home System</span>
-                </div>
-                <div class="row">
-                  <div class="input-group">
-                    <span id="lblShsLifetime" class="input-group-text">Max. Specific Grid Cost<span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="For each consumer, specific costs of grid connection are calculated and related to the consumer's consumption. If the threshold value is exceeded, a grid connection is forgone and instead a solar home system is recommended."
-                  ></span>
-                    </span
-                    >
+    <div id="selectShsBox" class="box box--tiny">
+        <div class="box__header">
+            <form class="was-validated">
+                <div class="form-check">
                     <input
-                      type="number"
-                      onchange="this.value = Math.max(0, Math.min(2, parseFloat(this.value))).toFixed(2);"
-                      class="form-control"
-                      id="shs_max_grid_cost"
-                      step="0.01"
-                      value="0.2"
-                      required
+                        type="checkbox"
+                        class="form-check-input"
+                        id="selectShs"
+                        required
+                        onclick="change_shs_box_visibility();"
                     />
-                    <span id="shsLifetimeUnit" class="input-group-text"
-                      >USD/kWh</span
-                    >
-                  </div>
-
-                    <img src="{{ url_for('static', path='/assets/icons/qm.svg') }}" alt="Icon" style="width: 100px; cursor: pointer; padding-top: 0.5rem; padding-bottom: 0.5rem" onclick="document.getElementById('videoTutorial').style.display='block'">
-                    <p style="margin-bottom: 5px; color: #8B0000;"><i>Watch video tutorial for further explanation of this parameter</i></p>
+                    <label class="form-check-label" for="selectShs">
+                        Solar Home System
+                    </label>
                 </div>
-              </div>
+            </form>
+        </div>
+        <div class="row">
+            <div class="input-group">
+                <span id="lblShsLifetime" class="input-group-text disabled">
+                    Max. Specific Grid Cost
+                    <span
+                        class="icon icon-question"
+                        data-bs-toggle="tooltip"
+                        title="For each consumer, specific costs of grid connection are calculated and related to the consumer's consumption. If the threshold value is exceeded, a grid connection is forgone and instead a solar home system is recommended."
+                    ></span>
+                </span>
+                <input
+                    type="number"
+                    onchange="this.value = Math.max(0, Math.min(2, parseFloat(this.value))).toFixed(2);"
+                    class="form-control"
+                    id="shs_max_grid_cost"
+                    step="0.01"
+                    value=""
+                    required
+                    disabled
+                />
+                <span id="shsLifetimeUnit" class="input-group-text disabled">
+                    USD/kWh
+                </span>
             </div>
+            <img
+                src="{{ url_for('static', path='/assets/icons/qm.svg') }}"
+                alt="Icon"
+                style="width: 100px; cursor: pointer; padding-top: 0.5rem; padding-bottom: 0.5rem"
+                onclick="document.getElementById('videoTutorial').style.display='block'"
+            />
+            <p style="margin-bottom: 5px; color: #8B0000;">
+                <i>
+                    Watch video tutorial for further explanation of this parameter
+                </i>
+            </p>
+        </div>
+    </div>
+</div>
           </div>
             <div class="row">
             <p style="font-size: 12px;">
