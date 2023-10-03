@@ -2,7 +2,7 @@ import sqlalchemy as sa
 import flatten_dict
 from flatten_dict.reducers import make_reducer
 from sqlalchemy import Boolean, Column, VARCHAR, Numeric, DateTime
-from sqlalchemy.dialects.mysql import TINYINT, SMALLINT, FLOAT
+from sqlalchemy.dialects.mysql import TINYINT, SMALLINT, FLOAT, INTEGER
 import json
 import inspect
 import pandas as pd
@@ -215,9 +215,9 @@ class Results(Base):
     average_length_distribution_cable = Column(Numeric(10, 3))
     length_connection_cable = Column(SMALLINT(unsigned=True))
     average_length_connection_cable = Column(Numeric(10, 3))
-    cost_grid = Column(SMALLINT(unsigned=True))
-    cost_shs = Column(SMALLINT(unsigned=True))
-    lcoe = Column(SMALLINT(unsigned=True))
+    cost_grid = Column(INTEGER(unsigned=True))
+    cost_shs = Column(INTEGER(unsigned=True))
+    lcoe = Column(INTEGER(unsigned=True))
     res = Column(Numeric(10, 3))
     shortage_total = Column(Numeric(10, 3))
     surplus_rate = Column(Numeric(10, 3))
