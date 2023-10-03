@@ -1,8 +1,11 @@
 import numpy as np
 import pandas as pd
 import urllib.request
+import datetime
+import time
 import json
 from shapely import geometry
+from fastapi_app.tools.coordinates_conversion import xy_coordinates_from_latitude_longitude
 
 
 def get_consumer_within_boundaries(df):
@@ -10,9 +13,9 @@ def get_consumer_within_boundaries(df):
     # a large rectangle including (maybe) more buildings than selected
     min_latitude, min_longitude, max_latitude, max_longitude \
         = df['latitude'].min(), df['longitude'].min(), df['latitude'].max(),  df['longitude'].max()
-    url = f'https://www.overpass-api.de/api/interpreter?data=[out:json][timeout:2500]' \
-          f'[bbox:{min_latitude},{min_longitude},{max_latitude},{max_longitude}];' \
-          f'(way["building"="yes"];relation["building"];);out body;>;out skel qt;'
+    url = (f'https://www.overpass-api.de/api/interpreter?data=[out:json][timeout:2500]'
+           f'[bbox:{min_latitude},{min_longitude},{max_latitude},{max_longitude}];'
+           f'way["building"="yes"];(._;>;);out;')
     url_formated = url.replace(" ", "+")
     with urllib.request.urlopen(url_formated) as url:
         res = url.read().decode()
@@ -23,16 +26,86 @@ def get_consumer_within_boundaries(df):
     # first converting the json file, which is delievered by overpass to geojson,
     # then obtaining coordinates and surface areas of all buildings inside the
     # 'big' rectangle.
-    df2 = pd.DataFrame.from_dict(data['elements'])
-    if df2.empty:
-        return None, None
-    building_coord = obtain_mean_coordinates_from_geojson(df2)
+    geojson_data = convert_overpass_json_to_geojson(data)
+
+    building_coord, building_surface_areas = obtain_areas_and_mean_coordinates_from_geojson(geojson_data)
     # excluding the buildings which are outside the drawn boundary
     mask_building_within_boundaries = {key: is_point_in_boundaries(value, df.values.tolist())
                                        for key, value in building_coord.items()}
     building_coordidates_within_boundaries = \
         {key: value for key, value in building_coord.items() if mask_building_within_boundaries[key]}
     return data, building_coordidates_within_boundaries
+
+
+def convert_overpass_json_to_geojson(json_dict):
+    """
+    This function convert dict obtained using the overpass api into
+    a GEOJSON dict containing only the polygons of the buildings.
+
+    Parameters
+    ----------
+    json_dict (dict):
+        dict obtained using the overpass api.
+        Example: json at https://www.overpass-api.de/api/interpreter?data=[out:json][timeout:2500][bbox:11.390617069027885,9.132004976127066,11.392010636465772,9.133802056167044];(way["building"];relation["building"];);out body;>;out skel qt;
+
+    """
+    ts = time.time()
+    timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+
+    node_coordinates = {element["id"]:  [element["lat"], element["lon"]]
+                        for element in json_dict["elements"] if element["type"] == "node"}
+
+    geojson = {
+        "type": "FeatureCollection",
+        "generator": "overpass-ide, formated by PeopleSun WP4 Tool",
+        "timestamp": timestamp,
+        "features": [
+            {
+                "type": "Feature",
+                "property": {
+                    "@id": f"{d['type']}/{d['id']}",
+                    "building": "yes",
+                },
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            node_coordinates[node] for node in d["nodes"]
+                        ],
+                    ],
+                },
+            } for d in json_dict['elements'] if d['type'] == "way"]}
+    return geojson
+
+
+def obtain_areas_and_mean_coordinates_from_geojson(geojson: dict):
+
+    building_mean_coordinates = {}
+    building_surface_areas = {}
+
+    if len(geojson["features"]) != 0:
+        reference_coordinate = geojson["features"][0]["geometry"]["coordinates"][0][0]
+        for building in geojson["features"]:
+            xy_coordinates = []
+            latitudes_longitudes = [coord for coord in building["geometry"]["coordinates"][0]]
+            latitudes = [x[0] for x in latitudes_longitudes]
+            longitudes = [x[1] for x in latitudes_longitudes]
+            mean_coord = [np.mean(latitudes), np.mean(longitudes)]
+            for edge in range(len(latitudes)):
+                xy_coordinates.append(xy_coordinates_from_latitude_longitude(
+                    latitude=latitudes_longitudes[edge][0],
+                    longitude=latitudes_longitudes[edge][1],
+                    ref_latitude=reference_coordinate[0],
+                    ref_longitude=reference_coordinate[1]))
+            polygon = geometry.Polygon(xy_coordinates)
+            area = polygon.area
+            perimeter = polygon.length
+            compactness = 4 * np.pi * area / (perimeter ** 2) if perimeter else 0
+            if area > 4 \
+                    and not (0.81 < compactness < 1.19 and area < 8):
+                building_mean_coordinates[building["property"]["@id"]] = mean_coord
+                building_surface_areas[building["property"]["@id"]] = area
+    return building_mean_coordinates, building_surface_areas
 
 
 def obtain_mean_coordinates_from_geojson(df):
