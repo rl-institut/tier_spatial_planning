@@ -517,7 +517,7 @@ async def load_results(project_id, request: Request):
                  'epc_battery': 'USD/a',
                  'epc_total': 'USD/a'
                  }
-    if int(df['n_consumers'].iat[0]) != int(df['n_shs_consumers'].iat[0]):
+    if int(df['n_consumers'].iat[0]) != int(df['n_shs_consumers'].iat[0]) and not infeasible:
         df['upfront_invest_converters'] = sum(df[col].iat[0] for col in df.columns if 'upfront' in col and 'grid' not in col)
         df['upfront_invest_total'] = df['upfront_invest_converters'] + df['upfront_invest_grid']
     else:
