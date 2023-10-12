@@ -36,7 +36,6 @@ function db_links_to_js(project_id) {
 }
 
 
-
 async function db_nodes_to_js(project_id, markers_only) {
     fetch("/db_nodes_to_js/" + project_id + '/' + markers_only)
   .then(response => response.json())
@@ -53,6 +52,7 @@ async function db_nodes_to_js(project_id, markers_only) {
 
   })
 }
+
 
 async function consumer_to_db(project_id, href) {
     update_map_elements();
