@@ -200,9 +200,9 @@ function markerOnClick(e){
             document.getElementById('shs_options').disabled = false;
             document.getElementById('consumer').value = 'P';
             document.getElementById('consumer').disabled = false;
-            let public_service_key2 = getKeyByValue(public_service_list, marker.consumer_detail);
-            document.getElementById('enterprise').value = public_service_key2;
-            document.getElementById('consumer').disabled = false;
+            let key2 = getKeyByValue(public_service_list, marker.consumer_detail);
+            document.getElementById('enterprise').value = key2;
+            console.log(key2);
             deactivate_large_loads()
         }
         if (marker.node_type !== 'power-house') {
@@ -259,8 +259,9 @@ function update_map_elements(){
                 break;
             case 'P':
                 marker.consumer_type = 'public_service';
-                let public_service_key = document.getElementById('enterprise').value;
-                marker.consumer_detail = public_service_list[public_service_key];
+                marker.consumer_detail = document.getElementById('enterprise').value;
+                let key2 = document.getElementById('enterprise').value;
+                marker.consumer_detail = public_service_list[key2];
                 selected_icon = markerPublicservice;
                 break;
             case 'E':

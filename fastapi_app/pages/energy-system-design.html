@@ -1243,7 +1243,7 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblShortageMaxTotal" class="input-group-text"
-                      >Maximum Total Shortage<span
+                      >Max. Total Shortage<span
                     class="icon icon-question"
                     data-bs-toggle="tooltip"
                     title="A parameter indicating the allowable extent of electricity demand under-coverage throughout the entire observation period."
@@ -1265,7 +1265,7 @@
                 <div class="row">
                   <div class="input-group">
                     <span id="lblShortageMaxTimestep" class="input-group-text"
-                      >Maximum Shortage Each Timestep<span
+                      >Max. Shortage Each Timestep<span
                     class="icon icon-question"
                     data-bs-toggle="tooltip"
                     title="Parameter defining the maximum permitted deficit in electricity supply during any single model time step."
@@ -1297,7 +1297,7 @@
                       type="number"
                       class="form-control"
                       id="shortagePenaltyCost"
-                      value="0.4"
+                      value="0.8"
                       required
                       onChange="styleInformation('shortage');"
                     />
@@ -1356,7 +1356,7 @@
   <script src="https://unpkg.com/leaflet-geosearch@3.0.0/dist/geosearch.umd.js"></script>
   <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
   <script src="{{ url_for('static', path='js/energy-system-design.js') }}"></script>
-<script>    var targetNode = document.getElementById('responseMsg');
+  <script>    var targetNode = document.getElementById('responseMsg');
     var config = { childList: true, subtree: true, characterData: true };
     var callback = function(mutationsList, observer) {
         for(let mutation of mutationsList) {
