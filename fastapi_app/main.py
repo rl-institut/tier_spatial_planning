@@ -825,6 +825,10 @@ async def save_demand_estimation(request: Request, data: fastapi_app.io.schema.S
     user = await accounts.get_user_from_cookie(request)
     project_id = get_project_id_from_request(request)
     custom_calibration = ast.literal_eval(data.demand_estimation['custom_calibration'])
+    use_custom_shares_bool = ast.literal_eval(data.demand_estimation['use_custom_shares'])
+    use_custom_shares = 0
+    custom_share_1, custom_share_2, custom_share_3, custom_share_4, custom_share_5 = 0, 0, 0, 0, 0
+
     if custom_calibration is None or '':
         maximum_peak_load = None
         average_daily_energy = None
@@ -837,11 +841,33 @@ async def save_demand_estimation(request: Request, data: fastapi_app.io.schema.S
             average_daily_energy = round(float(data.demand_estimation['average_daily_energy']), 1)
         except ValueError:
             average_daily_energy = None
+
+    if use_custom_shares_bool is None or '':
+        use_custom_shares = 0
+    else:
+        try:
+            if use_custom_shares_bool:
+                use_custom_shares = 1
+                custom_share_1 = round(float(data.demand_estimation['custom_share_1']), 1)
+                custom_share_2 = round(float(data.demand_estimation['custom_share_2']), 1)
+                custom_share_3 = round(float(data.demand_estimation['custom_share_3']), 1)
+                custom_share_4 = round(float(data.demand_estimation['custom_share_4']), 1)
+                custom_share_5 = round(float(data.demand_estimation['custom_share_5']), 1)
+
+        except ValueError:
+            use_custom_shares = 0
+
     dictionary = {'id': user.id,
                   'project_id': project_id,
                   'household_option': data.demand_estimation['household_option'],
                   'maximum_peak_load': maximum_peak_load,
-                  'average_daily_energy': average_daily_energy}
+                  'average_daily_energy': average_daily_energy,
+                  'use_custom_shares': use_custom_shares,
+                  'custom_share_1': custom_share_1,
+                  'custom_share_2': custom_share_2,
+                  'custom_share_3': custom_share_3,
+                  'custom_share_4': custom_share_4,
+                  'custom_share_5': custom_share_5,}
     demand_estimation = models.Demand(**dictionary)
     await inserts.merge_model(demand_estimation)
     return JSONResponse(status_code=200, content={"message": "Success"})

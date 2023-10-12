@@ -196,6 +196,12 @@ class Demand(Base):
     household_option = Column(SMALLINT, default=0)
     maximum_peak_load = Column(Numeric(10, 3), default=None)
     average_daily_energy = Column(Numeric(10, 3), default=None)
+    use_custom_shares = Column(SMALLINT, default=0)
+    custom_share_1 = Column(Numeric(10, 3), default=None)
+    custom_share_2 = Column(Numeric(10, 3), default=None)
+    custom_share_3 = Column(Numeric(10, 3), default=None)
+    custom_share_4 = Column(Numeric(10, 3), default=None)
+    custom_share_5 = Column(Numeric(10, 3), default=None)
 
 
 class Results(Base):

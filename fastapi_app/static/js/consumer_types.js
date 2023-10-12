@@ -16,41 +16,40 @@ let consumer_type = "H";
 
 
 let public_service_list = {
-'group1' : 'Public Health Centre',
-'group2' : 'Public Clinic',
-'group3' : 'Public CHPS',
-'group4' : 'School',
-'group5' : 'Cell Tower',
-'group6' : 'Street Light'
+'group1' : 'Health_Health Centre',
+'group2' : 'Health_Clinic',
+'group3' : 'Health_CHPS',
+'group4' : 'Education_School',
+'group5' : 'Education_School_noICT'
 }
 
 let enterprise_list = {
 
- 'group1' :'Groceries',
- 'group2' :'Restaurant',
- 'group3' :'Bar',
- 'group4' :'Drinks',
- 'group5' :'Fruits or vegetables',
- 'group6' :'Tailoring',
- 'group7' :'Beauty or Hair',
- 'group8' :'Metalworks',
- 'group9' :'Car or Motorbike Repair',
- 'group10' :'Carpentry',
- 'group11' :'Laundry',
- 'group12' :'Cycle Repair',
- 'group13' :'Shoemaking',
- 'group14' :'Medical',
- 'group15' :'Clothes and accessories',
- 'group16' :'Electronics',
- 'group17' :'Retail or Other',
- 'group18' :'Agricultural',
- 'group19' :'Mobile or Electronics Repair',
- 'group20' :'Digital Other',
- 'group21' :'Cybercafé',
- 'group22' :'Cinema or Betting',
- 'group23' :'Photostudio',
- 'group24' :'Mill or Thresher or Grater',
- 'group25' :'Agricultural or Other'};
+ 'group1' :'Food_Groceries',
+ 'group2' :'Food_Restaurant',
+ 'group3' :'Food_Bar',
+ 'group4' :'Food_Drinks',
+ 'group5' :'Food_Fruits or vegetables',
+ 'group6' :'Trades_Tailoring',
+ 'group7' :'Trades_Beauty or Hair',
+ 'group8' :'Trades_Metalworks',
+ 'group9' :'Trades_Car or Motorbike Repair',
+ 'group10' :'Trades_Carpentry',
+ 'group11' :'Trades_Laundry',
+ 'group12' :'Trades_Cycle Repair',
+ 'group13' :'Trades_Shoemaking',
+ 'group14' :'Retail_Medical',
+ 'group15' :'Retail_Clothes and accessories',
+ 'group16' :'Retail_Electronics',
+ 'group17' :'Retail_Other',
+ 'group18' :'Retail_Agricultural',
+ 'group19' :'Digital_Mobile or Electronics Repair',
+ 'group20' :'Digital_Digital Other',
+ 'group21' :'Digital_Cybercafé',
+ 'group22' :'Digital_Cinema or Betting',
+ 'group23' :'Digital_Photostudio',
+ 'group24' :'Agricultural_Mill or Thresher or Grater',
+ 'group25' :'Agricultural_Other'};
 
 let enterpise_option =  '';
 
@@ -74,9 +73,6 @@ let large_load_list = {
     'group8': 'Drill (0.4kW)',
     'group9': 'Welder (5.25kW)',
     'group10': 'Angle Grinder (2kW)',
-    'group11': 'Drill (0.4kW)',
-    'group12': 'Welder (5.25kW)',
-    'group13': 'Angle Grinder (2kW)'
 };
 let large_load_type = "group1";
 
@@ -186,7 +182,6 @@ function markerOnClick(e){
             document.getElementById('consumer').value = 'E';
             let key = getKeyByValue(enterprise_list, marker.consumer_detail);
             document.getElementById('enterprise').value = key;
-            console.log(key);
             document.getElementById('shs_options').disabled = false;
             document.getElementById('consumer').disabled = false;
             activate_large_loads();
