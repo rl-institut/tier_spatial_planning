@@ -11,7 +11,6 @@ from fastapi_app.io.db import config
 
 def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distribution_lookup=None):
     #print(nodes)
-    nodes.to_csv(r"C:\Spatial Data\PeopleSuN\H3\Demand_Functions\io\db\nodes.csv", index = False)
 
     num_households = get_number_of_households(nodes)
     lat, lon = get_location_GPS(nodes).values()
@@ -30,7 +29,6 @@ def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distributi
                                          option=hh_demand_option)
     enterprises = get_all_enterprise_customer_nodes(nodes)
     #print(enterprises)
-    enterprises.to_csv(r"C:\Spatial Data\PeopleSuN\H3\Demand_Functions\io\db\enterprises.csv", index=False)
     df_ent_profiles = combine_ent_profiles(all_profiles, enterprises)
 
     #print("demand_par_dict:", demand_par_dict)
