@@ -10,7 +10,7 @@ from fastapi_app.io.db import config
 
 
 def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distribution_lookup=None):
-    print(nodes)
+    #print(nodes)
     nodes.to_csv(r"C:\Spatial Data\PeopleSuN\H3\Demand_Functions\io\db\nodes.csv", index = False)
 
     num_households = get_number_of_households(nodes)
@@ -29,19 +29,19 @@ def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distributi
                                          demand_par_dict=demand_par_dict,
                                          option=hh_demand_option)
     enterprises = get_all_enterprise_customer_nodes(nodes)
-    print(enterprises)
+    #print(enterprises)
     enterprises.to_csv(r"C:\Spatial Data\PeopleSuN\H3\Demand_Functions\io\db\enterprises.csv", index=False)
     df_ent_profiles = combine_ent_profiles(all_profiles, enterprises)
 
-    print("demand_par_dict:", demand_par_dict)
-    print("use_custom_shares", demand_par_dict["use_custom_shares"])
-    print("enterprises consumer type:", enterprises.consumer_type.iloc[0])
-    print("enterprises consumer detail:", enterprises.consumer_detail.iloc[0])
-    print("enterprises node_type:", enterprises.node_type.iloc[0])
-    print("enterprises data:", enterprises.custom_specification.iloc[0])
-    print("hh_demand_option: ", hh_demand_option)
-    print("calibration_option:", calibration_option)
-    print("calibration_target_value:", calibration_target_value)
+    #print("demand_par_dict:", demand_par_dict)
+    #print("use_custom_shares", demand_par_dict["use_custom_shares"])
+    #print("enterprises consumer type:", enterprises.consumer_type.iloc[0])
+    #print("enterprises consumer detail:", enterprises.consumer_detail.iloc[0])
+    #print("enterprises node_type:", enterprises.node_type.iloc[0])
+    #print("enterprises data:", enterprises.custom_specification.iloc[0])
+    #print("hh_demand_option: ", hh_demand_option)
+    #print("calibration_option:", calibration_option)
+    #print("calibration_target_value:", calibration_target_value)
 
     calibrated_profile = combine_and_calibrate_total_profile(
         df_hh_profiles=df_hh_profiles,
@@ -50,8 +50,8 @@ def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distributi
         calibration_option=calibration_option) / 1000
     # calibration totals/setpoints are in kW
     # profiles are still in W
-    print("calibrated_profile_max:", calibrated_profile.max())
-    print("calibrated_profile_sum:", calibrated_profile.sum())
+    #print("calibrated_profile_max:", calibrated_profile.max())
+    #print("calibrated_profile_sum:", calibrated_profile.sum())
 
     return calibrated_profile
 
