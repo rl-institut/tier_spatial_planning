@@ -1,5 +1,4 @@
 import pandas as pd
-import pandas as pd
 import asyncio
 import datetime
 from sqlalchemy.exc import OperationalError
@@ -20,14 +19,12 @@ async def merge_model(model):
                 await async_db.commit()
                 return
         except OperationalError as e:
-            print(f'OperationalError occurred: {str(e)}. Retrying {i + 1}/{RETRY_COUNT}')
             if i == 0:
                 new_engine = True
             elif i < RETRY_COUNT - 1:  # Don't wait after the last try
                 await asyncio.sleep(RETRY_DELAY)
             else:
                 raise e
-                print(f"Failed to merge and commit after {RETRY_COUNT} retries")
 
 
 async def execute_stmt(stmt):
@@ -39,14 +36,12 @@ async def execute_stmt(stmt):
                 await async_db.commit()
                 return
         except OperationalError as e:
-            print(f'OperationalError occurred: {str(e)}. Retrying {i + 1}/{RETRY_COUNT}')
             if i == 0:
                 new_engine = True
             elif i < RETRY_COUNT - 1:  # Don't wait after the last try
                 await asyncio.sleep(RETRY_DELAY)
             else:
                 raise e
-                print(f"Failed to merge and commit after {RETRY_COUNT} retries")
 
 async def update_model_by_user_id(model):
     stmt = (update(model.metadata.tables[model.__name__().lower()])
