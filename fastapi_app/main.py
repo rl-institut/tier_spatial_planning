@@ -468,7 +468,7 @@ async def load_results(project_id, request: Request):
             return JSONResponse(content={})
     df["average_length_distribution_cable"] = df["length_distribution_cable"] / df["n_distribution_links"]
     df["average_length_connection_cable"] = df["length_connection_cable"] / df["n_connection_links"]
-    df["time"] = df["time_grid_design"] + df["time_energy_system_design"]
+    df["time"] = (df["time_grid_design"] + df["time_energy_system_design"]) * 3
     df["gridLcoe"] = df['cost_grid'].astype(float) / df["epc_total"].astype(float) * 100
     df["esLcoe"] = (df["epc_total"].astype(float) - df['cost_grid'].astype(float)) \
                    / df["epc_total"].astype(float) * 100
