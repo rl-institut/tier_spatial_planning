@@ -406,7 +406,7 @@ class EnergySystemOptimizer(Optimizer):
                 initial_storage_level=self.battery["parameters"]["soc_max"],
                 min_storage_level=self.battery["parameters"]["soc_min"],
                 max_storage_level=self.battery["parameters"]["soc_max"],
-                balanced=True,
+                balanced=False,
                 inflow_conversion_factor=self.battery["parameters"]["efficiency"],
                 outflow_conversion_factor=self.battery["parameters"]["efficiency"],
                 invest_relation_input_capacity=self.battery["parameters"]["c_rate_in"],
