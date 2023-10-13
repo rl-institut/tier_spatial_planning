@@ -1068,7 +1068,7 @@ async function remove_project(project_id) {
 let shouldStop = false;
 
 
-async function wait_for_results(project_id, task_id, time, model) {
+async function wait_for_results(project_id, task_id, time, model, opt_iter) {
     // Get the current URL
     var url = window.location.href;
 
@@ -1080,18 +1080,24 @@ async function wait_for_results(project_id, task_id, time, model) {
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ 'project_id': project_id, 'task_id': task_id, 'time': time, 'model': model })
+                body: JSON.stringify({ 'project_id': project_id, 'task_id': task_id, 'time': time, 'model': model})
             });
 
             if (response.ok) {
                 const res = await response.json();
 
                 if (res.finished === true) {
-                    window.location.href = window.location.origin + '/simulation_results?project_id=' + project_id;
+                    opt_iter = opt_iter + 1;
+                    if (opt_iter <= 2) {
+                        start_calculation(project_id, opt_iter)
+                    }
+                    else {
+                        window.location.href = window.location.origin + '/simulation_results?project_id=' + project_id;
+                    }
                 } else if (!shouldStop) {
                     document.querySelector("#statusMsg").innerHTML = res.status;
                     renewToken();
-                    wait_for_results(project_id, task_id, res.time, res.model);
+                    wait_for_results(project_id, task_id, res.time, res.model, opt_iter);
                 }
             } else {
                 if (response.status === 303 || response.status === 422) {
@@ -1154,7 +1160,7 @@ async function revoke_users_task() {
 
 
 
-function start_calculation(project_id) {
+function start_calculation(project_id, opt_iter=0) {
     fetch("start_calculation/" + project_id, {
         method: "POST",
         headers: {
@@ -1171,7 +1177,7 @@ function start_calculation(project_id) {
             document.getElementById('redirectLink').href = baseURL + res.redirect;
             document.getElementById('msgBox').style.display = 'block';
         } else {
-            wait_for_results(project_id, res.task_id, 0, 'grid');
+            wait_for_results(project_id, res.task_id, 0, 'grid', opt_iter);
         }
     })
     .catch(error => console.error('There was an error!', error));
