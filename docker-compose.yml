@@ -9,6 +9,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - PW=/run/secrets/pw
+      - MAIL_PW=/run/secrets/mail_pw
       - MAX_DAYS=365
       - MAX_CONSUMER=2000
       - MAX_CONSUMER_ANONYMOUS=150
@@ -31,6 +32,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile-mysql
+      args:
+        - UID_FOR_DB=${UID_FOR_DB}
+        - GID_FOR_DB=${GID_FOR_DB}
     command: --max-connections=1000
     restart: always
     environment:
@@ -138,6 +142,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile-mongo
+      args:
+        - UID_FOR_DB=${UID_FOR_DB}
+        - GID_FOR_DB=${GID_FOR_DB}
     restart: always
     environment:
       - MONGO_INITDB_ROOT_USERNAME=ackee_user
@@ -151,3 +158,5 @@ services:
 secrets:
   pw:
     file: ./secrets/secret.txt
+  mail_pw: # Added secret
+    file: ./secrets/mail_secret.txt # Path to your mail secret file

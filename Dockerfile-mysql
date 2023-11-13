@@ -1,6 +1,5 @@
 FROM mysql:latest
 
-ARG UID=1006
-ARG GID=1006
-
-RUN usermod -u $UID mysql && groupmod -g $GID mysql
+ARG UID_FOR_DB
+ARG GID_FOR_DB
+RUN usermod -u $UID_FOR_DB mysql && groupmod -g $GID_FOR_DB mysql

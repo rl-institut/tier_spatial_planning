@@ -23,7 +23,7 @@ import fastapi_app.tools.boundary_identification as bi
 import fastapi_app.tools.coordinates_conversion as conv
 import fastapi_app.tools.shs_identification as shs_ident
 import fastapi_app.io.db.models as models
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.responses import RedirectResponse, FileResponse, JSONResponse, HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
@@ -72,6 +72,15 @@ async def insert_weather_data(request: Request):
         sync_inserts.dump_weather_data_into_db('ERA5_weather_data3.nc')
     else:
         print('no privileges to insert weather data')
+
+
+@app.get("/workshop_tasks")
+async def get_workshop_slides():
+    file_path = "fastapi_app/static/images/workshop.pdf"
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="application/pdf")
+    else:
+        raise HTTPException(status_code=404, detail="File not found")
 
 
 @app.exception_handler(Exception)

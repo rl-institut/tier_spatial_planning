@@ -1,5 +1,5 @@
 FROM mongo:latest
 
-ARG UID=1006
-ARG GID=1006
-RUN usermod -u $UID mongodb && groupmod -g $GID mongodb
+ARG UID_FOR_DB
+ARG GID_FOR_DB
+RUN usermod -u $UID_FOR_DB mongodb && groupmod -g $GID_FOR_DB mongodb
