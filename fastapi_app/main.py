@@ -1,8 +1,6 @@
-import copy
 import uuid
 import ast
 import asyncio
-import math
 import json
 import base64
 import random
@@ -10,9 +8,8 @@ from captcha.image import ImageCaptcha
 import pandas as pd
 import numpy as np
 from io import StringIO
-from jose import jwt, JWTError
+from jose import jwt
 import fastapi_app.io.schema
-from celery import group
 from celery_worker import worker
 import os
 from datetime import datetime, timedelta, timezone
@@ -20,8 +17,6 @@ from collections import defaultdict
 from typing import Any, Dict, List, Union
 import time
 import fastapi_app.tools.boundary_identification as bi
-import fastapi_app.tools.coordinates_conversion as conv
-import fastapi_app.tools.shs_identification as shs_ident
 import fastapi_app.io.db.models as models
 from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.responses import RedirectResponse, FileResponse, JSONResponse, HTMLResponse, StreamingResponse
@@ -54,24 +49,11 @@ json_object = Dict[Any, Any]
 json_array = List[Any]
 import_structure = Union[json_array, json_object]
 
-"""
+
 @app.on_event("startup")
 def startup_event():
     if not sync_queries.check_if_weather_data_exists():
-        sync_inserts.dump_weather_data_into_db('ERA5_weather_data1.nc')
-        sync_inserts.dump_weather_data_into_db('ERA5_weather_data2.nc')
-        sync_inserts.dump_weather_data_into_db('ERA5_weather_data3.nc')
-"""
-
-@app.get('/insert_weather_data')
-async def insert_weather_data(request: Request):
-    user = await accounts.get_user_from_cookie(request)
-    if user.is_superuser:
-        sync_inserts.dump_weather_data_into_db('ERA5_weather_data1.nc')
-        sync_inserts.dump_weather_data_into_db('ERA5_weather_data2.nc')
-        sync_inserts.dump_weather_data_into_db('ERA5_weather_data3.nc')
-    else:
-        print('no privileges to insert weather data')
+        sync_inserts.dump_weather_data_into_db()
 
 
 @app.get("/workshop_tasks")

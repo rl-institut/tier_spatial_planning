@@ -10,13 +10,14 @@ from fastapi_app.io.db import models
 from fastapi_app.io.db.database import get_sync_session_maker, sync_engine
 from fastapi_app.io.db.sync_queries import get_df, get_model_instance
 from fastapi_app.io.db.inserts import df_2_sql
-from fastapi_app.io.db.config import DB_RETRY_COUNT, RETRY_DELAY
+from fastapi_app.io.db import config
+import subprocess
 
 
 
 def merge_model(model):
     new_engine = False
-    for i in range(DB_RETRY_COUNT):
+    for i in range(config.DB_RETRY_COUNT):
         try:
             with get_sync_session_maker(sync_engine, new_engine) as session:
                 session.merge(model)
@@ -35,7 +36,7 @@ def merge_model(model):
 
 def execute_stmt(stmt):
     new_engine = False
-    for i in range(DB_RETRY_COUNT):
+    for i in range(config.DB_RETRY_COUNT):
         try:
             with get_sync_session_maker(sync_engine, new_engine) as session:
                 session.execute(stmt)
@@ -162,9 +163,7 @@ def insert_df(model_class, df, user_id=None, project_id=None, ts=True):
             df = df.reset_index()
         _insert_df(model_class.__name__.lower(), df, if_exists='update')
 
-
-def dump_weather_data_into_db(file_name):
-    print('Dumping weather data into database... {}'.format(file_name))
+def _from_netcdf4_file(file_name):
     ds = xr.open_dataset(file_name, engine='netcdf4')
     df = era5.format_pvlib(ds)
     df = df.reset_index()
@@ -200,3 +199,26 @@ def dump_weather_data_into_db(file_name):
     df.loc[:, 'lat'] = df.loc[:, 'lat'].round(7)
     df.iloc[:, 1:] = df.iloc[:, 1:].astype(str)
     insert_df(models.WeatherData, df)
+
+
+def _import_weather_data_into_db():
+    file_path = 'fastapi_app/data/weather/weatherdata.sql'
+    mysql_command = f"mysql -u {config.DB_USER_NAME} -p{config.PW} -h {config.DB_HOST} {config.DB_NAME} < {file_path}"
+    try:
+        subprocess.run(mysql_command, check=True, shell=True)
+        print("SQL file imported successfully")
+    except subprocess.CalledProcessError as e:
+        print(f"Error during SQL import: {e}")
+
+
+def dump_weather_data_into_db():
+    print('Dumping weather data into database. \n'
+          'This usually takes a few minutes...\n'
+          'Please wait and do not interrupt the process.\n')
+    if os.path.exists('fastapi_app/data/weather/weatherdata.sql'):
+        _import_weather_data_into_db()
+    else:
+        for i in range(1, 4):
+            _from_netcdf4_file('ERA5_weather_data{}.nc'.format(i))
+
+

@@ -9,18 +9,12 @@ from sqlalchemy.exc import SQLAlchemyError
 from mysql.connector import DatabaseError, ProgrammingError, InterfaceError, OperationalError
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError, ServerSelectionTimeoutError, ConfigurationError, ConnectionFailure
+from fastapi_app.io.db.config import DB_USER_NAME, PW, DB_HOST, DB_PORT, DB_NAME, DOMAIN
 
-DB_USER_NAME=os.environ.get('DB_USER_NAME')
-PW=os.environ.get('PW')
-DB_HOST=os.environ.get('DB_HOST')
-DB_PORT=os.environ.get('DB_PORT')
-DB_NAME=os.environ.get('DB_NAME')
-DOMAIN=os.environ.get('DOMAIN')
 
 BASE_URL = 'mysql+package://{}:{}@{}:{}/{}'.format(DB_USER_NAME, PW, DB_HOST, DB_PORT, DB_NAME)
 SYNC_DB_URL = BASE_URL.replace('package', 'mysqlconnector')
 ASYNC_DB_URL = BASE_URL.replace('package', 'aiomysql')
-
 
 
 for i in range(400):
@@ -55,8 +49,6 @@ if bool(os.environ.get('DOCKERIZED')):
             break
 
 
-
-
 def get_async_session_maker(async_engine, new_engine=False):
     if new_engine:
         async_engine = create_async_engine(ASYNC_DB_URL, pool_size=5, max_overflow=150, pool_timeout=30)
@@ -70,4 +62,3 @@ def get_sync_session_maker(sync_engine, new_engine=False):
         sync_engine = create_engine(SYNC_DB_URL)
     sync_session = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
     return sync_session()
-
