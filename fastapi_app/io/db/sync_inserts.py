@@ -10,46 +10,46 @@ from fastapi_app.io.db import models
 from fastapi_app.io.db.database import get_sync_session_maker, sync_engine
 from fastapi_app.io.db.sync_queries import get_df, get_model_instance
 from fastapi_app.io.db.inserts import df_2_sql
-from fastapi_app.io.db.config import RETRY_COUNT, RETRY_DELAY
+from fastapi_app.io.db.config import DB_RETRY_COUNT, RETRY_DELAY
 
 
 
 def merge_model(model):
     new_engine = False
-    for i in range(RETRY_COUNT):
+    for i in range(DB_RETRY_COUNT):
         try:
             with get_sync_session_maker(sync_engine, new_engine) as session:
                 session.merge(model)
                 session.commit()
                 return
         except OperationalError as e:
-            print(f'OperationalError occurred: {str(e)}. Retrying {i + 1}/{RETRY_COUNT}')
+            print(f'OperationalError occurred: {str(e)}. Retrying {i + 1}/{DB_RETRY_COUNT}')
             if i == 0:
                 new_engine = True
-            elif i < RETRY_COUNT - 1:  # Don't wait after the last try
+            elif i < DB_RETRY_COUNT - 1:  # Don't wait after the last try
                 time.sleep(RETRY_DELAY)
             else:
                 raise e
-                print(f"Failed to merge and commit after {RETRY_COUNT} retries")
+                print(f"Failed to merge and commit after {DB_RETRY_COUNT} retries")
 
 
 def execute_stmt(stmt):
     new_engine = False
-    for i in range(RETRY_COUNT):
+    for i in range(DB_RETRY_COUNT):
         try:
             with get_sync_session_maker(sync_engine, new_engine) as session:
                 session.execute(stmt)
                 session.commit()
                 return
         except OperationalError as e:
-            print(f'OperationalError occurred: {str(e)}. Retrying {i + 1}/{RETRY_COUNT}')
+            print(f'OperationalError occurred: {str(e)}. Retrying {i + 1}/{DB_RETRY_COUNT}')
             if i == 0:
                 new_engine = True
-            elif i < RETRY_COUNT - 1:  # Don't wait after the last try
+            elif i < DB_RETRY_COUNT - 1:  # Don't wait after the last try
                 time.sleep(RETRY_DELAY)
             else:
                 raise e
-                print(f"Failed to merge and commit after {RETRY_COUNT} retries")
+                print(f"Failed to merge and commit after {DB_RETRY_COUNT} retries")
 
 
 def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, project_id, add=True, replace=True):

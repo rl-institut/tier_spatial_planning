@@ -7,12 +7,12 @@ from fastapi_app.io.db import models
 from fastapi_app.io.db.database import get_async_session_maker, async_engine
 from fastapi_app.io.db.queries import get_df, get_model_instance, get_user_by_username, get_projects_of_user
 from sqlalchemy import update
-from fastapi_app.io.db.config import RETRY_COUNT, RETRY_DELAY
+from fastapi_app.io.db.config import DB_RETRY_COUNT, RETRY_DELAY
 
 
 async def merge_model(model):
     new_engine = False
-    for i in range(RETRY_COUNT):
+    for i in range(DB_RETRY_COUNT):
         try:
             async with get_async_session_maker(async_engine, new_engine) as async_db:
                 await async_db.merge(model)
@@ -21,7 +21,7 @@ async def merge_model(model):
         except OperationalError as e:
             if i == 0:
                 new_engine = True
-            elif i < RETRY_COUNT - 1:  # Don't wait after the last try
+            elif i < DB_RETRY_COUNT - 1:  # Don't wait after the last try
                 await asyncio.sleep(RETRY_DELAY)
             else:
                 raise e
@@ -29,7 +29,7 @@ async def merge_model(model):
 
 async def execute_stmt(stmt):
     new_engine = False
-    for i in range(RETRY_COUNT):
+    for i in range(DB_RETRY_COUNT):
         try:
             async with get_async_session_maker(async_engine, new_engine) as async_db:
                 await async_db.execute(stmt)
@@ -38,7 +38,7 @@ async def execute_stmt(stmt):
         except OperationalError as e:
             if i == 0:
                 new_engine = True
-            elif i < RETRY_COUNT - 1:  # Don't wait after the last try
+            elif i < DB_RETRY_COUNT - 1:  # Don't wait after the last try
                 await asyncio.sleep(RETRY_DELAY)
             else:
                 raise e

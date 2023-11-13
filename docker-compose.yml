@@ -10,13 +10,13 @@ services:
       - PYTHONUNBUFFERED=1
       - PW=/run/secrets/pw
       - MAIL_PW=/run/secrets/mail_pw
-      - MAX_DAYS=365
-      - MAX_CONSUMER=2000
-      - MAX_CONSUMER_ANONYMOUS=150
-      - MAX_LAT_LON_DIST=0.15
+      - KEY_FOR_ACCESS_TOKEN=/run/secrets/key_for_token
       - DOCKERIZED=1
       - MONGO_USER=ackee_user
       - MONGO_PORT=27017
+    env_file:
+      - fastapi_app.env
+      - mail.env
     ports:
       - '40000:40000'
     links:
@@ -158,5 +158,7 @@ services:
 secrets:
   pw:
     file: ./secrets/secret.txt
-  mail_pw: # Added secret
-    file: ./secrets/mail_secret.txt # Path to your mail secret file
+  mail_pw:
+    file: ./secrets/mail_secret.txt
+  key_for_token:
+    file: ./secrets/key_for_token.txt

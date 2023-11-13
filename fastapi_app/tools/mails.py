@@ -10,7 +10,7 @@ def send_mail(to_adress, msg, subject='Activate your PeopleSun-Account'):
     smtp_username = config.MAIL_ADDRESS
     smtp_password = config.MAIL_PW
     message = MIMEMultipart()
-    message["From"] = config.FROM_ADDRESS
+    message["From"] = config.HEADER_ADDRESS
     message["To"] = to_adress if '@' in to_adress else config.MAIL_ADDRESS_LOGGER
     message["Subject"] = subject
     message.attach(MIMEText(msg, "plain"))

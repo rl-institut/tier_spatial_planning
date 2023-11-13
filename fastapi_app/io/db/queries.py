@@ -12,7 +12,7 @@ from sqlalchemy.exc import OperationalError, NoResultFound
 from fastapi_app.io.db import models
 from fastapi_app.io.db import config
 from fastapi_app.io.db.database import get_async_session_maker, async_engine
-from fastapi_app.io.db.config import RETRY_COUNT, RETRY_DELAY
+from fastapi_app.io.db.config import DB_RETRY_COUNT, RETRY_DELAY
 
 
 async def get_user_by_username(username):
@@ -157,7 +157,7 @@ async def get_weather_data(lat, lon, start, end):
 
 async def _get_user_from_token(token):
     try:
-        payload = jwt.decode(token, config.KEY_FOR_TOKEN, algorithms=[config.TOKEN_ALG])
+        payload = jwt.decode(token, config.KEY_FOR_ACCESS_TOKEN, algorithms=[config.TOKEN_ALG])
         username = payload.get("sub")
     except JWTError:
         return None
@@ -175,7 +175,7 @@ async def get_user_from_task_id(task_id):
 
 async def _execute_with_retry(query, which='first'):
     new_engine = False
-    for i in range(RETRY_COUNT):
+    for i in range(DB_RETRY_COUNT):
         try:
             async with get_async_session_maker(async_engine, new_engine) as async_db:
                 res = await async_db.execute(query)
@@ -187,13 +187,13 @@ async def _execute_with_retry(query, which='first'):
                     res = res.scalars().one()
                 return res
         except OperationalError as e:
-            print(f'OperationalError occurred: {str(e)}. Retrying {i + 1}/{RETRY_COUNT}')
+            print(f'OperationalError occurred: {str(e)}. Retrying {i + 1}/{DB_RETRY_COUNT}')
             if i == 0:
                 new_engine = True
-            elif i < RETRY_COUNT - 1:  # Don't wait after the last try
+            elif i < DB_RETRY_COUNT - 1:  # Don't wait after the last try
                 await asyncio.sleep(RETRY_DELAY)
             else:
-                print(f"Failed to execute query after {RETRY_COUNT} retries")
+                print(f"Failed to execute query after {DB_RETRY_COUNT} retries")
                 return None
         except NoResultFound:
             return None

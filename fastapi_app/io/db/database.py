@@ -4,14 +4,20 @@ import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from fastapi_app.io.db.config import db_host, db_name, db_user_name, PW, db_port, DOMAIN
 from fastapi_app.io.db.models import Base
 from sqlalchemy.exc import SQLAlchemyError
 from mysql.connector import DatabaseError, ProgrammingError, InterfaceError, OperationalError
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError, ServerSelectionTimeoutError, ConfigurationError, ConnectionFailure
 
-BASE_URL = 'mysql+package://{}:{}@{}:{}/{}'.format(db_user_name, PW, db_host, db_port, db_name)
+DB_USER_NAME=os.environ.get('DB_USER_NAME')
+PW=os.environ.get('PW')
+DB_HOST=os.environ.get('DB_HOST')
+DB_PORT=os.environ.get('DB_PORT')
+DB_NAME=os.environ.get('DB_NAME')
+DOMAIN=os.environ.get('DOMAIN')
+
+BASE_URL = 'mysql+package://{}:{}@{}:{}/{}'.format(DB_USER_NAME, PW, DB_HOST, DB_PORT, DB_NAME)
 SYNC_DB_URL = BASE_URL.replace('package', 'mysqlconnector')
 ASYNC_DB_URL = BASE_URL.replace('package', 'aiomysql')
 
@@ -23,6 +29,7 @@ for i in range(400):
         Base.metadata.create_all(bind=sync_engine)
         async_engine = create_async_engine(ASYNC_DB_URL, pool_size=30, max_overflow=150, pool_timeout=30)
     except (SQLAlchemyError, DatabaseError, ProgrammingError, InterfaceError) as e:
+        print(e)
         time.sleep(5)
     else:
         break

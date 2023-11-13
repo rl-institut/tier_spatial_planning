@@ -105,7 +105,7 @@ async def renew_token(request: Request):
     token = request.cookies.get('access_token', None)
     if token:
         token = token.replace("Bearer ", "")
-        token_data = jwt.decode(token, config.KEY_FOR_TOKEN, algorithms=[config.TOKEN_ALG])
+        token_data = jwt.decode(token, config.KEY_FOR_ACCESS_TOKEN, algorithms=[config.TOKEN_ALG])
         if token_data.get("exp"):
             time_left = token_data.get("exp") - datetime.utcnow().timestamp()
             if time_left < 1200:

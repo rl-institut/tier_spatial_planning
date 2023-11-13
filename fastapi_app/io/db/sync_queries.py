@@ -1,3 +1,4 @@
+import os
 import decimal
 import pandas as pd
 import time
@@ -9,7 +10,10 @@ from flatten_dict.splitters import make_splitter
 from sqlalchemy.exc import OperationalError
 from fastapi_app.io.db import models
 from fastapi_app.io.db.database import get_sync_session_maker, sync_engine
-from fastapi_app.io.db.config import RETRY_COUNT, RETRY_DELAY, db_name
+
+
+DB_RETRY_COUNT = os.environ.get('DB_RETRY_COUNT')
+RETRY_DELAY = os.environ.get('DB_RETRY_DELAY')
 
 
 def get_project_setup_of_user(user_id, project_id):
@@ -111,14 +115,14 @@ def get_energy_system_design(user_id, project_id):
 
 
 def check_if_weather_data_exists():
-    query = text("""SELECT EXISTS(SELECT 1 FROM {}.weatherdata LIMIT 1) as 'Exists';""".format(db_name))
+    query = text("""SELECT EXISTS(SELECT 1 FROM {}.weatherdata LIMIT 1) as 'Exists';""".format(DB_NAME))
     res = _execute_with_retry(query, which='first')
     ans = bool(res)
     return ans
 
 def _execute_with_retry(query, which='first'):
     new_engine = False
-    for i in range(RETRY_COUNT):
+    for i in range(DB_RETRY_COUNT):
         try:
             with get_sync_session_maker(sync_engine, new_engine) as session:
                 res = session.execute(query)
@@ -133,11 +137,11 @@ def _execute_with_retry(query, which='first'):
                         return None
                 return res
         except OperationalError as e:
-            print(f'OperationalError occurred: {str(e)}. Retrying {i + 1}/{RETRY_COUNT}')
+            print(f'OperationalError occurred: {str(e)}. Retrying {i + 1}/{DB_RETRY_COUNT}')
             if i == 0:
                 new_engine = True
-            elif i < RETRY_COUNT - 1:  # Don't wait after the last try
+            elif i < DB_RETRY_COUNT - 1:  # Don't wait after the last try
                 time.sleep(RETRY_DELAY)
             else:
-                print(f"Failed to execute query after {RETRY_COUNT} retries")
+                print(f"Failed to execute query after {DB_RETRY_COUNT} retries")
                 raise e

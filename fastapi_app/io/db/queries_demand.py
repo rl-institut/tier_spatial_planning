@@ -17,9 +17,9 @@ def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distributi
     hh_demand_option = get_user_household_demand_option_selection(demand_par_dict)
     calibration_target_value, calibration_option = get_calibration_target(demand_par_dict)
     if all_profiles is None:
-        all_profiles = read_all_profiles(config.full_path_profiles)
+        all_profiles = read_all_profiles(config.FULL_PATH_PROFILES)
     if distribution_lookup is None:
-        distribution_lookup = read_distribution_lookup(config.full_path_distributions)
+        distribution_lookup = read_distribution_lookup(config.FULL_PATH_DISTRIBUTIONS)
     df_hh_profiles = combine_hh_profiles(all_profiles,
                                          lat=lat,
                                          lon=lon,

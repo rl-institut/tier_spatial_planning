@@ -10,3 +10,7 @@ The features of the tool are listed below:
 - Automatic identification of buildings that are better to be served by idividual solar home systems.
 
 
+Install mysql (workbench)
+Create user with name you fastapi_app.env and password in secret PW and grant privileges to the user to change db offgridplanner
+create schema offgridplanner
+

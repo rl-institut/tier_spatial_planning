@@ -110,7 +110,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     else:
         expire = datetime.utcnow() + timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, config.KEY_FOR_TOKEN, algorithm=config.TOKEN_ALG)
+    encoded_jwt = jwt.encode(to_encode, config.KEY_FOR_ACCESS_TOKEN, algorithm=config.TOKEN_ALG)
     return encoded_jwt
 
 
