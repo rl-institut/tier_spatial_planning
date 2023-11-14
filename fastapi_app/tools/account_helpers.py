@@ -6,12 +6,12 @@ import random
 from typing import Tuple
 from captcha.image import ImageCaptcha
 from passlib.context import CryptContext
-from fastapi_app.io.db import config
+from fastapi_app.db import config
 from datetime import datetime, timedelta
 from typing import Optional
-from jose import jwt, JWTError
+from jose import jwt
 from fastapi.security.utils import get_authorization_scheme_param
-from fastapi_app.io.db import inserts, queries, models
+from fastapi_app.db import inserts, queries
 from fastapi_app.tools.mails import send_mail
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

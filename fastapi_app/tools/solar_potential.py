@@ -1,22 +1,14 @@
-from datetime import datetime
-import pandas as pd
-import numpy as np
-import xarray as xr
 import geopandas as gpd
-import netCDF4
 import pvlib
 from pvlib.pvsystem import PVSystem
 from pvlib.location import Location
 from pvlib.modelchain import ModelChain
 from pvlib.temperature import TEMPERATURE_MODEL_PARAMETERS
-from feedinlib import era5, Photovoltaic
-from shapely.geometry import Point, Polygon
-from fastapi_app.io.db.inserts import insert_df
-from fastapi_app.io.db import models
-from fastapi_app.io.db import queries, sync_queries
+from feedinlib import era5
+from fastapi_app.db import queries, sync_queries
 
 
-def download_weather_data(start_date, end_date, fiel_name='ERA5_weather_data2.nc', country='Nigeria'):
+def download_weather_data(start_date, end_date, file='ERA5_weather_data2.nc', country='Nigeria'):
     world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
     country_shape = world[world['name'] == country]
     geopoints = country_shape.geometry.iloc[0].bounds
@@ -28,7 +20,7 @@ def download_weather_data(start_date, end_date, fiel_name='ERA5_weather_data2.nc
         start_date=start_date.strftime('%Y-%m-%d'),
         end_date=end_date.strftime('%Y-%m-%d'),
         latitude=lat, longitude=lon,
-        target_file=fiel_name)
+        target_file=file)
 
 
 async def get_dc_feed_in(lat, lon, start, end):

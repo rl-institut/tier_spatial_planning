@@ -1,7 +1,7 @@
 from __future__ import division
 import pandas as pd
-from fastapi_app.io.db import queries
-import fastapi_app.io.db.models as models
+from fastapi_app.db import queries
+import fastapi_app.db.models as models
 
 
 async def check_data_availability(user_id, project_id):

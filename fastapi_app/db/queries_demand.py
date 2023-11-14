@@ -1,12 +1,6 @@
 import pandas as pd
-import numpy as np
 import h3
-import plotly
-import plotly.express as px
-import plotly.figure_factory as ff
-from fastapi_app.io.db import queries, sync_queries
-from fastapi_app.io.db import models
-from fastapi_app.io.db import config
+from fastapi_app.db import config
 
 
 def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distribution_lookup=None):

@@ -6,11 +6,11 @@ from sqlalchemy.exc import OperationalError
 import xarray as xr
 import pvlib
 from feedinlib import era5
-from fastapi_app.io.db import models
-from fastapi_app.io.db.database import get_sync_session_maker, sync_engine
-from fastapi_app.io.db.sync_queries import get_df, get_model_instance
-from fastapi_app.io.db.inserts import df_2_sql
-from fastapi_app.io.db import config
+from fastapi_app.db import models
+from fastapi_app.db.db_con import get_sync_session_maker, sync_engine
+from fastapi_app.db.sync_queries import get_df, get_model_instance
+from fastapi_app.db.inserts import df_2_sql
+from fastapi_app.db import config
 import subprocess
 
 

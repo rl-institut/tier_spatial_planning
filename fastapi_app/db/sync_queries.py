@@ -1,4 +1,3 @@
-import os
 import decimal
 import pandas as pd
 import time
@@ -8,9 +7,9 @@ from sqlalchemy.sql import text
 import flatten_dict
 from flatten_dict.splitters import make_splitter
 from sqlalchemy.exc import OperationalError
-from fastapi_app.io.db import models
-from fastapi_app.io.db.database import get_sync_session_maker, sync_engine
-from fastapi_app.io.db import config
+from fastapi_app.db import models
+from fastapi_app.db.db_con import get_sync_session_maker, sync_engine
+from fastapi_app.db import config
 
 
 def get_project_setup_of_user(user_id, project_id):

@@ -4,12 +4,12 @@ import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from fastapi_app.io.db.models import Base
+from fastapi_app.db.models import Base
 from sqlalchemy.exc import SQLAlchemyError
-from mysql.connector import DatabaseError, ProgrammingError, InterfaceError, OperationalError
+from mysql.connector import DatabaseError, ProgrammingError, InterfaceError
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError, ServerSelectionTimeoutError, ConfigurationError, ConnectionFailure
-from fastapi_app.io.db.config import DB_USER_NAME, PW, DB_HOST, DB_PORT, DB_NAME, DOMAIN
+from fastapi_app.db.config import DB_USER_NAME, PW, DB_HOST, DB_PORT, DB_NAME, DOMAIN
 
 
 BASE_URL = 'mysql+package://{}:{}@{}:{}/{}'.format(DB_USER_NAME, PW, DB_HOST, DB_PORT, DB_NAME)
@@ -17,13 +17,14 @@ SYNC_DB_URL = BASE_URL.replace('package', 'mysqlconnector')
 ASYNC_DB_URL = BASE_URL.replace('package', 'aiomysql')
 
 
-for i in range(400):
+for i in range(100):
     try:
         sync_engine = create_engine(SYNC_DB_URL)
         Base.metadata.create_all(bind=sync_engine)
         async_engine = create_async_engine(ASYNC_DB_URL, pool_size=30, max_overflow=150, pool_timeout=30)
     except (SQLAlchemyError, DatabaseError, ProgrammingError, InterfaceError) as e:
         print(e)
+        print('Retry in 5 seconds...')
         time.sleep(5)
     else:
         break

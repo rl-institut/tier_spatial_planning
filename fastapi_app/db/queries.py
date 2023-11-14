@@ -9,10 +9,10 @@ import flatten_dict
 from flatten_dict.splitters import make_splitter
 from jose import jwt, JWTError
 from sqlalchemy.exc import OperationalError, NoResultFound
-from fastapi_app.io.db import models
-from fastapi_app.io.db import config
-from fastapi_app.io.db.database import get_async_session_maker, async_engine
-from fastapi_app.io.db.config import DB_RETRY_COUNT, RETRY_DELAY
+from fastapi_app.db import models
+from fastapi_app.db import config
+from fastapi_app.db.db_con import get_async_session_maker, async_engine
+from fastapi_app.db.config import DB_RETRY_COUNT, RETRY_DELAY
 
 
 async def get_user_by_username(username):
@@ -35,7 +35,7 @@ async def get_user_by_guid(guid):
 async def get_max_project_id_of_user(user_id):
     subqry = select(sa.func.max(models.ProjectSetup.project_id)).filter(models.ProjectSetup.id == user_id).as_scalar()
     query = select(models.ProjectSetup).filter(models.ProjectSetup.id == user_id,
-                                             models.ProjectSetup.project_id == subqry)
+                                               models.ProjectSetup.project_id == subqry)
     res = await _execute_with_retry(query, which='first')
     max_project_id = res.project_id if hasattr(res, 'project_id') else None
     return max_project_id

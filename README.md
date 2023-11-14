@@ -132,7 +132,8 @@ map $http_upgrade $connection_upgrade {
 }
 # END ANSIBLE MANAGED BLOCK map http connetions to upgrade by default
 
-   ```
+```
+---
 # Server Configuration and Docker-Container
 
 The following describes the server configuration created for the Optimization Tool, aimed at ensuring secure and reliable operation. Client requests are received by NGINX, a so-called reverse proxy server, which establishes encrypted communication using SSL/TLS certification and forwards them to the appropriate destinations. The certificates are generated using Let’s Encrypt. The web tool comprises multiple applications and services, all housed in Docker containers.

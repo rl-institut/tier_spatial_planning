@@ -1,15 +1,8 @@
 from __future__ import division
-import numpy as np
 import pandas as pd
-from k_means_constrained import KMeansConstrained
-from munkres import Munkres
-from scipy.sparse.csgraph import minimum_spanning_tree
-from fastapi_app.tools.grids import Grid
 import oemof.solph as solph
 from datetime import datetime, timedelta
 import pyomo.environ as po
-from pyproj import Proj
-from fastapi_app.io.db import sync_queries, queries_demand, models
 from fastapi_app.tools.optimizer import Optimizer
 
 class EnergySystemOptimizer(Optimizer):

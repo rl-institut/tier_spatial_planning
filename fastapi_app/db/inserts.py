@@ -3,11 +3,11 @@ import asyncio
 import datetime
 from sqlalchemy.exc import OperationalError
 from sqlalchemy import delete, text
-from fastapi_app.io.db import models
-from fastapi_app.io.db.database import get_async_session_maker, async_engine
-from fastapi_app.io.db.queries import get_df, get_model_instance, get_user_by_username, get_projects_of_user
+from fastapi_app.db import models
+from fastapi_app.db.db_con import get_async_session_maker, async_engine
+from fastapi_app.db.queries import get_df, get_model_instance, get_user_by_username, get_projects_of_user
 from sqlalchemy import update
-from fastapi_app.io.db.config import DB_RETRY_COUNT, RETRY_DELAY
+from fastapi_app.db.config import DB_RETRY_COUNT, RETRY_DELAY
 
 
 async def merge_model(model):
