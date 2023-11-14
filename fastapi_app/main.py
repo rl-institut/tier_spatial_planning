@@ -909,49 +909,32 @@ def get_project_id_from_request(request: Request):
 async def get_plot_data(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
     df = await queries.get_df(models.Results, user.id, project_id)
-    optimal_capacities = {}
-    optimal_capacities["pv"] = str(df.loc[0, "pv_capacity"])
-    optimal_capacities["battery"] = str(df.loc[0, "battery_capacity"])
-    optimal_capacities["inverter"] = str(df.loc[0, "inverter_capacity"])
-    optimal_capacities["rectifier"] = str(df.loc[0, "rectifier_capacity"])
-    optimal_capacities["diesel_genset"] = str(df.loc[0, "diesel_genset_capacity"])
-    optimal_capacities["peak_demand"] = str(df.loc[0, "peak_demand"])
-    optimal_capacities["surplus"] = str(df.loc[0, "surplus"])
-    lcoe_breakdown = {}
-    lcoe_breakdown["renewable_assets"] = str(df.loc[0, "cost_renewable_assets"])
-    lcoe_breakdown["non_renewable_assets"] = str(df.loc[0, "cost_non_renewable_assets"])
-    lcoe_breakdown["grid"] = str(df.loc[0, "cost_grid"])
-    lcoe_breakdown["fuel"] = str(df.loc[0, "cost_fuel"])
-    sankey_data = {}
-    sankey_data["fuel_to_diesel_genset"] = str(df.loc[0, "fuel_to_diesel_genset"])
-    sankey_data["diesel_genset_to_rectifier"] = str(df.loc[0, "diesel_genset_to_rectifier"])
-    sankey_data["diesel_genset_to_demand"] = str(df.loc[0, "diesel_genset_to_demand"])
-    sankey_data["rectifier_to_dc_bus"] = str(df.loc[0, "rectifier_to_dc_bus"])
-    sankey_data["pv_to_dc_bus"] = str(df.loc[0, "pv_to_dc_bus"])
-    sankey_data["battery_to_dc_bus"] = str(df.loc[0, "battery_to_dc_bus"])
-    sankey_data["dc_bus_to_battery"] = str(df.loc[0, "dc_bus_to_battery"])
-    sankey_data["dc_bus_to_inverter"] = str(df.loc[0, "dc_bus_to_inverter"])
-    sankey_data["dc_bus_to_surplus"] = str(df.loc[0, "dc_bus_to_surplus"])
-    sankey_data["inverter_to_demand"] = str(df.loc[0, "inverter_to_demand"])
+    df = df.astype(str)
+    optimal_capacity_keys = ["pv", "battery", "inverter", "rectifier", "diesel_genset", "peak_demand", "surplus"]
+    optimal_capacities = {key: df.loc[0, f"{key}_capacity"] for key in optimal_capacity_keys[:-2]}
+    optimal_capacities.update({key: df.loc[0, key] for key in optimal_capacity_keys[-2:]})
+    lcoe_breakdown_keys = ["renewable_assets", "non_renewable_assets", "grid", "fuel"]
+    lcoe_breakdown = {key: df.loc[0, f"cost_{key}"] for key in lcoe_breakdown_keys}
+    sankey_keys = ["fuel_to_diesel_genset", "diesel_genset_to_rectifier", "diesel_genset_to_demand",
+                   "rectifier_to_dc_bus", "pv_to_dc_bus", "battery_to_dc_bus", "dc_bus_to_battery",
+                   "dc_bus_to_inverter", "dc_bus_to_surplus", "inverter_to_demand"]
+    sankey_data = {key: df.loc[0, key] for key in sankey_keys}
     energy_flow = await queries.get_model_instance(models.EnergyFlow, user.id, project_id)
     energy_flow = pd.read_json(energy_flow.data)
-    energy_flow['battery'] = - energy_flow['battery_charge'] + energy_flow['battery_discharge']
-    energy_flow = energy_flow.drop(columns=['battery_charge', 'battery_discharge'])
-    energy_flow = energy_flow.reset_index(drop=True)
+    energy_flow['battery'] = energy_flow['battery_discharge'] - energy_flow['battery_charge']
+    energy_flow.drop(columns=['battery_charge', 'battery_discharge'], inplace=True)
+    energy_flow.reset_index(drop=True, inplace=True)
     energy_flow = json.loads(energy_flow.to_json())
-    duration_curve = await queries.get_model_instance(models.DurationCurve, user.id, project_id)
-    duration_curve = json.loads(duration_curve.data)
-    emissions = await queries.get_model_instance(models.Emissions, user.id, project_id)
-    emissions = json.loads(emissions.data)
-    demand_coverage = await queries.get_model_instance(models.DemandCoverage, user.id, project_id)
-    demand_coverage =  json.loads(demand_coverage.data)
+    duration_curve = json.loads((await queries.get_model_instance(models.DurationCurve, user.id, project_id)).data)
+    emissions = json.loads((await queries.get_model_instance(models.Emissions, user.id, project_id)).data)
+    demand_coverage = json.loads((await queries.get_model_instance(models.DemandCoverage, user.id, project_id)).data)
     return JSONResponse(status_code=200, content={"optimal_capacities": optimal_capacities,
                                                   "lcoe_breakdown": lcoe_breakdown,
                                                   "sankey_data": sankey_data,
                                                   "energy_flow": energy_flow,
                                                   "duration_curve": duration_curve,
                                                   "demand_coverage": demand_coverage,
-                                                  "emissions": emissions,})
+                                                  "emissions": emissions})
 
 
 @app.get("/get_demand_time_series/{project_id}")

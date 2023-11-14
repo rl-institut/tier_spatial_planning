@@ -11,9 +11,9 @@ venv/
 /fastapi_app/data/*
 !/fastapi_app/data/wp3/
 scratch.py
-fastapi_app/io/db/dev_config.py
+fastapi_app/db/dev_config.py
 /.db_data/
-ERA5_weather_data1.nc
-ERA5_weather_data2.nc
-ERA5_weather_data3.nc
+fastapi_app/data/weather/ERA5_weather_data1.nc
+fastapi_app/data/weather/ERA5_weather_data2.nc
+fastapi_app/data/weather/ERA5_weather_data3.nc
 logs/error_logs.txt
