@@ -1322,7 +1322,6 @@ function reset_pw(guid) {
 }
 
 
-
 function create_example_project() {
     fetch("/example_model/")
         .then(res => {

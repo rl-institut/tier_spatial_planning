@@ -3,7 +3,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 DIRECTORY_PARENT = "fastapi_app"
-DIRECTORY_WP3 = os.path.join(DIRECTORY_PARENT, "data", "wp3").replace("\\", "/")
+DIRECTORY_WP3 = os.path.join(DIRECTORY_PARENT, "data", "demand").replace("\\", "/")
 FULL_PATH_PROFILES = os.path.join(DIRECTORY_WP3, "1-hour_mean_365_days_all_users.parquet").replace("\\", "/")
 FULL_PATH_DISTRIBUTIONS = os.path.join(DIRECTORY_WP3, "zonal_consumption_distributions.parquet").replace("\\", "/")
 

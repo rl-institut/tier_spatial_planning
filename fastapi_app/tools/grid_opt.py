@@ -27,6 +27,14 @@ class GridOptimizer(Optimizer):
         super().__init__(start_date, n_days, project_lifetime, wacc, tax)
         self.mst_algorithm = mst_algorithm
 
+    def calc_epc(self, capex_column, lifetime_column, df):
+        capex_0 = df.loc[0, capex_column]
+        component_lifetime = df.loc[0, lifetime_column] if lifetime_column != "project" else self.project_lifetime
+        epc = (self.crf * Optimizer.capex_multi_investment(self,
+                                                            capex_0=capex_0,
+                                                            component_lifetime=component_lifetime)) * self.n_days / 365
+        return epc
+
     # ------------ CONNECT NODES USING TREE-STAR SHAPE ------------#
     def connect_grid_consumers(self, grid: Grid):
         """
