@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from k_means_constrained import KMeansConstrained
 from scipy.sparse.csgraph import minimum_spanning_tree
-from fastapi_app.tools.grids import Grid
+from fastapi_app.tools.grid_obj import Grid
 from fastapi_app.tools.optimizer import Optimizer
 
 
