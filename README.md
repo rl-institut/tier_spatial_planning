@@ -35,10 +35,17 @@ These steps ensure that you are prepared to either proceed with Docker integrati
 3. **Grant Privileges and Create Database:**
    - Grant the necessary privileges to the newly created user.
    - Create a database with the name you've specified in `fastapi_app.env`.
-4. **Run the Application:**
+4. **Virtual Environment and Package Installations:**
+   - Create env with `pyhton 3.8` (pip or conda env)  
+
+   if you use pip, execute:
+   - `pip install -r requirements.txt`
+   - `pip install --no-deps no_deps_requirements.txt`
+5. **Run the Application:**
    - Execute `run.py` to start the application. This script uses Uvicorn to run the app.
    - Once running, the web application should be accessible at [http://localhost:40000](http://localhost:40000).
    - When the app is executed for the first time, it automatically creates all necessary database tables and initiates the process of importing weather data into the database. This import process usually takes several minutes, potentially up to half an hour. During this time, please refrain from interrupting the process to ensure a complete and successful setup.
+
 ---
 # Access the web app as well as the additional services with a graphical user interface.
 1. When the Docker containers are running or `run.py` is executed, the web application can be accessed at http://localhost:40000.
