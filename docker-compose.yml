@@ -11,6 +11,7 @@ services:
       - PW=/run/secrets/pw
       - MAIL_PW=/run/secrets/mail_pw
       - KEY_FOR_ACCESS_TOKEN=/run/secrets/key_for_token
+      - EXAMPLE_USER_PW=/run/secrets/example_user_pw
       - DOCKERIZED=1
       - MONGO_USER=ackee_user
       - MONGO_PORT=27017
@@ -162,3 +163,5 @@ secrets:
     file: ./secrets/mail_secret.txt
   key_for_token:
     file: ./secrets/key_for_token.txt
+  example_user_pw:
+    file: ./secrets/example_user_secret.txt

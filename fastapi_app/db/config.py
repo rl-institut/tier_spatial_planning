@@ -31,7 +31,8 @@ if os.environ.get('DOCKERIZED') is None:
 
     file_paths = {'PW': os.path.join(os.getcwd(), 'secrets', 'secret.txt'),
                   'MAIL_PW': os.path.join(secret_path, 'secrets', 'mail_secret.txt'),
-                  'KEY_FOR_ACCESS_TOKEN': os.path.join(secret_path, 'secrets', 'key_for_token.txt')}
+                  'KEY_FOR_ACCESS_TOKEN': os.path.join(secret_path, 'secrets', 'key_for_token.txt'),
+                  'EXAMPLE_USER_PW': os.path.join(secret_path, 'secrets', 'example_user_secret.txt')}
     for var_name, file_path in file_paths.items():
         if os.path.exists(file_path):
             with open(file_path, 'r') as file:
