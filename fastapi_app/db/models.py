@@ -251,7 +251,7 @@ class Results(Base):
     time_energy_system_design = Column(Numeric(10, 3))
     time = Column(Numeric(10, 3))
     co2_savings = Column(Numeric(10, 3))
-    max_voltage_drop = Column(Numeric(3, 1))
+    max_voltage_drop = Column(Numeric(3, 1)) # not used anymore (backwards compatibility old db data)
     infeasible = Column(TINYINT(unsigned=True))
     average_annual_demand_per_consumer = Column(Numeric(10, 1))
     total_annual_consumption = Column(Numeric(10, 1))

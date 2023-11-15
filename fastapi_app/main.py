@@ -1421,8 +1421,7 @@ def optimize_grid(user_id, project_id):
         results.n_distribution_links = int(grid.links[grid.links["link_type"] == "distribution"].shape[0])
         results.n_connection_links = int(grid.links[grid.links["link_type"] == "connection"].shape[0])
 
-        #ToDo: Delete Max voltage drop
-        results.max_voltage_drop = round(float(0), 1)
+
         df = results.to_df()
         sync_inserts.insert_results_df(df, user_id, project_id)
     except Exception as exc:
