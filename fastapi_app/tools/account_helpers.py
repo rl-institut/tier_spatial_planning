@@ -6,13 +6,14 @@ import random
 from typing import Tuple
 from captcha.image import ImageCaptcha
 from passlib.context import CryptContext
-from fastapi_app.db import config
+from fastapi_app.db import models, config
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import jwt
 from fastapi.security.utils import get_authorization_scheme_param
 from fastapi_app.db import inserts, queries
 from fastapi_app.tools.mails import send_mail
+
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -129,6 +130,16 @@ async def generate_captcha_image() -> Tuple[str, str]:
     captcha_data = await loop.run_in_executor(None, captcha.generate, captcha_text)
     base64_image = base64.b64encode(captcha_data.getvalue()).decode('utf-8')
     return captcha_text, base64_image
+
+async def create_example_user_account():
+    if await queries.get_user_by_username('default_example') is None:
+        user = models.User(email='default_example',
+                           hashed_password=Hasher.get_password_hash(config.EXAMPLE_USER_PW),
+                           guid='',
+                           is_confirmed=True,
+                           is_active=False,
+                           is_superuser=False)
+        await inserts.merge_model(user)
 
 
 if __name__ == '__main__':

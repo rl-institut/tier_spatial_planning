@@ -27,7 +27,7 @@ from fastapi_app.tools.grid_opt_model import GridOptimizer
 from fastapi_app.tools.energy_system_opt_model import EnergySystemOptimizer
 from fastapi_app.tools.optimizer import Optimizer, check_data_availability
 from fastapi_app.tools.account_helpers import Hasher, create_guid, is_valid_credentials, send_activation_link, activate_mail, \
-    authenticate_user, create_access_token, send_mail
+    authenticate_user, create_access_token, send_mail, create_example_user_account
 from fastapi_app.tools import account_helpers as accounts
 from fastapi_app.db import config, inserts, queries, sync_queries, sync_inserts, queries_demand
 from fastapi_app.tools.df_to_excel import df_to_xlsx
@@ -51,9 +51,10 @@ import_structure = Union[json_array, json_object]
 
 
 @app.on_event("startup")
-def startup_event():
+async def startup_event():
     if not sync_queries.check_if_weather_data_exists():
         sync_inserts.dump_weather_data_into_db()
+    await create_example_user_account()
 
 
 @app.get("/workshop_tasks")
