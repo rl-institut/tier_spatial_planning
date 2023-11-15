@@ -1088,7 +1088,7 @@ async function wait_for_results(project_id, task_id, time, model, opt_iter) {
 
                 if (res.finished === true) {
                     opt_iter = opt_iter + 1;
-                    if (opt_iter <= 2) {
+                    if (opt_iter <= 0) {
                         start_calculation(project_id, opt_iter)
                     }
                     else {
