@@ -56,8 +56,12 @@ These steps ensure that you are prepared to either proceed with Docker integrati
    - Execute `run.py` to start the application. This script uses Uvicorn to run the app.
    - Once running, the web application should be accessible at [http://localhost:40000](http://localhost:40000).
    - When the app is executed for the first time, it automatically creates all necessary database tables and initiates the process of importing weather data into the database. This import process usually takes several minutes, potentially up to half an hour. During this time, please refrain from interrupting the process to ensure a complete and successful setup.
+---
+## Create Example Project
+   Upon startup, a user account with the username `default_example` is created, using the password specified in the Docker secret `example_user_account.txt`. Please log into this account and create a project. The first project created under this account will be used as the default example for other users.
 
 ---
+
 # Access the web app as well as the additional services with a graphical user interface.
 1. When the Docker containers are running or `run.py` is executed, the web application can be accessed at http://localhost:40000.
 
