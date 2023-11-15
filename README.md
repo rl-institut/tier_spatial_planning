@@ -19,6 +19,17 @@ This tool is designed to operate within a Docker environment, with detailed inst
    cd path/to/project
    ```
    Replace `path/to/project` with the actual path where you downloaded the project.
+3. **Provide Docker Secrets:**
+   Create the following files in the `/secret` directory and enter the keys and passwords (without quotes and without linebreaks):  
+   <ins>Note</ins>: These secrets are required even if you are not running the project in a Docker environment.
+   - `secret.txt`: Contains the password used for MySQL, MongoDB, and the Ackee account.
+   - `mail_secret.txt`: Contains the password of the used email/email service.
+   - `key_for_token.txt`: Contains the key used to generate user access tokens.
+   - `example_user_secret.txt`: Contains the password of the database example user account (used for the example project).
+4. **Provide Mail Data in `mail.env`**  
+   Replace tbd with the actual values of the variables used for sending emails. Although the app will continue to function without these values, it will be unable to send activation emails. This becomes a significant issue during user registration, as new users will not receive the necessary activation emails. As a result, you would need to manually activate each user account in the database system.
+5. **Adopt the Parameter Values in the `fastapi.env`-File:**  
+   Tailor the parameter values to meet your specific requirements.
 
 These steps ensure that you are prepared to either proceed with Docker integration or work in a non-Docker environment as per your preference. Remember to refer to the specific instructions for setting up and maintaining the MySQL database when not using Docker.
 ## Running the App in Docker Environment (Production Environment)
