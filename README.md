@@ -65,10 +65,12 @@ These steps ensure that you are prepared to either proceed with Docker integrati
 # Access the web app as well as the additional services with a graphical user interface.
 1. When the Docker containers are running or `run.py` is executed, the web application can be accessed at http://localhost:40000.
 
-Note: The following services are only available when the project is run in a Docker environment.
-3. An overview of the tasks in the task queue (Celery) is available at [http://localhost:40002](http://localhost:40002).
-4. A graphical user interface for the database (Adminer) is accessible at [http://localhost:40003](http://localhost:40003)
-5. Statistics on web-app accesses can be found at [http://localhost:40004](http://localhost:40004).  Note that this requires accessing the web app via a domain name, not via an IP address and port.
+   <ins>Note</ins>: The following services are only available when the project is run in a Docker environment.  
+  
+2. An overview of the tasks in the task queue (Celery) is available at [http://localhost:40002](http://localhost:40002).
+3. A graphical user interface for the database (Adminer) is accessible at [http://localhost:40003](http://localhost:40003)
+4. Statistics on web-app accesses can be found at [http://localhost:40004](http://localhost:40004).  Note that this requires accessing the web app via a domain name, not via an IP address and port.
+
 ---
 # Domain Linking and SSL Encryption
 Enhancing security and ensuring proper domain routing for our Dockerized web app necessitates the use of an external proxy server. In our configuration, a proxy is not integrated into the Docker setup and needs to be configured separately. It is advised to implement a proxy, such as Nginx, to efficiently direct domain requests to port 40000 while managing SSL encryption. Enabling "Header forwarding" is crucial for the seamless operation of the app. To assist with this process, an example Nginx configuration file is provided, helping streamline the integration of these essential features.## Example configuration file for nginx.
@@ -162,26 +164,26 @@ The following describes the server configuration created for the Optimization To
 
 NGINX intercepts client requests, providing SSL/TLS encryption and routing them to their intended destinations. The web tool consists of several applications, including database systems and applications for database visualization, monitoring of asynchronous tasks, user data analysis, and load management.
 
-**Web Application Container**  
+<ins>**Web Application Container**</ins>  
 This container hosts the actual web application, responding to NGINX requests. It includes the FastAPI application, website elements like HTML, CSS, and JavaScript, database interfaces, and energy system models. It runs Gunicorn, a Python-based HTTP server, supporting multiple worker processes to handle requests and enable parallel operation of FastAPI instances. The container also includes the open-source CBC solver for mixed-integer linear programming, as a fallback when no licensed Gurobi solver is available.
 
-**MySQL Container**  
+<ins>**MySQL Container**</ins>  
 Hosts a MySQL database system for storing user account data and input/output data of energy system models.
 
-**Adminer Container**  
+<ins>**Adminer Container**</ins>  
 Adminer, a web-based database management tool, provides a user interface for database systems like MySQL and visualizes the databases.
 
-**Celery Container**  
+<ins>**Celery Container**</ins>  
 Celery, a task queue system, is used for asynchronous tasks like optimizing energy models and deleting temporary user accounts after a set period. It ensures the FastAPI application continues to handle user requests during model solving, preventing overload of memory and CPU resources.
 
-**Redis Container**  
+<ins>**Redis Container**</ins>  
 Redis, an in-memory database, acts as a message broker, managing communication between Celery tasks and the web server. It transfers tasks from the FastAPI application to the Celery container and retrieves their status.
 
-**Flower Container**  
+<ins>**Flower Container**</ins>  
 Flower provides a web-based interface for monitoring and managing the Celery task queue, housed in a separate Docker container.
 
-**Ackee Container**  
+<ins>**Ackee Container**</ins>  
 Ackee, an open-source tool, collects website user data, offering GDPR-compliant analytics without sharing data with third-party services. It is hosted independently.
 
-**MongoDB Container**  
+<ins>**MongoDB Container**</ins>  
 MongoDB, used for Ackee's operation, stores website visitor data, including page views, duration, bounce rate, screen size, browsers, and client operating systems.
