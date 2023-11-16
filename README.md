@@ -28,7 +28,7 @@ This tool is designed to operate within a Docker environment, with detailed inst
    - `example_user_secret.txt`: Contains the password of the database example user account (used for the example project).
 4. **Provide Mail Data in `mail.env`**  
    Replace tbd with the actual values of the variables used for sending emails. Although the app will continue to function without these values, it will be unable to send activation emails. This becomes a significant issue during user registration, as new users will not receive the necessary activation emails. As a result, you would need to manually activate each user account in the database system.
-5. **Adopt the Parameter Values in the `fastapi.env`-File:**  
+5. **Adopt the Parameter Values in the `fastapi_app.env`-File:**  
    Tailor the parameter values to meet your specific requirements.
 
 These steps ensure that you are prepared to either proceed with Docker integration or work in a non-Docker environment as per your preference. Remember to refer to the specific instructions for setting up and maintaining the MySQL database when not using Docker.
@@ -57,7 +57,7 @@ These steps ensure that you are prepared to either proceed with Docker integrati
    - Once running, the web application should be accessible at [http://localhost:40000](http://localhost:40000).
    - When the app is executed for the first time, it automatically creates all necessary database tables and initiates the process of importing weather data into the database. This import process usually takes several minutes, potentially up to half an hour. During this time, please refrain from interrupting the process to ensure a complete and successful setup.
 ---
-## Create Example Project
+# Create Example Project
    Upon startup, a user account with the username `default_example` is created, using the password specified in the Docker secret `example_user_account.txt`. Please log into this account and create a project. The first project created under this account will be used as the default example for other users.
 
 ---
@@ -73,7 +73,8 @@ These steps ensure that you are prepared to either proceed with Docker integrati
 
 ---
 # Domain Linking and SSL Encryption
-Enhancing security and ensuring proper domain routing for our Dockerized web app necessitates the use of an external proxy server. In our configuration, a proxy is not integrated into the Docker setup and needs to be configured separately. It is advised to implement a proxy, such as Nginx, to efficiently direct domain requests to port 40000 while managing SSL encryption. Enabling "Header forwarding" is crucial for the seamless operation of the app. To assist with this process, an example Nginx configuration file is provided, helping streamline the integration of these essential features.## Example configuration file for nginx.
+Enhancing security and ensuring proper domain routing for our Dockerized web app necessitates the use of an external proxy server. In our configuration, a proxy is not integrated into the Docker setup and needs to be configured separately. It is advised to implement a proxy, such as Nginx, to efficiently direct domain requests to port 40000 while managing SSL encryption. Enabling "Header forwarding" is crucial for the seamless operation of the app. To assist with this process, an example Nginx configuration file is provided, helping streamline the integration of these essential features.  
+Example configuration file for nginx:  
    Replace `>your_domain.com<` and `>Your Server IP<` and insert `ssl_ciphers value`
 ```bash
    # ansible provided config file---changes will be lost
@@ -104,9 +105,6 @@ server {
   # the locations start here
   # BEGIN ANSIBLE MANAGED BLOCK location for peoplesun app proxy
   location / {
-    #allow 130.149.65.0/24;
-    #allow 213.61.198.10;
-    #deny all;
 
     keepalive_timeout 5;
     client_max_body_size 4G;
