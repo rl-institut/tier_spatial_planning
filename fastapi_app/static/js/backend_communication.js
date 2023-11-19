@@ -266,7 +266,7 @@ async function load_results(project_id) {
     const results = await response.json();
 
     if (results['n_consumers'] > 0) {
-                    document.getElementById('noResults').style.display='none';
+        document.getElementById('noResults').style.display='none';
             document.getElementById("nConsumers").innerText = Number(results['n_consumers']) - Number(results['n_shs_consumers']);
             document.getElementById("nGridConsumers").innerText = Number(results['n_consumers']) - Number(results['n_shs_consumers']);
             document.getElementById("nShsConsumers").innerText = results['n_shs_consumers'];
@@ -922,77 +922,6 @@ function  load_previous_data(page_name){
             }
         }
 }
-
-
-/************************************************************/
-/*                   EXPORT DATA AS XLSX                    */
-/************************************************************/
-
-function export_data(project_id) {
-    // Create the excel workbook and fill it out with some properties
-    var workbook = XLSX.utils.book_new();s
-    workbook.Props = {
-      Title: "Import and Export Data form/to the Optimization Web App.",
-      Subject: "Off-Grid Network and Energy Supply System",
-      Author: "Saeed Sayadi",
-      CreatedDate: new Date(2022, 8, 8)
-    };
-  
-    // Get all nodes from the database.
-    db_links_to_js(nodes_or_links = 'nodes', map_or_export = 'export', project_id, function (data_nodes) {
-        
-        // Since the format of the JSON file exported by the `database_read` is
-        // not compatible with the `Sheetjs` library, we need to restructure it
-        // first. For this purpose, we require an array consisting of the same
-        // number of elements as the number of nodes (representing the rows) and
-        // for each element we should write down all properties in a dictionaty.
-
-        // Here, all the properties of the nodes are read from the `data_nodes`
-        // e.g., latitude, longitude, ...
-        var headers = Object.keys(data_nodes);
-
-        // To obtain the number of nodes, we take the first property of the
-        // node, which can be any parameter depending on the `data_nodes`, and
-        // obtain its length.
-        var number_of_nodes = Object.keys(data_nodes[Object.keys(data_nodes)[0]]).length
-
-        // The final JSON file must be like [{}, {}, {}, ...], which means there
-        // are several numbers of single dictionaries (i.e., for each node),
-        // and just one array that includes all these dictionaries.
-        // This array is then put into the Excel file.
-        var single_dict = {};
-        var array_of_dicts = [];
-
-        for(var item = 0; item < number_of_nodes; item++) {
-            for(var header in headers) {
-                single_dict[headers[header]] = data_nodes[headers[header]][item];
-            }
-            array_of_dicts.push(single_dict);
-            // Remove the content of the `single_dict` to avoid using the same
-            // numbers for different elements of the array.
-            single_dict = {};
-        }
-        
-        // Create an Excel worksheet from the the array consisting several
-        // single dictionaries.
-        const worksheet = XLSX.utils.json_to_sheet(array_of_dicts);
-
-        // Create a new sheet in the Excel workbook with the given name and
-        // copy the content of the `worksheet` into it.
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Nodes')           
-
-        // Specify the proper write options.
-        let wopts = { bookType: 'xlsx', type: 'array'};
-
-        // Get the current date and time with this format YYYY_M_D_H_M_S to add
-        // to the end of the Excel file.
-        const current_date = new Date(Date.now());
-        const time_extension = current_date.getFullYear() + '_' +  (current_date.getMonth() + 1) + '_' +  current_date.getDate() + '_' + current_date.getHours() + '_' + current_date.getMinutes() + '_' + current_date.getSeconds();
-        
-        XLSX.writeFile(workbook, 'import_export_' + time_extension + '.xlsx', wopts);
-    });
-}
-
 
 
 function show_user_email_in_navbar() {
