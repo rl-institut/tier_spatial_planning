@@ -4,7 +4,7 @@ import pandas as pd
 from k_means_constrained import KMeansConstrained
 from scipy.sparse.csgraph import minimum_spanning_tree
 from fastapi_app.tools.grid_obj import Grid
-from fastapi_app.tools.optimizer import Optimizer
+from fastapi_app.tools.general_optimizer_obj import Optimizer
 
 
 class GridOptimizer(Optimizer):
