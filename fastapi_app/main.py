@@ -40,14 +40,8 @@ from fastapi_app.tools import energy_system_opt_model
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 
 app = FastAPI()
-
-app.mount("/fastapi_app/static", StaticFiles(directory="fastapi_app/static"), name="static")
+uapp.mount("/fastapi_app/static", StaticFiles(directory="fastapi_app/static"), name="static")
 templates = Jinja2Templates(directory="fastapi_app/pages")
-
-# define the template for importing json data in the form of arrays from js to python
-json_object = Dict[Any, Any]
-json_array = List[Any]
-import_structure = Union[json_array, json_object]
 
 
 @app.on_event("startup")
