@@ -12,6 +12,7 @@ oemof.solph==0.5
 shapely==1.8.1
 scipy==1.8.0
 pyproj==3.3.1
+bcrypt==4.0.1
 k-means-constrained==0.7.2  # only pypy
 python-jose==3.3.0
 passlib==1.7.4
