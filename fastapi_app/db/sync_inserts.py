@@ -164,11 +164,15 @@ def insert_df(model_class, df, user_id=None, project_id=None, ts=True):
         _insert_df(model_class.__name__.lower(), df, if_exists='update')
 
 def _from_netcdf4_file(file_name):
+    if not os.path.exists(file_name):
+        print(f"\nnetcdf4 file not found: {file_name}\n")
+        return  False# Exit the function if file does not exist
     ds = xr.open_dataset(file_name, engine='netcdf4')
     df = era5.format_pvlib(ds)
     df = df.reset_index()
     df = df.rename(columns={'time': 'dt', 'latitude': 'lat', 'longitude': 'lon'})
     df = df.set_index(['dt'])
+    return True
 
     def get_all_locations(ds):
         lat = ds.variables['latitude'][:]
@@ -203,22 +207,30 @@ def _from_netcdf4_file(file_name):
 
 def _import_weather_data_into_db():
     file_path = 'fastapi_app/data/weather/weatherdata.sql'
+    if not os.path.exists(file_path):
+        print(f"\nSQL file not found: {file_path}\n")
+        return  # Exit the function if file does not exist
     mysql_command = f"mysql -u {config.DB_USER_NAME} -p{config.PW} -h {config.DB_HOST} {config.DB_NAME} < {file_path}"
     try:
         subprocess.run(mysql_command, check=True, shell=True)
-        print("SQL file imported successfully")
+        print("\nSQL file imported successfully\n")
     except subprocess.CalledProcessError as e:
-        print(f"Error during SQL import: {e}")
+        print(f"\nError during SQL import: {e}\n")
 
 
 def dump_weather_data_into_db():
-    print('Dumping weather data into database. \n'
+    print('\nDumping weather data into database. \n'
           'This usually takes a few minutes...\n'
           'Please wait and do not interrupt the process.\n')
     if os.path.exists('fastapi_app/data/weather/weatherdata.sql'):
         _import_weather_data_into_db()
     else:
         for i in range(1, 4):
-            _from_netcdf4_file('ERA5_weather_data{}.nc'.format(i))
-
+            try:
+                res = _from_netcdf4_file('ERA5_weather_data{}.nc'.format(i))
+                if res is False:
+                    print('\nWeather data file not found. As a result, the app will be unable to perform calculations.\n'.format(i))
+            except subprocess.CalledProcessError as e:
+                print(f"Error during SQL import from netcdf: {e}")
+            print("SQL file imported successfully")
 
