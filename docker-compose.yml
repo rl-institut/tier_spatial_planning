@@ -37,8 +37,10 @@ services:
     command: --max-connections=1000
     restart: always
     environment:
-      MYSQL_DATABASE: peoplesun_user_db
+      MYSQL_DATABASE: ${DB_NAME}
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/pw
+    env_file:
+      - fastapi_app.env
     ports:
       - '40001:3306'
     secrets:
