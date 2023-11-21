@@ -14,8 +14,6 @@ services:
       - EXAMPLE_USER_PW=/run/secrets/example_user_pw
       - DB_HOST=mysql
       - DOCKERIZED=1
-      - MONGO_USER=ackee_user
-      - MONGO_PORT=27017
     env_file:
       - fastapi_app.env
       - mail.env
@@ -28,7 +26,6 @@ services:
     depends_on:
       - redis
       - mysql
-      - mongo
   mysql:
     container_name: mysql
     build:
@@ -117,44 +114,6 @@ services:
       - ADMINER_DEFAULT_SERVER=mysql
       - ADMINER_DEFAULT_USERNAME=root
       - ADMINER_DEFAULT_PASSWORD_FILE=/run/secrets/pw
-    secrets:
-      - pw
-  ackee:
-    container_name: 'ackee'
-    image: electerious/ackee:3.4.2
-    restart: always
-    ports:
-      - "40004:3000"
-    environment:
-      - ACKEE_MONGODB=placeholder # ackee.config.js is copied into the container and overrides the env-variables
-      - ACKEE_USERNAME=ackee_user
-      - ACKEE_PASSWORD=placeholder # ackee.config.js is copied into the container and overrides the env-variables
-      - ACKEE_PASSWORD_FILE=/run/secrets/pw
-      - MONGO_CONTAINER_NAME=mongo
-      - DB_PORT=27017
-    secrets:
-      - pw
-    volumes:
-          - ./ackee_config.js:/srv/app/src/utils/config.js
-    depends_on:
-      - mongo
-      - app
-  mongo:
-    container_name: 'mongo'
-    build:
-      context: .
-      dockerfile: Dockerfile-mongo
-      args:
-        - UID_FOR_DB=${UID_FOR_DB}
-        - GID_FOR_DB=${GID_FOR_DB}
-    restart: always
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=ackee_user
-      - MONGO_INITDB_ROOT_PASSWORD_FILE=/run/secrets/pw
-    ports:
-      - "27017:27017"
-    volumes:
-      - ./db_data/mongo:/data/db
     secrets:
       - pw
 secrets:

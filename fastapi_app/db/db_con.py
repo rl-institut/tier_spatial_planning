@@ -1,14 +1,10 @@
-import os
 import time
-import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from fastapi_app.db.models import Base
 from sqlalchemy.exc import SQLAlchemyError
 from mysql.connector import DatabaseError, ProgrammingError, InterfaceError
-from pymongo import MongoClient
-from pymongo.errors import PyMongoError, ServerSelectionTimeoutError, ConfigurationError, ConnectionFailure
 from fastapi_app.db.config import DB_USER_NAME, PW, DB_HOST, DB_PORT, DB_NAME, DOMAIN
 
 
@@ -28,26 +24,6 @@ for i in range(100):
         time.sleep(5)
     else:
         break
-
-if bool(os.environ.get('DOCKERIZED')):
-    for i in range(10):
-        try:
-            mongo_uri = 'mongodb://{}:{}@mongo:{}'.format(os.environ.get('MONGO_USER'),
-                                                                          PW,
-                                                                          os.environ.get('MONGO_PORT'))
-            client = MongoClient(mongo_uri)
-            db = client['admin']
-            domains_collection = db['domains']
-            document = {'title': DOMAIN,
-                        'id': 'e6b4dbf9-7401-4172-8212-f6a13cd5f962',
-                        'created': datetime.datetime.now(),
-                        'updated': datetime.datetime.now()}
-            query_filter = {"id": document["id"]}
-            result = domains_collection.update_one(query_filter, {"$setOnInsert": document}, upsert=True)
-        except (PyMongoError, ServerSelectionTimeoutError, ConfigurationError, ConnectionFailure) as e:
-            time.sleep(5)
-        else:
-            break
 
 
 def get_async_session_maker(async_engine, new_engine=False):

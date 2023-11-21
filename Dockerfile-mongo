@@ -1,5 +1,0 @@
-FROM mongo:latest
-
-ARG UID_FOR_DB
-ARG GID_FOR_DB
-RUN usermod -u $UID_FOR_DB mongodb && groupmod -g $GID_FOR_DB mongodb
