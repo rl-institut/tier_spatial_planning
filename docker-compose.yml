@@ -49,7 +49,7 @@ services:
     container_name: 'redis'
     restart: always
     ports:
-    - '6379:6379'
+    - '40005:6379'
   worker_default:
     container_name: 'celery_default'
     build: .
