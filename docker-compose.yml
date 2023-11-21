@@ -12,6 +12,7 @@ services:
       - MAIL_PW=/run/secrets/mail_pw
       - KEY_FOR_ACCESS_TOKEN=/run/secrets/key_for_token
       - EXAMPLE_USER_PW=/run/secrets/example_user_pw
+      - DB_HOST=mysql
       - DOCKERIZED=1
       - MONGO_USER=ackee_user
       - MONGO_PORT=27017
