@@ -51,7 +51,7 @@ These steps ensure that you are prepared to either proceed with Docker integrati
 
    if you use pip, execute:
    - `pip install -r requirements.txt`
-   - `pip install --no-deps no_deps_requirements.txt`
+   - `pip install --no-deps -r no_deps_requirements.txt`
 5. **Run the Application:**
    - Execute `run.py` to start the application. This script uses Uvicorn to run the app.
    - Once running, the web application should be accessible at [http://localhost:40000](http://localhost:40000).
