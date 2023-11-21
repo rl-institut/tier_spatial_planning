@@ -2,44 +2,64 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-DIRECTORY_PARENT = "fastapi_app"
-DIRECTORY_WP3 = os.path.join(DIRECTORY_PARENT, "data", "demand").replace("\\", "/")
+APP_DIR = "fastapi_app"
+DIRECTORY_WP3 = os.path.join(APP_DIR, "data", "demand").replace("\\", "/")
 FULL_PATH_PROFILES = os.path.join(DIRECTORY_WP3, "1-hour_mean_365_days_all_users.parquet").replace("\\", "/")
 FULL_PATH_DISTRIBUTIONS = os.path.join(DIRECTORY_WP3, "zonal_consumption_distributions.parquet").replace("\\", "/")
 
-def check_vars(var_name):
-    if os.environ.get(var_name) == 'tbd' or os.environ.get(var_name) is None:
-        user_input = input(f"{var_name} is not set. Please enter a value:")
-        os.environ[f"{var_name}"] = f"value_{user_input}"
+mail_vars = ['MAIL_ADDRESS',
+             'HEADER_ADDRESS',
+             'MAIL_HOST',
+             'MAIL_PORT',
+             'MAIL_PW']
 
-var_list = ['MAIL_ADDRESS',
-            'HEADER_ADDRESS',
-            'LOGGER_RECEIVING_MAIL',
-            'MAIL_HOST',
-            'MAIL_PORT',
-            'PW',
-            'MAIL_PW',
-            'KEY_FOR_ACCESS_TOKEN']
+var_list = ['PW',
+            'KEY_FOR_ACCESS_TOKEN',
+            'EXAMPLE_USER_PW']
 
 if os.environ.get('DOCKERIZED') is None:
+    # If the environment variable 'DOCKERIZED' is not set, it is assumed that the app is running outside a docker container.
+    # In this case, we need to read the environment files and docker secrets files manually.
     load_dotenv(dotenv_path='fastapi_app.env')
     load_dotenv(dotenv_path='mail.env')
-    secret_path = next((path for path in Path.cwd().parents if path.name == DIRECTORY_PARENT), None)
-    secret_path = os.getcwd() if secret_path is None else str(secret_path.parent)
-    if secret_path is None:
-        raise FileNotFoundError(f"Could not find directory {DIRECTORY_PARENT}")
+    root_path = os.getcwd()
+    secret_path = os.path.join(root_path, 'secrets')
+    if not os.path.exists(secret_path):
+        root_path = next((path for path in Path.cwd().parents if path.name == APP_DIR), None)
+        secret_path = os.path.join(root_path, 'secrets') if root_path is not None else None
+    if not os.path.exists(secret_path):
+        raise FileNotFoundError(f"Could not find directory the directory /secrets/")
 
-    file_paths = {'PW': os.path.join(os.getcwd(), 'secrets', 'secret.txt'),
-                  'MAIL_PW': os.path.join(secret_path, 'secrets', 'mail_secret.txt'),
-                  'KEY_FOR_ACCESS_TOKEN': os.path.join(secret_path, 'secrets', 'key_for_token.txt'),
-                  'EXAMPLE_USER_PW': os.path.join(secret_path, 'secrets', 'example_user_secret.txt')}
+    file_paths = {'PW': os.path.join(secret_path, 'secret.txt'),
+                  'MAIL_PW': os.path.join(secret_path, 'mail_secret.txt'),
+                  'KEY_FOR_ACCESS_TOKEN': os.path.join(secret_path, 'key_for_token.txt'),
+                  'EXAMPLE_USER_PW': os.path.join(secret_path, 'example_user_secret.txt')}
+
     for var_name, file_path in file_paths.items():
         if os.path.exists(file_path):
             with open(file_path, 'r') as file:
                 os.environ[var_name] = file.read().strip()
 
-for var in var_list:
-    check_vars(var)
+def is_set(var_name):
+    if os.environ.get(var_name) == 'tbd' or os.environ.get(var_name) is None:
+        return False
+    else:
+        return True
+
+for var in mail_vars:
+    if is_set(var) is False:
+        print("To set up the mail service, you need to define the environment variable {}.\nWithout the mail"
+              " service, the web app won't be able to send activation links during user registration.".format(var))
+
+if is_set('PW') is False:
+    print("To set up the database, you need to define the environment variable PW")
+
+if is_set('KEY_FOR_ACCESS_TOKEN') is False:
+    print("To set up the user access token, you need to define the environment variable KEY_FOR_ACCESS_TOKEN")
+
+if is_set('EXAMPLE_USER_PW') is False:
+    print("To set up the default_example user, you need to define the environment variable EXAMPLE_USER_PW")
+
 
 DB_RETRY_COUNT = int(os.environ.get('DB_RETRY_COUNT'))
 RETRY_DELAY = float(os.environ.get('DB_RETRY_DELAY'))
