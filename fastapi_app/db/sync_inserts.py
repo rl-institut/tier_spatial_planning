@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import calendar
 import os
 from sqlalchemy import delete, text
 from sqlalchemy.exc import OperationalError
@@ -11,7 +12,9 @@ from fastapi_app.db.db_con import get_sync_session_maker, sync_engine
 from fastapi_app.db.sync_queries import get_df, get_model_instance
 from fastapi_app.db.inserts import df_2_sql
 from fastapi_app.db import config
+from fastapi_app.tools.solar_potential import download_weather_data, prepare_weather_data
 import subprocess
+
 
 
 
@@ -172,8 +175,6 @@ def _from_netcdf4_file(file_name):
     df = df.reset_index()
     df = df.rename(columns={'time': 'dt', 'latitude': 'lat', 'longitude': 'lon'})
     df = df.set_index(['dt'])
-    return True
-
     def get_all_locations(ds):
         lat = ds.variables['latitude'][:]
         lon = ds.variables['longitude'][:]
@@ -181,7 +182,6 @@ def _from_netcdf4_file(file_name):
         grid_points = np.stack((lat_grid, lon_grid), axis=-1)
         grid_points = grid_points.reshape(-1, 2)
         return grid_points
-
     df['dni'] = np.nan
     grid_points = get_all_locations(ds)
     for lon, lat in grid_points:
@@ -190,7 +190,6 @@ def _from_netcdf4_file(file_name):
         solar_position = pvlib.solarposition.get_solarposition(time=tmp_df.index,
                                                                latitude=lat,
                                                                longitude=lon)
-
         df.loc[mask, 'dni'] = pvlib.irradiance.dni(ghi=tmp_df['ghi'],
                                                    dhi=tmp_df['dhi'],
                                                    zenith=solar_position['apparent_zenith']).fillna(0)
@@ -203,34 +202,48 @@ def _from_netcdf4_file(file_name):
     df.loc[:, 'lat'] = df.loc[:, 'lat'].round(7)
     df.iloc[:, 1:] = df.iloc[:, 1:].astype(str)
     insert_df(models.WeatherData, df)
+    return True
 
 
-def _import_weather_data_into_db():
+def _db_sql_dump_import_weather_data():
     file_path = 'fastapi_app/data/weather/weatherdata.sql'
     if not os.path.exists(file_path):
         print(f"\nSQL file not found: {file_path}\n")
         return  # Exit the function if file does not exist
-    mysql_command = f"mysql -u {config.DB_USER_NAME} -p{config.PW} -h {config.DB_HOST} {config.DB_NAME} < {file_path}"
+    mysql_command = f"mysql -u {config.DB_USER_NAME} -p {config.PW} -h {config.DB_HOST} {config.DB_NAME} < {file_path}"
     try:
         subprocess.run(mysql_command, check=True, shell=True)
         print("\nSQL file imported successfully\n")
     except subprocess.CalledProcessError as e:
         print(f"\nError during SQL import: {e}\n")
+        raise e
+    return True
 
 
 def dump_weather_data_into_db():
-    print('\nDumping weather data into database. \n'
-          'This usually takes a few minutes...\n'
-          'Please wait and do not interrupt the process.\n')
     if os.path.exists('fastapi_app/data/weather/weatherdata.sql'):
-        _import_weather_data_into_db()
-    else:
-        for i in range(1, 4):
-            try:
-                res = _from_netcdf4_file('ERA5_weather_data{}.nc'.format(i))
-                if res is False:
-                    print('\nWeather data file not found. As a result, the app will be unable to perform calculations.\n'.format(i))
-            except subprocess.CalledProcessError as e:
-                print(f"Error during SQL import from netcdf: {e}")
-            print("SQL file imported successfully")
-
+        print('\nDumping weather data into database. \n'
+              'This usually takes a few minutes...\n'
+              'Please wait and do not interrupt the process.\n')
+        ans = _db_sql_dump_import_weather_data()
+        if ans:
+            return
+    print('\nDownloading and dumping weather data into database. \n'
+              'This usually takes a few minutes...\n'
+              'Please wait and do not interrupt the process.\n')
+    last_year = (pd.Timestamp.now() + pd.Timedelta(24 * 14, unit='H')).year - 1
+    for month in range(1, 13, 3):  # Increment by 3
+        print(f'Period starting {month} of 12 is being imported.')
+        start_date = pd.Timestamp(year=last_year, month=month, day=1)
+        end_month = month + 2  # Third month in the interval
+        end_month = 12 if end_month > 12 else end_month  # Ensure it does not exceed December
+        last_day_of_end_month = calendar.monthrange(last_year, end_month)[1]
+        end_date = pd.Timestamp(year=last_year, month=end_month, day=last_day_of_end_month)
+        try:
+            data_xr = download_weather_data(start_date, end_date, country='Nigeria')
+            df = prepare_weather_data(data_xr)
+            insert_df(models.WeatherData, df)
+            print(
+                f"Data for period {start_date.strftime('%Y-%m')} to {end_date.strftime('%Y-%m')} imported successfully")
+        except subprocess.CalledProcessError as e:
+            print("Error during import of weather data")

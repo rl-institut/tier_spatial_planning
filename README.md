@@ -19,10 +19,10 @@ This tool is designed to operate within a Docker environment, with detailed inst
    cd path/to/project
    ```
    Replace `path/to/project` with the actual path where you downloaded the project.
-3. **Provide Docker Secrets:**
-   Create the following files in the `/secret` directory and enter the keys and passwords (without quotes and without linebreaks):  
+3. **Adjust Docker Secrets:**
+   In the /secret directory, modify the default settings according to your preferences (without quotes and without linebreaks):  
    <ins>Note</ins>: These secrets are required even if you are not running the project in a Docker environment.
-   - `secret.txt`: Contains the password used for MySQL, MongoDB, and the Ackee account.
+   - `secret.txt`: Contains the password used for MySQL.
    - `mail_secret.txt`: Contains the password of the used email/email service.
    - `key_for_token.txt`: Contains the key used to generate user access tokens.
    - `example_user_secret.txt`: Contains the password of the database example user account (used for the example project).
@@ -38,8 +38,11 @@ These steps ensure that you are prepared to either proceed with Docker integrati
    ```bash
    UID_FOR_DB=$(id -u) GID_FOR_DB=$(id -g) docker-compose up -d
    ```
+6. **Downloading Weather Data:**  
+   When the app is executed for the first time, it automatically creates all necessary database tables and initiates the process of downloading and importing weather data into the database. "This download and import process usually takes about 2 hours, mainly due to the time spent waiting for https://cds.climate.copernicus.eu/api/v2 to process the request. During this time, please refrain from interrupting the process to ensure a complete and successful setup. (If an SQL dump file is provided under /fastapi_app/data/weather.sql, it will be imported and the need for downloading is eliminated. This process only takes a few minutes.)
+
 ## Running the App without Docker Environment (Development Environment):
-1. **Install MySQL:** Begin by manually installing MySQL. If you prefer a graphical interface, you may also install MySQL Workbench.
+1. **Install MySQL:** Begin by manually installing MySQL (server and client). If you prefer a graphical interface, you may also install MySQL Workbench.
 2. **Create Database User:**
    - Create a new database user with the username specified in your `fastapi_app.env` file.
    - Set the password for this user as defined in your Docker `secret.txt`.
@@ -55,7 +58,9 @@ These steps ensure that you are prepared to either proceed with Docker integrati
 5. **Run the Application:**
    - Execute `run.py` to start the application. This script uses Uvicorn to run the app.
    - Once running, the web application should be accessible at [http://localhost:40000](http://localhost:40000).
-   - When the app is executed for the first time, it automatically creates all necessary database tables and initiates the process of importing weather data into the database. This import process usually takes several minutes, potentially up to half an hour. During this time, please refrain from interrupting the process to ensure a complete and successful setup.
+6. **Downloading Weather Data:**  
+   When the app is executed for the first time, it automatically creates all necessary database tables and initiates the process of downloading and importing weather data into the database. "This download and import process usually takes a few hours, mainly due to the time spent waiting for https://cds.climate.copernicus.eu/api/v2 to process the request. During this time, please refrain from interrupting the process to ensure a complete and successful setup. (If an SQL dump file is provided under /fastapi_app/data/weather.sql, it will be imported and the need for downloading is eliminated. This process only takes a few minutes.)
+
 ---
 # Create Example Project
    Upon startup, a user account with the username `default_example` is created, using the password specified in the Docker secret `example_user_account.txt`. Please log into this account and create a project. The first project created under this account will be used as the default example for other users.
