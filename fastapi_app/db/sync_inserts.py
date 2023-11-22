@@ -38,6 +38,7 @@ def merge_model(model):
 
 
 def execute_stmt(stmt):
+    stmt = text(stmt) if isinstance(stmt, str) else stmt
     new_engine = False
     for i in range(config.DB_RETRY_COUNT):
         try:
@@ -207,17 +208,15 @@ def _from_netcdf4_file(file_name):
 
 def _db_sql_dump_import_weather_data():
     file_path = 'fastapi_app/data/weather/weatherdata.sql'
-    if not os.path.exists(file_path):
-        print(f"\nSQL file not found: {file_path}\n")
-        return  # Exit the function if file does not exist
-    mysql_command = f"mysql -u {config.DB_USER_NAME} -p {config.PW} -h {config.DB_HOST} {config.DB_NAME} < {file_path}"
     try:
-        subprocess.run(mysql_command, check=True, shell=True)
-        print("\nSQL file imported successfully\n")
-    except subprocess.CalledProcessError as e:
-        print(f"\nError during SQL import: {e}\n")
-        raise e
-    return True
+        if os.path.exists(file_path):
+            with open(file_path) as file:
+                stmt = text(file.read())
+            execute_stmt(stmt)
+            return True
+    except Exception as e:
+        print(e)
+        return False
 
 
 def dump_weather_data_into_db():
