@@ -1,7 +1,7 @@
 FROM continuumio/miniconda3
 WORKDIR /src
 RUN apt-get update -q  \
-    && apt-get install --no-install-recommends -qy g++ gcc inetutils-ping coinor-cbc\
+    && apt-get install --no-install-recommends -qy g++ gcc inetutils-ping coinor-cbc mysql-client \
     && rm -rf /var/lib/apt/lists/*
 RUN conda update -n base -c defaults conda
 RUN conda create -n py38 python=3.8 pip
