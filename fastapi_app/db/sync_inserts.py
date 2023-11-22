@@ -211,11 +211,25 @@ def _db_sql_dump_import_weather_data():
     try:
         if os.path.exists(file_path):
             with open(file_path, 'r') as file:
-                sql_commands = file.read().split(';')
-            for command in sql_commands:
-                if command.strip():
-                    stmt = text(command)
-                    execute_stmt(stmt)
+                sql_commands = []
+                command = ""
+                for line in file:
+                    if line.startswith('--') or not line.strip():
+                        # Skip comments and empty lines
+                        continue
+                    if '/*!' in line and '*/;' in line:
+                        # Convert conditional comments to standard SQL
+                        line = line.split('*/')[0].replace('/*!', '') + ';'
+                    command += line
+                    if ';' in line:
+                        # End of SQL statement; add to list
+                        sql_commands.append(command)
+                        command = ""
+            for cmd in sql_commands:
+                if cmd.strip():
+                    stmt = text(cmd)
+                    execute_stmt(stmt)  # Execute each statement
+            print("All SQL commands executed successfully.")
             return True
     except Exception as e:
         print(f"Error executing SQL commands: {e}")
