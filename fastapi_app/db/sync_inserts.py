@@ -210,12 +210,15 @@ def _db_sql_dump_import_weather_data():
     file_path = 'fastapi_app/data/weather/weatherdata.sql'
     try:
         if os.path.exists(file_path):
-            with open(file_path) as file:
-                stmt = text(file.read())
-            execute_stmt(stmt)
+            with open(file_path, 'r') as file:
+                sql_commands = file.read().split(';')
+            for command in sql_commands:
+                if command.strip():
+                    stmt = text(command)
+                    execute_stmt(stmt)
             return True
     except Exception as e:
-        print(e)
+        print(f"Error executing SQL commands: {e}")
         return False
 
 
