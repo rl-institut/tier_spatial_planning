@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 import geopandas as gpd
@@ -7,7 +8,19 @@ from pvlib.location import Location
 from pvlib.modelchain import ModelChain
 from pvlib.temperature import TEMPERATURE_MODEL_PARAMETERS
 from feedinlib import era5
-from fastapi_app.db import queries, sync_queries
+from fastapi_app.db import queries, sync_queries, config
+
+
+def create_cdsapirc_file():
+    home_dir = os.path.expanduser('~')
+    file_path = os.path.join(home_dir, '.cdsapirc')
+    if os.path.exists(file_path):
+        print(f".cdsapirc file already exists at {file_path}")
+        return
+    content = f"url: https://cds.climate.copernicus.eu/api/v2\nkey: {config.CDS_API_KEY}"
+    with open(file_path, 'w') as file:
+        file.write(content)
+    print(f".cdsapirc file created at {file_path}")
 
 
 def download_weather_data(start_date, end_date, country='Nigeria'):
@@ -17,6 +30,7 @@ def download_weather_data(start_date, end_date, country='Nigeria'):
     lat = [geopoints[0], geopoints[2]]
     lon = [geopoints[1], geopoints[3]]
     variable = "pvlib"
+    create_cdsapirc_file()
     data_xr = era5.get_era5_data_from_datespan_and_position(
         variable=variable,
         start_date=start_date.strftime('%Y-%m-%d'),

@@ -35,7 +35,9 @@ if not os.path.exists(secret_path):
 file_paths = {'PW': os.path.join(secret_path, 'secret.txt'),
               'MAIL_PW': os.path.join(secret_path, 'mail_secret.txt'),
               'KEY_FOR_ACCESS_TOKEN': os.path.join(secret_path, 'key_for_token.txt'),
-              'EXAMPLE_USER_PW': os.path.join(secret_path, 'example_user_secret.txt')}
+              'EXAMPLE_USER_PW': os.path.join(secret_path, 'example_user_secret.txt'),
+              'CDS_API_KEY': os.path.join(secret_path, 'cds_api_key.txt'),
+              }
 
 for var_name, file_path in file_paths.items():
     if os.path.exists(file_path):
@@ -81,3 +83,4 @@ MAIL_PW=os.environ.get('MAIL_PW')
 MAIL_ADDRESS=os.environ.get('MAIL_ADDRESS')
 MAIL_ADDRESS_LOGGER=os.environ.get('MAIL_ADDRESS_LOGGER')
 HEADER_ADDRESS=os.environ.get('HEADER_ADDRESS')
+CDS_API_KEY=os.environ.get('CDS_API_KEY')
