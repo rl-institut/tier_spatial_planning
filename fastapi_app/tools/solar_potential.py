@@ -23,7 +23,7 @@ def create_cdsapirc_file():
     print(f".cdsapirc file created at {file_path}")
 
 
-def download_weather_data(start_date, end_date, country='Nigeria'):
+def download_weather_data(start_date, end_date, country='Nigeria', target_file='file'):
     world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
     country_shape = world[world['name'] == country]
     geopoints = country_shape.geometry.iloc[0].bounds
@@ -32,11 +32,14 @@ def download_weather_data(start_date, end_date, country='Nigeria'):
     variable = "pvlib"
     create_cdsapirc_file()
     data_xr = era5.get_era5_data_from_datespan_and_position(
-        variable=variable,
-        start_date=start_date.strftime('%Y-%m-%d'),
-        end_date=end_date.strftime('%Y-%m-%d'),
-        latitude=lat, longitude=lon )
+                variable=variable,
+                start_date=start_date.strftime('%Y-%m-%d'),
+                end_date=end_date.strftime('%Y-%m-%d'),
+                latitude=lat,
+                longitude=lon,
+                target_file=target_file)
     return data_xr
+
 
 def prepare_weather_data(data_xr):
     df = era5.format_pvlib(data_xr)

@@ -269,8 +269,9 @@ def dump_weather_data_into_db():
         end_month = 12 if end_month > 12 else end_month  # Ensure it does not exceed December
         last_day_of_end_month = calendar.monthrange(last_year, end_month)[1]
         end_date = pd.Timestamp(year=last_year, month=end_month, day=last_day_of_end_month)
+        file_name = 'cfd_weather_data_{}.nc'.format(start_date.strftime('%Y-%m'))
         try:
-            data_xr = download_weather_data(start_date, end_date, country='Nigeria')
+            data_xr = download_weather_data(start_date, end_date, country='Nigeria', target_file=file_name).copy()
             df = prepare_weather_data(data_xr)
             insert_df(models.WeatherData, df)
             print(
