@@ -1,3 +1,4 @@
+import warnings
 import pandas as pd
 import numpy as np
 import calendar
@@ -208,6 +209,13 @@ def _from_netcdf4_file(file_name):
 
 def _db_sql_dump_import_weather_data():
     file_path = 'fastapi_app/data/weather/weatherdata.sql'
+    if is_table_locked('weatherdata'):
+        print('Table is locked. It is assumed that other worker is already importing weather data.')
+        return True
+    else:
+        print('\nDumping weather data into database. \n'
+              'This usually takes a few minutes...\n'
+              'Please wait and do not interrupt the process.\n')
     try:
         if os.path.exists(file_path):
             with open(file_path, 'r') as file:
@@ -215,32 +223,38 @@ def _db_sql_dump_import_weather_data():
                 command = ""
                 for line in file:
                     if line.startswith('--') or not line.strip():
-                        # Skip comments and empty lines
                         continue
-                    if '/*!' in line and '*/;' in line:
-                        # Convert conditional comments to standard SQL
-                        line = line.split('*/')[0].replace('/*!', '') + ';'
                     command += line
                     if ';' in line:
-                        # End of SQL statement; add to list
                         sql_commands.append(command)
                         command = ""
             for cmd in sql_commands:
                 if cmd.strip():
+                    if "DROP TABLE" in cmd:
+                        continue
+                    if "CREATE TABLE" in cmd and "IF NOT EXISTS" not in cmd:
+                        cmd = cmd.replace("CREATE TABLE", "CREATE TABLE IF NOT EXISTS")
                     stmt = text(cmd)
                     execute_stmt(stmt)  # Execute each statement
-            print("All SQL commands executed successfully.")
+            print("\nAll SQL commands executed successfully.\n")
             return True
     except Exception as e:
         print(f"Error executing SQL commands: {e}")
         return False
 
 
+def is_table_locked(table_name):
+    try:
+        with get_sync_session_maker(sync_engine, False) as session:
+            session.execute(text(f"SELECT 1 FROM {table_name} LIMIT 1;"))
+            session.commit()
+        return False
+    except OperationalError:
+        return True
+
+
 def dump_weather_data_into_db():
     if os.path.exists('fastapi_app/data/weather/weatherdata.sql'):
-        print('\nDumping weather data into database. \n'
-              'This usually takes a few minutes...\n'
-              'Please wait and do not interrupt the process.\n')
         ans = _db_sql_dump_import_weather_data()
         if ans:
             return
@@ -261,5 +275,6 @@ def dump_weather_data_into_db():
             insert_df(models.WeatherData, df)
             print(
                 f"Data for period {start_date.strftime('%Y-%m')} to {end_date.strftime('%Y-%m')} imported successfully")
-        except subprocess.CalledProcessError as e:
-            print("Error during import of weather data")
+        except Exception as e:
+            print("\n{}\n".format(e))
+            warnings.warn(str(e), category=UserWarning)

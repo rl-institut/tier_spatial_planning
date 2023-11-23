@@ -660,7 +660,7 @@ async def anonymous_login(data: Dict[str, str], response: Response):
 @app.post("/login/")
 async def login(response: Response, credentials: fastapi_app.db.schema.Credentials):
     if isinstance(credentials.email, str) and len(credentials.email) > 3:
-        is_valid, res = await authenticate_user(credentials.email, credentials.password)
+        is_valid, res = await authenticate_user(credentials.email.strip(), credentials.password)
         if is_valid:
             if credentials.remember_me:
                 access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES_EXTENDED)
@@ -685,17 +685,17 @@ async def consent_cookie(response: Response):
 
 @app.post("/change_email/")
 async def change_email(request: Request, credentials: fastapi_app.db.schema.Credentials):
-    if isinstance(credentials.email, str) and len(credentials.email) > 3:
+    if isinstance(credentials.email.strip(), str) and len(credentials.email.strip()) > 3:
         user = await accounts.get_user_from_cookie(request)
         is_valid, res = await authenticate_user(user.email, credentials.password)
         validation = False
         if is_valid:
-            user.email = credentials.email
+            user.email = credentials.email.strip()
             if accounts.is_valid_email(user):
                 user.is_confirmed = False
                 user.guid = create_guid()
                 await inserts.merge_model(user)
-                send_activation_link(credentials.email, user.guid)
+                send_activation_link(credentials.email.strip(), user.guid)
                 res = 'Please click the activation link we sent to your email.'
                 validation = True
             else:
@@ -725,7 +725,7 @@ async def change_pw(request: Request, passwords: Dict[str, str]):
 
 @app.post("/send_reset_password_email/")
 async def send_reset_password_email(data: Dict[str, str], request: Request):
-    email = data.get('email')
+    email = data.get('email').strip()
     captcha_input = data.get('captcha_input')
     hashed_captcha = data.get('hashed_captcha')
     user = await queries.get_user_by_username(email)

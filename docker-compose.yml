@@ -60,6 +60,7 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - FLOWER_PORT=5555
       - PW=/run/secrets/pw
+      - DB_HOST=mysql
     depends_on:
       - app
       - redis
@@ -76,6 +77,7 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - FLOWER_PORT=5555
       - PW=/run/secrets/pw
+      - DB_HOST=mysql
     depends_on:
       - app
       - redis
@@ -92,6 +94,7 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - FLOWER_PORT=5555
       - PW=/run/secrets/pw
+      - DB_HOST=mysql
     ports:
       - '40002:5555'
     depends_on:

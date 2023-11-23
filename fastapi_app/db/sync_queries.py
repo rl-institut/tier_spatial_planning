@@ -111,6 +111,15 @@ def get_energy_system_design(user_id, project_id):
 
 
 def check_if_weather_data_exists():
+    check_table_query = text(f"""
+            SELECT COUNT(*)
+            FROM information_schema.tables 
+            WHERE table_schema = '{config.DB_NAME}' 
+            AND table_name = 'weatherdata';
+        """)
+    res = bool(_execute_with_retry(check_table_query, which='first'))
+    if res is False:
+        return False
     query = text("""SELECT COUNT(*) FROM {}.weatherdata;""".format(config.DB_NAME))
     res = _execute_with_retry(query, which='first')
     if isinstance(res, list):
