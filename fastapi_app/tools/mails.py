@@ -1,3 +1,4 @@
+import warnings
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -20,4 +21,5 @@ def send_mail(to_adress, msg, subject='Activate your PeopleSun-Account'):
             server.login(smtp_username, smtp_password)
             server.sendmail(config.MAIL_ADDRESS, message["To"], message.as_string())
         except smtplib.SMTPAuthenticationError as e:
-            raise Exception(config.MAIL_ADDRESS.replace('@', ''))
+            print('\n{}\n{}'.format(e, config.MAIL_ADDRESS.replace('@', '')))
+            warnings.warn(str(e), category=UserWarning)
