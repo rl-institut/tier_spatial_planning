@@ -44,6 +44,11 @@ async def startup_event():
     await create_example_user_account()
 
 
+@app.on_event("shutdown")
+async def shutdown_event():
+    sync_inserts.remove_guid_from_init_flag()
+
+
 @app.get("/workshop_tasks")
 async def get_workshop_slides():
     file_path = "fastapi_app/static/images/workshop.pdf"

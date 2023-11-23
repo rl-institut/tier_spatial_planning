@@ -3,10 +3,10 @@ from sqlalchemy import create_engine
 from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from fastapi_app.db.models import Base
+from fastapi_app.db.models import Base, InitFlag
 from sqlalchemy.exc import SQLAlchemyError
 from mysql.connector import DatabaseError, ProgrammingError, InterfaceError
-from fastapi_app.db.config import DB_USER_NAME, PW, DB_HOST, DB_PORT, DB_NAME
+from fastapi_app.db.config import DB_USER_NAME, PW, DB_HOST, DB_PORT, DB_NAME, INSTANCE_GUID
 
 
 BASE_URL = 'mysql+package://{}:{}@{}:{}/{}'.format(DB_USER_NAME, PW, DB_HOST, DB_PORT, DB_NAME)
@@ -46,3 +46,20 @@ def get_sync_session_maker(sync_engine, new_engine=False):
         sync_engine = create_engine(SYNC_DB_URL)
     sync_session = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
     return sync_session()
+
+
+
+
+def check_and_set_init_flag(instance_guid):
+    with get_sync_session_maker(sync_engine, False) as session:
+        init_flag = session.query(InitFlag).first()
+        if init_flag is None:
+            init_flag = InitFlag(initialized=0)
+            session.add(init_flag)
+            session.commit()
+        if init_flag.initialized == 0 and init_flag.guid is None:
+            init_flag.guid = instance_guid  # Set the GUID of the initializing instance
+            session.commit()
+
+
+check_and_set_init_flag(INSTANCE_GUID)

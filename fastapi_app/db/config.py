@@ -1,3 +1,4 @@
+import uuid
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -84,3 +85,4 @@ MAIL_ADDRESS=os.environ.get('MAIL_ADDRESS')
 MAIL_ADDRESS_LOGGER=os.environ.get('MAIL_ADDRESS_LOGGER')
 HEADER_ADDRESS=os.environ.get('HEADER_ADDRESS')
 CDS_API_KEY=os.environ.get('CDS_API_KEY')
+INSTANCE_GUID=str(uuid.uuid4()).replace('-', '')[:12]
