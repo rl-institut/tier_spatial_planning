@@ -12,11 +12,9 @@ from fastapi_app.db import models
 from fastapi_app.db.db_con import get_sync_session_maker, sync_engine
 from fastapi_app.db.sync_queries import get_df, get_model_instance
 from fastapi_app.db.inserts import df_2_sql
+from fastapi_app.db.models import Base
 from fastapi_app.db import config
 from fastapi_app.tools.solar_potential import download_weather_data, prepare_weather_data
-import subprocess
-
-
 
 
 def merge_model(model):
@@ -252,15 +250,7 @@ def is_table_locked(table_name):
     except OperationalError:
         return True
 
-
-def dump_weather_data_into_db():
-    if os.path.exists('fastapi_app/data/weather/weatherdata.sql'):
-        ans = _db_sql_dump_import_weather_data()
-        if ans:
-            return
-    print('\nDownloading and dumping weather data into database. \n'
-              'This usually takes a few minutes...\n'
-              'Please wait and do not interrupt the process.\n')
+def download_era5(data_list):
     last_year = (pd.Timestamp.now() + pd.Timedelta(24 * 14, unit='H')).year - 1
     for month in range(1, 13, 3):  # Increment by 3
         print(f'Period starting {month} of 12 is being imported.')
@@ -272,10 +262,49 @@ def dump_weather_data_into_db():
         file_name = 'cfd_weather_data_{}.nc'.format(start_date.strftime('%Y-%m'))
         try:
             data_xr = download_weather_data(start_date, end_date, country='Nigeria', target_file=file_name).copy()
-            df = prepare_weather_data(data_xr)
-            insert_df(models.WeatherData, df)
+            data_list.append(data_xr)
+            # df = prepare_weather_data(data_xr)
+            # insert_df(models.WeatherData, df)
             print(
                 f"Data for period {start_date.strftime('%Y-%m')} to {end_date.strftime('%Y-%m')} imported successfully")
         except Exception as e:
             print("\n{}\n".format(e))
             warnings.warn(str(e), category=UserWarning)
+    return data_list
+
+
+def dump_weather_data_into_db():
+    data_list = list()
+    if os.path.exists('fastapi_app/data/weather/weatherdata.sql'):
+        ans = _db_sql_dump_import_weather_data()
+        if ans:
+            return
+
+    print('\nDownloading and dumping weather data into database. \n'
+          'This usually takes a few minutes...\n'
+          'Please wait and do not interrupt the process.\n')
+
+    for table in Base.metadata.sorted_tables:
+        if table.name != 'weatherdata':
+            table.create(bind=sync_engine, checkfirst=True)
+
+    session = None
+    try:
+        session = get_sync_session_maker(sync_engine, False)
+        # Acquire the lock
+        session.execute(text("LOCK TABLES weatherdata WRITE NOWAIT"))
+        # Perform your DB operations here if the lock is acquired
+        data_list = download_era5(data_list)
+    except OperationalError:
+        # The lock could not be acquired, skip the DB operations
+        pass
+    finally:
+        if session:
+            # Always ensure the session is closed properly
+            session.execute(text("UNLOCK TABLES"))
+            session.close()
+    if len(data_list) > 0:
+        for data_xr in data_list:
+            df = prepare_weather_data(data_xr)
+            insert_df(models.WeatherData, df)
+
