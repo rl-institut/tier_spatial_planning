@@ -4,11 +4,11 @@ import calendar
 import os
 from sqlalchemy import delete, text
 from sqlalchemy.exc import OperationalError
-from fastapi_app.db import models
-from fastapi_app.db.db_con import get_sync_session_maker, sync_engine
-from fastapi_app.db.sync_queries import get_df, get_model_instance, check_if_weather_data_exists
-from fastapi_app.db.inserts import df_2_sql
-from fastapi_app.db.config import DB_RETRY_COUNT, RETRY_DELAY
+from fastapi_app.db import sa_tables
+from fastapi_app.db.connections import get_sync_session_maker, sync_engine
+from fastapi_app.db.sync_queries import get_df, get_model_instance
+from fastapi_app.db.async_inserts import df_2_sql
+from fastapi_app.config import DB_RETRY_COUNT, RETRY_DELAY
 from fastapi_app.tools.solar_potential import download_weather_data, prepare_weather_data
 
 

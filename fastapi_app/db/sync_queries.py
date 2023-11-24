@@ -7,9 +7,9 @@ from sqlalchemy.sql import text
 import flatten_dict
 from flatten_dict.splitters import make_splitter
 from sqlalchemy.exc import OperationalError
-from fastapi_app.db import models
-from fastapi_app.db.db_con import get_sync_session_maker, sync_engine
-from fastapi_app.db import config
+from fastapi_app.db import sa_tables
+from fastapi_app.db.connections import get_sync_session_maker, sync_engine
+from fastapi_app import config
 
 
 def get_project_setup_of_user(user_id, project_id):

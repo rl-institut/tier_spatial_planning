@@ -1,6 +1,6 @@
 import pandas as pd
 import h3
-from fastapi_app.db import config
+from fastapi_app import config
 
 
 def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distribution_lookup=None):

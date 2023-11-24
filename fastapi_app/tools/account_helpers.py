@@ -6,12 +6,13 @@ import random
 from typing import Tuple
 from captcha.image import ImageCaptcha
 from passlib.context import CryptContext
-from fastapi_app.db import models, config
+from fastapi_app.db import sa_tables
+from fastapi_app import config
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import jwt
 from fastapi.security.utils import get_authorization_scheme_param
-from fastapi_app.db import inserts, queries
+from fastapi_app.db import async_inserts, async_queries
 from fastapi_app.tools.mails import send_mail
 
 

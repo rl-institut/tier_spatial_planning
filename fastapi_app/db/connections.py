@@ -3,10 +3,10 @@ from sqlalchemy import create_engine
 from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from fastapi_app.db.models import Base
+from fastapi_app.db.sa_tables import Base
 from sqlalchemy.exc import SQLAlchemyError
 from mysql.connector import DatabaseError, ProgrammingError, InterfaceError
-from fastapi_app.db.config import DB_USER_NAME, PW, DB_HOST, DB_PORT, DB_NAME
+from fastapi_app.config import DB_USER_NAME, PW, DB_HOST, DB_PORT, DB_NAME
 
 
 BASE_URL = 'mysql+package://{}:{}@{}:{}/{}'.format(DB_USER_NAME, PW, DB_HOST, DB_PORT, DB_NAME)

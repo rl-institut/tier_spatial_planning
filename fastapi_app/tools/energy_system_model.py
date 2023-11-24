@@ -5,7 +5,7 @@ import oemof.solph as solph
 from datetime import datetime, timedelta
 import pyomo.environ as po
 from fastapi_app.tools.general_optimizer_obj import Optimizer
-from fastapi_app.db import models
+from fastapi_app.db import sa_tables
 
 class EnergySystemOptimizer(Optimizer):
     """

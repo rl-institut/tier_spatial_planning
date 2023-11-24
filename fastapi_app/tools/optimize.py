@@ -4,8 +4,9 @@ import time
 from datetime import datetime, timedelta
 import pandas as pd
 from pyomo import environ as po
-from fastapi_app.db import queries, sync_queries, sync_inserts, queries_demand, config
-import fastapi_app.db.models as models
+from fastapi_app.db import async_queries, sync_queries, sync_inserts, queries_demand
+from fastapi_app import config
+import fastapi_app.db.sa_tables as models
 from fastapi_app.tools.energy_system_model import EnergySystemOptimizer
 from fastapi_app.tools import energy_system_model
 from fastapi_app.tools.error_logger import logger as error_logger

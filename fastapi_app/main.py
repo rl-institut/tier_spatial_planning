@@ -7,14 +7,14 @@ import random
 from captcha.image import ImageCaptcha
 import pandas as pd
 from jose import jwt
-import fastapi_app.db.schema
+import fastapi_app.db.pydantic_schema
 from celery_worker import worker
 import os
 from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 from typing import Dict
 import fastapi_app.tools.boundary_identification as bi
-import fastapi_app.db.models as models
+import fastapi_app.db.sa_tables as models
 from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.responses import RedirectResponse, FileResponse, JSONResponse, HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
@@ -22,9 +22,10 @@ from passlib.context import CryptContext
 from fastapi.staticfiles import StaticFiles
 from fastapi_app.tools.optimize import check_data_availability, optimize_grid, optimize_energy_system
 from fastapi_app.tools.account_helpers import Hasher, create_guid, is_valid_credentials, send_activation_link, activate_mail, \
-    authenticate_user, create_access_token, send_mail, create_example_user_account
+    authenticate_user, create_access_token, send_mail, create_default_user_account
 from fastapi_app.tools import account_helpers as accounts
-from fastapi_app.db import config, inserts, queries, sync_queries, sync_inserts
+from fastapi_app.db import async_inserts, async_queries, sync_queries, sync_inserts
+from fastapi_app import config
 from fastapi_app.tools.df_to_excel import df_to_xlsx
 import pyutilib.subprocess.GlobalData
 from fastapi_app.tools.error_logger import logger as error_logger
@@ -39,14 +40,9 @@ templates = Jinja2Templates(directory="fastapi_app/pages")
 
 @app.on_event("startup")
 async def startup_event():
-    if not sync_queries.check_if_weather_data_exists():
-        sync_inserts.dump_weather_data_into_db()
-    await create_example_user_account()
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    sync_inserts.remove_guid_from_init_flag()
+    if not config.DOCKERIZED and not sync_queries.check_if_weather_data_exists():
+        sync_inserts.update_weather_db()
+    await create_default_user_account()
 
 
 @app.get("/workshop_tasks")
@@ -1155,9 +1151,7 @@ async def waiting_for_results(request: Request, data: fastapi_app.db.schema.Task
     try:
         max_time = 3600 * 24 * 7
         t_wait = -2E-05 *  data.time + 0.0655 *  data.time + 5.7036 if data.time < 1800 else 60
-        # ToDo: set the time limit based on number of queued tasks and size of the model
         res = {'time': int(data.time) + t_wait, 'status': '', 'task_id': data.task_id, 'model': data.model}
-
         if len(data.task_id) > 12 and max_time > res['time']:
             if not data.time == 0:
                 await asyncio.sleep(t_wait)

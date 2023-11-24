@@ -9,7 +9,8 @@ from pvlib.location import Location
 from pvlib.modelchain import ModelChain
 from pvlib.temperature import TEMPERATURE_MODEL_PARAMETERS
 from feedinlib import era5
-from fastapi_app.db import queries, sync_queries, config
+from fastapi_app.db import async_queries, sync_queries
+from fastapi_app import config
 
 
 def create_cdsapirc_file():
