@@ -335,10 +335,5 @@
   </body>
   {% include '_scripts.html' %}
   <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=Promise"></script>
-<script>
-    function stopVideo() {
-        var video = document.getElementById("tutorialVideo");
-        video.pause();
-    }
-</script>
+  <script src="{{ url_for('static', path='js/grid_design.js') }}"></script>
 </html>

@@ -1,4 +1,21 @@
-
+function plot() {
+    const urlParams = new URLSearchParams(window.location.search);
+    project_id = urlParams.get('project_id');
+    fetch('/get_plot_data/' + project_id)
+    .then(response => response.json())
+    .then(data => {
+        plot_bar_chart(data.optimal_capacities);
+        plot_lcoe_pie(data.lcoe_breakdown);
+        plot_sankey(data.sankey_data);
+        plot_duration_curves(data.duration_curve);
+        plot_co2_emissions(data.emissions);
+        plot_energy_flows(data.energy_flow);
+        plot_demand_coverage(data.demand_coverage);
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+    }
 
 function db_links_to_js(project_id) {
   const url = "db_links_to_js/" + project_id;
@@ -12,23 +29,8 @@ function db_links_to_js(project_id) {
       }
     })
     .then((links) => {
-      // push links to the map
-      removeLinksFromMap(map);
-      for (let index = 0; index < Object.keys(links.link_type).length; index++) {
-        var color = links.link_type[index] === "distribution" ? "rgb(255, 99, 71)" : "rgb(0, 165, 114)";
-        var weight = links.link_type[index] === "distribution" ? 3 : 2;
-        var opacity = links.link_type[index] === "distribution" ? 1 : 1;
-        drawLinkOnMap(
-          links.lat_from[index],
-          links.lon_from[index],
-          links.lat_to[index],
-          links.lon_to[index],
-          color,
-          map,
-          weight,
-          opacity
-        );
-      }
+        removeLinksFromMap(map);
+        put_links_on_map(links)
     })
     .catch((error) => {
       console.error("Error fetching data:", error);
@@ -668,7 +670,7 @@ async function save_project_setup(project_id, href) {
             'project_description': projectDescription.value.trim(),
             'interest_rate': interestRate.value,
             'project_lifetime': projectLifetime.value,
-            'start_date': startDate.value,
+            'start_date': "2022-01-01",
             'temporal_resolution': 1,
             'n_days': nDays.value,
         }
@@ -1283,34 +1285,6 @@ function deactivate_video_tutorial() {
   fetch("/deactivate_video_tutorial/")
 }
 
-function redirect(url) {
-    window.location.href = url;
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-  var tooltipTriggerList = [].slice.call(document.querySelectorAll('.icon[data-bs-toggle="tooltip"]'));
-  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-    return new bootstrap.Tooltip(tooltipTriggerEl, {
-      trigger: 'hover click'
-    });
-  });
-});
-
-
-function show_modal_example_model() {
-    // Select the table by its ID 'projectTable'
-    var table = document.getElementById('projectTable');
-
-    // The table rows, excluding the header
-    var rows = table.querySelectorAll('tr:not(:first-child)');
-
-    // If there are no rows (excluding the header), it means there are no projects
-    if (rows.length == 1 && rows[0].innerText.includes("You do not yet have any saved projects")) {
-        document.getElementById('projectExample').style.cssText = "display: block !important;";
-    }
-}
-
-
 function copyProject(url) {
     fetch(url)
     .then(response => response.json())
@@ -1327,19 +1301,12 @@ function copyProject(url) {
     });
 }
 
-function change_shs_box_visibility() {
-    if (document.getElementById("selectShs").checked) {
-        document.getElementById('selectShsBox').classList.remove('box--not-selected');
-        document.getElementById('shs_max_grid_cost').disabled = false;
-        document.getElementById('lblShsLifetime').classList.remove('disabled');
-        document.getElementById('shsLifetimeUnit').classList.remove('disabled');
-                if (document.getElementById('shs_max_grid_cost').value === '') {
-            document.getElementById('shs_max_grid_cost').value = '0.6';
-        }
-    } else {
-        document.getElementById('selectShsBox').classList.add('box--not-selected');
-        document.getElementById('shs_max_grid_cost').disabled = true;
-        document.getElementById('lblShsLifetime').classList.add('disabled');
-        document.getElementById('shsLifetimeUnit').classList.add('disabled');
-    }
-}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('.icon[data-bs-toggle="tooltip"]'));
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl, {
+      trigger: 'hover click'
+    });
+  });
+});
