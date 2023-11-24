@@ -158,6 +158,23 @@ function removeLinksFromMap(map) {
   polygonCoordinates.length = 0;
 }
 
+function put_links_on_map(links) {
+      for (let index = 0; index < Object.keys(links.link_type).length; index++) {
+        var color = links.link_type[index] === "distribution" ? "rgb(255, 99, 71)" : "rgb(0, 165, 114)";
+        var weight = links.link_type[index] === "distribution" ? 3 : 2;
+        var opacity = links.link_type[index] === "distribution" ? 1 : 1;
+        drawLinkOnMap(
+          links.lat_from[index],
+          links.lon_from[index],
+          links.lat_to[index],
+          links.lon_to[index],
+          color,
+          map,
+          weight,
+          opacity
+        );
+      }
+}
 
 function markerOnClick(e)
 { if (is_active) {
