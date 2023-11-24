@@ -41,7 +41,8 @@ templates = Jinja2Templates(directory="fastapi_app/pages")
 @app.on_event("startup")
 async def startup_event():
     if not config.DOCKERIZED and not sync_queries.check_if_weather_data_exists():
-        sync_inserts.update_weather_db()
+        pass
+        # sync_inserts.update_weather_db()
     await create_default_user_account()
 
 

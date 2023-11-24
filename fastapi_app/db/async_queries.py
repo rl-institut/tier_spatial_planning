@@ -11,7 +11,6 @@ from fastapi_app.db import sa_tables
 from fastapi_app import config
 from fastapi_app.db.connections import get_async_session_maker, async_engine
 from fastapi_app.config import DB_RETRY_COUNT, RETRY_DELAY
-from fastapi_app.tools.solar_potential import get_closest_grid_point
 
 
 async def get_user_by_username(username):
@@ -122,22 +121,6 @@ async def _get_df(query, is_timeseries=True):
             df[col] = df[col].astype(float)
     if 'dt' in df.columns:
         df = df.set_index('dt')
-    return df
-
-
-async def get_weather_data(lat, lon, start, end):
-    index = pd.date_range(start, end, freq='1H')
-    ts_changed = False
-    if end > pd.to_datetime('2023-03-01'):
-        end = pd.to_datetime('2022-{}-{}'.format(start.month, start.day)) + (end - start)
-        start = pd.to_datetime('2022-{}-{}'.format(start.month, start.day))
-        ts_changed = True
-    model = sa_tables.WeatherData
-    closest_lat, closest_lon = get_closest_grid_point(lat, lon)
-    query = select(model).where(model.lat == closest_lat, model.lon == closest_lon, model.dt >= start, model.dt <= end)
-    df = await _get_df(query, is_timeseries=True)
-    if ts_changed:
-        df.index = index
     return df
 
 
