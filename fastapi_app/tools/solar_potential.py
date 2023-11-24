@@ -1,3 +1,4 @@
+import warnings
 import os
 import pandas as pd
 import numpy as np
@@ -24,7 +25,9 @@ def create_cdsapirc_file():
 
 
 def download_weather_data(start_date, end_date, country='Nigeria', target_file='file'):
-    world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
     country_shape = world[world['name'] == country]
     geopoints = country_shape.geometry.iloc[0].bounds
     lat = [geopoints[0], geopoints[2]]
@@ -46,15 +49,8 @@ def prepare_weather_data(data_xr):
     df = df.reset_index()
     df = df.rename(columns={'time': 'dt', 'latitude': 'lat', 'longitude': 'lon'})
     df = df.set_index(['dt'])
-    def get_all_locations(ds):
-        lat = ds.variables['latitude'][:]
-        lon = ds.variables['longitude'][:]
-        lon_grid, lat_grid = np.meshgrid(lat, lon)
-        grid_points = np.stack((lat_grid, lon_grid), axis=-1)
-        grid_points = grid_points.reshape(-1, 2)
-        return grid_points
     df['dni'] = np.nan
-    grid_points = get_all_locations(data_xr)
+    grid_points = retrieve_grid_points(data_xr)
     for lon, lat in grid_points:
         mask = (df['lat'] == lat) & (df['lon'] == lon)
         tmp_df = df.loc[mask]
@@ -67,18 +63,26 @@ def prepare_weather_data(data_xr):
     df = df.reset_index()
     df['dt'] = df['dt'] - pd.Timedelta('30min')
     df['dt'] = df['dt'].dt.tz_convert('UTC').dt.tz_localize(None)
-    df.iloc[:, 3:] = df.iloc[:, 3:] + 0.0000001
-    df.iloc[:, 3:] = df.iloc[:, 3:].round(1)
+    df.iloc[:, 3:] = (df.iloc[:, 3:] + 0.0000001).round(1)
     df.loc[:, 'lon'] = df.loc[:, 'lon'].round(3)
     df.loc[:, 'lat'] = df.loc[:, 'lat'].round(7)
     df.iloc[:, 1:] = df.iloc[:, 1:].astype(str)
     return df
 
 
+def retrieve_grid_points(ds):
+    lat = ds.variables['latitude'][:]
+    lon = ds.variables['longitude'][:]
+    lon_grid, lat_grid = np.meshgrid(lat, lon)
+    grid_points = np.stack((lat_grid, lon_grid), axis=-1)
+    grid_points = grid_points.reshape(-1, 2)
+    return grid_points
+
 
 async def get_dc_feed_in(lat, lon, start, end):
     weather_df = await queries.get_weather_data(lat, lon, start, end)
     return _get_dc_feed_in(lat, lon, weather_df)
+
 
 def get_dc_feed_in_sync_db_query(lat, lon, start, end):
     weather_df = sync_queries.get_weather_data(lat, lon, start, end)

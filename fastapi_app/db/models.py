@@ -332,18 +332,3 @@ class WeatherData(Base):
     ghi = Column(Numeric(6, 2))
     dni = Column(Numeric(6, 2))
     dhi = Column(Numeric(6, 2))
-
-
-class InitFlag(Base):
-
-    @staticmethod
-    def __name__():
-        return 'InitFlag'
-
-    id = sa.Column(SMALLINT, primary_key=True, autoincrement=True)
-    initialized = sa.Column(TINYINT(unsigned=True), default=0)
-    guid = sa.Column(sa.String(45), nullable=True)
-
-    def __repr__(self):
-        return f"<InitFlag(guid='{self.guid}', initialized={self.initialized})>"
-

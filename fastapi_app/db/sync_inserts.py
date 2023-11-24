@@ -1,25 +1,20 @@
-import warnings
+import time
 import pandas as pd
-import numpy as np
 import calendar
 import os
 from sqlalchemy import delete, text
 from sqlalchemy.exc import OperationalError
-import xarray as xr
-import pvlib
-from feedinlib import era5
 from fastapi_app.db import models
 from fastapi_app.db.db_con import get_sync_session_maker, sync_engine
 from fastapi_app.db.sync_queries import get_df, get_model_instance, check_if_weather_data_exists
 from fastapi_app.db.inserts import df_2_sql
-from fastapi_app.db.models import Base
-from fastapi_app.db import config
+from fastapi_app.db.config import DB_RETRY_COUNT, RETRY_DELAY
 from fastapi_app.tools.solar_potential import download_weather_data, prepare_weather_data
 
 
 def merge_model(model):
     new_engine = False
-    for i in range(config.DB_RETRY_COUNT):
+    for i in range(DB_RETRY_COUNT):
         try:
             with get_sync_session_maker(sync_engine, new_engine) as session:
                 session.merge(model)
@@ -32,14 +27,15 @@ def merge_model(model):
             elif i < DB_RETRY_COUNT - 1:  # Don't wait after the last try
                 time.sleep(RETRY_DELAY)
             else:
-                raise e
                 print(f"Failed to merge and commit after {DB_RETRY_COUNT} retries")
+                raise e
+
 
 
 def execute_stmt(stmt):
     stmt = text(stmt) if isinstance(stmt, str) else stmt
     new_engine = False
-    for i in range(config.DB_RETRY_COUNT):
+    for i in range(DB_RETRY_COUNT):
         try:
             with get_sync_session_maker(sync_engine, new_engine) as session:
                 session.execute(stmt)
@@ -52,8 +48,9 @@ def execute_stmt(stmt):
             elif i < DB_RETRY_COUNT - 1:  # Don't wait after the last try
                 time.sleep(RETRY_DELAY)
             else:
-                raise e
                 print(f"Failed to merge and commit after {DB_RETRY_COUNT} retries")
+                raise e
+
 
 
 def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, project_id, add=True, replace=True):
@@ -152,7 +149,7 @@ def insert_results_df(df, user_id, project_id):
         _insert_df('results', df, if_exists='update')
 
 
-def insert_df(model_class, df, user_id=None, project_id=None, ts=True):
+def insert_df(model_class, df, user_id=None, project_id=None):
     if user_id is not None and project_id is not None:
         user_id, project_id = int(user_id), int(project_id)
     df = df.dropna(how='all', axis=0)
@@ -166,50 +163,9 @@ def insert_df(model_class, df, user_id=None, project_id=None, ts=True):
             df = df.reset_index()
         _insert_df(model_class.__name__.lower(), df, if_exists='update')
 
-def _from_netcdf4_file(file_name):
-    if not os.path.exists(file_name):
-        print(f"\nnetcdf4 file not found: {file_name}\n")
-        return  False# Exit the function if file does not exist
-    ds = xr.open_dataset(file_name, engine='netcdf4')
-    df = era5.format_pvlib(ds)
-    df = df.reset_index()
-    df = df.rename(columns={'time': 'dt', 'latitude': 'lat', 'longitude': 'lon'})
-    df = df.set_index(['dt'])
-    def get_all_locations(ds):
-        lat = ds.variables['latitude'][:]
-        lon = ds.variables['longitude'][:]
-        lon_grid, lat_grid = np.meshgrid(lat, lon)
-        grid_points = np.stack((lat_grid, lon_grid), axis=-1)
-        grid_points = grid_points.reshape(-1, 2)
-        return grid_points
-    df['dni'] = np.nan
-    grid_points = get_all_locations(ds)
-    for lon, lat in grid_points:
-        mask = (df['lat'] == lat) & (df['lon'] == lon)
-        tmp_df = df.loc[mask]
-        solar_position = pvlib.solarposition.get_solarposition(time=tmp_df.index,
-                                                               latitude=lat,
-                                                               longitude=lon)
-        df.loc[mask, 'dni'] = pvlib.irradiance.dni(ghi=tmp_df['ghi'],
-                                                   dhi=tmp_df['dhi'],
-                                                   zenith=solar_position['apparent_zenith']).fillna(0)
-    df = df.reset_index()
-    df['dt'] = df['dt'] - pd.Timedelta('30min')
-    df['dt'] = df['dt'].dt.tz_convert('UTC').dt.tz_localize(None)
-    df.iloc[:, 3:] = df.iloc[:, 3:] + 0.0000001
-    df.iloc[:, 3:] = df.iloc[:, 3:].round(1)
-    df.loc[:, 'lon'] = df.loc[:, 'lon'].round(3)
-    df.loc[:, 'lat'] = df.loc[:, 'lat'].round(7)
-    df.iloc[:, 1:] = df.iloc[:, 1:].astype(str)
-    insert_df(models.WeatherData, df)
-    return True
 
-
-def _db_sql_dump_import_weather_data():
-    file_path = 'fastapi_app/data/weather/weatherdata.sql'
-    print('\nDumping weather data into database. \n'
-          'This usually takes a few minutes...\n'
-          'Please wait and do not interrupt the process.\n')
+def db_sql_dump_import(file_path):
+    print('\nImporting sql dump file \n')
     try:
         if os.path.exists(file_path):
             with open(file_path, 'r') as file:
@@ -224,10 +180,6 @@ def _db_sql_dump_import_weather_data():
                         command = ""
             for cmd in sql_commands:
                 if cmd.strip():
-                    if "DROP TABLE" in cmd:
-                        continue
-                    if "CREATE TABLE" in cmd and "IF NOT EXISTS" not in cmd:
-                        cmd = cmd.replace("CREATE TABLE", "CREATE TABLE IF NOT EXISTS")
                     stmt = text(cmd)
                     execute_stmt(stmt)  # Execute each statement
             print("\nAll SQL commands executed successfully.\n")
@@ -237,47 +189,19 @@ def _db_sql_dump_import_weather_data():
         return False
 
 
-def download_and_insert_era5():
-    last_year = (pd.Timestamp.now() + pd.Timedelta(24 * 14, unit='H')).year - 1
+def update_weather_db(country='Nigeria', year=None):
+    if year is not None and year >= (pd.Timestamp.now() + pd.Timedelta(24 * 7, unit='H')).year:
+        raise Exception("This function excepts available weather data for a entire year, "
+                        "but for {} that data is not yet available".format(year))
+    year = (pd.Timestamp.now() + pd.Timedelta(24 * 14, unit='H')).year - 1 if year is None else int(year)
     for month in range(1, 13, 3):  # Increment by 3
-        print(f'Period starting {month} of 12 is being imported.')
-        start_date = pd.Timestamp(year=last_year, month=month, day=1)
+        start_date = pd.Timestamp(year=year, month=month, day=1) - pd.Timedelta(25, unit='H')
         end_month = month + 2  # Third month in the interval
         end_month = 12 if end_month > 12 else end_month  # Ensure it does not exceed December
-        last_day_of_end_month = calendar.monthrange(last_year, end_month)[1]
-        end_date = pd.Timestamp(year=last_year, month=end_month, day=last_day_of_end_month)
+        last_day_of_end_month = calendar.monthrange(year, end_month)[1]
+        end_date = pd.Timestamp(year=year, month=end_month, day=last_day_of_end_month) + pd.Timedelta(25, unit='H')
         file_name = 'cfd_weather_data_{}.nc'.format(start_date.strftime('%Y-%m'))
-        try:
-            data_xr = download_weather_data(start_date, end_date, country='Nigeria', target_file=file_name).copy()
-            df = prepare_weather_data(data_xr)
-            insert_df(models.WeatherData, df)
-            print(
-                f"Data for period {start_date.strftime('%Y-%m')} to {end_date.strftime('%Y-%m')} imported successfully")
-        except Exception as e:
-            print("\n{}\n".format(e))
-            warnings.warn(str(e), category=UserWarning)
+        data_xr = download_weather_data(start_date, end_date, country=country, target_file=file_name).copy()
+        df = prepare_weather_data(data_xr)
+        insert_df(models.WeatherData, df)
 
-
-def dump_weather_data_into_db():
-    with get_sync_session_maker(sync_engine, False) as session:
-        init_flag = session.query(models.InitFlag).first()
-    if init_flag.initialized == 0 and init_flag.guid == config.INSTANCE_GUID:
-        if os.path.exists('fastapi_app/data/weather/weatherdata.sql'):
-            ans = _db_sql_dump_import_weather_data()
-            if ans is False:
-                for table in Base.metadata.sorted_tables:
-                    if table.name == 'weatherdata':
-                        table.create(bind=sync_engine, checkfirst=True)
-                download_and_insert_era5()
-    if check_if_weather_data_exists():
-        with get_sync_session_maker(sync_engine, False) as session:
-            init_flag.initialized = 1
-            init_flag.guid = None
-            session.commit()
-
-
-def remove_guid_from_init_flag():
-    with get_sync_session_maker(sync_engine, False) as session:
-        init_flag = session.query(models.InitFlag).first()
-        init_flag.guid = None
-        session.commit()
