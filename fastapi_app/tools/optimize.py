@@ -7,11 +7,11 @@ from pyomo import environ as po
 from fastapi_app.db import async_queries, sync_queries, sync_inserts, queries_demand
 from fastapi_app import config
 import fastapi_app.db.sa_tables as models
-from fastapi_app.tools.energy_system_model import EnergySystemOptimizer
-from fastapi_app.tools import energy_system_model
+from fastapi_app.tools.supply_optimizer import EnergySystemOptimizer
+from fastapi_app.tools import supply_optimizer
 from fastapi_app.tools.error_logger import logger as error_logger
 from fastapi_app.tools.grid_obj import Grid
-from fastapi_app.tools.grid_model import GridOptimizer
+from fastapi_app.tools.grid_optimizer import GridOptimizer
 from fastapi_app.tools.mail import send_mail
 from fastapi_app.tools.solar_potential import get_dc_feed_in_sync_db_query
 

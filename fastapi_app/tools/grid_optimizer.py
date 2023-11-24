@@ -4,10 +4,10 @@ import pandas as pd
 from k_means_constrained import KMeansConstrained
 from scipy.sparse.csgraph import minimum_spanning_tree
 from fastapi_app.tools.grid_obj import Grid
-from fastapi_app.tools.general_optimizer_obj import Optimizer
+from fastapi_app.tools.base_optimizer import BaseOptimizer
 
 
-class GridOptimizer(Optimizer):
+class GridOptimizer(BaseOptimizer):
     """
     This class includes:
         - methods for optimizing the "grid" object
@@ -30,9 +30,9 @@ class GridOptimizer(Optimizer):
     def calc_epc(self, capex_column, lifetime_column, df):
         capex_0 = df.loc[0, capex_column]
         component_lifetime = df.loc[0, lifetime_column] if lifetime_column != "project" else self.project_lifetime
-        epc = (self.crf * Optimizer.capex_multi_investment(self,
-                                                            capex_0=capex_0,
-                                                            component_lifetime=component_lifetime)) * self.n_days / 365
+        epc = (self.crf * BaseOptimizer.capex_multi_investment(self,
+                                                               capex_0=capex_0,
+                                                               component_lifetime=component_lifetime)) * self.n_days / 365
         return epc
 
     # ------------ CONNECT NODES USING TREE-STAR SHAPE ------------#

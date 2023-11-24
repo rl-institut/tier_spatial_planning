@@ -1,4 +1,4 @@
-class Optimizer:
+class BaseOptimizer:
     """
     This is a general parent class for both grid and energy system optimizers
     """

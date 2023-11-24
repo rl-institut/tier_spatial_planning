@@ -4,12 +4,12 @@ import pandas as pd
 import oemof.solph as solph
 from datetime import datetime, timedelta
 import pyomo.environ as po
-from fastapi_app.tools.general_optimizer_obj import Optimizer
+from fastapi_app.tools.base_optimizer import BaseOptimizer
 from fastapi_app.db import sa_tables
 
 
 
-class EnergySystemOptimizer(Optimizer):
+class EnergySystemOptimizer(BaseOptimizer):
     """
     This class includes:
         - methods for optimizing the "energy system" object
@@ -21,81 +21,21 @@ class EnergySystemOptimizer(Optimizer):
     """
 
     def __init__(
-        self,
-        start_date,
-        n_days,
-        project_lifetime,
-        wacc,
-        tax,
-        solar_potential,
-        demand,
-        solver="cbc",
-        pv={
-            "settings": {"is_selected": True,
-                         "design": True},
-            "parameters": {
-                "nominal_capacity": None,
-                "capex": 1000,
-                "opex": 20,
-                "lifetime": 20,
-            },
-        },
-        diesel_genset={
-            "settings": {"is_selected": True, "design": True, "offset": False},
-            "parameters": {
-                "nominal_capacity": None,
-                "capex": 1000,
-                "opex": 20,
-                "variable_cost": 0.045,
-                "lifetime": 8,
-                "fuel_cost": 1.214,
-                "fuel_lhv": 11.83,
-                "min_load": 0.3,
-                "max_efficiency": 0.3,
-            },
-        },
-        battery={
-            "settings": {"is_selected": True, "design": True},
-            "parameters": {
-                "nominal_capacity": None,
-                "capex": 350,
-                "opex": 7,
-                "lifetime": 6,
-                "soc_min": 0.3,
-                "soc_max": 1,
-                "c_rate_in": 1,
-                "c_rate_out": 0.5,
-                "efficiency": 0.8,
-            },
-        },
-        inverter={
-            "settings": {"is_selected": True, "design": True},
-            "parameters": {
-                "nominal_capacity": None,
-                "capex": 400,
-                "opex": 8,
-                "lifetime": 10,
-                "efficiency": 0.98,
-            },
-        },
-        rectifier={
-            "settings": {"is_selected": True, "design": True},
-            "parameters": {
-                "nominal_capacity": None,
-                "capex": 400,
-                "opex": 8,
-                "lifetime": 10,
-                "efficiency": 0.98,
-            },
-        },
-        shortage={
-            "settings": {"is_selected": True},
-            "parameters": {
-                "max_total": 10,
-                "max_timestep": 50,
-                "penalty_cost": 0.3,
-            },
-        },
+            self,
+            start_date,
+            n_days,
+            project_lifetime,
+            wacc,
+            tax,
+            solar_potential,
+            demand,
+            solver,
+            pv,
+            diesel_genset,
+            battery,
+            inverter,
+            rectifier,
+            shortage,
     ):
         """
         Initialize the grid optimizer object
@@ -131,7 +71,6 @@ class EnergySystemOptimizer(Optimizer):
         self.end_datetime = self.start_datetime + timedelta(days=int(self.n_days))
 
     def import_data(self):
-        # ToDo create correct timestamps
         self.demand.index = pd.date_range(start=self.start_datetime, periods=len(self.demand.index), freq='H')
         self.demand = self.demand.loc[self.start_datetime : self.end_datetime]['Demand']
         self.solar_potential_peak = self.solar_potential.max()
