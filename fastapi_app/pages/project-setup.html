@@ -127,11 +127,5 @@
   {% include '_footer.html' %}
   </body>
     {% include '_scripts.html' %}
-      <script>
-      var currentDate = new Date();
-      var Year = currentDate.getFullYear();
-      var firstDay = new Date(Date.UTC(Year, 0, 1));
-      var startDateInput = document.getElementById("startDate");
-      startDateInput.value = firstDay.toISOString().slice(0,10);
-    </script>
+    <script src="{{ url_for('static', path='js/project_setup.js') }}"></script>
 </html>
