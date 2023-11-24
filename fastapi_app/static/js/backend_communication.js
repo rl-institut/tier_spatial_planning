@@ -1325,3 +1325,58 @@ fetch("/get_captcha")
     img3.src = "data:image/jpeg;base64," + data.img;
     hashedCaptcha = data.hashed_captcha;
   });}
+
+
+
+async function sendMail() {
+  // Getting values from the HTML elements
+  const from_address = document.getElementById("from_address").value;
+  const subject = document.getElementById("subject").value;
+  const body = document.getElementById("body").value;
+
+  function handleError() {
+      const responseMsgElement = document.getElementById("responseMsg");
+      responseMsgElement.innerText = "Something went wrong";
+      responseMsgElement.style.color = "red";
+    }
+
+  // Creating the mail object
+  const mail = {
+    from_address: from_address,
+    subject: subject,
+    body: body
+  };
+
+  // Reference to the responseMsg element
+  const responseMsgElement = document.getElementById("responseMsg");
+
+  // Sending the mail object to the FastAPI route
+  try {
+    const response = await fetch("/send_mail_route/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(mail)
+    });
+
+    if (response.status === 200) {
+      const result = await response.json();
+      if (result.message === "Success") {
+        responseMsgElement.innerText = "Email successfully sent";
+        responseMsgElement.style.color = "green";
+
+        // Redirect to the base URL after 1.5 seconds
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 2500);
+      } else {
+        handleError();
+      }
+    } else {
+      handleError();
+    }
+  } catch (error) {
+    handleError();
+  }
+}
