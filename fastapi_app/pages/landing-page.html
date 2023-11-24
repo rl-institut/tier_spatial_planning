@@ -24,7 +24,7 @@
 </style>
 
   </head>
-  <body onload="show_cookie_consent(); show_user_email_in_navbar();">
+  <body onload="show_cookie_consent(); show_user_email_in_navbar(); get_captcha();">
   {% include '_navbar_homepage.html' %}
     <main>
 
@@ -419,43 +419,5 @@ Leveraging the open-source modeling framework OEMOF and the high-efficiency Guro
   </body>
 {% include '_scripts.html' %}
 <script src="https://unpkg.com/scrollreveal"></script>
-<script>
-const img = document.getElementById("captcha_img");
-const img2 = document.getElementById("captcha_img2");
-const img3 = document.getElementById("captcha_img3");
-let hashedCaptcha;
-function get_captcha(){
-fetch("/get_captcha")
-  .then(response => response.json())
-  .then(data => {
-    img.src = "data:image/jpeg;base64," + data.img;
-    img2.src = "data:image/jpeg;base64," + data.img;
-    img3.src = "data:image/jpeg;base64," + data.img;
-    hashedCaptcha = data.hashed_captcha;
-  });}
-get_captcha();
-document.getElementById('myForm').addEventListener('submit', function(e) {
-  e.preventDefault();
-  document.getElementById('myButton').click();
-});
-$(window).scroll(function() {
-    var scrollTop = $(this).scrollTop();
-    $('.parallax').css('transform', 'translateY(' + -(scrollTop * 0.2) + 'px)');
-});
-
-  ScrollReveal().reveal('.col-md-6:nth-child(odd):not(.no-reveal)', {
-    origin: 'left',
-    distance: '0px',
-    duration: 1000,
-    reset: false
-  });
-
-  ScrollReveal().reveal('.col-md-6:nth-child(even):not(.no-reveal)', {
-    origin: 'right',
-    distance: '0px',
-    duration: 1000,
-    reset: false
-  });
-</script>
-
+<script src="{{ url_for('static', path='js/landing_page.js') }}"></script>
 </html>

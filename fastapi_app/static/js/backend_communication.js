@@ -1310,3 +1310,18 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
+
+
+const img = document.getElementById("captcha_img");
+const img2 = document.getElementById("captcha_img2");
+const img3 = document.getElementById("captcha_img3");
+let hashedCaptcha;
+function get_captcha(){
+fetch("/get_captcha")
+  .then(response => response.json())
+  .then(data => {
+    img.src = "data:image/jpeg;base64," + data.img;
+    img2.src = "data:image/jpeg;base64," + data.img;
+    img3.src = "data:image/jpeg;base64," + data.img;
+    hashedCaptcha = data.hashed_captcha;
+  });}
