@@ -59,7 +59,7 @@ def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, proje
         nodes = inlet
         df = nodes.round(decimals=6)
         if add and replace:
-            nodes_existing = get_model_instance(models.Nodes, user_id, project_id)
+            nodes_existing = get_model_instance(sa_tables.Nodes, user_id, project_id)
             if nodes_existing is not None:
                 df_existing = pd.read_json(nodes_existing.data)
             else:
@@ -74,10 +74,10 @@ def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, proje
         if not df.empty:
             df["node_type"] = df["node_type"].astype(str)
             if df["node_type"].str.contains("consumer").sum() > 0:
-                df_links = get_df(models.Links, user_id, project_id)
+                df_links = get_df(sa_tables.Links, user_id, project_id)
                 if not df_links.empty:
                     df_links.drop(labels=df_links.index, axis=0, inplace=True)
-                    links = models.Links()
+                    links = sa_tables.Links()
                     links.id = user_id
                     links.project_id = project_id
                     links.data = df_links.reset_index(drop=True).to_json()
@@ -89,7 +89,7 @@ def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, proje
             if len(df_total.index) != 0:
                 if 'parent' in df_total.columns:
                     df_total['parent'] = df_total['parent'].where(df_total['parent'] != 'unknown', None)
-                nodes = models.Nodes()
+                nodes = sa_tables.Nodes()
                 nodes.id = user_id
                 nodes.project_id = project_id
                 nodes.data = df_total.reset_index(drop=True).to_json()
@@ -104,7 +104,7 @@ def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, proje
         df.lon_to = df.lon_to.map(lambda x: "%.6f" % x)
         # adding the links to the existing csv file
         if len(df.index) != 0:
-            links = models.Links()
+            links = sa_tables.Links()
             links.id = user_id
             links.project_id = project_id
             links.data = df.reset_index(drop=True).to_json()
@@ -142,7 +142,7 @@ def insert_results_df(df, user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     df = df.dropna(how='all', axis=0)
     if not df.empty:
-        model_class = models.Results
+        model_class = sa_tables.Results
         remove(model_class, user_id, project_id)
         df['id'] = int(user_id)
         df['project_id'] = int(project_id)
@@ -203,5 +203,5 @@ def update_weather_db(country='Nigeria', year=None):
         file_name = 'cfd_weather_data_{}.nc'.format(start_date.strftime('%Y-%m'))
         data_xr = download_weather_data(start_date, end_date, country=country, target_file=file_name).copy()
         df = prepare_weather_data(data_xr)
-        insert_df(models.WeatherData, df)
+        insert_df(sa_tables.WeatherData, df)
 

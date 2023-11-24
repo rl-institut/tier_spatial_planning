@@ -51,7 +51,7 @@ async def update_model_by_user_id(model):
 
 async def insert_energysystemdesign_df(df, user_id, project_id, replace=True):
     user_id, project_id = int(user_id), int(project_id)
-    model_class = models.EnergySystemDesign
+    model_class = sa_tables.EnergySystemDesign
     if replace:
         await remove(model_class, user_id, project_id)
     df['id'] = int(user_id)
@@ -63,7 +63,7 @@ async def insert_results_df(df, user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     df = df.dropna(how='all', axis=0)
     if not df.empty:
-        model_class = models.Results
+        model_class = sa_tables.Results
         await remove(model_class, user_id, project_id)
         df['id'] = int(user_id)
         df['project_id'] = int(project_id)
@@ -92,26 +92,26 @@ async def remove(model_class, user_id, project_id):
 
 
 async def remove_account(user_email, user_id):
-    for model_class in [models.User,
-                        models.ProjectSetup,
-                        models.GridDesign,
-                        models.EnergySystemDesign,
-                        models.Nodes,
-                        models.Links,
-                        models.Results,
-                        models.DemandCoverage,
-                        models.Demand,
-                        models.EnergyFlow,
-                        models.Emissions,
-                        models.DurationCurve]:
+    for model_class in [sa_tables.User,
+                        sa_tables.ProjectSetup,
+                        sa_tables.GridDesign,
+                        sa_tables.EnergySystemDesign,
+                        sa_tables.Nodes,
+                        sa_tables.Links,
+                        sa_tables.Results,
+                        sa_tables.DemandCoverage,
+                        sa_tables.Demand,
+                        sa_tables.EnergyFlow,
+                        sa_tables.Emissions,
+                        sa_tables.DurationCurve]:
         stmt = delete(model_class).where(model_class.id == user_id)
         await execute_stmt(stmt)
 
 
 async def remove_project(user_id, project_id):
-    for model_class in [models.Nodes, models.Links, models.Results, models.DemandCoverage, models.EnergyFlow,
-                        models.Emissions, models.DurationCurve, models.ProjectSetup, models.EnergySystemDesign,
-                        models.GridDesign]:
+    for model_class in [sa_tables.Nodes, sa_tables.Links, sa_tables.Results, sa_tables.DemandCoverage, sa_tables.EnergyFlow,
+                        sa_tables.Emissions, sa_tables.DurationCurve, sa_tables.ProjectSetup, sa_tables.EnergySystemDesign,
+                        sa_tables.GridDesign]:
         await remove(model_class, user_id, project_id)
 
 
@@ -124,7 +124,7 @@ async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id,
         except ValueError:
             df = pd.DataFrame(nodes, index=[0]).round(decimals=6)
         if add and replace:
-            df_existing = await get_df(models.Nodes, user_id, project_id)
+            df_existing = await get_df(sa_tables.Nodes, user_id, project_id)
             if not df_existing.empty:
                 df_existing = df_existing[(df_existing["node_type"] != "pole") &
                                           (df_existing["node_type"] != "power-house")]
@@ -135,10 +135,10 @@ async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id,
         if not df.empty:
             df["node_type"] = df["node_type"].astype(str)
             if df["node_type"].str.contains("consumer").sum() > 0:
-                df_links = await get_df(models.Links, user_id, project_id)
+                df_links = await get_df(sa_tables.Links, user_id, project_id)
                 if not df_links.empty:
                     df_links.drop(labels=df_links.index, axis=0, inplace=True)
-                    links = models.Links()
+                    links = sa_tables.Links()
                     links.id = user_id
                     links.project_id = project_id
                     links.data = df_links.reset_index(drop=True).to_json()
@@ -150,7 +150,7 @@ async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id,
             if len(df_total.index) != 0:
                 if 'parent' in df_total.columns:
                     df_total['parent'] = df_total['parent'].where(df_total['parent'] != 'unknown', None)
-                nodes = models.Nodes()
+                nodes = sa_tables.Nodes()
                 nodes.id = user_id
                 nodes.project_id = project_id
                 nodes.data = df_total.reset_index(drop=True).to_json()
@@ -165,7 +165,7 @@ async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id,
         df.lon_to = df.lon_to.map(lambda x: "%.6f" % x)
         # adding the links to the existing csv file
         if len(df.index) != 0:
-            links = models.Links()
+            links = sa_tables.Links()
             links.id = user_id
             links.project_id = project_id
             links.data = df.reset_index(drop=True).to_json()
@@ -248,11 +248,11 @@ async def copy_project(user_id, project_id):
 
 
 async def _copy_project(user_from_id, user_to_id, project_from_id, project_to_id):
-    for model_class in [models.Nodes, models.Links, models.Results, models.DemandCoverage, models.EnergyFlow,
-                        models.Emissions, models.DurationCurve, models.ProjectSetup, models.EnergySystemDesign,
-                        models.GridDesign, models.Demand]:
+    for model_class in [sa_tables.Nodes, sa_tables.Links, sa_tables.Results, sa_tables.DemandCoverage, sa_tables.EnergyFlow,
+                        sa_tables.Emissions, sa_tables.DurationCurve, sa_tables.ProjectSetup, sa_tables.EnergySystemDesign,
+                        sa_tables.GridDesign, sa_tables.Demand]:
         model_instance = await get_model_instance(model_class, user_from_id, project_from_id, 'all')
-        if model_class == models.ProjectSetup:
+        if model_class == sa_tables.ProjectSetup:
             time_now = datetime.datetime.now()
             time_now \
                 = datetime.datetime(time_now.year, time_now.month, time_now.day, time_now.hour, time_now.minute)

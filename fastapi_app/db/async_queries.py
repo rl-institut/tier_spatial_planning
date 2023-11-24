@@ -14,26 +14,26 @@ from fastapi_app.config import DB_RETRY_COUNT, RETRY_DELAY
 
 
 async def get_user_by_username(username):
-    query =select(models.User).where(models.User.email == username)
+    query =select(sa_tables.User).where(sa_tables.User.email == username)
     user = await _execute_with_retry(query, which='first')
     return user
 
 async def get_user_by_id(user_id):
-    query =select(models.User).where(models.User.id == user_id)
+    query =select(sa_tables.User).where(sa_tables.User.id == user_id)
     user = await _execute_with_retry(query, which='first')
     return user
 
 
 async def get_user_by_guid(guid):
-    query =select(models.User).where(models.User.guid == guid)
+    query =select(sa_tables.User).where(sa_tables.User.guid == guid)
     user = await _execute_with_retry(query, which='first')
     return user
 
 
 async def get_max_project_id_of_user(user_id):
-    subqry = select(sa.func.max(models.ProjectSetup.project_id)).filter(models.ProjectSetup.id == user_id).as_scalar()
-    query = select(models.ProjectSetup).filter(models.ProjectSetup.id == user_id,
-                                               models.ProjectSetup.project_id == subqry)
+    subqry = select(sa.func.max(sa_tables.ProjectSetup.project_id)).filter(sa_tables.ProjectSetup.id == user_id).as_scalar()
+    query = select(sa_tables.ProjectSetup).filter(sa_tables.ProjectSetup.id == user_id,
+                                                  sa_tables.ProjectSetup.project_id == subqry)
     res = await _execute_with_retry(query, which='first')
     max_project_id = res.project_id if hasattr(res, 'project_id') else None
     return max_project_id
@@ -51,27 +51,27 @@ async def next_project_id_of_user(user_id):
 
 async def get_projects_of_user(user_id):
     user_id = int(user_id)
-    query = select(models.ProjectSetup).where(models.ProjectSetup.id == user_id)
+    query = select(sa_tables.ProjectSetup).where(sa_tables.ProjectSetup.id == user_id)
     projects = await _execute_with_retry(query, which='all')
     return projects
 
 
 async def get_project_setup_of_user(user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
-    query = select(models.ProjectSetup).where(models.ProjectSetup.id == user_id,
-                                              models.ProjectSetup.project_id == project_id)
+    query = select(sa_tables.ProjectSetup).where(sa_tables.ProjectSetup.id == user_id,
+                                                 sa_tables.ProjectSetup.project_id == project_id)
     project_setup = await _execute_with_retry(query, which='first')
     return project_setup
 
 
 async def get_energy_system_design(user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
-    query = select(models.EnergySystemDesign).where(models.EnergySystemDesign.id == user_id,
-                                                    models.EnergySystemDesign.project_id == project_id)
+    query = select(sa_tables.EnergySystemDesign).where(sa_tables.EnergySystemDesign.id == user_id,
+                                                       sa_tables.EnergySystemDesign.project_id == project_id)
     model_inst = await _execute_with_retry(query, which='first')
     df = model_inst.to_df()
     if df.empty:
-        df = models.Nodes().to_df().iloc[0:0]
+        df = sa_tables.Nodes().to_df().iloc[0:0]
     df = df.drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
     energy_system_design = flatten_dict.unflatten(df.to_dict('records')[0], splitter=make_splitter('__'))
     return energy_system_design
@@ -86,8 +86,8 @@ async def get_model_instance(model, user_id, project_id, which='first'):
 
 async def get_input_df(user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
-    project_setup = await get_df(models.ProjectSetup, user_id, project_id, is_timeseries=False)
-    grid_design = await get_df(models.GridDesign, user_id, project_id, is_timeseries=False)
+    project_setup = await get_df(sa_tables.ProjectSetup, user_id, project_id, is_timeseries=False)
+    grid_design = await get_df(sa_tables.GridDesign, user_id, project_id, is_timeseries=False)
     df = pd.concat([project_setup, grid_design], axis=1)
     return df
 
@@ -130,7 +130,7 @@ async def get_weather_data(lat, lon, start, end):
         end = pd.to_datetime('2022-{}-{}'.format(start.month, start.day)) + (end - start)
         start = pd.to_datetime('2022-{}-{}'.format(start.month, start.day))
         ts_changed = True
-    model = models.WeatherData
+    model = sa_tables.WeatherData
     lats = pd.Series([14.442, 14.192, 13.942, 13.692, 13.442, 13.192, 12.942, 12.692, 12.442,
                       12.192, 11.942, 11.692, 11.442, 11.192, 10.942, 10.692, 10.442, 10.192,
                       9.942, 9.692, 9.442, 9.192, 8.942, 8.692, 8.442, 8.192, 7.942,
@@ -160,13 +160,13 @@ async def _get_user_from_token(token):
     except JWTError:
         return None
     # if isinstance(db, scoped_session):
-    query = select(models.User).where(models.User.email == username)
+    query = select(sa_tables.User).where(sa_tables.User.email == username)
     user = await _execute_with_retry(query, which='first')
     return user
 
 
 async def get_user_from_task_id(task_id):
-    query = select(models.User).where(models.User.task_id == task_id)
+    query = select(sa_tables.User).where(sa_tables.User.task_id == task_id)
     user = await _execute_with_retry(query, which='first')
     return user
 
