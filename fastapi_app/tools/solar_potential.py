@@ -9,7 +9,7 @@ from pvlib.location import Location
 from pvlib.modelchain import ModelChain
 from pvlib.temperature import TEMPERATURE_MODEL_PARAMETERS
 from feedinlib import era5
-from fastapi_app.db import async_queries, sync_queries
+from fastapi_app.db import  sync_queries, async_queries
 from fastapi_app import config
 
 
@@ -81,7 +81,7 @@ def retrieve_grid_points(ds):
 
 
 async def get_dc_feed_in(lat, lon, start, end):
-    weather_df = await queries.get_weather_data(lat, lon, start, end)
+    weather_df = await async_queries.get_weather_data(lat, lon, start, end)
     return _get_dc_feed_in(lat, lon, weather_df)
 
 

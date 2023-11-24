@@ -2,7 +2,6 @@ import copy
 import math
 import numpy as np
 import pandas as pd
-from configparser import ConfigParser
 import os
 from pyproj import Proj
 from fastapi_app.tools.error_logger import logger as error_logger

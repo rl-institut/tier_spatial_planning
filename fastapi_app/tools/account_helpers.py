@@ -45,7 +45,7 @@ def is_valid_email(user):
 
 
 async def is_mail_unregistered(user):
-    if await queries.get_user_by_username(user.email) is None:
+    if await async_queries.get_user_by_username(user.email) is None:
         return True
     else:
         return False
@@ -73,11 +73,11 @@ def send_activation_link(mail, guid):
 
 
 async def activate_mail(guid):
-    user = await queries.get_user_by_guid(guid)
+    user = await async_queries.get_user_by_guid(guid)
     if user is not None:
         user.is_confirmed = True
         user.guid = ''
-        await inserts.merge_model(user)
+        await async_inserts.merge_model(user)
         send_email_with_activation_status(user)
 
 
@@ -91,7 +91,7 @@ def send_email_with_activation_status(user):
 
 
 async def authenticate_user(username: str, password: str):
-    user = await queries.get_user_by_username(username)
+    user = await async_queries.get_user_by_username(username)
     if user is None:
         del password
         return False, 'Incorrect username or password'
@@ -120,7 +120,7 @@ async def get_user_from_cookie(request):
     for i in range(2):
         token = request.cookies.get("access_token")
         scheme, param = get_authorization_scheme_param(token)
-        user = await queries._get_user_from_token(token=param)
+        user = await async_queries._get_user_from_token(token=param)
         if user is not None:
             return user
 
@@ -133,21 +133,21 @@ async def generate_captcha_image() -> Tuple[str, str]:
     return captcha_text, base64_image
 
 async def create_default_user_account():
-    if await queries.get_user_by_username('default_example') is None:
-        user = models.User(email='default_example',
+    if await async_queries.get_user_by_username('default_example') is None:
+        user = sa_tables.User(email='default_example',
                            hashed_password=Hasher.get_password_hash(config.EXAMPLE_USER_PW),
                            guid='',
                            is_confirmed=True,
                            is_active=False,
                            is_superuser=False)
-        await inserts.merge_model(user)
-        user = models.User(email='admin',
+        await async_inserts.merge_model(user)
+        user = sa_tables.User(email='admin',
                            hashed_password=Hasher.get_password_hash(config.PW),
                            guid='',
                            is_confirmed=True,
                            is_active=False,
                            is_superuser=True)
-        await inserts.merge_model(user)
+        await async_inserts.merge_model(user)
 
 
 if __name__ == '__main__':

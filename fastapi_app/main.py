@@ -59,11 +59,11 @@ async def exception_handler(request: Request, exc: Exception):
     try:
         user = await accounts.get_user_from_cookie(request)
         user_name = user.email
-        projects = await queries.get_projects_of_user(user.id)
+        projects = await async_queries.get_projects_of_user(user.id)
         for project in projects:
             if project.status == "in progress":
                 project.status = "failed"
-                await inserts.merge_model(project)
+                await async_inserts.merge_model(project)
                 break
     except:
         user_name = 'unknown username'
@@ -117,7 +117,7 @@ async def home(request: Request):
                                            'MAX_CONSUMER_ANONYMOUS': int(
                                                os.environ.get('MAX_CONSUMER_ANONYMOUS', 150))})
     else:
-        projects = await queries.get_projects_of_user(user.id)
+        projects = await async_queries.get_projects_of_user(user.id)
         for project in projects:
             project.created_at = project.created_at.date()
             project.updated_at = project.updated_at.date()
@@ -127,18 +127,18 @@ async def home(request: Request):
                 else:
                     status = 'success'
                 if status in ['success', 'failure', 'revoked']:
-                    project_setup = await queries.get_model_instance(models.ProjectSetup, user.id, user.project_id)
+                    project_setup = await async_queries.get_model_instance(models.ProjectSetup, user.id, user.project_id)
                     user.task_id = ''
                     user.project_id = None
-                    await inserts.update_model_by_user_id(user)
+                    await async_inserts.update_model_by_user_id(user)
                     if status == 'success':
                         project_setup.status = "finished"
                     else:
                         project_setup.status = status
-                    await inserts.merge_model(project_setup)
+                    await async_inserts.merge_model(project_setup)
                     user.task_id = ''
                     user.project_id = None
-                    await inserts.update_model_by_user_id(user)
+                    await async_inserts.update_model_by_user_id(user)
         return templates.TemplateResponse("user_projects.html", {"request": request,
                                                                  'projects': projects})
 
@@ -148,7 +148,7 @@ async def project_setup(request: Request):
     user = await accounts.get_user_from_cookie(request)
     project_id = request.query_params.get('project_id')
     if project_id is None:
-        project_id = await queries.next_project_id_of_user(user.id)
+        project_id = await async_queries.next_project_id_of_user(user.id)
     max_days = int(os.environ.get('MAX_DAYS', 365))
     return templates.TemplateResponse("project-setup.html", {"request": request,
                                                              'project_id': project_id,
@@ -194,7 +194,7 @@ async def activation_mail(guid: str, request: Request):
 @app.get("/reset_password", response_class=HTMLResponse)
 async def reset_password(guid, request: Request):
     if guid is not None:
-        user = await queries.get_user_by_guid(guid)
+        user = await async_queries.get_user_by_guid(guid)
         if user is not None:
             return templates.TemplateResponse("reset_password.html", {"request": request, 'guid': guid})
     return RedirectResponse('/')
@@ -205,12 +205,12 @@ async def reset_password(request: Request, form_data: Dict[str, str]):
     guid = form_data.get('guid')
     password = form_data.get('password')
     if guid is not None:
-        user = await queries.get_user_by_guid(guid)
+        user = await async_queries.get_user_by_guid(guid)
         if user is not None:
             if accounts.is_valid_password(password):
                 user.hashed_password = Hasher.get_password_hash(password)
                 user.guid = ''
-                await inserts.merge_model(user)
+                await async_inserts.merge_model(user)
                 res = 'Password changed successfully.'
                 validation = True
             else:
@@ -242,7 +242,7 @@ async def contact(request: Request):
 async def example_model(request: Request):
     user = await accounts.get_user_from_cookie(request)
     if user is not None:
-        await inserts.insert_example_project(user.id)
+        await async_inserts.insert_example_project(user.id)
     return JSONResponse(status_code=200, content={'success': True})
 
 
@@ -251,7 +251,7 @@ async def copy_project(request: Request):
     user = await accounts.get_user_from_cookie(request)
     project_id = request.query_params.get('project_id')
     if user is not None and project_id is not None:
-        await inserts.copy_project(user.id, project_id)
+        await async_inserts.copy_project(user.id, project_id)
         return JSONResponse(status_code=200, content={'success': True})
     else:
         return JSONResponse(status_code=400, content={'success': False})
@@ -286,7 +286,7 @@ async def grid_design(request: Request):
 async def remove_project(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
     if hasattr(user, 'id'):
-        await inserts.remove_project(user.id, project_id)
+        await async_inserts.remove_project(user.id, project_id)
 
 
 @app.get("/demand_estimation", response_class=HTMLResponse)
@@ -345,15 +345,15 @@ async def calculating(request: Request):
 @app.post("/set_email_notification/{project_id}/{is_active}")
 async def set_email_notification(project_id: int, is_active: bool, request: Request):
     user = await accounts.get_user_from_cookie(request)
-    project_setup = await queries.get_model_instance(models.ProjectSetup, user.id, project_id)
+    project_setup = await async_queries.get_model_instance(models.ProjectSetup, user.id, project_id)
     project_setup.email_notification = is_active
-    await inserts.merge_model(project_setup)
+    await async_inserts.merge_model(project_setup)
 
 
 @app.get("/db_links_to_js/{project_id}")
 async def db_links_to_js(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
-    links = await queries.get_model_instance(models.Links, user.id, project_id)
+    links = await async_queries.get_model_instance(models.Links, user.id, project_id)
     links_json = json.loads(links.data) if links is not None else json.loads('{}')
     return JSONResponse(content=links_json, status_code=200)
 
@@ -363,7 +363,7 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
     user = await accounts.get_user_from_cookie(request)
     if project_id == 'undefined':
         project_id = get_project_id_from_request(request)
-    nodes = await queries.get_model_instance(models.Nodes, user.id, project_id)
+    nodes = await async_queries.get_model_instance(models.Nodes, user.id, project_id)
     df = pd.read_json(nodes.data) if nodes is not None else pd.DataFrame()
     if not df.empty:
         df = df[['latitude',
@@ -401,18 +401,18 @@ async def consumer_to_db(project_id: str, map_elements: fastapi_app.db.schema.Ma
     user = await accounts.get_user_from_cookie(request)
     df = pd.DataFrame.from_records(map_elements.map_elements)
     if df.empty is True:
-        await inserts.remove(models.Nodes, user.id, project_id)
+        await async_inserts.remove(models.Nodes, user.id, project_id)
         return
     df = df.drop_duplicates(subset=['latitude', 'longitude'])
     drop_index = df[df['node_type'] == 'power-house'].index
     if drop_index.__len__() > 1:
         df = df.drop(index=drop_index[1:])
     if df.empty is True:
-        await inserts.remove(models.Nodes, user.id, project_id)
+        await async_inserts.remove(models.Nodes, user.id, project_id)
         return
     df = df[df['node_type'].isin(['power-house', 'consumer'])]
     if df.empty is True:
-        await inserts.remove(models.Nodes, user.id, project_id)
+        await async_inserts.remove(models.Nodes, user.id, project_id)
         return
     df = df[['latitude', 'longitude', 'how_added', 'node_type', 'consumer_type', 'custom_specification', 'shs_options',
              'consumer_detail']]
@@ -422,7 +422,7 @@ async def consumer_to_db(project_id: str, map_elements: fastapi_app.db.schema.Ma
     df['is_connected'] = True
     df = df.round(decimals=6)
     if df.empty:
-        await inserts.remove(models.Nodes, user.id, project_id)
+        await async_inserts.remove(models.Nodes, user.id, project_id)
         return
     df["node_type"] = df["node_type"].astype(str)
     if len(df.index) != 0:
@@ -432,18 +432,18 @@ async def consumer_to_db(project_id: str, map_elements: fastapi_app.db.schema.Ma
     nodes.id = user.id
     nodes.project_id = project_id
     nodes.data = df.reset_index(drop=True).to_json()
-    await inserts.merge_model(nodes)
+    await async_inserts.merge_model(nodes)
     return JSONResponse(status_code=200, content={"message": "Success"})
 
 
 @app.get("/load_results/{project_id}")
 async def load_results(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
-    df = await queries.get_df(models.Results, user.id, project_id)
+    df = await async_queries.get_df(models.Results, user.id, project_id)
     infeasible = bool(df.loc[0, 'infeasible']) if df.columns.__contains__('infeasible') else False
     if df.empty:
         await asyncio.sleep(1)
-        df = await queries.get_df(models.Results, user.id, project_id)
+        df = await async_queries.get_df(models.Results, user.id, project_id)
         if df.empty or df['lcoe'].isna() is True:
             return JSONResponse(content={})
     if bool(df['lcoe'].isna()[0]) is True:
@@ -543,7 +543,7 @@ async def show_video_tutorial(request: Request):
 async def deactivate_video_tutorial(request: Request):
     user = await accounts.get_user_from_cookie(request)
     user.show_tutorial = False
-    await inserts.merge_model(user)
+    await async_inserts.merge_model(user)
 
 
 @app.get("/load_previous_data/{page_name}")
@@ -552,13 +552,13 @@ async def load_previous_data(page_name, request: Request):
     project_id = request.query_params.get('project_id')
     if page_name == "project_setup":
         if project_id == 'new':
-            project_id = await queries.next_project_id_of_user(user.id)
+            project_id = await async_queries.next_project_id_of_user(user.id)
             return models.ProjectSetup(project_id=project_id)
         try:
             project_id = int(project_id)
         except (ValueError, TypeError):
             return None
-        project_setup = await queries.get_model_instance(models.ProjectSetup, user.id, project_id)
+        project_setup = await async_queries.get_model_instance(models.ProjectSetup, user.id, project_id)
         if hasattr(project_setup, 'start_date'):
             project_setup.start_date = str(project_setup.start_date.date())
             return project_setup
@@ -569,14 +569,14 @@ async def load_previous_data(page_name, request: Request):
             project_id = int(project_id)
         except (ValueError, TypeError):
             return None
-        grid_design = await queries.get_model_instance(models.GridDesign, user.id, project_id)
+        grid_design = await async_queries.get_model_instance(models.GridDesign, user.id, project_id)
         return grid_design
     elif page_name == "demand_estimation":
         try:
             project_id = int(project_id)
         except (ValueError, TypeError):
             return None
-        demand_estimation = await queries.get_model_instance(models.Demand, user.id, project_id)
+        demand_estimation = await async_queries.get_model_instance(models.Demand, user.id, project_id)
         if demand_estimation is None or not hasattr(demand_estimation,'maximum_peak_load'):
             return None
         demand_estimation.maximum_peak_load = str(demand_estimation.maximum_peak_load) \
@@ -593,7 +593,7 @@ async def load_previous_data(page_name, request: Request):
             project_id = int(project_id)
         except (ValueError, TypeError):
             return None
-        energy_system_design = await queries.get_model_instance(models.EnergySystemDesign, user.id, project_id)
+        energy_system_design = await async_queries.get_model_instance(models.EnergySystemDesign, user.id, project_id)
         return energy_system_design
 
 
@@ -621,7 +621,7 @@ async def add_user_to_db(data: Dict[str, str]):
                                is_confirmed=False,
                                is_active=False,
                                is_superuser=False)
-            await inserts.merge_model(user)
+            await async_inserts.merge_model(user)
         else:
             res = [False, 'Please enter a valid captcha']
     return fastapi_app.db.schema.ValidRegistration(validation=res[0], msg=res[1])
@@ -642,8 +642,8 @@ async def anonymous_login(data: Dict[str, str], response: Response):
                            is_superuser=False,
                            task_id='',
                            project_id=0)
-        await inserts.merge_model(user)
-        user = await queries.get_user_by_username(name)
+        await async_inserts.merge_model(user)
+        user = await async_queries.get_user_by_username(name)
         access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES_ANONYMOUS)
         access_token = create_access_token(data={"sub": name}, expires_delta=access_token_expires)
         response.set_cookie(key="access_token", value=f"Bearer {access_token}",
@@ -695,7 +695,7 @@ async def change_email(request: Request, credentials: fastapi_app.db.schema.Cred
             if accounts.is_valid_email(user):
                 user.is_confirmed = False
                 user.guid = create_guid()
-                await inserts.merge_model(user)
+                await async_inserts.merge_model(user)
                 send_activation_link(credentials.email.strip(), user.guid)
                 res = 'Please click the activation link we sent to your email.'
                 validation = True
@@ -714,7 +714,7 @@ async def change_pw(request: Request, passwords: Dict[str, str]):
     if is_valid:
         if accounts.is_valid_password(passwords['new_password']):
             user.hashed_password = Hasher.get_password_hash(passwords['new_password'])
-            await inserts.merge_model(user)
+            await async_inserts.merge_model(user)
             res = 'Password changed successfully.'
             validation = True
         else:
@@ -729,14 +729,14 @@ async def send_reset_password_email(data: Dict[str, str], request: Request):
     email = data.get('email').strip()
     captcha_input = data.get('captcha_input')
     hashed_captcha = data.get('hashed_captcha')
-    user = await queries.get_user_by_username(email)
+    user = await async_queries.get_user_by_username(email)
     if user is None:
         validation, res = False, 'Email address is not registered'
     else:
         if captcha_context.verify(captcha_input, hashed_captcha):
             guid = str(uuid.uuid4()).replace('-', '')[:24]
             user.guid = guid
-            await inserts.merge_model(user)
+            await async_inserts.merge_model(user)
             msg = 'For your PeopleSuN-Account a password reset was requested. If you did not request a password reset, ' \
                   'please ignore this email. Otherwise, please click the following link:\n\n{}/reset_password?guid={}' \
                 .format(config.DOMAIN, guid)
@@ -753,7 +753,7 @@ async def change_pw(response: Response, request: Request, form_data: fastapi_app
     is_valid, res = await authenticate_user(user.email, form_data.password)
     validation = False
     if is_valid:
-        await inserts.remove_account(user.email, user.id)
+        await async_inserts.remove_account(user.email, user.id)
         response.delete_cookie("access_token")
         res = 'Account removed'
         validation = True
@@ -798,7 +798,7 @@ async def save_grid_design(request: Request, data: fastapi_app.db.schema.SaveGri
     data.grid_design['id'] = user.id
     data.grid_design['project_id'] = project_id
     grid_design = models.GridDesign(**data.grid_design)
-    await inserts.merge_model(grid_design)
+    await async_inserts.merge_model(grid_design)
     return JSONResponse(status_code=200, content={"message": "Success"})
 
 
@@ -851,7 +851,7 @@ async def save_demand_estimation(request: Request, data: fastapi_app.db.schema.S
                   'custom_share_4': custom_share_4,
                   'custom_share_5': custom_share_5,}
     demand_estimation = models.Demand(**dictionary)
-    await inserts.merge_model(demand_estimation)
+    await async_inserts.merge_model(demand_estimation)
     return JSONResponse(status_code=200, content={"message": "Success"})
 
 
@@ -873,7 +873,7 @@ async def save_project_setup(project_id, request: Request, data: fastapi_app.db.
     data.page_setup['id'] = user.id
     data.page_setup['project_id'] = project_id
     project_setup = models.ProjectSetup(**data.page_setup)
-    await inserts.merge_model(project_setup)
+    await async_inserts.merge_model(project_setup)
     return JSONResponse(status_code=200, content={"message": "Success"})
 
 
@@ -882,7 +882,7 @@ async def save_energy_system_design(request: Request, data: fastapi_app.db.schem
     user = await accounts.get_user_from_cookie(request)
     project_id = get_project_id_from_request(request)
     df = data.to_df()
-    await inserts.insert_energysystemdesign_df(df, user.id, project_id)
+    await async_inserts.insert_energysystemdesign_df(df, user.id, project_id)
 
 
 def get_project_id_from_request(request: Request):
@@ -900,7 +900,7 @@ def get_project_id_from_request(request: Request):
 @app.get("/get_plot_data/{project_id}")
 async def get_plot_data(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
-    df = await queries.get_df(models.Results, user.id, project_id)
+    df = await async_queries.get_df(models.Results, user.id, project_id)
     df = df.astype(str)
     optimal_capacity_keys = ["pv", "battery", "inverter", "rectifier", "diesel_genset", "peak_demand", "surplus"]
     optimal_capacities = {key: df.loc[0, f"{key}_capacity"] for key in optimal_capacity_keys[:-2]}
@@ -911,15 +911,15 @@ async def get_plot_data(project_id, request: Request):
                    "rectifier_to_dc_bus", "pv_to_dc_bus", "battery_to_dc_bus", "dc_bus_to_battery",
                    "dc_bus_to_inverter", "dc_bus_to_surplus", "inverter_to_demand"]
     sankey_data = {key: df.loc[0, key] for key in sankey_keys}
-    energy_flow = await queries.get_model_instance(models.EnergyFlow, user.id, project_id)
+    energy_flow = await async_queries.get_model_instance(models.EnergyFlow, user.id, project_id)
     energy_flow = pd.read_json(energy_flow.data)
     energy_flow['battery'] = energy_flow['battery_discharge'] - energy_flow['battery_charge']
     energy_flow.drop(columns=['battery_charge', 'battery_discharge'], inplace=True)
     energy_flow.reset_index(drop=True, inplace=True)
     energy_flow = json.loads(energy_flow.to_json())
-    duration_curve = json.loads((await queries.get_model_instance(models.DurationCurve, user.id, project_id)).data)
-    emissions = json.loads((await queries.get_model_instance(models.Emissions, user.id, project_id)).data)
-    demand_coverage = json.loads((await queries.get_model_instance(models.DemandCoverage, user.id, project_id)).data)
+    duration_curve = json.loads((await async_queries.get_model_instance(models.DurationCurve, user.id, project_id)).data)
+    emissions = json.loads((await async_queries.get_model_instance(models.Emissions, user.id, project_id)).data)
+    demand_coverage = json.loads((await async_queries.get_model_instance(models.DemandCoverage, user.id, project_id)).data)
     return JSONResponse(status_code=200, content={"optimal_capacities": optimal_capacities,
                                                   "lcoe_breakdown": lcoe_breakdown,
                                                   "sankey_data": sankey_data,
@@ -999,7 +999,7 @@ async def database_add_remove_manual(add_remove: str, project_id, add_node_reque
     user = await accounts.get_user_from_cookie(request)
     nodes = models.Nodes(**dict(add_node_request)).to_dict()
     if add_remove == "remove":
-        nodes = queries.get_model_instance(models.Nodes, user.id, project_id)
+        nodes = async_queries.get_model_instance(models.Nodes, user.id, project_id)
         df = pd.read_json(nodes.data)
         df = df[(df["node_type"] != "pole") & (df["node_type"] != "power-house")]
         for index in df.index:
@@ -1007,18 +1007,18 @@ async def database_add_remove_manual(add_remove: str, project_id, add_node_reque
                     (round(add_node_request.longitude, 6) == df.to_dict()["longitude"][index]):
                 df.drop(labels=index, axis=0, inplace=True)
         df = df.reset_index(drop=True)
-        await inserts.update_nodes_and_links(True, False, df.to_dict(), user.id, project_id, add=False)
+        await async_inserts.update_nodes_and_links(True, False, df.to_dict(), user.id, project_id, add=False)
     else:
-        await inserts.update_nodes_and_links(True, False, nodes, user.id, project_id, add=True, replace=False)
+        await async_inserts.update_nodes_and_links(True, False, nodes, user.id, project_id, add=True, replace=False)
 
 
 async def remove_results(user_id, project_id):
-    await inserts.remove(models.Results, user_id, project_id)
-    await inserts.remove(models.DemandCoverage, user_id, project_id)
-    await inserts.remove(models.EnergyFlow, user_id, project_id)
-    await inserts.remove(models.Emissions, user_id, project_id)
-    await inserts.remove(models.DurationCurve, user_id, project_id)
-    await inserts.remove(models.Links, user_id, project_id)
+    await async_inserts.remove(models.Results, user_id, project_id)
+    await async_inserts.remove(models.DemandCoverage, user_id, project_id)
+    await async_inserts.remove(models.EnergyFlow, user_id, project_id)
+    await async_inserts.remove(models.Emissions, user_id, project_id)
+    await async_inserts.remove(models.DurationCurve, user_id, project_id)
+    await async_inserts.remove(models.Links, user_id, project_id)
 
 
 @worker.task(name='celery_worker.task_grid_opt',
@@ -1050,16 +1050,16 @@ def task_remove_anonymous_users(user_email, user_id):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
     if loop.is_running():
-        result = loop.run_until_complete(inserts.remove_account(user_email, user_id))
+        result = loop.run_until_complete(async_inserts.remove_account(user_email, user_id))
     else:
-        result = asyncio.run(inserts.remove_account(user_email, user_id))
+        result = asyncio.run(async_inserts.remove_account(user_email, user_id))
     return result
 
 async def optimization(user_id, project_id):
     await remove_results(user_id, project_id)
-    project_setup = await queries.get_model_instance(models.ProjectSetup, user_id, project_id)
+    project_setup = await async_queries.get_model_instance(models.ProjectSetup, user_id, project_id)
     project_setup.status = "queued"
-    await inserts.merge_model(project_setup)
+    await async_inserts.merge_model(project_setup)
     if bool(os.environ.get('DOCKERIZED')):
         task = task_grid_opt.delay(user_id, project_id)
         return task.id
@@ -1105,7 +1105,7 @@ async def forward_if_no_task_is_pending(request: Request):
 @app.post("/forward_if_consumer_selection_exists/{project_id}")
 async def forward_if_consumer_selection_exists(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
-    nodes = await queries.get_model_instance(models.Nodes, user.id, project_id)
+    nodes = await async_queries.get_model_instance(models.Nodes, user.id, project_id)
     if nodes is None:
         res = {'forward': False}
     else:
@@ -1128,7 +1128,7 @@ async def start_calculation(project_id, request: Request):
     task_id = await optimization(user.id, project_id)
     user.task_id = task_id
     user.project_id = int(project_id)
-    await inserts.update_model_by_user_id(user)
+    await async_inserts.update_model_by_user_id(user)
     return JSONResponse({'task_id': task_id, 'redirect': ''})
 
 
@@ -1137,7 +1137,7 @@ async def waiting_for_results(request: Request, data: fastapi_app.db.schema.Task
     async def pause_until_results_are_available(user_id, project_id, status):
         iter = 4 if status == 'unknown' else 2
         for i in range(iter):
-            results = await queries.get_model_instance(models.Results, user_id, project_id)
+            results = await async_queries.get_model_instance(models.Results, user_id, project_id)
             if hasattr(results, 'lcoe') and results.lcoe is not None:
                 break
             elif hasattr(results, 'infeasible') and bool(results.infeasible) is True:
@@ -1175,7 +1175,7 @@ async def waiting_for_results(request: Request, data: fastapi_app.db.schema.Task
                     print('Could not get user from cookie')
                 await asyncio.sleep(1)
                 if i == 2 and len(data.task_id) > 12 and max_time > res['time']:
-                    user = await queries.get_user_from_task_id(data.task_id)
+                    user = await async_queries.get_user_from_task_id(data.task_id)
                     if user is not None:
                         break
                     else:
@@ -1183,13 +1183,13 @@ async def waiting_for_results(request: Request, data: fastapi_app.db.schema.Task
             if data.model == 'grid' and bool(os.environ.get('DOCKERIZED')):
                 task = task_supply_opt.delay(user.id, data.project_id)
                 user.task_id = task.id
-                await inserts.update_model_by_user_id(user)
+                await async_inserts.update_model_by_user_id(user)
                 res['finished'] = False
                 res['status'] = "power supply optimization is running..."
                 res['model'] = 'supply'
                 res[task.id] = task.id
             else:
-                project_setup = await queries.get_model_instance(models.ProjectSetup, user.id, data.project_id)
+                project_setup = await async_queries.get_model_instance(models.ProjectSetup, user.id, data.project_id)
                 if project_setup is not None:
                     if 'status' in locals():
                         if status in ['success', 'failure', 'revoked']:
@@ -1199,10 +1199,10 @@ async def waiting_for_results(request: Request, data: fastapi_app.db.schema.Task
                     else:
                         project_setup.status = "finished"
                         status = 'unknown'
-                    await inserts.merge_model(project_setup)
+                    await async_inserts.merge_model(project_setup)
                     user.task_id = ''
                     user.project_id = None
-                    await inserts.update_model_by_user_id(user)
+                    await async_inserts.update_model_by_user_id(user)
                     await pause_until_results_are_available(user.id, data.project_id, status)
         return JSONResponse(res)
     except Exception as e:
@@ -1240,7 +1240,7 @@ async def revoke_users_task(request: Request):
     user = await accounts.get_user_from_cookie(request)
     user.task_id = ''
     user.project_id = None
-    await inserts.update_model_by_user_id(user)
+    await async_inserts.update_model_by_user_id(user)
 
 
 # ************************************************************/
@@ -1250,15 +1250,15 @@ async def revoke_users_task(request: Request):
 @app.get("/download_data/{project_id}/{file_type}/")
 async def export_data(project_id: int, file_type:str,  request: Request):
     user = await accounts.get_user_from_cookie(request)
-    input_parameters_df = await queries.get_input_df(user.id, project_id)
-    results_df = await queries.get_df(models.Results, user.id, project_id)
-    energy_flow = await queries.get_model_instance(models.EnergyFlow, user.id, project_id)
+    input_parameters_df = await async_queries.get_input_df(user.id, project_id)
+    results_df = await async_queries.get_df(models.Results, user.id, project_id)
+    energy_flow = await async_queries.get_model_instance(models.EnergyFlow, user.id, project_id)
     energy_flow_df = pd.read_json(energy_flow.data) if energy_flow is not None else pd.DataFrame()
-    nodes = await queries.get_model_instance(models.Nodes, user.id, project_id)
-    links = await queries.get_model_instance(models.Links, user.id, project_id)
+    nodes = await async_queries.get_model_instance(models.Nodes, user.id, project_id)
+    links = await async_queries.get_model_instance(models.Links, user.id, project_id)
     nodes_df = pd.read_json(nodes.data) if nodes is not None else pd.DataFrame()
     links_df = pd.read_json(links.data) if links is not None else pd.DataFrame()
-    energy_system_design = await queries.get_df(models.EnergySystemDesign, user.id, project_id)
+    energy_system_design = await async_queries.get_df(models.EnergySystemDesign, user.id, project_id)
     excel_file = df_to_xlsx(input_parameters_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df)
     response = StreamingResponse(excel_file, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_results.xlsx"
