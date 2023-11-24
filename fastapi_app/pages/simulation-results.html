@@ -683,26 +683,9 @@
   </body>
   {% include '_scripts.html' %}
     <script src="{{ url_for('static', path='js/integrate_map.js') }}"></script>
-  <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-  <script src="{{ url_for('static', path='js/plotly.js') }}"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.0/jspdf.umd.min.js"></script>
-<script src="{{ url_for('static', path='js/plots.js') }}"></script>
-<script>
-    document.getElementById('downloadCSV').addEventListener('click', function() {
-    window.location.href = '/download_data/{{ project_id }}/csv';
-        });
-    var targetNode = document.getElementById('responseMsg');
-    var config = { childList: true, subtree: true, characterData: true };
-    var callback = function(mutationsList, observer) {
-        for(let mutation of mutationsList) {
-            if ((mutation.type === 'childList' || mutation.type === 'characterData') && targetNode.textContent.trim() !== '') {
-                var modal = document.getElementById('msgBox');
-                modal.style.display = "block";
-            }
-        }
-    };
-    var observer = new MutationObserver(callback);
-    observer.observe(targetNode, config);
-    document.getElementById("msgBox").style.zIndex = "9999";
-</script>
+    <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script src="{{ url_for('static', path='js/plotly.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.0/jspdf.umd.min.js"></script>
+    <script src="{{ url_for('static', path='js/plots.js') }}"></script>
+    <script src="{{ url_for('static', path='js/simulation_results.js') }}"></script>
 </html>
