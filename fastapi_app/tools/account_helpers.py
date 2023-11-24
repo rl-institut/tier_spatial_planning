@@ -131,7 +131,7 @@ async def generate_captcha_image() -> Tuple[str, str]:
     base64_image = base64.b64encode(captcha_data.getvalue()).decode('utf-8')
     return captcha_text, base64_image
 
-async def create_example_user_account():
+async def create_default_user_account():
     if await queries.get_user_by_username('default_example') is None:
         user = models.User(email='default_example',
                            hashed_password=Hasher.get_password_hash(config.EXAMPLE_USER_PW),
@@ -139,6 +139,13 @@ async def create_example_user_account():
                            is_confirmed=True,
                            is_active=False,
                            is_superuser=False)
+        await inserts.merge_model(user)
+        user = models.User(email='admin',
+                           hashed_password=Hasher.get_password_hash(config.PW),
+                           guid='',
+                           is_confirmed=True,
+                           is_active=False,
+                           is_superuser=True)
         await inserts.merge_model(user)
 
 
