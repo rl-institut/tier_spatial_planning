@@ -1,4 +1,3 @@
-import uuid
 import sqlalchemy as sa
 import flatten_dict
 from flatten_dict.reducers import make_reducer

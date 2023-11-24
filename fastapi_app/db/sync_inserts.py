@@ -53,11 +53,12 @@ def execute_stmt(stmt):
 
 
 
-def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, project_id, add=True, replace=True):
+def update_nodes_and_links(nodes: bool, links: bool, inlet, user_id, project_id, add=True, replace=True):
     user_id, project_id = int(user_id), int(project_id)
     if nodes:
         nodes = inlet
-        df = nodes.round(decimals=6)
+        df = nodes
+        df = df.round(decimals=6)
         if add and replace:
             nodes_existing = get_model_instance(sa_tables.Nodes, user_id, project_id)
             if nodes_existing is not None:

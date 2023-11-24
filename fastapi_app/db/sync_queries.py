@@ -88,7 +88,7 @@ def get_energy_system_design(user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     query = select(sa_tables.EnergySystemDesign).where(sa_tables.EnergySystemDesign.id == user_id,
                                                        sa_tables.EnergySystemDesign.project_id == project_id)
-    model_inst = res = _execute_with_retry(query, which='first')
+    model_inst = _execute_with_retry(query, which='first')
     df = model_inst.to_df()
     if df.empty:
         df = sa_tables.Nodes().to_df().iloc[0:0]

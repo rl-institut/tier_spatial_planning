@@ -7,7 +7,7 @@ def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distributi
     #print(nodes)
 
     num_households = get_number_of_households(nodes)
-    lat, lon = get_location_GPS(nodes).values()
+    lat, lon = get_location_gps(nodes).values()
     hh_demand_option = get_user_household_demand_option_selection(demand_par_dict)
     calibration_target_value, calibration_option = get_calibration_target(demand_par_dict)
     if all_profiles is None:
@@ -74,7 +74,7 @@ def get_number_of_enterprise(nodes):
     return num_enterprise
 
 
-def get_location_GPS(nodes):
+def get_location_gps(nodes):
     lat = nodes["latitude"].median()
     lon = nodes["longitude"].median()
     return {"lat": lat, "lon": lon}
@@ -177,8 +177,6 @@ def combine_ent_profiles(all_profiles, enterprises):
 def hh_location_estimate(all_profiles, lat, lon, num_households, wealth_lookup):
     # Dummy function - still tests h3.geo_to_h3() functionality
     default_location_estimate = "Household_Location_Estimate_Middle Wealth"
-    H3_cell = h3.geo_to_h3(lat, lon, resolution=8)
-
     # hh_consumption_estimate = wealth_lookup[H3_cell]
 
     df_hh_profiles = all_profiles[default_location_estimate] * num_households

@@ -108,13 +108,13 @@ def df_to_xlsx(input_df, energy_system_design, energy_flow_df, results_df, nodes
     return io.BytesIO(xlsx_data)
 
 
-def set_column_width(worksheet, df, format=None):
+def set_column_width(worksheet, df, col_format=None):
     for i, col in enumerate(df.columns):
         column_len = df[col].astype(str).str.len().max()
         column_len = max(column_len, len(col)) + 2
         column_len = min(column_len, 150)
-        if format:
-            worksheet.set_column(i, i, column_len, format)
+        if col_format:
+            worksheet.set_column(i, i, column_len, col_format)
         else:
             worksheet.set_column(i, i, column_len)
     return worksheet

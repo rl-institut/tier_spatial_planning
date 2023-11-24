@@ -19,7 +19,7 @@ class GridOptimizer(BaseOptimizer):
     """
 
     def __init__(
-        self, start_date, n_days, project_lifetime, wacc, tax, mst_algorithm="Kruskal"
+        self, start_date, n_days, project_lifetime, wacc, tax
     ):
         """
         Initialize the grid optimizer object
@@ -49,7 +49,6 @@ class GridOptimizer(BaseOptimizer):
         grid (~grids.Grid):
             grid object
         """
-        links = grid.get_links()
         # Remove all existing connections between poles and consumers
         grid.clear_links(link_type="connection")
 
@@ -76,7 +75,7 @@ class GridOptimizer(BaseOptimizer):
                         grid.add_links(label_node_from=str(pole_label), label_node_to=str(node_label))
                         grid.nodes.loc[node_label, "parent"] = str(pole_label)
 
-    def connect_grid_poles(self, grid: Grid, long_links=[]):
+    def connect_grid_poles(self, grid: Grid, long_links=None):
         """
         +++ ok +++
 
@@ -94,7 +93,7 @@ class GridOptimizer(BaseOptimizer):
             list of all links longer than the maximum allowed distance between
             links.
         """
-
+        long_links = list() if long_links is None else long_links
         # First, all links in the grid should be removed.
         grid.clear_links(link_type="distribution")
 
@@ -212,87 +211,8 @@ class GridOptimizer(BaseOptimizer):
         grid (~grids.Grid):
             grid object
         """
+        self.mst_using_kruskal(grid)
 
-        if self.mst_algorithm == "Prims":
-            self.mst_using_prims(grid)
-        elif self.mst_algorithm == "Kruskal":
-            self.mst_using_kruskal(grid)
-        else:
-            raise Exception("Invalid value provided for mst_algorithm.")
-
-    def mst_using_prims(self, grid: Grid):
-        """
-        This  method creates links between all poles following
-        Prim's minimum spanning tree method. The idea goes as follow:
-        a first node is selected and it is connected to the nearest neighbour,
-        together they compose the a so-called forest. Then a loop
-        runs over all node of the forest, the node that is the closest to
-        the forest without being part of it is added to the forest and
-        connected to the node of the forest it is the closest to.
-
-        Parameters
-        ----------
-        grid (~grids.Grid):
-            Grid object whose poles shall be connected.
-        """
-
-        # create list to keep track of nodes that have already been added
-        # to the forest
-
-        for segment in grid.get_poles()["segment"].unique():
-            # Create dataframe containing the poles from the segment
-            # and add temporary column to keep track of wheter the
-            # pole has already been added to the forest or not
-            poles = grid.get_poles()[grid.get_poles()["segment"] == segment]
-            poles["in_forest"] = [False] * poles.shape[0]
-
-            # Makes sure that there are at least two poles in segment
-            if poles[-(poles["in_forest"])].shape[0] > 0:
-                # First, pick one pole and add it to the forest by
-                # setting its value in 'in_forest' to True
-                index_first_forest_pole = poles[-poles["in_forest"]].index[0]
-                poles.at[index_first_forest_pole, "in_forest"] = True
-
-                # while there are poles not connected to the forest,
-                # find nereast pole to the forest and connect it to the forest
-                count = 0  # safety parameter to avoid staying stuck in loop
-                while len(poles[-poles["in_forest"]]) and count < poles.shape[0]:
-
-                    # create variables to compare poles distances and store best
-                    # candidates
-                    shortest_dist_to_pole_outside_forest = grid.distance_between_nodes(
-                        poles[poles["in_forest"]].index[0],
-                        poles[-poles["in_forest"]].index[0],
-                    )
-                    index_closest_pole_in_forest = poles[poles["in_forest"]].index[0]
-                    index_closest_pole_to_forest = poles[-poles["in_forest"]].index[0]
-
-                    # Iterate over all poles within the forest and over all the
-                    # ones outside of the forest and find shortest distance
-                    for index_pole_in_forest, row_forest_pole in poles[
-                        poles["in_forest"]
-                    ].iterrows():
-                        for (
-                            index_pole_outside_forest,
-                            row_pole_outside_forest,
-                        ) in poles[-poles["in_forest"]].iterrows():
-                            if grid.distance_between_nodes(
-                                index_pole_in_forest, index_pole_outside_forest
-                            ) <= (shortest_dist_to_pole_outside_forest):
-                                index_closest_pole_in_forest = index_pole_in_forest
-                                index_closest_pole_to_forest = index_pole_outside_forest
-                                shortest_dist_to_pole_outside_forest = (
-                                    grid.distance_between_nodes(
-                                        index_closest_pole_in_forest,
-                                        index_closest_pole_to_forest,
-                                    )
-                                )
-                    # create a link between pole pair
-                    grid.add_links(
-                        index_closest_pole_in_forest, index_closest_pole_to_forest
-                    )
-                    poles.at[index_closest_pole_to_forest, "in_forest"] = True
-                    count += 1
 
     def mst_using_kruskal(self, grid: Grid):
         """
@@ -354,14 +274,6 @@ class GridOptimizer(BaseOptimizer):
         # gets (x,y) coordinates of all nodes in the grid
         nodes_coord = np.array([[grid_consumers.x.loc[index], grid_consumers.y.loc[index]]
                                 for index in grid_consumers.index if grid_consumers.is_connected.loc[index] == True])
-
-        # features, true_labels = make_blobs(
-        #    n_samples=200,
-        #    centers=3,
-        #    cluster_std=2.75,
-        #    random_state=42)
-
-        # features = coord_nodes
 
         # call kmeans clustering with constraints (min and max number of members in each cluster )
         kmeans = KMeansConstrained(
@@ -452,7 +364,7 @@ class GridOptimizer(BaseOptimizer):
         if grid.pole_max_connection == 0:
             min_number_of_poles = 1
         else:
-            min_number_of_poles = int(np.ceil(n_mg_consumers / (grid.pole_max_connection)))
+            min_number_of_poles = int(np.ceil(n_mg_consumers / grid.pole_max_connection))
 
         space = pd.Series(range(min_number_of_poles, n_mg_consumers, 1))
 

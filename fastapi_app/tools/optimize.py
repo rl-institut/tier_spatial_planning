@@ -151,8 +151,8 @@ def optimize_grid(user_id, project_id):
 
         # Find the location of the power house.
         grid.add_number_of_distribution_and_connection_cables()
-        iter = 2 if power_house is None else 1
-        for i in range(iter):
+        n_iter = 2 if power_house is None else 1
+        for i in range(n_iter):
             if power_house is None and i == 0:
                 grid.select_location_of_power_house()
             grid.set_direction_of_links()
@@ -261,31 +261,31 @@ def optimize_energy_system(user_id, project_id):
                 df.loc[0, "infeasible"] = ensys_opt.infeasible
                 sync_inserts.insert_results_df(df, user_id, project_id)
             return False
-        df, emissions, co2_emission_factor = energy_system_model.get_emissions(ensys_opt, user_id, project_id)
+        df, emissions, co2_emission_factor = supply_optimizer.get_emissions(ensys_opt, user_id, project_id)
         sync_inserts.merge_model(emissions)
         co2_savings = df.loc[:, "co2_savings"].max()
         df = sync_queries.get_df(models.Results, user_id, project_id)
         grid_input_parameter = sync_queries.get_input_df(user_id, project_id)
         links = sync_queries.get_model_instance(models.Links, user_id, project_id)
-        df = energy_system_model.get_results_df(ensys_opt,
-                       df,
-                       n_days,
-                       grid_input_parameter,
-                       demand_full_year,
-                       co2_savings,
-                       nodes,
-                       links,
-                       num_households,
-                       end_execution_time,
-                       start_execution_time,
-                       energy_system_design,
-                       co2_emission_factor)
+        df = supply_optimizer.get_results_df(ensys_opt,
+                                             df,
+                                             n_days,
+                                             grid_input_parameter,
+                                             demand_full_year,
+                                             co2_savings,
+                                             nodes,
+                                             links,
+                                             num_households,
+                                             end_execution_time,
+                                             start_execution_time,
+                                             energy_system_design,
+                                             co2_emission_factor)
         sync_inserts.insert_results_df(df, user_id, project_id)
-        energy_flow = energy_system_model.get_energy_flow(ensys_opt, user_id, project_id)
+        energy_flow = supply_optimizer.get_energy_flow(ensys_opt, user_id, project_id)
         sync_inserts.merge_model(energy_flow)
-        demand_coverage = energy_system_model.get_demand_coverage(ensys_opt, user_id, project_id)
+        demand_coverage = supply_optimizer.get_demand_coverage(ensys_opt, user_id, project_id)
         sync_inserts.merge_model(demand_coverage)
-        demand_curve = energy_system_model.get_demand_curve(ensys_opt, user_id, project_id)
+        demand_curve = supply_optimizer.get_demand_curve(ensys_opt, user_id, project_id)
         sync_inserts.merge_model(demand_curve)
         project_setup = sync_queries.get_model_instance(models.ProjectSetup, user_id, project_id)
         project_setup.status = "finished"

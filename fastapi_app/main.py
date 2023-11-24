@@ -65,7 +65,7 @@ async def exception_handler(request: Request, exc: Exception):
                 project.status = "failed"
                 await async_inserts.merge_model(project)
                 break
-    except:
+    except Exception:
         user_name = 'unknown username'
     error_logger.error_log(exc, request, user_name)
     return RedirectResponse(url="/?internal_error", status_code=303)
@@ -96,7 +96,7 @@ captcha_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 @app.get('/get_captcha')
-async def captcha(request: Request):
+async def captcha():
     captcha_text = ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ', k=4))
     captcha = ImageCaptcha()
     loop = asyncio.get_running_loop()
@@ -201,7 +201,7 @@ async def reset_password(guid, request: Request):
 
 
 @app.post("/reset_password")
-async def reset_password(request: Request, form_data: Dict[str, str]):
+async def reset_password(form_data: Dict[str, str]):
     guid = form_data.get('guid')
     password = form_data.get('password')
     if guid is not None:
@@ -560,7 +560,7 @@ async def load_previous_data(page_name, request: Request):
             return None
         project_setup = await async_queries.get_model_instance(models.ProjectSetup, user.id, project_id)
         if hasattr(project_setup, 'start_date'):
-            project_setup.start_date = str(project_setup.start_date.date())
+            project_setup.start_date = project_setup.start_date.date().__str__()
             return project_setup
         else:
             return None
@@ -651,7 +651,7 @@ async def anonymous_login(data: Dict[str, str], response: Response):
         if bool(os.environ.get('DOCKERIZED')):
             minutes = config.ACCESS_TOKEN_EXPIRE_MINUTES_ANONYMOUS + 60
             eta = datetime.utcnow() + timedelta(minutes=minutes)
-            task_remove_anonymous_users.apply_async((user.email, user.id,), eta=eta)
+            task_remove_anonymous_users.apply_async((user.id,), eta=eta)
         validation, res = True, ''
     else:
         validation, res = False, 'Please enter a valid captcha'
@@ -725,7 +725,7 @@ async def change_pw(request: Request, passwords: Dict[str, str]):
 
 
 @app.post("/send_reset_password_email/")
-async def send_reset_password_email(data: Dict[str, str], request: Request):
+async def send_reset_password_email(data: Dict[str, str]):
     email = data.get('email').strip()
     captcha_input = data.get('captcha_input')
     hashed_captcha = data.get('hashed_captcha')
@@ -753,7 +753,7 @@ async def change_pw(response: Response, request: Request, form_data: fastapi_app
     is_valid, res = await authenticate_user(user.email, form_data.password)
     validation = False
     if is_valid:
-        await async_inserts.remove_account(user.email, user.id)
+        await async_inserts.remove_account(user.id)
         response.delete_cookie("access_token")
         res = 'Account removed'
         validation = True
@@ -930,7 +930,7 @@ async def get_plot_data(project_id, request: Request):
 
 
 @app.get("/get_demand_time_series/{project_id}")
-async def get_demand_time_series(project_id, request: Request):
+async def get_demand_time_series(project_id):
     return demand_time_series_df().to_dict('list')  # converts dataframe to dict format with lists as values
 
 
@@ -999,7 +999,7 @@ async def database_add_remove_manual(add_remove: str, project_id, add_node_reque
     user = await accounts.get_user_from_cookie(request)
     nodes = models.Nodes(**dict(add_node_request)).to_dict()
     if add_remove == "remove":
-        nodes = async_queries.get_model_instance(models.Nodes, user.id, project_id)
+        nodes = await async_queries.get_model_instance(models.Nodes, user.id, project_id)
         df = pd.read_json(nodes.data)
         df = df[(df["node_type"] != "pole") & (df["node_type"] != "power-house")]
         for index in df.index:
@@ -1043,16 +1043,16 @@ def task_supply_opt(user_id, project_id):
 
 
 @worker.task(name='celery_worker.task_remove_anonymous_users', force=True, track_started=True)
-def task_remove_anonymous_users(user_email, user_id):
+def task_remove_anonymous_users(user_id):
     try:
         loop = asyncio.get_event_loop()
     except RuntimeError:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
     if loop.is_running():
-        result = loop.run_until_complete(async_inserts.remove_account(user_email, user_id))
+        result = loop.run_until_complete(async_inserts.remove_account(user_id))
     else:
-        result = asyncio.run(async_inserts.remove_account(user_email, user_id))
+        result = asyncio.run(async_inserts.remove_account(user_id))
     return result
 
 async def optimization(user_id, project_id):
@@ -1135,8 +1135,8 @@ async def start_calculation(project_id, request: Request):
 @app.post('/waiting_for_results/')
 async def waiting_for_results(request: Request, data: fastapi_app.db.pydantic_schema.TaskInfo):
     async def pause_until_results_are_available(user_id, project_id, status):
-        iter = 4 if status == 'unknown' else 2
-        for i in range(iter):
+        n_iter = 4 if status == 'unknown' else 2
+        for i in range(n_iter):
             results = await async_queries.get_model_instance(models.Results, user_id, project_id)
             if hasattr(results, 'lcoe') and results.lcoe is not None:
                 break

@@ -91,7 +91,7 @@ async def remove(model_class, user_id, project_id):
     await execute_stmt(stmt)
 
 
-async def remove_account(user_email, user_id):
+async def remove_account(user_id):
     for model_class in [sa_tables.User,
                         sa_tables.ProjectSetup,
                         sa_tables.GridDesign,

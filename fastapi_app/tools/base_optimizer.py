@@ -49,5 +49,5 @@ class BaseOptimizer:
             linear_depreciation_last_investment = last_investment / component_lifetime
             capex = capex - linear_depreciation_last_investment * (
                 number_of_investments * component_lifetime - self.project_lifetime
-            ) / ((1 + self.wacc) ** (self.project_lifetime))
+            ) / ((1 + self.wacc) ** self.project_lifetime)
         return capex

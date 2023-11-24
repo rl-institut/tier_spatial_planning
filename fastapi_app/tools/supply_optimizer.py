@@ -103,12 +103,12 @@ class EnergySystemOptimizer(BaseOptimizer):
             + self.pv["parameters"]["opex"]
         )
         # Make decision about different simulation modes of the PV
-        if self.pv["settings"]["is_selected"] == False:
+        if self.pv["settings"]["is_selected"] is False:
             pv = solph.components.Source(
                 label="pv",
                 outputs={b_el_dc: solph.Flow(nominal_value=0)},
             )
-        elif self.pv["settings"]["design"] == True:
+        elif self.pv["settings"]["design"] is True:
             # DESIGN
             pv = solph.components.Source(
                 label="pv",
@@ -157,13 +157,13 @@ class EnergySystemOptimizer(BaseOptimizer):
             + self.diesel_genset["parameters"]["opex"]
         )
 
-        if self.diesel_genset["settings"]["is_selected"] == False:
+        if self.diesel_genset["settings"]["is_selected"] is False:
             diesel_genset = solph.components.Transformer(
                 label="diesel_genset",
                 inputs={b_fuel: solph.Flow()},
                 outputs={b_el_ac: solph.Flow(nominal_value=0)},
             )
-        elif self.diesel_genset["settings"]["design"] == True:
+        elif self.diesel_genset["settings"]["design"] is True:
             # DESIGN
             if self.diesel_genset["settings"]["offset"] is True:
                 diesel_genset = solph.components.Transformer(
@@ -222,13 +222,13 @@ class EnergySystemOptimizer(BaseOptimizer):
             + self.rectifier["parameters"]["opex"]
         )
 
-        if self.rectifier["settings"]["is_selected"] == False:
+        if self.rectifier["settings"]["is_selected"] is False:
             rectifier = solph.components.Transformer(
                 label="rectifier",
                 inputs={b_el_ac: solph.Flow(nominal_value=0)},
                 outputs={b_el_dc: solph.Flow()},
             )
-        elif self.rectifier["settings"]["design"] == True:
+        elif self.rectifier["settings"]["design"] is True:
             # DESIGN
             rectifier = solph.components.Transformer(
                 label="rectifier",
@@ -272,13 +272,13 @@ class EnergySystemOptimizer(BaseOptimizer):
             + self.inverter["parameters"]["opex"]
         )
 
-        if self.inverter["settings"]["is_selected"] == False:
+        if self.inverter["settings"]["is_selected"] is False:
             inverter = solph.components.Transformer(
                 label="inverter",
                 inputs={b_el_dc: solph.Flow(nominal_value=0)},
                 outputs={b_el_ac: solph.Flow()},
             )
-        elif self.inverter["settings"]["design"] == True:
+        elif self.inverter["settings"]["design"] is True:
             # DESIGN
             inverter = solph.components.Transformer(
                 label="inverter",
@@ -322,14 +322,14 @@ class EnergySystemOptimizer(BaseOptimizer):
             + self.battery["parameters"]["opex"]
         )
 
-        if self.battery["settings"]["is_selected"] == False:
+        if self.battery["settings"]["is_selected"] is False:
             battery = solph.components.GenericStorage(
                 label="battery",
                 nominal_storage_capacity=0,
                 inputs={b_el_dc: solph.Flow()},
                 outputs={b_el_dc: solph.Flow()},
             )
-        elif self.battery["settings"]["design"] == True:
+        elif self.battery["settings"]["design"] is True:
             # DESIGN
             battery = solph.components.GenericStorage(
                 label="battery",
@@ -561,7 +561,7 @@ class EnergySystemOptimizer(BaseOptimizer):
         ]
 
         # -------------------- SCALARS (STATIC) --------------------
-        if self.diesel_genset["settings"]["is_selected"] == False:
+        if self.diesel_genset["settings"]["is_selected"] is False:
             self.capacity_genset = 0
         elif self.diesel_genset["settings"]["design"] == True:
             self.capacity_genset = results_diesel_genset["scalars"][
@@ -570,7 +570,7 @@ class EnergySystemOptimizer(BaseOptimizer):
         else:
             self.capacity_genset = self.diesel_genset["parameters"]["nominal_capacity"]
 
-        if self.pv["settings"]["is_selected"] == False:
+        if self.pv["settings"]["is_selected"] is False:
             self.capacity_pv = 0
         elif self.pv["settings"]["design"] == True:
             self.capacity_pv = results_pv["scalars"][
@@ -579,7 +579,7 @@ class EnergySystemOptimizer(BaseOptimizer):
         else:
             self.capacity_pv = self.pv["parameters"]["nominal_capacity"]
 
-        if self.inverter["settings"]["is_selected"] == False:
+        if self.inverter["settings"]["is_selected"] is False:
             self.capacity_inverter = 0
         elif self.inverter["settings"]["design"] == True:
             self.capacity_inverter = results_inverter["scalars"][
@@ -588,7 +588,7 @@ class EnergySystemOptimizer(BaseOptimizer):
         else:
             self.capacity_inverter = self.inverter["parameters"]["nominal_capacity"]
 
-        if self.rectifier["settings"]["is_selected"] == False:
+        if self.rectifier["settings"]["is_selected"] is False:
             self.capacity_rectifier = 0
         elif self.rectifier["settings"]["design"] == True:
             self.capacity_rectifier = results_rectifier["scalars"][
@@ -597,9 +597,9 @@ class EnergySystemOptimizer(BaseOptimizer):
         else:
             self.capacity_rectifier = self.rectifier["parameters"]["nominal_capacity"]
 
-        if self.battery["settings"]["is_selected"] == False:
+        if self.battery["settings"]["is_selected"] is False:
             self.capacity_battery = 0
-        elif self.battery["settings"]["design"] == True:
+        elif self.battery["settings"]["design"] is True:
             self.capacity_battery = results_battery["scalars"][
                 (("electricity_dc", "battery"), "invest")
             ]

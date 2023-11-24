@@ -2,7 +2,6 @@ import copy
 import math
 import numpy as np
 import pandas as pd
-import os
 from pyproj import Proj
 from fastapi_app.tools.error_logger import logger as error_logger
 pd.options.mode.chained_assignment = None  # default='warn'
@@ -16,8 +15,6 @@ class Grid:
 
     Attributes
     ----------
-    grid_id: str
-        name of the grid
 
     nodes: :class:`pandas.core.frame.DataFrame`
         pandas dataframe containing the following information
@@ -47,19 +44,6 @@ class Grid:
                 + 'distribution': between two poles
             - length
 
-    capex: :class:`pandas.core.frame.DataFrame`
-        capital expenditure associated with:
-            + pole [$/pcs]
-            + connection [$/pcs]
-            + connection_cable [$/m]
-            + distribution_cable [$/m]
-
-    opex: :class:`pandas.core.frame.DataFrame`
-        operational expenditure associated with:
-            + pole [$/pcs]
-            + connection [$/pcs]
-            + connection_cable [$/m]
-            + distribution_cable [$/m]
 
     pole_max_connection: int
         maximum number of consumers that can be connected to each pole.
@@ -168,7 +152,7 @@ class Grid:
         self.load_centroid = [lat, lon]
 
     def haversine_distance(self, lat1, lon1, lat2, lon2):
-        R = 6371.0 * 1000
+        radius = 6371.0 * 1000
 
         # Convert degrees to radians
         lat1_rad = math.radians(lat1)
@@ -185,7 +169,7 @@ class Grid:
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
         # Distance
-        distance = R * c
+        distance = radius * c
         return distance
 
     def get_poles_distances_from_load_centroid(self):
@@ -882,15 +866,6 @@ class Grid:
                             break
                 else:
                     continue
-                    """
-                    consumers = self.get_all_consumers_of_subbranches(branch)
-                    total_consumption = self.nodes[self.nodes.index.isin(consumers)]['yearly_consumption'].sum()
-                    cost_of_branch = \
-                    self.nodes.loc[self.nodes[self.nodes['branch'] == branch].index, 'distribution_cost_per_branch'].iat[0]
-                    for consumer in consumers:
-                        self.nodes.loc[consumer, 'total_grid_cost_per_consumer_per_a'] += \
-                            cost_of_branch * self.nodes.loc[consumer, 'yearly_consumption'] / total_consumption
-                    """
         self.nodes['total_grid_cost_per_consumer_per_a'] = \
             self.nodes['total_grid_cost_per_consumer_per_a'] / self.nodes['yearly_consumption']
 

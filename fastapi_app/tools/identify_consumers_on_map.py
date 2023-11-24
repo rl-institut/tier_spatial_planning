@@ -125,7 +125,6 @@ def obtain_mean_coordinates_from_geojson(df):
 
         Dict containing the 'id' of each building as a key
     """
-    retrieve_building_area_from_overpass = False
     if not df.empty:
         df1 = df[df['type'] == 'way']
         df2 = df[df['type'] == 'node'].set_index('id')
@@ -137,60 +136,15 @@ def obtain_mean_coordinates_from_geojson(df):
         df1['nodes'] = df1_exploded.groupby(df1_exploded.index).agg({'nodes': list})
         building_mean_coordinates = {}
         if not df1.empty:
-            reference_coordinate = df1['nodes'].iloc[0][0]
             for row_idx, row in df1.iterrows():
-                xy_coordinates = []
                 latitudes_longitudes = [coord for coord in row["nodes"]]
                 latitudes = [x[0] for x in latitudes_longitudes]
                 longitudes = [x[1] for x in latitudes_longitudes]
                 mean_coord = [np.mean(latitudes), np.mean(longitudes)]
-
                 building_mean_coordinates[row["id"]] = mean_coord
         return building_mean_coordinates
     else:
         return {}, {}
-
-
-def are_segments_crossing(segment1, segment2):
-    """
-    Function that checks weather two 2D segments are crossing/intersecting.
-    Inspired from https://algorithmtutor.com/Computational-Geometry/Check-if-two-line-segment-intersect/
-
-    Parameters
-    ----------
-    segment1 (list or tuple):
-        coordinates of the two end points of the first segment in format
-        ((x1, y1), (x2, y2))
-
-    segment2 (list or tuple):
-        coordinates of the two end points of the second segment in format
-        ((x1, y1), (x2, y2))
-
-    Output
-    ------
-        Returns True is the two segments are intersecting, otherwise returns
-        False
-
-    Notes
-    -----
-    If the two segments are just touching without intersecting, the function
-    return False
-    """
-
-    p1 = np.array(segment1[0])
-    p2 = np.array(segment1[1])
-    p3 = np.array(segment2[0])
-    p4 = np.array(segment2[1])
-
-    d1 = np.cross((p1 - p3), (p4 - p3))
-    d2 = np.cross((p2 - p3), (p4 - p3))
-    d3 = np.cross((p3 - p1), (p2 - p1))
-    d4 = np.cross((p4 - p1), (p2 - p1))
-    if ((d1 > 0 and d2 < 0) or (d1 < 0 and d2 > 0)) and \
-            ((d3 > 0 and d4 < 0) or (d3 < 0 and d4 > 0)):
-        return True
-    else:
-        return False
 
 
 def is_point_in_boundaries(point_coordinates: tuple,
@@ -238,7 +192,7 @@ def xy_coordinates_from_latitude_longitude(latitude, longitude, ref_latitude, re
         ref_longitude (float):
             Reference longitude (in degree).
 
-    Output
+    Return
     ------
         (tuple):
             (x, y) plane coordinates.
