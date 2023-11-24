@@ -13,7 +13,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 from typing import Dict
-import fastapi_app.tools.boundary_identification as bi
+import fastapi_app.tools.identify_consumers_on_map as bi
 import fastapi_app.db.sa_tables as models
 from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.responses import RedirectResponse, FileResponse, JSONResponse, HTMLResponse, StreamingResponse
@@ -21,9 +21,9 @@ from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
 from fastapi.staticfiles import StaticFiles
 from fastapi_app.tools.optimize import check_data_availability, optimize_grid, optimize_energy_system
-from fastapi_app.tools.account_helpers import Hasher, create_guid, is_valid_credentials, send_activation_link, activate_mail, \
+from fastapi_app.tools.handle_user_accounts import Hasher, create_guid, is_valid_credentials, send_activation_link, activate_mail, \
     authenticate_user, create_access_token, send_mail, create_default_user_account
-from fastapi_app.tools import account_helpers as accounts
+from fastapi_app.tools import handle_user_accounts as accounts
 from fastapi_app.db import async_inserts, async_queries, sync_queries, sync_inserts
 from fastapi_app import config
 from fastapi_app.tools.df_to_excel import df_to_xlsx
@@ -216,7 +216,7 @@ async def reset_password(request: Request, form_data: Dict[str, str]):
             else:
                 validation = False
                 res = 'The password needs to be at least 8 characters long'
-            return fastapi_app.db.schema.ValidRegistration(validation=validation, msg=res)
+            return fastapi_app.db.pydantic_schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.get("/account_overview")
@@ -397,7 +397,7 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
 
 
 @app.post("/consumer_to_db/{project_id}")
-async def consumer_to_db(project_id: str, map_elements: fastapi_app.db.schema.MapDataRequest, request: Request):
+async def consumer_to_db(project_id: str, map_elements: fastapi_app.db.pydantic_schema.MapDataRequest, request: Request):
     user = await accounts.get_user_from_cookie(request)
     df = pd.DataFrame.from_records(map_elements.map_elements)
     if df.empty is True:
@@ -624,7 +624,7 @@ async def add_user_to_db(data: Dict[str, str]):
             await async_inserts.merge_model(user)
         else:
             res = [False, 'Please enter a valid captcha']
-    return fastapi_app.db.schema.ValidRegistration(validation=res[0], msg=res[1])
+    return fastapi_app.db.pydantic_schema.ValidRegistration(validation=res[0], msg=res[1])
 
 
 @app.post("/anonymous_login/")
@@ -655,11 +655,11 @@ async def anonymous_login(data: Dict[str, str], response: Response):
         validation, res = True, ''
     else:
         validation, res = False, 'Please enter a valid captcha'
-    return fastapi_app.db.schema.ValidRegistration(validation=validation, msg=res)
+    return fastapi_app.db.pydantic_schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/login/")
-async def login(response: Response, credentials: fastapi_app.db.schema.Credentials):
+async def login(response: Response, credentials: fastapi_app.db.pydantic_schema.Credentials):
     if isinstance(credentials.email, str) and len(credentials.email) > 3:
         is_valid, res = await authenticate_user(credentials.email.strip(), credentials.password)
         if is_valid:
@@ -670,10 +670,10 @@ async def login(response: Response, credentials: fastapi_app.db.schema.Credentia
             del credentials
             access_token = create_access_token(data={"sub": res.email}, expires_delta=access_token_expires)
             response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
-            return fastapi_app.db.schema.ValidRegistration(validation=True, msg="")
+            return fastapi_app.db.pydantic_schema.ValidRegistration(validation=True, msg="")
         else:
             del credentials
-            return fastapi_app.db.schema.ValidRegistration(validation=False, msg=res)
+            return fastapi_app.db.pydantic_schema.ValidRegistration(validation=False, msg=res)
 
 
 @app.post("/consent_cookie/")
@@ -685,7 +685,7 @@ async def consent_cookie(response: Response):
 
 
 @app.post("/change_email/")
-async def change_email(request: Request, credentials: fastapi_app.db.schema.Credentials):
+async def change_email(request: Request, credentials: fastapi_app.db.pydantic_schema.Credentials):
     if isinstance(credentials.email.strip(), str) and len(credentials.email.strip()) > 3:
         user = await accounts.get_user_from_cookie(request)
         is_valid, res = await authenticate_user(user.email, credentials.password)
@@ -703,7 +703,7 @@ async def change_email(request: Request, credentials: fastapi_app.db.schema.Cred
                 res = 'Please enter a valid email address.'
         else:
             del credentials
-        return fastapi_app.db.schema.ValidRegistration(validation=validation, msg=res)
+        return fastapi_app.db.pydantic_schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/change_pw/")
@@ -721,7 +721,7 @@ async def change_pw(request: Request, passwords: Dict[str, str]):
             res = 'The password needs to be at least 8 characters long'
     else:
         del passwords
-    return fastapi_app.db.schema.ValidRegistration(validation=validation, msg=res)
+    return fastapi_app.db.pydantic_schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/send_reset_password_email/")
@@ -744,11 +744,11 @@ async def send_reset_password_email(data: Dict[str, str], request: Request):
             validation, res = True, 'Please click the link we sent to your email.'
         else:
             validation, res = False, 'Please enter a valid captcha'
-    return fastapi_app.db.schema.ValidRegistration(validation=validation, msg=res)
+    return fastapi_app.db.pydantic_schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/delete_account/")
-async def change_pw(response: Response, request: Request, form_data: fastapi_app.db.schema.Password):
+async def change_pw(response: Response, request: Request, form_data: fastapi_app.db.pydantic_schema.Password):
     user = await accounts.get_user_from_cookie(request)
     is_valid, res = await authenticate_user(user.email, form_data.password)
     validation = False
@@ -757,7 +757,7 @@ async def change_pw(response: Response, request: Request, form_data: fastapi_app
         response.delete_cookie("access_token")
         res = 'Account removed'
         validation = True
-    return fastapi_app.db.schema.ValidRegistration(validation=validation, msg=res)
+    return fastapi_app.db.pydantic_schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/logout/")
@@ -773,13 +773,13 @@ async def query_account_data(request: Request):
         name = user.email
         if 'anonymous__' in name:
             name = name.split('__')[0]
-        return fastapi_app.db.schema.UserOverview(email=name)
+        return fastapi_app.db.pydantic_schema.UserOverview(email=name)
     else:
-        return fastapi_app.db.schema.UserOverview(email="")
+        return fastapi_app.db.pydantic_schema.UserOverview(email="")
 
 
 @app.post("/has_cookie/")
-async def has_cookie(request: Request, has_cookies: fastapi_app.db.schema.HasCookies):
+async def has_cookie(request: Request, has_cookies: fastapi_app.db.pydantic_schema.HasCookies):
     if has_cookies.access_token:
         token = request.cookies.get("access_token")
         if token is None:
@@ -792,7 +792,7 @@ async def has_cookie(request: Request, has_cookies: fastapi_app.db.schema.HasCoo
 
 
 @app.post("/save_grid_design/")
-async def save_grid_design(request: Request, data: fastapi_app.db.schema.SaveGridDesign):
+async def save_grid_design(request: Request, data: fastapi_app.db.pydantic_schema.SaveGridDesign):
     user = await accounts.get_user_from_cookie(request)
     project_id = get_project_id_from_request(request)
     data.grid_design['id'] = user.id
@@ -803,7 +803,7 @@ async def save_grid_design(request: Request, data: fastapi_app.db.schema.SaveGri
 
 
 @app.post("/save_demand_estimation/")
-async def save_demand_estimation(request: Request, data: fastapi_app.db.schema.SaveDemandEstimation):
+async def save_demand_estimation(request: Request, data: fastapi_app.db.pydantic_schema.SaveDemandEstimation):
     user = await accounts.get_user_from_cookie(request)
     project_id = get_project_id_from_request(request)
     custom_calibration = ast.literal_eval(data.demand_estimation['custom_calibration'])
@@ -856,7 +856,7 @@ async def save_demand_estimation(request: Request, data: fastapi_app.db.schema.S
 
 
 @app.post("/send_mail_route/")
-async def send_mail_route(mail: fastapi_app.db.schema.Mail):
+async def send_mail_route(mail: fastapi_app.db.pydantic_schema.Mail):
     body = 'offgridplanner.org contact form. email from: {}'.format(mail.from_address) + '\n' + mail.body
     subject = 'offgridplanner.org contact form: {}'.format(mail.subject)
     send_mail('internal', body, subject)
@@ -864,7 +864,7 @@ async def send_mail_route(mail: fastapi_app.db.schema.Mail):
 
 
 @app.post("/save_project_setup/{project_id}")
-async def save_project_setup(project_id, request: Request, data: fastapi_app.db.schema.SaveProjectSetup):
+async def save_project_setup(project_id, request: Request, data: fastapi_app.db.pydantic_schema.SaveProjectSetup):
     user = await accounts.get_user_from_cookie(request)
     # project_id = get_project_id_from_request(request)
     timestamp = pd.Timestamp.now()
@@ -878,7 +878,7 @@ async def save_project_setup(project_id, request: Request, data: fastapi_app.db.
 
 
 @app.post("/save_energy_system_design/")
-async def save_energy_system_design(request: Request, data: fastapi_app.db.schema.OptimizeEnergySystemRequest):
+async def save_energy_system_design(request: Request, data: fastapi_app.db.pydantic_schema.OptimizeEnergySystemRequest):
     user = await accounts.get_user_from_cookie(request)
     project_id = get_project_id_from_request(request)
     df = data.to_df()
@@ -935,7 +935,7 @@ async def get_demand_time_series(project_id, request: Request):
 
 
 @app.post("/add_buildings_inside_boundary")
-async def add_buildings_inside_boundary(js_data: fastapi_app.db.schema.MapData, request: Request):
+async def add_buildings_inside_boundary(js_data: fastapi_app.db.pydantic_schema.MapData, request: Request):
     user = await accounts.get_user_from_cookie(request)
     boundary_coordinates = js_data.boundary_coordinates[0][0]
     df = pd.DataFrame.from_dict(boundary_coordinates).rename(columns={'lat': 'latitude', 'lng': 'longitude'})
@@ -982,7 +982,7 @@ async def add_buildings_inside_boundary(js_data: fastapi_app.db.schema.MapData, 
     return JSONResponse({'executed': True, 'msg': '', 'new_consumers': nodes_list})
 
 @app.post("/remove_buildings_inside_boundary")
-async def remove_buildings_inside_boundary(data: fastapi_app.db.schema.MapData):
+async def remove_buildings_inside_boundary(data: fastapi_app.db.pydantic_schema.MapData):
     df = pd.DataFrame.from_records(data.map_elements)
     if not df.empty:
         boundaries = pd.DataFrame.from_records(data.boundary_coordinates[0][0]).values.tolist()
@@ -994,7 +994,7 @@ async def remove_buildings_inside_boundary(data: fastapi_app.db.schema.MapData):
 
 # add new manually-selected nodes to the *.csv file
 @app.post("/database_add_remove_manual/{add_remove}/{project_id}")
-async def database_add_remove_manual(add_remove: str, project_id, add_node_request: fastapi_app.db.schema.AddNodeRequest,
+async def database_add_remove_manual(add_remove: str, project_id, add_node_request: fastapi_app.db.pydantic_schema.AddNodeRequest,
                                      request: Request):
     user = await accounts.get_user_from_cookie(request)
     nodes = models.Nodes(**dict(add_node_request)).to_dict()
@@ -1133,7 +1133,7 @@ async def start_calculation(project_id, request: Request):
 
 
 @app.post('/waiting_for_results/')
-async def waiting_for_results(request: Request, data: fastapi_app.db.schema.TaskInfo):
+async def waiting_for_results(request: Request, data: fastapi_app.db.pydantic_schema.TaskInfo):
     async def pause_until_results_are_available(user_id, project_id, status):
         iter = 4 if status == 'unknown' else 2
         for i in range(iter):
@@ -1225,7 +1225,7 @@ async def has_pending_task(project_id, request: Request):
 
 
 @app.post('/revoke_task/')
-async def revoke_task(request: Request, data: fastapi_app.db.schema.TaskID):
+async def revoke_task(request: Request, data: fastapi_app.db.pydantic_schema.TaskID):
     celery_task = worker.AsyncResult(data.task_id)
     celery_task.revoke(terminate=True, signal='SIGKILL')
     user = await accounts.get_user_from_cookie(request)

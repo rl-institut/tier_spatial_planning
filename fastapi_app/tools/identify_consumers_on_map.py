@@ -3,9 +3,8 @@ import urllib.request
 import datetime
 import time
 import json
+import math
 from shapely import geometry
-from fastapi_app.tools.coordinates_conversion import xy_coordinates_from_latitude_longitude
-
 
 def get_consumer_within_boundaries(df):
     # min and max of latitudes and longitudes are sent to the overpass to get
@@ -219,3 +218,38 @@ def are_points_in_boundaries(df, boundaries):
     df['inside_boundary'] = df.apply(lambda row: polygon.contains(geometry.Point([row['latitude'], row['longitude']])),
                                      axis=1)
     return df['inside_boundary']
+
+
+def xy_coordinates_from_latitude_longitude(latitude, longitude, ref_latitude, ref_longitude):
+    """ This function converts (latitude, longitude) coordinates into (x, y)
+    plane coordinates using a reference latitude and longitude.
+
+    Parameters
+    ----------
+        latitude (float):
+            Latitude (in degree) to be converted.
+
+        longitude (float):
+            Longitude (in degree) to be converted.
+
+        ref_latitude (float):
+            Reference latitude (in degree).
+
+        ref_longitude (float):
+            Reference longitude (in degree).
+
+    Output
+    ------
+        (tuple):
+            (x, y) plane coordinates.
+    """
+
+    r = 6371000     # Radius of the earth [m]
+    latitude_rad = math.radians(latitude)
+    longitude_rad = math.radians(longitude)
+    ref_latitude_rad = math.radians(ref_latitude)
+    ref_longitude_rad = math.radians(ref_longitude)
+
+    x = r * (longitude_rad - ref_longitude_rad) * math.cos(ref_latitude)
+    y = r * (latitude_rad - ref_latitude_rad)
+    return x, y

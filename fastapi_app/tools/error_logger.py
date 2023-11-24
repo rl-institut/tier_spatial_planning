@@ -3,13 +3,14 @@ import os
 import traceback
 import socket
 from fastapi_app import config
-from fastapi_app.tools.mails import send_mail
+from fastapi_app.tools.mail import send_mail
 
 directory = os.getcwd() + '/logs'
-print(directory)
+
+
 if not os.path.exists(directory):
     os.makedirs(directory)
-print(directory)
+
 
 class CustomLogger(logging.Logger):
     def __init__(self, name, level=logging.NOTSET):
@@ -37,7 +38,7 @@ class CustomLogger(logging.Logger):
             pass
         msg += '\n\n'
         try:
-            send_mail(subject='Error - {} - {}'.format([user_name, host]), msg=msg, to_adress=config.MAIL_ADDRESS_LOGGER)
+            send_mail(subject='Error - {} - {}'.format(user_name, host), msg=msg, to_adress=config.MAIL_ADDRESS_LOGGER)
         except Exception:
             pass
         self.error(msg)

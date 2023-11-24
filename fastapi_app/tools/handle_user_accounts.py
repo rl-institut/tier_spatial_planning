@@ -13,7 +13,7 @@ from typing import Optional
 from jose import jwt
 from fastapi.security.utils import get_authorization_scheme_param
 from fastapi_app.db import async_inserts, async_queries
-from fastapi_app.tools.mails import send_mail
+from fastapi_app.tools.mail import send_mail
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -124,6 +124,7 @@ async def get_user_from_cookie(request):
         if user is not None:
             return user
 
+
 async def generate_captcha_image() -> Tuple[str, str]:
     captcha_text = ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ', k=6))
     captcha = ImageCaptcha()
@@ -131,6 +132,7 @@ async def generate_captcha_image() -> Tuple[str, str]:
     captcha_data = await loop.run_in_executor(None, captcha.generate, captcha_text)
     base64_image = base64.b64encode(captcha_data.getvalue()).decode('utf-8')
     return captcha_text, base64_image
+
 
 async def create_default_user_account():
     if await async_queries.get_user_by_username('default_example') is None:

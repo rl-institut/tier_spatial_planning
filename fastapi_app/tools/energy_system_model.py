@@ -7,6 +7,8 @@ import pyomo.environ as po
 from fastapi_app.tools.general_optimizer_obj import Optimizer
 from fastapi_app.db import sa_tables
 
+
+
 class EnergySystemOptimizer(Optimizer):
     """
     This class includes:
@@ -751,7 +753,7 @@ def get_emissions(ensys_opt, user_id, project_id,):
         df.loc[:, "non_renewable_electricity_production"] - df.loc[:, "hybrid_electricity_production"]  # tCO2 per year
     df['h'] = np.arange(1, len(ensys_opt.demand) + 1)
     df = df.round(3)
-    emissions = models.Emissions()
+    emissions = sa_tables.Emissions()
     emissions.id = user_id
     emissions.project_id = project_id
     emissions.data = df.reset_index(drop=True).to_json()
@@ -862,7 +864,7 @@ def get_energy_flow(ensys_opt, user_id, project_id):
         "surplus": ensys_opt.sequences_surplus
     }).round(3)
 
-    energy_flow = models.EnergyFlow()
+    energy_flow = sa_tables.EnergyFlow()
     energy_flow.id = user_id
     energy_flow.project_id = project_id
     energy_flow.data = energy_flow_df.reset_index(drop=True).to_json()
@@ -877,7 +879,7 @@ def get_demand_coverage(ensys_opt, user_id, project_id):
     df.index.name = "dt"
     df = df.reset_index()
     df = df.round(3)
-    demand_coverage = models.DemandCoverage()
+    demand_coverage = sa_tables.DemandCoverage()
     demand_coverage.id = user_id
     demand_coverage.project_id = project_id
     demand_coverage.data = df.reset_index(drop=True).to_json()
@@ -925,7 +927,7 @@ def get_demand_curve(ensys_opt, user_id, project_id):
     df["battery_discharge_duration"] = (100 * np.sort(ensys_opt.sequences_battery_discharge)[::-1]/ div)
     df['h'] = np.arange(1, len(ensys_opt.sequences_genset) + 1)
     df = df.round(3)
-    demand_curve = models.DurationCurve()
+    demand_curve = sa_tables.DurationCurve()
     demand_curve.id = user_id
     demand_curve.project_id = project_id
     demand_curve.data = df.reset_index(drop=True).to_json()

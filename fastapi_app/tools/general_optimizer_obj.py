@@ -1,6 +1,3 @@
-from __future__ import division
-
-
 class Optimizer:
     """
     This is a general parent class for both grid and energy system optimizers
@@ -17,7 +14,6 @@ class Optimizer:
         self.project_lifetime = project_lifetime
         self.wacc = wacc
         self.tax = tax
-
         self.crf = (self.wacc * (1 + self.wacc) ** self.project_lifetime) / (
             (1 + self.wacc) ** self.project_lifetime - 1
         )
@@ -37,18 +33,13 @@ class Optimizer:
             number_of_investments = int(
                 round(self.project_lifetime / component_lifetime + 0.5)
             )
-
         first_time_investment = capex_0 * (1 + self.tax)
-
-        for count_of_replacements in range(0, number_of_investments):
-            if count_of_replacements == 0:
-                capex = first_time_investment
-            else:
-                if count_of_replacements * component_lifetime != self.project_lifetime:
-                    capex = capex + first_time_investment / (
+        capex = first_time_investment
+        for count_of_replacements in range(1, number_of_investments):
+            if count_of_replacements * component_lifetime != self.project_lifetime:
+                    capex += first_time_investment / (
                         (1 + self.wacc) ** (count_of_replacements * component_lifetime)
                     )
-
         # Substraction of component value at end of life with last replacement (= number_of_investments - 1)
         # This part calculates the salvage costs
         if number_of_investments * component_lifetime > self.project_lifetime:
@@ -59,5 +50,4 @@ class Optimizer:
             capex = capex - linear_depreciation_last_investment * (
                 number_of_investments * component_lifetime - self.project_lifetime
             ) / ((1 + self.wacc) ** (self.project_lifetime))
-
         return capex

@@ -12,7 +12,7 @@ from fastapi_app.tools import energy_system_model
 from fastapi_app.tools.error_logger import logger as error_logger
 from fastapi_app.tools.grid_obj import Grid
 from fastapi_app.tools.grid_model import GridOptimizer
-from fastapi_app.tools.mails import send_mail
+from fastapi_app.tools.mail import send_mail
 from fastapi_app.tools.solar_potential import get_dc_feed_in_sync_db_query
 
 
