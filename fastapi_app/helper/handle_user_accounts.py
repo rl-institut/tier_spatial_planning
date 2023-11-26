@@ -13,7 +13,7 @@ from typing import Optional
 from jose import jwt
 from fastapi.security.utils import get_authorization_scheme_param
 from fastapi_app.db import async_inserts, async_queries
-from fastapi_app.tools.mail import send_mail
+from fastapi_app.helper.mail import send_mail
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

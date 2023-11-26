@@ -4,7 +4,7 @@ import pandas as pd
 import oemof.solph as solph
 from datetime import datetime, timedelta
 import pyomo.environ as po
-from fastapi_app.tools.base_optimizer import BaseOptimizer
+from fastapi_app.models.base_optimizer import BaseOptimizer
 from fastapi_app.db import sa_tables
 
 

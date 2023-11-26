@@ -9,7 +9,7 @@ from fastapi_app.db.connections import get_sync_session_maker, sync_engine
 from fastapi_app.db.sync_queries import get_df, get_model_instance
 from fastapi_app.db.async_inserts import df_2_sql
 from fastapi_app.config import DB_RETRY_COUNT, RETRY_DELAY
-from fastapi_app.tools.solar_potential import download_weather_data, prepare_weather_data
+from fastapi_app.helper.solar_potential import download_weather_data, prepare_weather_data
 
 
 def merge_model(model):

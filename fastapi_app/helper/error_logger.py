@@ -3,7 +3,7 @@ import os
 import traceback
 import socket
 from fastapi_app import config
-from fastapi_app.tools.mail import send_mail
+from fastapi_app.helper.mail import send_mail
 
 directory = os.getcwd() + '/logs'
 

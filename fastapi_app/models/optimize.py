@@ -7,13 +7,13 @@ from pyomo import environ as po
 from fastapi_app.db import async_queries, sync_queries, sync_inserts, queries_demand
 from fastapi_app import config
 import fastapi_app.db.sa_tables as models
-from fastapi_app.tools.supply_optimizer import EnergySystemOptimizer
-from fastapi_app.tools import supply_optimizer
-from fastapi_app.tools.error_logger import logger as error_logger
-from fastapi_app.tools.grid_obj import Grid
-from fastapi_app.tools.grid_optimizer import GridOptimizer
-from fastapi_app.tools.mail import send_mail
-from fastapi_app.tools.solar_potential import get_dc_feed_in_sync_db_query
+from fastapi_app.models.supply_optimizer import EnergySystemOptimizer
+from fastapi_app.models import supply_optimizer
+from fastapi_app.helper.error_logger import logger as error_logger
+from fastapi_app.models.grid_obj import Grid
+from fastapi_app.models.grid_optimizer import GridOptimizer
+from fastapi_app.helper.mail import send_mail
+from fastapi_app.helper.solar_potential import get_dc_feed_in_sync_db_query
 
 
 async def check_data_availability(user_id, project_id):
@@ -162,7 +162,6 @@ def optimize_grid(user_id, project_id):
             grid.determine_cost_per_pole()
             grid.connection_cost_per_consumer()
             grid.determine_costs_per_branch()
-            # ToDo: demand of each consumer should be calculated here.
             consumer_idxs = grid.nodes[grid.nodes['node_type'] == 'consumer'].index
             grid.nodes.loc[consumer_idxs, 'yearly_consumption'] = demand_selected_period.sum() / len(consumer_idxs)
             grid.determine_shs_consumers()

@@ -3,7 +3,7 @@ import math
 import numpy as np
 import pandas as pd
 from pyproj import Proj
-from fastapi_app.tools.error_logger import logger as error_logger
+from fastapi_app.helper.error_logger import logger as error_logger
 pd.options.mode.chained_assignment = None  # default='warn'
 
 
@@ -189,11 +189,6 @@ class Grid:
         This function assumes the closest pole to the calculated location for
         the power house, as the new location of the power house.
 
-        TODO:
-        If the length of the cable connecting the power house and the nearest
-        pole is longer than the maximum allowed distance for distribution links,
-        some more poles will be placed on it.
-        """
         self.get_poles_distances_from_load_centroid()
         poles_with_consumers = self.poles()
         poles_with_consumers = poles_with_consumers[poles_with_consumers["n_connection_links"] > 0]

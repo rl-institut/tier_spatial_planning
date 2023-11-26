@@ -3,8 +3,8 @@ import numpy as np
 import pandas as pd
 from k_means_constrained import KMeansConstrained
 from scipy.sparse.csgraph import minimum_spanning_tree
-from fastapi_app.tools.grid_obj import Grid
-from fastapi_app.tools.base_optimizer import BaseOptimizer
+from fastapi_app.models.grid_obj import Grid
+from fastapi_app.models.base_optimizer import BaseOptimizer
 
 
 class GridOptimizer(BaseOptimizer):
