@@ -188,7 +188,7 @@ class Grid:
         """
         This function assumes the closest pole to the calculated location for
         the power house, as the new location of the power house.
-
+        """
         self.get_poles_distances_from_load_centroid()
         poles_with_consumers = self.poles()
         poles_with_consumers = poles_with_consumers[poles_with_consumers["n_connection_links"] > 0]
