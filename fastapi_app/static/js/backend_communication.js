@@ -40,19 +40,19 @@ function db_links_to_js(project_id) {
 
 async function db_nodes_to_js(project_id, markers_only) {
     fetch("/db_nodes_to_js/" + project_id + '/' + markers_only)
-  .then(response => response.json())
-  .then(data => {
-    map_elements = data.map_elements;
-    is_load_center = data.is_load_center;
-    load_legend();
-    if (map_elements !== null) {
-        put_markers_on_map(map_elements, markers_only);
+    .then(response => response.json())
+    .then(data => {
+        if (data !== null) {
+            map_elements = data.map_elements;
+            is_load_center = data.is_load_center;
+            load_legend();
+            if (map_elements !== null) {
+                put_markers_on_map(map_elements, markers_only);
+            }
+        } else {
+            map_elements = [];
         }
-    else {
-        map_elements = [];
-    }
-
-  })
+    });
 }
 
 

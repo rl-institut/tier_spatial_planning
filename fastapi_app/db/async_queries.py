@@ -124,7 +124,7 @@ async def _get_df(query, is_timeseries=True):
     return df
 
 
-async def _get_user_from_token(token):
+async def get_user_from_token(token):
     try:
         payload = jwt.decode(token, config.KEY_FOR_ACCESS_TOKEN, algorithms=[config.TOKEN_ALG])
         username = payload.get("sub")

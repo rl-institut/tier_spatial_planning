@@ -120,7 +120,7 @@ async def get_user_from_cookie(request):
     for i in range(2):
         token = request.cookies.get("access_token")
         scheme, param = get_authorization_scheme_param(token)
-        user = await async_queries._get_user_from_token(token=param)
+        user = await async_queries.get_user_from_token(token=param)
         if user is not None:
             return user
 

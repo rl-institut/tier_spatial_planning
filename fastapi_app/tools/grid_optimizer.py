@@ -25,7 +25,6 @@ class GridOptimizer(BaseOptimizer):
         Initialize the grid optimizer object
         """
         super().__init__(start_date, n_days, project_lifetime, wacc, tax)
-        self.mst_algorithm = mst_algorithm
 
     def calc_epc(self, capex_column, lifetime_column, df):
         capex_0 = df.loc[0, capex_column]
