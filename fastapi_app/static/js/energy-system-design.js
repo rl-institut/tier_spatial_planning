@@ -302,13 +302,13 @@ function styleInformation(id) {
         information.classList.add('components-information--constraints');
         informationSecondLine.classList.add('components-information--constraints');
     } else if (document.getElementById(id+"Design").checked) {
-        information.textContent="design";
+        information.textContent="optimized capacity";
         information.classList.remove('components-information--dispatch');
         information.classList.add('components-information--design');
     } else {
         const capacity = document.getElementById(id+"NominalCapacity").value;
         const unit = document.getElementById(id+"NominalCapacityUnit").innerText;
-        information.textContent="dispatch - " + capacity + " " + unit;
+        information.textContent="fixed capacity - " + capacity + " " + unit;
         information.classList.remove('components-information--design');
         information.classList.add('components-information--dispatch');
     }
