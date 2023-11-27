@@ -321,7 +321,7 @@ async function load_results(project_id) {
             document.getElementById('epc_diesel_genset').innerText = results['epc_diesel_genset'];
             document.getElementById('epc_battery').innerText = results['epc_battery'];
             document.getElementById('epc_total').innerText = results['epc_total'];
-            document.getElementById('LCOE').innerHTML = results['lcoe'].toString() + " ¢<sub class='sub'>USD</sub>/kWh";
+            document.getElementById('LCOE').innerHTML = results['lcoe'].toString() + " Cent<sub class='sub'>USD</sub>/kWh";
             db_nodes_to_js(project_id, false);
             db_links_to_js(project_id);
 

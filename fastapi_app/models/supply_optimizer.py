@@ -748,8 +748,7 @@ def get_results_df(ensys_opt,
         div = ensys_opt.inverter["parameters"]["efficiency"]
     else:
         div = 1
-    df.loc[0, "dc_bus_to_inverter"] = (ensys_opt.sequences_inverter.sum() /
-                                       div / 1000)
+    df.loc[0, "dc_bus_to_inverter"] = (ensys_opt.sequences_inverter.sum() / div / 1000)
     df.loc[0, "dc_bus_to_surplus"] = ensys_opt.sequences_surplus.sum() / 1000
     df.loc[0, "inverter_to_demand"] = ensys_opt.sequences_inverter.sum() / 1000
     df.loc[0, "time_energy_system_design"] = end_execution_time - start_execution_time
@@ -780,7 +779,7 @@ def get_results_df(ensys_opt,
     df.loc[0, "upfront_invest_battery"] = df.loc[0, "battery_capacity"] \
                                           * energy_system_design['battery']['parameters']['capex']
     df.loc[0, "co2_emissions"] = ensys_opt.sequences_genset.sum() * co2_emission_factor / 1000 / n_days * 365
-    df.loc[0, "fuel_consumption"] = ensys_opt.sequences_fuel_consumption_kWh.sum() / n_days * 365
+    df.loc[0, "fuel_consumption"] = ensys_opt.sequences_fuel_consumption.sum() / n_days * 365
     df.loc[0, "epc_pv"] = ensys_opt.epc['pv'] * ensys_opt.capacity_pv
     df.loc[0, "epc_diesel_genset"] = (ensys_opt.epc["diesel_genset"] * ensys_opt.capacity_genset) \
                                      + ensys_opt.diesel_genset["parameters"]["variable_cost"] \
