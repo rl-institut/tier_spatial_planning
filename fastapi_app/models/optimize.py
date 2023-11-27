@@ -6,7 +6,7 @@ import pandas as pd
 from pyomo import environ as po
 from fastapi_app.db import async_queries, sync_queries, sync_inserts, queries_demand
 from fastapi_app import config
-import fastapi_app.db.sa_tables as models
+from fastapi_app.db import sa_tables
 from fastapi_app.models.supply_optimizer import EnergySystemOptimizer
 from fastapi_app.models import supply_optimizer
 from fastapi_app.helper.error_logger import logger as error_logger
@@ -17,19 +17,19 @@ from fastapi_app.helper.solar_potential import get_dc_feed_in_sync_db_query
 
 
 async def check_data_availability(user_id, project_id):
-    project_setup = await async_queries.get_model_instance(models.ProjectSetup, user_id, project_id)
+    project_setup = await async_queries.get_model_instance(sa_tables.ProjectSetup, user_id, project_id)
     if project_setup is None:
         return False, '/project_setup/?project_id=' + str(project_id)
-    nodes = await async_queries.get_model_instance(models.Nodes, user_id, project_id)
+    nodes = await async_queries.get_model_instance(sa_tables.Nodes, user_id, project_id)
     nodes_df = pd.read_json(nodes.data) if nodes is not None else None
     if nodes_df is None or nodes_df.empty or nodes_df[nodes_df['node_type'] == 'consumer'].index.__len__() == 0:
         return False, '/consumer_selection/?project_id=' + str(project_id)
-    demand_opt_dict = await async_queries.get_model_instance(models.Demand, user_id, project_id)
+    demand_opt_dict = await async_queries.get_model_instance(sa_tables.Demand, user_id, project_id)
     if demand_opt_dict is not None:
         demand_opt_dict = demand_opt_dict.to_dict()
     if demand_opt_dict is None or demand_opt_dict['household_option'] is None:
         return False, '/demand_estimation/?project_id=' + str(project_id)
-    grid_design = await async_queries.get_df(models.GridDesign, user_id, project_id, is_timeseries=False)
+    grid_design = await async_queries.get_df(sa_tables.GridDesign, user_id, project_id, is_timeseries=False)
     if grid_design is None or grid_design.empty or pd.isna(grid_design['pole_lifetime'].iat[0]):
         return False, '/grid_design/?project_id=' + str(project_id)
     energy_system_design = await async_queries.get_energy_system_design(user_id, project_id)
@@ -54,10 +54,10 @@ def optimize_grid(user_id, project_id):
                             project_lifetime=df.loc[0, "project_lifetime"],
                             wacc=df.loc[0, "interest_rate"] / 100,
                             tax=0, )
-        nodes = sync_queries.get_model_instance(models.Nodes, user_id, project_id)
+        nodes = sync_queries.get_model_instance(sa_tables.Nodes, user_id, project_id)
         nodes = pd.read_json(nodes.data)
-        nodes['is_connected'] = True
         nodes.loc[nodes['shs_options'] == 2, 'is_connected'] = False
+        nodes['is_connected'] = True
         nodes.index = nodes.index.astype(str)
         nodes = nodes[nodes['node_type'].isin(['consumer', 'power-house'])]
         power_house = nodes.loc[nodes['node_type'] == 'power-house']
@@ -80,7 +80,7 @@ def optimize_grid(user_id, project_id):
         start_datetime = datetime.combine(start_date_obj.date(), start_date_obj.time())
         end_datetime = start_datetime + timedelta(days=int(opt.n_days))
 
-        demand_opt_dict = sync_queries.get_model_instance(models.Demand, user_id, project_id).to_dict()
+        demand_opt_dict = sync_queries.get_model_instance(sa_tables.Demand, user_id, project_id).to_dict()
         demand_full_year = queries_demand.get_demand_time_series(nodes, demand_opt_dict).to_frame('Demand')
         demand_full_year.index = pd.date_range(start=start_datetime, periods=len(demand_full_year), freq="H")
 
@@ -184,14 +184,14 @@ def optimize_grid(user_id, project_id):
                            'yearly_consumption'],
                    axis=1,
                    inplace=True)
-        sync_inserts.update_nodes_and_links(True, False, nodes, user_id, project_id, replace=True)
+        sync_inserts.update_nodes_and_links(True, False, nodes, user_id, project_id)
         links = grid.links.reset_index(drop=True)
         links.drop(labels=["x_from", "y_from", "x_to", "y_to", "n_consumers", "total_power", "from_node", "to_node"],
                    axis=1,
                    inplace=True)
-        sync_inserts.update_nodes_and_links(False, True, links.to_dict(), user_id, project_id, replace=True)
+        sync_inserts.update_nodes_and_links(False, True, links.to_dict(), user_id, project_id)
         end_execution_time = time.monotonic()
-        results = models.Results()
+        results = sa_tables.Results()
         results.n_consumers = len(grid.consumers())
         results.n_shs_consumers = nodes[nodes["is_connected"] == False].index.__len__()
         results.n_poles = len(grid.poles())
@@ -221,7 +221,7 @@ def optimize_energy_system(user_id, project_id):
         solver = 'gurobi' if po.SolverFactory('gurobi').available() else 'cbc'
         if solver == 'cbc':
             energy_system_design['diesel_genset']['settings']['offset'] = False
-        nodes = sync_queries.get_model_instance(models.Nodes, user_id, project_id)
+        nodes = sync_queries.get_model_instance(sa_tables.Nodes, user_id, project_id)
         nodes = pd.read_json(nodes.data)
         num_households = len(nodes[(nodes['consumer_type'] == 'household') &
                                    (nodes['is_connected'] == True)].index)
@@ -235,7 +235,7 @@ def optimize_energy_system(user_id, project_id):
         start = pd.to_datetime(df.loc[0, "start_date"])
         end = start + timedelta(days=int(n_days))
         solar_potential_df = get_dc_feed_in_sync_db_query(lat, lon, start, end)
-        demand_opt_dict = sync_queries.get_model_instance(models.Demand, user_id, project_id).to_dict()
+        demand_opt_dict = sync_queries.get_model_instance(sa_tables.Demand, user_id, project_id).to_dict()
         demand_full_year = queries_demand.get_demand_time_series(nodes, demand_opt_dict).to_frame('Demand')
         ensys_opt = EnergySystemOptimizer(
             start_date=df.loc[0, "start_date"],
@@ -256,16 +256,16 @@ def optimize_energy_system(user_id, project_id):
         end_execution_time = time.monotonic()
         if ensys_opt.model.solutions.__len__() == 0:
             if ensys_opt.infeasible is True:
-                df = sync_queries.get_df(models.Results, user_id, project_id)
+                df = sync_queries.get_df(sa_tables.Results, user_id, project_id)
                 df.loc[0, "infeasible"] = ensys_opt.infeasible
                 sync_inserts.insert_results_df(df, user_id, project_id)
             return False
         df, emissions, co2_emission_factor = supply_optimizer.get_emissions(ensys_opt, user_id, project_id)
         sync_inserts.merge_model(emissions)
         co2_savings = df.loc[:, "co2_savings"].max()
-        df = sync_queries.get_df(models.Results, user_id, project_id)
+        df = sync_queries.get_df(sa_tables.Results, user_id, project_id)
         grid_input_parameter = sync_queries.get_input_df(user_id, project_id)
-        links = sync_queries.get_model_instance(models.Links, user_id, project_id)
+        links = sync_queries.get_model_instance(sa_tables.Links, user_id, project_id)
         df = supply_optimizer.get_results_df(ensys_opt,
                                              df,
                                              n_days,
@@ -286,7 +286,7 @@ def optimize_energy_system(user_id, project_id):
         sync_inserts.merge_model(demand_coverage)
         demand_curve = supply_optimizer.get_demand_curve(ensys_opt, user_id, project_id)
         sync_inserts.merge_model(demand_curve)
-        project_setup = sync_queries.get_model_instance(models.ProjectSetup, user_id, project_id)
+        project_setup = sync_queries.get_model_instance(sa_tables.ProjectSetup, user_id, project_id)
         project_setup.status = "finished"
         if project_setup.email_notification is True:
             user = sync_queries.get_user_by_id(user_id)

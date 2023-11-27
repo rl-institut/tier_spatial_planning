@@ -53,57 +53,30 @@ def execute_stmt(stmt):
 
 
 
-def update_nodes_and_links(nodes: bool, links: bool, inlet, user_id, project_id, add=True, replace=True):
+def update_nodes_and_links(nodes: bool, links: bool, inlet, user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     if nodes:
         nodes = inlet
         df = nodes
         df = df.round(decimals=6)
-        if add and replace:
-            nodes_existing = get_model_instance(sa_tables.Nodes, user_id, project_id)
-            if nodes_existing is not None:
-                df_existing = pd.read_json(nodes_existing.data)
-            else:
-                df_existing = pd.DataFrame()
-            if not df_existing.empty:
-                df_existing = df_existing[(df_existing["node_type"] != "pole") &
-                                          (df_existing["node_type"] != "power-house")]
-            df_total = pd.concat([df, df_existing], ignore_index=True, axis=0)
-            df_total = df_total.drop_duplicates(subset=["latitude", "longitude", "node_type"])
-        else:
-            df_total = df
         if not df.empty:
-            df["node_type"] = df["node_type"].astype(str)
-            if df["node_type"].str.contains("consumer").sum() > 0:
-                df_links = get_df(sa_tables.Links, user_id, project_id)
-                if not df_links.empty:
-                    df_links.drop(labels=df_links.index, axis=0, inplace=True)
-                    links = sa_tables.Links()
-                    links.id = user_id
-                    links.project_id = project_id
-                    links.data = df_links.reset_index(drop=True).to_json()
-                    merge_model(links)
-        if not df_total.empty:
-            df_total.latitude = df_total.latitude.map(lambda x: "%.6f" % x)
-            df_total.longitude = df_total.longitude.map(lambda x: "%.6f" % x)
-            # finally adding the refined dataframe (if it is not empty) to the existing csv file
-            if len(df_total.index) != 0:
-                if 'parent' in df_total.columns:
-                    df_total['parent'] = df_total['parent'].where(df_total['parent'] != 'unknown', None)
+            df.latitude = df.latitude.map(lambda x: "%.6f" % x)
+            df.longitude = df.longitude.map(lambda x: "%.6f" % x)
+            if len(df.index) != 0:
+                if 'parent' in df.columns:
+                    df['parent'] = df['parent'].where(df['parent'] != 'unknown', None)
                 nodes = sa_tables.Nodes()
                 nodes.id = user_id
                 nodes.project_id = project_id
-                nodes.data = df_total.reset_index(drop=True).to_json()
+                nodes.data = df.reset_index(drop=True).to_json()
                 merge_model(nodes)
     if links:
         links = inlet
-        # defining the precision of data
         df = pd.DataFrame.from_dict(links)
         df.lat_from = df.lat_from.map(lambda x: "%.6f" % x)
         df.lon_from = df.lon_from.map(lambda x: "%.6f" % x)
         df.lat_to = df.lat_to.map(lambda x: "%.6f" % x)
         df.lon_to = df.lon_to.map(lambda x: "%.6f" % x)
-        # adding the links to the existing csv file
         if len(df.index) != 0:
             links = sa_tables.Links()
             links.id = user_id

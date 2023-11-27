@@ -14,7 +14,7 @@ from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 from typing import Dict
 import fastapi_app.helper.identify_consumers_on_map as bi
-import fastapi_app.db.sa_tables as models
+from fastapi_app.db import sa_tables
 from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.responses import RedirectResponse, FileResponse, JSONResponse, HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
@@ -126,7 +126,7 @@ async def home(request: Request):
                 else:
                     status = 'success'
                 if status in ['success', 'failure', 'revoked']:
-                    project_setup = await async_queries.get_model_instance(models.ProjectSetup, user.id, user.project_id)
+                    project_setup = await async_queries.get_model_instance(sa_tables.ProjectSetup, user.id, user.project_id)
                     user.task_id = ''
                     user.project_id = None
                     await async_inserts.update_model_by_user_id(user)
@@ -344,7 +344,7 @@ async def calculating(request: Request):
 @app.post("/set_email_notification/{project_id}/{is_active}")
 async def set_email_notification(project_id: int, is_active: bool, request: Request):
     user = await accounts.get_user_from_cookie(request)
-    project_setup = await async_queries.get_model_instance(models.ProjectSetup, user.id, project_id)
+    project_setup = await async_queries.get_model_instance(sa_tables.ProjectSetup, user.id, project_id)
     project_setup.email_notification = is_active
     await async_inserts.merge_model(project_setup)
 
@@ -352,7 +352,7 @@ async def set_email_notification(project_id: int, is_active: bool, request: Requ
 @app.get("/db_links_to_js/{project_id}")
 async def db_links_to_js(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
-    links = await async_queries.get_model_instance(models.Links, user.id, project_id)
+    links = await async_queries.get_model_instance(sa_tables.Links, user.id, project_id)
     links_json = json.loads(links.data) if links is not None else json.loads('{}')
     return JSONResponse(content=links_json, status_code=200)
 
@@ -362,7 +362,7 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
     user = await accounts.get_user_from_cookie(request)
     if project_id == 'undefined':
         project_id = get_project_id_from_request(request)
-    nodes = await async_queries.get_model_instance(models.Nodes, user.id, project_id)
+    nodes = await async_queries.get_model_instance(sa_tables.Nodes, user.id, project_id)
     df = pd.read_json(nodes.data) if nodes is not None else pd.DataFrame()
     if not df.empty:
         df = df[['latitude',
@@ -400,18 +400,18 @@ async def consumer_to_db(project_id: str, map_elements: fastapi_app.db.pydantic_
     user = await accounts.get_user_from_cookie(request)
     df = pd.DataFrame.from_records(map_elements.map_elements)
     if df.empty is True:
-        await async_inserts.remove(models.Nodes, user.id, project_id)
+        await async_inserts.remove(sa_tables.Nodes, user.id, project_id)
         return
     df = df.drop_duplicates(subset=['latitude', 'longitude'])
     drop_index = df[df['node_type'] == 'power-house'].index
     if drop_index.__len__() > 1:
         df = df.drop(index=drop_index[1:])
     if df.empty is True:
-        await async_inserts.remove(models.Nodes, user.id, project_id)
+        await async_inserts.remove(sa_tables.Nodes, user.id, project_id)
         return
     df = df[df['node_type'].isin(['power-house', 'consumer'])]
     if df.empty is True:
-        await async_inserts.remove(models.Nodes, user.id, project_id)
+        await async_inserts.remove(sa_tables.Nodes, user.id, project_id)
         return
     df = df[['latitude', 'longitude', 'how_added', 'node_type', 'consumer_type', 'custom_specification', 'shs_options',
              'consumer_detail']]
@@ -421,13 +421,13 @@ async def consumer_to_db(project_id: str, map_elements: fastapi_app.db.pydantic_
     df['is_connected'] = True
     df = df.round(decimals=6)
     if df.empty:
-        await async_inserts.remove(models.Nodes, user.id, project_id)
+        await async_inserts.remove(sa_tables.Nodes, user.id, project_id)
         return
     df["node_type"] = df["node_type"].astype(str)
     if len(df.index) != 0:
         if 'parent' in df.columns:
             df['parent'] = df['parent'].replace('unknown', None)
-    nodes = models.Nodes()
+    nodes = sa_tables.Nodes()
     nodes.id = user.id
     nodes.project_id = project_id
     nodes.data = df.reset_index(drop=True).to_json()
@@ -438,11 +438,12 @@ async def consumer_to_db(project_id: str, map_elements: fastapi_app.db.pydantic_
 @app.get("/load_results/{project_id}")
 async def load_results(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
-    df = await async_queries.get_df(models.Results, user.id, project_id)
+    project_id = int(project_id)
+    df = await async_queries.get_df(sa_tables.Results, user.id, project_id)
     infeasible = bool(df.loc[0, 'infeasible']) if df.columns.__contains__('infeasible') else False
     if df.empty:
         await asyncio.sleep(1)
-        df = await async_queries.get_df(models.Results, user.id, project_id)
+        df = await async_queries.get_df(sa_tables.Results, user.id, project_id)
         if df.empty or df['lcoe'].isna() is True:
             return JSONResponse(content={})
     if bool(df['lcoe'].isna()[0]) is True:
@@ -486,7 +487,7 @@ async def load_results(project_id, request: Request):
                  'inverter_capacity': 'kW',
                  'rectifier_capacity': 'kW',
                  'co2_emissions': 't/a',
-                 'fuel_consumption': 'kWh',
+                 'fuel_consumption': 'liter/a',
                  'peak_demand': 'kW',
                  'base_load': 'kW',
                  'max_shortage': '%',
@@ -552,12 +553,12 @@ async def load_previous_data(page_name, request: Request):
     if page_name == "project_setup":
         if project_id == 'new':
             project_id = await async_queries.next_project_id_of_user(user.id)
-            return models.ProjectSetup(project_id=project_id)
+            return sa_tables.ProjectSetup(project_id=project_id)
         try:
             project_id = int(project_id)
         except (ValueError, TypeError):
             return None
-        project_setup = await async_queries.get_model_instance(models.ProjectSetup, user.id, project_id)
+        project_setup = await async_queries.get_model_instance(sa_tables.ProjectSetup, user.id, project_id)
         if hasattr(project_setup, 'start_date'):
             project_setup.start_date = project_setup.start_date.date().__str__()
             return project_setup
@@ -568,14 +569,14 @@ async def load_previous_data(page_name, request: Request):
             project_id = int(project_id)
         except (ValueError, TypeError):
             return None
-        grid_design = await async_queries.get_model_instance(models.GridDesign, user.id, project_id)
+        grid_design = await async_queries.get_model_instance(sa_tables.GridDesign, user.id, project_id)
         return grid_design
     elif page_name == "demand_estimation":
         try:
             project_id = int(project_id)
         except (ValueError, TypeError):
             return None
-        demand_estimation = await async_queries.get_model_instance(models.Demand, user.id, project_id)
+        demand_estimation = await async_queries.get_model_instance(sa_tables.Demand, user.id, project_id)
         if demand_estimation is None or not hasattr(demand_estimation,'maximum_peak_load'):
             return None
         demand_estimation.maximum_peak_load = str(demand_estimation.maximum_peak_load) \
@@ -592,7 +593,7 @@ async def load_previous_data(page_name, request: Request):
             project_id = int(project_id)
         except (ValueError, TypeError):
             return None
-        energy_system_design = await async_queries.get_model_instance(models.EnergySystemDesign, user.id, project_id)
+        energy_system_design = await async_queries.get_model_instance(sa_tables.EnergySystemDesign, user.id, project_id)
         return energy_system_design
 
 
@@ -614,12 +615,12 @@ async def add_user_to_db(data: Dict[str, str]):
         if captcha_context.verify(captcha_input, hashed_captcha):
             guid = create_guid()
             send_activation_link(email, guid)
-            user = models.User(email=email,
-                               hashed_password=Hasher.get_password_hash(password),
-                               guid=guid,
-                               is_confirmed=False,
-                               is_active=False,
-                               is_superuser=False)
+            user = sa_tables.User(email=email,
+                                  hashed_password=Hasher.get_password_hash(password),
+                                  guid=guid,
+                                  is_confirmed=False,
+                                  is_active=False,
+                                  is_superuser=False)
             await async_inserts.merge_model(user)
         else:
             res = [False, 'Please enter a valid captcha']
@@ -633,14 +634,14 @@ async def anonymous_login(data: Dict[str, str], response: Response):
     if captcha_context.verify(captcha_input, hashed_captcha):
         guid = str(uuid.uuid4())
         name = 'anonymous__' + guid
-        user = models.User(email=name,
-                           hashed_password='',
-                           guid='',
-                           is_confirmed=True,
-                           is_active=True,
-                           is_superuser=False,
-                           task_id='',
-                           project_id=0)
+        user = sa_tables.User(email=name,
+                              hashed_password='',
+                              guid='',
+                              is_confirmed=True,
+                              is_active=True,
+                              is_superuser=False,
+                              task_id='',
+                              project_id=0)
         await async_inserts.merge_model(user)
         user = await async_queries.get_user_by_username(name)
         access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES_ANONYMOUS)
@@ -775,7 +776,8 @@ async def query_account_data(project_id: fastapi_app.db.pydantic_schema.ProjectI
             name = name.split('__')[0]
         else:
             if project_id.project_id is not None:
-                project = await async_queries.get_project_name_by_id(user.id, project_id)
+                project_id.project_id = int(project_id.project_id)
+                project = await async_queries.get_project_name_by_id(user.id, project_id.project_id)
                 project_name = project.project_name
         return fastapi_app.db.pydantic_schema.UserOverview(email=name, project_name=project_name)
     else:
@@ -801,7 +803,7 @@ async def save_grid_design(request: Request, data: fastapi_app.db.pydantic_schem
     project_id = get_project_id_from_request(request)
     data.grid_design['id'] = user.id
     data.grid_design['project_id'] = project_id
-    grid_design = models.GridDesign(**data.grid_design)
+    grid_design = sa_tables.GridDesign(**data.grid_design)
     await async_inserts.merge_model(grid_design)
     return JSONResponse(status_code=200, content={"message": "Success"})
 
@@ -854,7 +856,7 @@ async def save_demand_estimation(request: Request, data: fastapi_app.db.pydantic
                   'custom_share_3': custom_share_3,
                   'custom_share_4': custom_share_4,
                   'custom_share_5': custom_share_5,}
-    demand_estimation = models.Demand(**dictionary)
+    demand_estimation = sa_tables.Demand(**dictionary)
     await async_inserts.merge_model(demand_estimation)
     return JSONResponse(status_code=200, content={"message": "Success"})
 
@@ -876,7 +878,7 @@ async def save_project_setup(project_id, request: Request, data: fastapi_app.db.
     data.page_setup['updated_at'] = timestamp
     data.page_setup['id'] = user.id
     data.page_setup['project_id'] = project_id
-    project_setup = models.ProjectSetup(**data.page_setup)
+    project_setup = sa_tables.ProjectSetup(**data.page_setup)
     await async_inserts.merge_model(project_setup)
     return JSONResponse(status_code=200, content={"message": "Success"})
 
@@ -904,7 +906,7 @@ def get_project_id_from_request(request: Request):
 @app.get("/get_plot_data/{project_id}")
 async def get_plot_data(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
-    df = await async_queries.get_df(models.Results, user.id, project_id)
+    df = await async_queries.get_df(sa_tables.Results, user.id, project_id)
     df = df.astype(str)
     optimal_capacity_keys = ["pv", "battery", "inverter", "rectifier", "diesel_genset", "peak_demand", "surplus"]
     optimal_capacities = {key: df.loc[0, f"{key}_capacity"] for key in optimal_capacity_keys[:-2]}
@@ -915,15 +917,15 @@ async def get_plot_data(project_id, request: Request):
                    "rectifier_to_dc_bus", "pv_to_dc_bus", "battery_to_dc_bus", "dc_bus_to_battery",
                    "dc_bus_to_inverter", "dc_bus_to_surplus", "inverter_to_demand"]
     sankey_data = {key: df.loc[0, key] for key in sankey_keys}
-    energy_flow = await async_queries.get_model_instance(models.EnergyFlow, user.id, project_id)
+    energy_flow = await async_queries.get_model_instance(sa_tables.EnergyFlow, user.id, project_id)
     energy_flow = pd.read_json(energy_flow.data)
     energy_flow['battery'] = energy_flow['battery_discharge'] - energy_flow['battery_charge']
     energy_flow.drop(columns=['battery_charge', 'battery_discharge'], inplace=True)
     energy_flow.reset_index(drop=True, inplace=True)
     energy_flow = json.loads(energy_flow.to_json())
-    duration_curve = json.loads((await async_queries.get_model_instance(models.DurationCurve, user.id, project_id)).data)
-    emissions = json.loads((await async_queries.get_model_instance(models.Emissions, user.id, project_id)).data)
-    demand_coverage = json.loads((await async_queries.get_model_instance(models.DemandCoverage, user.id, project_id)).data)
+    duration_curve = json.loads((await async_queries.get_model_instance(sa_tables.DurationCurve, user.id, project_id)).data)
+    emissions = json.loads((await async_queries.get_model_instance(sa_tables.Emissions, user.id, project_id)).data)
+    demand_coverage = json.loads((await async_queries.get_model_instance(sa_tables.DemandCoverage, user.id, project_id)).data)
     return JSONResponse(status_code=200, content={"optimal_capacities": optimal_capacities,
                                                   "lcoe_breakdown": lcoe_breakdown,
                                                   "sankey_data": sankey_data,
@@ -985,6 +987,7 @@ async def add_buildings_inside_boundary(js_data: fastapi_app.db.pydantic_schema.
     nodes_list = df.to_dict('records')
     return JSONResponse({'executed': True, 'msg': '', 'new_consumers': nodes_list})
 
+
 @app.post("/remove_buildings_inside_boundary")
 async def remove_buildings_inside_boundary(data: fastapi_app.db.pydantic_schema.MapData):
     df = pd.DataFrame.from_records(data.map_elements)
@@ -996,33 +999,13 @@ async def remove_buildings_inside_boundary(data: fastapi_app.db.pydantic_schema.
         return JSONResponse({'map_elements': df.to_dict('records')})
 
 
-# add new manually-selected nodes to the *.csv file
-@app.post("/database_add_remove_manual/{add_remove}/{project_id}")
-async def database_add_remove_manual(add_remove: str, project_id, add_node_request: fastapi_app.db.pydantic_schema.AddNodeRequest,
-                                     request: Request):
-    user = await accounts.get_user_from_cookie(request)
-    nodes = models.Nodes(**dict(add_node_request)).to_dict()
-    if add_remove == "remove":
-        nodes = await async_queries.get_model_instance(models.Nodes, user.id, project_id)
-        df = pd.read_json(nodes.data)
-        df = df[(df["node_type"] != "pole") & (df["node_type"] != "power-house")]
-        for index in df.index:
-            if (round(add_node_request.latitude, 6) == df.to_dict()["latitude"][index]) and \
-                    (round(add_node_request.longitude, 6) == df.to_dict()["longitude"][index]):
-                df.drop(labels=index, axis=0, inplace=True)
-        df = df.reset_index(drop=True)
-        await async_inserts.update_nodes_and_links(True, False, df.to_dict(), user.id, project_id, add=False)
-    else:
-        await async_inserts.update_nodes_and_links(True, False, nodes, user.id, project_id, add=True, replace=False)
-
-
 async def remove_results(user_id, project_id):
-    await async_inserts.remove(models.Results, user_id, project_id)
-    await async_inserts.remove(models.DemandCoverage, user_id, project_id)
-    await async_inserts.remove(models.EnergyFlow, user_id, project_id)
-    await async_inserts.remove(models.Emissions, user_id, project_id)
-    await async_inserts.remove(models.DurationCurve, user_id, project_id)
-    await async_inserts.remove(models.Links, user_id, project_id)
+    await async_inserts.remove(sa_tables.Results, user_id, project_id)
+    await async_inserts.remove(sa_tables.DemandCoverage, user_id, project_id)
+    await async_inserts.remove(sa_tables.EnergyFlow, user_id, project_id)
+    await async_inserts.remove(sa_tables.Emissions, user_id, project_id)
+    await async_inserts.remove(sa_tables.DurationCurve, user_id, project_id)
+    await async_inserts.remove(sa_tables.Links, user_id, project_id)
 
 
 @worker.task(name='celery_worker.task_grid_opt',
@@ -1061,7 +1044,7 @@ def task_remove_anonymous_users(user_id):
 
 async def optimization(user_id, project_id):
     await remove_results(user_id, project_id)
-    project_setup = await async_queries.get_model_instance(models.ProjectSetup, user_id, project_id)
+    project_setup = await async_queries.get_model_instance(sa_tables.ProjectSetup, user_id, project_id)
     project_setup.status = "queued"
     await async_inserts.merge_model(project_setup)
     if bool(os.environ.get('DOCKERIZED')):
@@ -1109,7 +1092,7 @@ async def forward_if_no_task_is_pending(request: Request):
 @app.post("/forward_if_consumer_selection_exists/{project_id}")
 async def forward_if_consumer_selection_exists(project_id, request: Request):
     user = await accounts.get_user_from_cookie(request)
-    nodes = await async_queries.get_model_instance(models.Nodes, user.id, project_id)
+    nodes = await async_queries.get_model_instance(sa_tables.Nodes, user.id, project_id)
     if nodes is None:
         res = {'forward': False}
     else:
@@ -1141,7 +1124,7 @@ async def waiting_for_results(request: Request, data: fastapi_app.db.pydantic_sc
     async def pause_until_results_are_available(user_id, project_id, status):
         n_iter = 4 if status == 'unknown' else 2
         for i in range(n_iter):
-            results = await async_queries.get_model_instance(models.Results, user_id, project_id)
+            results = await async_queries.get_model_instance(sa_tables.Results, user_id, project_id)
             if hasattr(results, 'lcoe') and results.lcoe is not None:
                 break
             elif hasattr(results, 'infeasible') and bool(results.infeasible) is True:
@@ -1193,7 +1176,7 @@ async def waiting_for_results(request: Request, data: fastapi_app.db.pydantic_sc
                 res['model'] = 'supply'
                 res[task.id] = task.id
             else:
-                project_setup = await async_queries.get_model_instance(models.ProjectSetup, user.id, data.project_id)
+                project_setup = await async_queries.get_model_instance(sa_tables.ProjectSetup, user.id, data.project_id)
                 if project_setup is not None:
                     if 'status' in locals():
                         if status in ['success', 'failure', 'revoked']:
@@ -1251,14 +1234,14 @@ async def revoke_users_task(request: Request):
 async def export_data(project_id: int, file_type:str,  request: Request):
     user = await accounts.get_user_from_cookie(request)
     input_parameters_df = await async_queries.get_input_df(user.id, project_id)
-    results_df = await async_queries.get_df(models.Results, user.id, project_id)
-    energy_flow = await async_queries.get_model_instance(models.EnergyFlow, user.id, project_id)
+    results_df = await async_queries.get_df(sa_tables.Results, user.id, project_id)
+    energy_flow = await async_queries.get_model_instance(sa_tables.EnergyFlow, user.id, project_id)
     energy_flow_df = pd.read_json(energy_flow.data) if energy_flow is not None else pd.DataFrame()
-    nodes = await async_queries.get_model_instance(models.Nodes, user.id, project_id)
-    links = await async_queries.get_model_instance(models.Links, user.id, project_id)
+    nodes = await async_queries.get_model_instance(sa_tables.Nodes, user.id, project_id)
+    links = await async_queries.get_model_instance(sa_tables.Links, user.id, project_id)
     nodes_df = pd.read_json(nodes.data) if nodes is not None else pd.DataFrame()
     links_df = pd.read_json(links.data) if links is not None else pd.DataFrame()
-    energy_system_design = await async_queries.get_df(models.EnergySystemDesign, user.id, project_id)
+    energy_system_design = await async_queries.get_df(sa_tables.EnergySystemDesign, user.id, project_id)
     excel_file = df_to_xlsx(input_parameters_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df)
     response = StreamingResponse(excel_file, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_results.xlsx"

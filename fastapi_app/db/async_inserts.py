@@ -5,7 +5,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy import delete, text
 from fastapi_app.db import sa_tables
 from fastapi_app.db.connections import get_async_session_maker, async_engine
-from fastapi_app.db.async_queries import get_df, get_model_instance, get_user_by_username, get_projects_of_user
+from fastapi_app.db.async_queries import get_model_instance, get_user_by_username, get_projects_of_user
 from sqlalchemy import update
 from fastapi_app.config import DB_RETRY_COUNT, RETRY_DELAY
 
@@ -113,63 +113,6 @@ async def remove_project(user_id, project_id):
                         sa_tables.Emissions, sa_tables.DurationCurve, sa_tables.ProjectSetup, sa_tables.EnergySystemDesign,
                         sa_tables.GridDesign]:
         await remove(model_class, user_id, project_id)
-
-
-async def update_nodes_and_links(nodes: bool, links: bool, inlet: dict, user_id, project_id, add=True, replace=True):
-    user_id, project_id = int(user_id), int(project_id)
-    if nodes:
-        nodes = inlet
-        try:
-            df = pd.DataFrame.from_dict(nodes).round(decimals=6)
-        except ValueError:
-            df = pd.DataFrame(nodes, index=[0]).round(decimals=6)
-        if add and replace:
-            df_existing = await get_df(sa_tables.Nodes, user_id, project_id)
-            if not df_existing.empty:
-                df_existing = df_existing[(df_existing["node_type"] != "pole") &
-                                          (df_existing["node_type"] != "power-house")]
-            df_total = pd.concat([df, df_existing], ignore_index=True, axis=0)
-            df_total = df_total.drop_duplicates(subset=["latitude", "longitude", "node_type"])
-        else:
-            df_total = df
-        if not df.empty:
-            df["node_type"] = df["node_type"].astype(str)
-            if df["node_type"].str.contains("consumer").sum() > 0:
-                df_links = await get_df(sa_tables.Links, user_id, project_id)
-                if not df_links.empty:
-                    df_links.drop(labels=df_links.index, axis=0, inplace=True)
-                    links = sa_tables.Links()
-                    links.id = user_id
-                    links.project_id = project_id
-                    links.data = df_links.reset_index(drop=True).to_json()
-                    await merge_model(links)
-        if not df_total.empty:
-            df_total.latitude = df_total.latitude.map(lambda x: "%.6f" % x)
-            df_total.longitude = df_total.longitude.map(lambda x: "%.6f" % x)
-            # finally adding the refined dataframe (if it is not empty) to the existing csv file
-            if len(df_total.index) != 0:
-                if 'parent' in df_total.columns:
-                    df_total['parent'] = df_total['parent'].where(df_total['parent'] != 'unknown', None)
-                nodes = sa_tables.Nodes()
-                nodes.id = user_id
-                nodes.project_id = project_id
-                nodes.data = df_total.reset_index(drop=True).to_json()
-                await merge_model(nodes)
-    if links:
-        links = inlet
-        # defining the precision of data
-        df = pd.DataFrame.from_dict(links)
-        df.lat_from = df.lat_from.map(lambda x: "%.6f" % x)
-        df.lon_from = df.lon_from.map(lambda x: "%.6f" % x)
-        df.lat_to = df.lat_to.map(lambda x: "%.6f" % x)
-        df.lon_to = df.lon_to.map(lambda x: "%.6f" % x)
-        # adding the links to the existing csv file
-        if len(df.index) != 0:
-            links = sa_tables.Links()
-            links.id = user_id
-            links.project_id = project_id
-            links.data = df.reset_index(drop=True).to_json()
-            await merge_model(links)
 
 
 async def sql_str_2_db(sql):
