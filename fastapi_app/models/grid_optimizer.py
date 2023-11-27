@@ -284,7 +284,7 @@ class GridOptimizer(BaseOptimizer):
             size_min=0,
             size_max=grid.pole_max_connection,
             random_state=0,
-            n_jobs=1,
+            n_jobs=5,
         )
 
         # fit clusters to the data
