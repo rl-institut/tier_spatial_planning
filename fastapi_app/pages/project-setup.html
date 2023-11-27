@@ -3,7 +3,11 @@
   <head>
     {% set title='Project Setup' %}
     {% include '_head.html' %}
-
+      <style>
+    .custom-textarea-height {
+      height: 122px;
+    }
+    </style>
   </head>
   <body onload="redirect_if_cookie_is_missing(true, true);
                 load_previous_data('project_setup?project_id={{ project_id }}');
@@ -35,7 +39,7 @@
                   </span>
                 </label>
                 <textarea
-                  class="form-control"
+                  class="form-control custom-textarea-height"
                   maxlength="200"
                   id="projectDescription"
                   placeholder="Description"
