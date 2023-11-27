@@ -9,7 +9,7 @@
                 refreshBlocksOnDiagramOnLoad();
                 load_previous_data('energy_system_design?project_id={{ project_id }}');
                 check_box_visibility('shortage');
-                show_user_email_in_navbar();">
+                show_email_and_project_in_navbar({{ project_id }});">
   {% include '_navbar.html' %}
   {% include '_wizard.html' %}
     <main>

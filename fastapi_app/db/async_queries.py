@@ -30,6 +30,13 @@ async def get_user_by_guid(guid):
     return user
 
 
+async def get_project_name_by_id(user_id, project_id):
+    query = select(sa_tables.ProjectSetup).where(sa_tables.ProjectSetup.id == user_id,
+                                                 sa_tables.ProjectSetup.project_id == project_id)
+    project = await _execute_with_retry(query, which='first')
+    return project
+
+
 async def get_max_project_id_of_user(user_id):
     subqry = select(sa.func.max(sa_tables.ProjectSetup.project_id)).filter(sa_tables.ProjectSetup.id == user_id).as_scalar()
     query = select(sa_tables.ProjectSetup).filter(sa_tables.ProjectSetup.id == user_id,

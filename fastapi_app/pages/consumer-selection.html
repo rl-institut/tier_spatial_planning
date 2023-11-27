@@ -65,7 +65,7 @@
   </head>
   <body onload="redirect_if_cookie_is_missing(true, true);
                 db_nodes_to_js({{ project_id }}, true);
-                show_user_email_in_navbar();
+                show_email_and_project_in_navbar({{ project_id }});
                 show_video_tutorial();">
   {% include '_navbar.html' %}
   {% include '_wizard.html' %}

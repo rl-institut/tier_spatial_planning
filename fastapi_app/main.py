@@ -766,15 +766,20 @@ async def logout(response: Response):
 
 
 @app.post("/query_account_data/")
-async def query_account_data(request: Request):
+async def query_account_data(project_id: fastapi_app.db.pydantic_schema.ProjectID, request: Request):
     user = await accounts.get_user_from_cookie(request)
+    project_name = ''
     if user is not None:
         name = user.email
         if 'anonymous__' in name:
             name = name.split('__')[0]
-        return fastapi_app.db.pydantic_schema.UserOverview(email=name)
+        else:
+            if project_id.project_id is not None:
+                project = await async_queries.get_project_name_by_id(user.id, project_id)
+                project_name = project.project_name
+        return fastapi_app.db.pydantic_schema.UserOverview(email=name, project_name=project_name)
     else:
-        return fastapi_app.db.pydantic_schema.UserOverview(email="")
+        return fastapi_app.db.pydantic_schema.UserOverview(email="", project_name="")
 
 
 @app.post("/has_cookie/")

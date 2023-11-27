@@ -1,6 +1,5 @@
 import inspect
-from typing import List, Dict, Union
-
+from typing import List, Dict, Union, Optional
 import flatten_dict
 import pandas as pd
 from flatten_dict.reducers import make_reducer
@@ -43,6 +42,7 @@ class Token(BaseModel):
 
 class UserOverview(BaseModel):
     email: str
+    project_name: Optional[str] = None
 
 
 class ShsIdentificationRequest(BaseModel):
@@ -86,7 +86,7 @@ class TaskID(BaseModel):
 
 
 class ProjectID(BaseModel):
-    project_id: str
+    project_id: Optional[str] = None
 
 
 class ImportFileRequestList(BaseModel):

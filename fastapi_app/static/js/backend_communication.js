@@ -926,18 +926,23 @@ function  load_previous_data(page_name){
 }
 
 
-function show_user_email_in_navbar() {
+function show_email_and_project_in_navbar(project_id=null) {
     fetch("query_account_data/", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
+        headers: {"Content-Type": "application/json",},
+        body: JSON.stringify({
+            'project_id': project_id
+        }),
     })
         .then(response => response.json())
         .then(data => {
             const showMailElement = document.getElementById("showMail");
+            const showProjectElement = document.getElementById("showProject");
             if (showMailElement) {
                 showMailElement.innerHTML = data.email;
+            }
+            if (showMailElement) {
+                showProjectElement.innerHTML = "     Project: " + data.project_name;
             }
         });
 }
