@@ -941,7 +941,7 @@ function show_email_and_project_in_navbar(project_id=null) {
             if (showMailElement) {
                 showMailElement.innerHTML = data.email;
             }
-            if (showMailElement) {
+            if (showProjectElement && data.project_name) {
                 showProjectElement.innerHTML = "     Project: " + data.project_name;
             }
         });
