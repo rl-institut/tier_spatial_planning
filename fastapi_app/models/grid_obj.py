@@ -1,95 +1,22 @@
 import copy
 import math
+import time
 import numpy as np
 import pandas as pd
 from pyproj import Proj
 from fastapi_app.helper.error_logger import logger as error_logger
+from fastapi_app.db import sync_inserts, sa_tables
+
 pd.options.mode.chained_assignment = None  # default='warn'
 
 
 class Grid:
-    """
-    Defines a basic grid containing all the information about the topology
-    of the network. The grid contains a network representation composed of
-    a set of nodes and a set of links.
-
-    Attributes
-    ----------
-
-    nodes: :class:`pandas.core.frame.DataFrame`
-        pandas dataframe containing the following information
-        related to the nodes (consumers and/or poles):
-            - label
-            - coordinates
-                + latitude & longitude
-                + x & y
-            - node_type ('consumer' or 'pole')
-            - consumer_type ('household', 'enterprise', ...)
-            - consumer_detail ('default' or 'custom')
-            - is_connected (is False only for solar-home-system nodes)
-            - how_added (if a node is added as a result of optimization or by user)
-            - segment (which cluster the node belongs to)
-            - allocation capacity, denoting how many consumers can be
-              connected to the node.
-
-    links : :class:`pandas.core.frame.DataFrame`
-        Table containing the following information related to the links:
-            - label
-            - lat_from
-            - lat_to
-            - long_from
-            - long_to
-            - link_type
-                + 'connection': between poles and consumers
-                + 'distribution': between two poles
-            - length
-
-
-    pole_max_connection: int
-        maximum number of consumers that can be connected to each pole.
-
-    max_current: float
-        the maximal current expected to flow into the cables [A].
-
-    voltage: float
-        the nominal (minimum) voltage that must be delivered to each consumer [V].
-
-    cables: :class:`pandas.core.frame.DataFrame`
-        a panda dataframe including the following characteristics of
-        the 'distribution' and 'connection' cables:
-            + cross-section area in [mm²]
-            + electrical resistivity in [Ohm*mm²/m].
-    """
-
-    # -------------------- CONSTRUCTOR --------------------#
     def __init__(
         self,
         grid_id="unnamed_grid",
-        nodes=pd.DataFrame(
-            {
-                "label": pd.Series([], dtype=str),
-                "latitude": pd.Series([], dtype=np.dtype(float)),
-                "longitude": pd.Series([], dtype=np.dtype(float)),
-                "x": pd.Series([], dtype=np.dtype(float)),
-                "y": pd.Series([], dtype=np.dtype(float)),
-                "node_type": pd.Series([], dtype=str),
-                "consumer_type": pd.Series([], dtype=str),
-                "consumer_detail": pd.Series([], dtype=str),
-                "distance_to_load_center": pd.Series([], dtype=np.dtype(float)),
-                "is_connected": pd.Series([], dtype=bool),
-                "how_added": pd.Series([], dtype=str),
-                "type_fixed": pd.Series([], dtype=bool),
-                "cluster_label": pd.Series([], dtype=np.dtype(int)),
-                "n_connection_links": pd.Series([], dtype=np.dtype(str)),
-                "n_distribution_links": pd.Series([], dtype=np.dtype(int)),
-                "parent": pd.Series([], dtype=np.dtype(str)),
-                "distribution_cost": pd.Series([], dtype=np.dtype(float)),
-            }
-        ).set_index("label"),
-        ref_node=np.zeros(2),
-        links=pd.DataFrame(
-            {
-                "label": pd.Series([], dtype=str),
+        nodes = sa_tables.Nodes().to_df(),
+        links = pd.DataFrame(
+            {   "label": pd.Series([], dtype=str),
                 "lat_from": pd.Series([], dtype=np.dtype(float)),
                 "lon_from": pd.Series([], dtype=np.dtype(float)),
                 "lat_to": pd.Series([], dtype=np.dtype(float)),
@@ -103,9 +30,8 @@ class Grid:
                 "n_consumers": pd.Series([], dtype=int),
                 "total_power": pd.Series([], dtype=int),
                 "from_node": pd.Series([], dtype=str),
-                "to_node": pd.Series([], dtype=str),
-            }
-        ).set_index("label"),
+                "to_node": pd.Series([], dtype=str),}).set_index("label"),
+        ref_node=np.zeros(2),
         epc_distribution_cable=2,  # per meter
         epc_connection_cable=0.5,  # per meter
         epc_connection=12,
@@ -1067,4 +993,56 @@ class Grid:
             mask = links['link_type'] == 'connection'
             links.loc[mask, ['from_node', 'to_node']] = links.loc[mask, ['to_node', 'from_node']].values
         self.links = links.copy(True)
+
+    def nodes_and_links_to_db(self, df, start_execution_time, cost_shs, user_id, project_id):
+        self.user_id = user_id
+        self.project_id = project_id
+        nodes_df = self.nodes.reset_index(drop=True)
+        nodes_df.drop(labels=["x", "y", "cluster_label", "type_fixed", "n_connection_links", "n_distribution_links",
+                              "cost_per_pole", "branch", "parent_branch", "total_grid_cost_per_consumer_per_a",
+                              "connection_cost_per_consumer", 'cost_per_branch', 'distribution_cost_per_branch',
+                              'yearly_consumption'],
+                      axis=1,
+                      inplace=True)
+        nodes_df = nodes_df.round(decimals=6)
+        if not nodes_df.empty:
+            nodes_df.latitude = nodes_df.latitude.map(lambda x: "%.6f" % x)
+            nodes_df.longitude = nodes_df.longitude.map(lambda x: "%.6f" % x)
+            if len(nodes_df.index) != 0:
+                if 'parent' in nodes_df.columns:
+                    nodes_df['parent'] = nodes_df['parent'].where(nodes_df['parent'] != 'unknown', None)
+                nodes = sa_tables.Nodes()
+                nodes.id = self.user_id
+                nodes.project_id = self.project_id
+                nodes.data = nodes_df.reset_index(drop=True).to_json()
+                sync_inserts.merge_model(nodes)
+        links_df = self.links.reset_index(drop=True)
+        links_df.drop(labels=["x_from", "y_from", "x_to", "y_to", "n_consumers", "total_power", "from_node", "to_node"],
+                      axis=1,
+                      inplace=True)
+        links_df.lat_from = links_df.lat_from.map(lambda x: "%.6f" % x)
+        links_df.lon_from = links_df.lon_from.map(lambda x: "%.6f" % x)
+        links_df.lat_to = links_df.lat_to.map(lambda x: "%.6f" % x)
+        links_df.lon_to = links_df.lon_to.map(lambda x: "%.6f" % x)
+        if len(df.index) != 0:
+            links = sa_tables.Links()
+            links.id = self.user_id
+            links.project_id = self.project_id
+            links.data = links_df.reset_index(drop=True).to_json()
+            sync_inserts.merge_model(links)
+        end_execution_time = time.monotonic()
+        results = sa_tables.Results()
+        results.n_consumers = len(self.consumers())
+        results.n_shs_consumers = nodes_df[nodes_df["is_connected"] == False].index.__len__()
+        results.n_poles = len(self.poles())
+        results.length_distribution_cable = int(self.links[self.links.link_type == "distribution"]["length"].sum())
+        results.length_connection_cable = int(self.links[self.links.link_type == "connection"]["length"].sum())
+        results.cost_grid = int(self.cost()) if self.links.index.__len__() > 0 else 0
+        results.cost_shs = int(cost_shs)
+        results.time_grid_design = round(end_execution_time - start_execution_time, 1)
+        results.n_distribution_links = int(self.links[self.links["link_type"] == "distribution"].shape[0])
+        results.n_connection_links = int(self.links[self.links["link_type"] == "connection"].shape[0])
+        results.id = self.user_id
+        results.project_id = self.project_id
+        sync_inserts.merge_model(results)
 

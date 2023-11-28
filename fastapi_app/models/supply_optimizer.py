@@ -10,7 +10,7 @@ from fastapi_app.db import sa_tables
 from fastapi_app.db import sync_inserts, sync_queries
 from fastapi_app import config
 from fastapi_app.helper.mail import send_mail
-from fastapi_app.inputs import solar_potential
+from fastapi_app.inputs import solar_potential, demand_estimation
 
 
 def optimize_energy_system(user_id, project_id):
@@ -79,7 +79,7 @@ class EnergySystemOptimizer(BaseOptimizer):
             lat, lon = nodes[['latitude', 'longitude']].mean().to_list()
         self.solar_potential = solar_potential.get_dc_feed_in_sync_db_query(lat, lon, self.dt_index).loc[self.dt_index]
         demand_opt_dict = sync_queries.get_model_instance(sa_tables.Demand, user_id, project_id).to_dict()
-        self.demand_full_year = queries_demand.get_demand_time_series(nodes, demand_opt_dict).to_frame('Demand')
+        self.demand_full_year = demand_estimation.get_demand_time_series(nodes, demand_opt_dict).to_frame('Demand')
         self.demand = self.demand_full_year.loc[self.dt_index]['Demand'].copy()
         self.solar_potential_peak = self.solar_potential.max()
         self.demand_peak = self.demand.max()
@@ -684,14 +684,15 @@ class EnergySystemOptimizer(BaseOptimizer):
     def results_to_db(self):
         if self.model.solutions.__len__() == 0:
             if self.infeasible is True:
-                df = sync_queries.get_df(sa_tables.Results, self.user_id, self.project_id)
-                df.loc[0, "infeasible"] = self.infeasible
-                sync_inserts.insert_results_df(df, self.user_id, self.project_id)
+                results = sync_queries.get_model_instance(sa_tables.Results, self.user_id, self.project_id)
+                results.infeasable = self.infeasible
+                sync_inserts.merge_model(results)
             return False
         self._emissions_to_db()
         self._results_to_db()
         self._energy_flow_to_db()
         self._demand_curve_to_db()
+        self._demand_coverage_to_db()
         self._project_setup_to_db()
         return True
 
@@ -707,7 +708,7 @@ class EnergySystemOptimizer(BaseOptimizer):
         project_setup.email_notification = False
         sync_inserts.merge_model(project_setup)
 
-    def _get_demand_coverage(self):
+    def _demand_coverage_to_db(self):
         df = pd.DataFrame()
         df["demand"] = self.sequences_demand
         df["renewable"] = self.sequences_inverter
@@ -720,7 +721,7 @@ class EnergySystemOptimizer(BaseOptimizer):
         demand_coverage.id = self.user_id
         demand_coverage.project_id = self.project_id
         demand_coverage.data = df.reset_index(drop=True).to_json()
-        return demand_coverage
+        sync_inserts.merge_model(demand_coverage)
 
 
     def _emissions_to_db(self):

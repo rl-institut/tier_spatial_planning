@@ -6,6 +6,7 @@ from fastapi_app.db import sa_tables
 from fastapi_app.helper.error_logger import logger as error_logger
 from fastapi_app.models.grid_obj import Grid
 from fastapi_app.models.grid_optimizer import GridOptimizer
+from fastapi_app.inputs import demand_estimation
 
 
 def optimize_grid(user_id, project_id):
@@ -52,7 +53,7 @@ def optimize_grid(user_id, project_id):
         end_datetime = start_datetime + timedelta(days=int(opt.n_days))
 
         demand_opt_dict = sync_queries.get_model_instance(sa_tables.Demand, user_id, project_id).to_dict()
-        demand_full_year = queries_demand.get_demand_time_series(nodes_df, demand_opt_dict).to_frame('Demand')
+        demand_full_year = demand_estimation.get_demand_time_series(nodes_df, demand_opt_dict).to_frame('Demand')
         demand_full_year.index = pd.date_range(start=start_datetime, periods=len(demand_full_year), freq="H")
 
         # Then the demand for the selected time period given by the user will be
@@ -146,56 +147,9 @@ def optimize_grid(user_id, project_id):
                 break
 
         cost_shs =  0 #peak_demand_shs_consumers.sum()
-
+        grid.nodes_and_links_to_db(df, start_execution_time, cost_shs, user_id, project_id)
         # get all poles obtained by the network relaxation method
-        nodes_df = grid.nodes.reset_index(drop=True)
-        nodes_df.drop(labels=["x", "y", "cluster_label", "type_fixed", "n_connection_links", "n_distribution_links",
-                           "cost_per_pole", "branch", "parent_branch", "total_grid_cost_per_consumer_per_a",
-                           "connection_cost_per_consumer", 'cost_per_branch', 'distribution_cost_per_branch',
-                           'yearly_consumption'],
-                   axis=1,
-                   inplace=True)
-        nodes_df = nodes_df.round(decimals=6)
-        if not nodes_df.empty:
-            nodes_df.latitude = nodes_df.latitude.map(lambda x: "%.6f" % x)
-            nodes_df.longitude = nodes_df.longitude.map(lambda x: "%.6f" % x)
-            if len(nodes_df.index) != 0:
-                if 'parent' in nodes_df.columns:
-                    nodes_df['parent'] = nodes_df['parent'].where(nodes_df['parent'] != 'unknown', None)
-                nodes = sa_tables.Nodes()
-                nodes.id = user_id
-                nodes.project_id = project_id
-                nodes.data = nodes_df.reset_index(drop=True).to_json()
-                sync_inserts.merge_model(nodes)
-        links_df = grid.links.reset_index(drop=True)
-        links_df.drop(labels=["x_from", "y_from", "x_to", "y_to", "n_consumers", "total_power", "from_node", "to_node"],
-                   axis=1,
-                   inplace=True)
-        links_df.lat_from = links_df.lat_from.map(lambda x: "%.6f" % x)
-        links_df.lon_from = links_df.lon_from.map(lambda x: "%.6f" % x)
-        links_df.lat_to = links_df.lat_to.map(lambda x: "%.6f" % x)
-        links_df.lon_to = links_df.lon_to.map(lambda x: "%.6f" % x)
-        if len(df.index) != 0:
-            links = sa_tables.Links()
-            links.id = user_id
-            links.project_id = project_id
-            links.data = links_df.reset_index(drop=True).to_json()
-            sync_inserts.merge_model(links)
-        end_execution_time = time.monotonic()
-        results = sa_tables.Results()
-        results.n_consumers = len(grid.consumers())
-        results.n_shs_consumers = nodes_df[nodes_df["is_connected"] == False].index.__len__()
-        results.n_poles = len(grid.poles())
-        results.length_distribution_cable = int(grid.links[grid.links.link_type == "distribution"]["length"].sum())
-        results.length_connection_cable = int(grid.links[grid.links.link_type == "connection"]["length"].sum())
-        results.cost_grid = int(grid.cost()) if grid.links.index.__len__() > 0 else 0
-        results.cost_shs = int(cost_shs)
-        results.time_grid_design = round(end_execution_time - start_execution_time, 1)
-        results.n_distribution_links = int(grid.links[grid.links["link_type"] == "distribution"].shape[0])
-        results.n_connection_links = int(grid.links[grid.links["link_type"] == "connection"].shape[0])
-        results.id = user_id
-        results.project_id = project_id
-        sync_inserts.merge_model(results)
+
     except Exception as exc:
         user_name = 'user with user_id: {}'.format(user_id)
         error_logger.error_log(exc, 'no request', user_name)
