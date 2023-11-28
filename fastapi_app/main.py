@@ -20,7 +20,7 @@ from fastapi.responses import RedirectResponse, FileResponse, JSONResponse, HTML
 from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
 from fastapi.staticfiles import StaticFiles
-from fastapi_app.models.optimize import check_data_availability, optimize_grid, optimize_energy_system
+from fastapi_app.models.optimize import optimize_grid, optimize_energy_system
 from fastapi_app.helper.handle_user_accounts import Hasher, create_guid, is_valid_credentials, send_activation_link, activate_mail, \
     authenticate_user, create_access_token, send_mail, create_default_user_account
 from fastapi_app.helper import handle_user_accounts as accounts
@@ -413,7 +413,13 @@ async def consumer_to_db(project_id: str, map_elements: fastapi_app.db.pydantic_
     if df.empty is True:
         await async_inserts.remove(sa_tables.Nodes, user.id, project_id)
         return
-    df = df[['latitude', 'longitude', 'how_added', 'node_type', 'consumer_type', 'custom_specification', 'shs_options',
+    df = df[['latitude',
+             'longitude',
+             'how_added',
+             'node_type',
+             'consumer_type',
+             'custom_specification',
+             'shs_options',
              'consumer_detail']]
     df['consumer_type'] = df['consumer_type'].fillna('household')
     df['custom_specification'] = df['custom_specification'].fillna('')
@@ -427,6 +433,8 @@ async def consumer_to_db(project_id: str, map_elements: fastapi_app.db.pydantic_
     if len(df.index) != 0:
         if 'parent' in df.columns:
             df['parent'] = df['parent'].replace('unknown', None)
+    df.latitude = df.latitude.map(lambda x: "%.6f" % x)
+    df.longitude = df.longitude.map(lambda x: "%.6f" % x)
     nodes = sa_tables.Nodes()
     nodes.id = user.id
     nodes.project_id = project_id
@@ -1110,7 +1118,7 @@ async def start_calculation(project_id, request: Request):
     if project_id is None:
         project_id = request.query_params.get('project_id')
     user = await accounts.get_user_from_cookie(request)
-    forward, redirect = await check_data_availability(user.id, project_id)
+    forward, redirect = await async_queries.check_data_availability(user.id, project_id)
     if forward is False:
         return JSONResponse({'task_id': '', 'redirect': redirect})
     task_id = await optimization(user.id, project_id)
