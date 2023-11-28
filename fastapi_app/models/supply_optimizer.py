@@ -21,6 +21,8 @@ class EnergySystemOptimizer(BaseOptimizer):
 
     def __init__(
             self,
+            user_id,
+            project_id,
             start_datetime,
             n_days,
             project_lifetime,
@@ -39,7 +41,7 @@ class EnergySystemOptimizer(BaseOptimizer):
         """
         Initialize the grid optimizer object
         """
-        super().__init__(start_datetime, n_days, project_lifetime, wacc, tax)
+        super().__init__(user_id, project_id, start_datetime, n_days, project_lifetime, wacc, tax)
         if pv["settings"]["is_selected"] is True or battery["settings"]["is_selected"] is True:
             inverter["settings"]["is_selected"] = True
         if diesel_genset["settings"]["is_selected"] is False:
@@ -62,8 +64,7 @@ class EnergySystemOptimizer(BaseOptimizer):
     def _optimize_energy_system(self):
         # define an empty dictionary for all epc values
         self.epc = {}
-        energy_system = solph.EnergySystem(timeindex=self.dt_index.copy(),
-                                           infer_last_interval=True)
+        energy_system = solph.EnergySystem(timeindex=self.dt_index.copy(), infer_last_interval=True)
         # -------------------- BUSES --------------------
         # create electricity and fuel buses
         b_el_ac = solph.Bus(label="electricity_ac")
@@ -451,13 +452,13 @@ class EnergySystemOptimizer(BaseOptimizer):
             energy_system.results["meta"] = solph.processing.meta_results(model)
             self.results_main = solph.processing.results(model)
 
-            self.process_results()
+            self._process_results()
         else:
             print("No solution found")
         if list(res['Solver'])[0]['Termination condition'] == 'infeasible':
             self.infeasible = True
 
-    def process_results(self):
+    def _process_results(self):
         results_pv = solph.views.node(results=self.results_main, node="pv")
         results_fuel_source = solph.views.node(
             results=self.results_main, node="fuel_source"
@@ -536,7 +537,7 @@ class EnergySystemOptimizer(BaseOptimizer):
         # -------------------- SCALARS (STATIC) --------------------
         if self.diesel_genset["settings"]["is_selected"] is False:
             self.capacity_genset = 0
-        elif self.diesel_genset["settings"]["design"] == True:
+        elif self.diesel_genset["settings"]["design"] is True:
             self.capacity_genset = results_diesel_genset["scalars"][
                 (("diesel_genset", "electricity_ac"), "invest")
             ]
@@ -545,7 +546,7 @@ class EnergySystemOptimizer(BaseOptimizer):
 
         if self.pv["settings"]["is_selected"] is False:
             self.capacity_pv = 0
-        elif self.pv["settings"]["design"] == True:
+        elif self.pv["settings"]["design"] is True:
             self.capacity_pv = results_pv["scalars"][
                 (("pv", "electricity_dc"), "invest")
             ]
@@ -554,7 +555,7 @@ class EnergySystemOptimizer(BaseOptimizer):
 
         if self.inverter["settings"]["is_selected"] is False:
             self.capacity_inverter = 0
-        elif self.inverter["settings"]["design"] == True:
+        elif self.inverter["settings"]["design"] is True:
             self.capacity_inverter = results_inverter["scalars"][
                 (("electricity_dc", "inverter"), "invest")
             ]
@@ -563,7 +564,7 @@ class EnergySystemOptimizer(BaseOptimizer):
 
         if self.rectifier["settings"]["is_selected"] is False:
             self.capacity_rectifier = 0
-        elif self.rectifier["settings"]["design"] == True:
+        elif self.rectifier["settings"]["design"] is True:
             self.capacity_rectifier = results_rectifier["scalars"][
                 (("electricity_ac", "rectifier"), "invest")
             ]

@@ -19,12 +19,12 @@ class GridOptimizer(BaseOptimizer):
     """
 
     def __init__(
-        self, start_datetime, n_days, project_lifetime, wacc, tax
+        self, user_id, project_id, start_datetime, n_days, project_lifetime, wacc, tax
     ):
         """
         Initialize the grid optimizer object
         """
-        super().__init__(start_datetime, n_days, project_lifetime, wacc, tax)
+        super().__init__(user_id, project_id, start_datetime, n_days, project_lifetime, wacc, tax)
 
     def calc_epc(self, capex_column, lifetime_column, df):
         capex_0 = df.loc[0, capex_column]

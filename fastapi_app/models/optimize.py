@@ -26,7 +26,9 @@ def optimize_grid(user_id, project_id):
         start_execution_time = time.monotonic()
         # create GridOptimizer object
         df = sync_queries.get_input_df(user_id, project_id)
-        opt = GridOptimizer(start_datetime=df.loc[0, "start_date"],
+        opt = GridOptimizer(user_id=user_id,
+                            project_id=project_id,
+                            start_datetime=df.loc[0, "start_date"],
                             n_days=df.loc[0, "n_days"],
                             project_lifetime=df.loc[0, "project_lifetime"],
                             wacc=df.loc[0, "interest_rate"] / 100,
@@ -235,6 +237,8 @@ def optimize_energy_system(user_id, project_id):
         demand_opt_dict = sync_queries.get_model_instance(sa_tables.Demand, user_id, project_id).to_dict()
         demand_full_year = queries_demand.get_demand_time_series(nodes, demand_opt_dict).to_frame('Demand')
         ensys_opt = EnergySystemOptimizer(
+            user_id=user_id,
+            project_id=project_id,
             start_datetime=df.loc[0, "start_date"],
             n_days=n_days,
             project_lifetime=df.loc[0, "project_lifetime"],
@@ -263,18 +267,18 @@ def optimize_energy_system(user_id, project_id):
         df = sync_queries.get_df(sa_tables.Results, user_id, project_id)
         grid_input_parameter = sync_queries.get_input_df(user_id, project_id)
         links = sync_queries.get_model_instance(sa_tables.Links, user_id, project_id)
-        df = ensys_opt.get_results_df(       df,
-                                             n_days,
-                                             grid_input_parameter,
-                                             demand_full_year,
-                                             co2_savings,
-                                             nodes,
-                                             links,
-                                             num_households,
-                                             end_execution_time,
-                                             start_execution_time,
-                                             energy_system_design,
-                                             co2_emission_factor)
+        df = ensys_opt.get_results_df(df,
+                                      n_days,
+                                      grid_input_parameter,
+                                      demand_full_year,
+                                      co2_savings,
+                                      nodes,
+                                      links,
+                                      num_households,
+                                      end_execution_time,
+                                      start_execution_time,
+                                      energy_system_design,
+                                      co2_emission_factor)
         sync_inserts.insert_results_df(df, user_id, project_id)
         energy_flow = ensys_opt.get_energy_flow(user_id, project_id)
         sync_inserts.merge_model(energy_flow)
