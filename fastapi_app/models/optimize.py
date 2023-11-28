@@ -26,7 +26,7 @@ def optimize_grid(user_id, project_id):
         start_execution_time = time.monotonic()
         # create GridOptimizer object
         df = sync_queries.get_input_df(user_id, project_id)
-        opt = GridOptimizer(start_date=df.loc[0, "start_date"],
+        opt = GridOptimizer(start_datetime=df.loc[0, "start_date"],
                             n_days=df.loc[0, "n_days"],
                             project_lifetime=df.loc[0, "project_lifetime"],
                             wacc=df.loc[0, "interest_rate"] / 100,
@@ -53,7 +53,7 @@ def optimize_grid(user_id, project_id):
 
         # This part calculated the total consumption of the community for the
         # selected time period.
-        start_date_obj = opt.start_date
+        start_date_obj = opt.start_datetime
         start_datetime = datetime.combine(start_date_obj.date(), start_date_obj.time())
         end_datetime = start_datetime + timedelta(days=int(opt.n_days))
 
@@ -235,7 +235,7 @@ def optimize_energy_system(user_id, project_id):
         demand_opt_dict = sync_queries.get_model_instance(sa_tables.Demand, user_id, project_id).to_dict()
         demand_full_year = queries_demand.get_demand_time_series(nodes, demand_opt_dict).to_frame('Demand')
         ensys_opt = EnergySystemOptimizer(
-            start_date=df.loc[0, "start_date"],
+            start_datetime=df.loc[0, "start_date"],
             n_days=n_days,
             project_lifetime=df.loc[0, "project_lifetime"],
             wacc=df.loc[0, "interest_rate"] / 100,
@@ -249,7 +249,7 @@ def optimize_energy_system(user_id, project_id):
             inverter=energy_system_design['inverter'],
             rectifier=energy_system_design['rectifier'],
             shortage=energy_system_design['shortage'], )
-        ensys_opt.optimize_energy_system()
+        ensys_opt._optimize_energy_system()
         end_execution_time = time.monotonic()
         if ensys_opt.model.solutions.__len__() == 0:
             if ensys_opt.infeasible is True:
@@ -257,14 +257,13 @@ def optimize_energy_system(user_id, project_id):
                 df.loc[0, "infeasible"] = ensys_opt.infeasible
                 sync_inserts.insert_results_df(df, user_id, project_id)
             return False
-        df, emissions, co2_emission_factor = supply_optimizer.get_emissions(ensys_opt, user_id, project_id)
+        df, emissions, co2_emission_factor = ensys_opt.get_emissions(user_id, project_id)
         sync_inserts.merge_model(emissions)
         co2_savings = df.loc[:, "co2_savings"].max()
         df = sync_queries.get_df(sa_tables.Results, user_id, project_id)
         grid_input_parameter = sync_queries.get_input_df(user_id, project_id)
         links = sync_queries.get_model_instance(sa_tables.Links, user_id, project_id)
-        df = supply_optimizer.get_results_df(ensys_opt,
-                                             df,
+        df = ensys_opt.get_results_df(       df,
                                              n_days,
                                              grid_input_parameter,
                                              demand_full_year,
@@ -277,11 +276,11 @@ def optimize_energy_system(user_id, project_id):
                                              energy_system_design,
                                              co2_emission_factor)
         sync_inserts.insert_results_df(df, user_id, project_id)
-        energy_flow = supply_optimizer.get_energy_flow(ensys_opt, user_id, project_id)
+        energy_flow = ensys_opt.get_energy_flow(user_id, project_id)
         sync_inserts.merge_model(energy_flow)
-        demand_coverage = supply_optimizer.get_demand_coverage(ensys_opt, user_id, project_id)
+        demand_coverage = ensys_opt.get_demand_coverage(user_id, project_id)
         sync_inserts.merge_model(demand_coverage)
-        demand_curve = supply_optimizer.get_demand_curve(ensys_opt, user_id, project_id)
+        demand_curve = ensys_opt.get_demand_curve(user_id, project_id)
         sync_inserts.merge_model(demand_curve)
         project_setup = sync_queries.get_model_instance(sa_tables.ProjectSetup, user_id, project_id)
         project_setup.status = "finished"

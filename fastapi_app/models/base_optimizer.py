@@ -1,22 +1,24 @@
+import pandas as pd
+
+
 class BaseOptimizer:
     """
     This is a general parent class for both grid and energy system optimizers
     """
-
     def __init__(
         self, start_date="2021-01-01", n_days=365, project_lifetime=20, wacc=0.1, tax=0
     ):
-        """
-        Initialize the grid optimizer object
-        """
-        self.start_date = start_date
+        self.start_datetime = pd.to_datetime(start_date).to_pydatetime()
+        self.dt_index = pd.date_range(self.start_datetime,
+                                      self.start_datetime + pd.to_timedelta(n_days, unit="D"),
+                                      freq='H',
+                                      closed='left')
         self.n_days = n_days
         self.project_lifetime = project_lifetime
         self.wacc = wacc
         self.tax = tax
-        self.crf = (self.wacc * (1 + self.wacc) ** self.project_lifetime) / (
-            (1 + self.wacc) ** self.project_lifetime - 1
-        )
+        self.crf = (self.wacc * (1 + self.wacc) ** self.project_lifetime) / \
+                   ((1 + self.wacc) ** self.project_lifetime - 1)
 
     def capex_multi_investment(self, capex_0, component_lifetime):
         """

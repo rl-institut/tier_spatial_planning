@@ -568,7 +568,7 @@ async def load_previous_data(page_name, request: Request):
             return None
         project_setup = await async_queries.get_model_instance(sa_tables.ProjectSetup, user.id, project_id)
         if hasattr(project_setup, 'start_date'):
-            project_setup.start_date = project_setup.start_date.date().__str__()
+            project_setup.start_datetime = project_setup.start_datetime.date().__str__()
             return project_setup
         else:
             return None

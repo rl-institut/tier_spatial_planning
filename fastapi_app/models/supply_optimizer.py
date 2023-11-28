@@ -2,7 +2,6 @@ from __future__ import division
 import numpy as np
 import pandas as pd
 import oemof.solph as solph
-from datetime import datetime, timedelta
 import pyomo.environ as po
 from fastapi_app.models.base_optimizer import BaseOptimizer
 from fastapi_app.db import sa_tables
@@ -22,7 +21,7 @@ class EnergySystemOptimizer(BaseOptimizer):
 
     def __init__(
             self,
-            start_date,
+            start_datetime,
             n_days,
             project_lifetime,
             wacc,
@@ -40,7 +39,7 @@ class EnergySystemOptimizer(BaseOptimizer):
         """
         Initialize the grid optimizer object
         """
-        super().__init__(start_date, n_days, project_lifetime, wacc, tax)
+        super().__init__(start_datetime, n_days, project_lifetime, wacc, tax)
         if pv["settings"]["is_selected"] is True or battery["settings"]["is_selected"] is True:
             inverter["settings"]["is_selected"] = True
         if diesel_genset["settings"]["is_selected"] is False:
@@ -54,45 +53,22 @@ class EnergySystemOptimizer(BaseOptimizer):
         self.inverter = inverter
         self.rectifier = rectifier
         self.shortage = shortage
-        self.solar_potential = solar_potential
-        self.demand = demand
-        self.infeasible = False
-
-
-    def create_datetime_objects(self):
-        """
-        explanation
-        """
-        start_date_obj = self.start_date
-        self.start_date = start_date_obj.date()
-        self.start_time = start_date_obj.time()
-        self.start_datetime = datetime.combine(start_date_obj.date(), start_date_obj.time())
-        # conversion to in() is needed becasue self.n_days is a <class 'numpy.int64'> and it causes troubles
-        self.end_datetime = self.start_datetime + timedelta(days=int(self.n_days))
-
-    def import_data(self):
-        self.demand.index = pd.date_range(start=self.start_datetime, periods=len(self.demand.index), freq='H')
-        self.demand = self.demand.loc[self.start_datetime : self.end_datetime]['Demand']
+        self.solar_potential = solar_potential.loc[self.dt_index]
+        self.demand = demand.loc[self.dt_index]['Demand']
         self.solar_potential_peak = self.solar_potential.max()
         self.demand_peak = self.demand.max()
+        self.infeasible = False
 
-    def optimize_energy_system(self):
-        self.create_datetime_objects()
-        self.import_data()
-
+    def _optimize_energy_system(self):
         # define an empty dictionary for all epc values
         self.epc = {}
-        date_time_index = pd.date_range(start=self.start_date, periods=self.n_days * 24, freq="H")
-        self.solar_potential = self.solar_potential[date_time_index]
-        energy_system = solph.EnergySystem(timeindex=date_time_index,
+        energy_system = solph.EnergySystem(timeindex=self.dt_index.copy(),
                                            infer_last_interval=True)
-
         # -------------------- BUSES --------------------
         # create electricity and fuel buses
         b_el_ac = solph.Bus(label="electricity_ac")
         b_el_dc = solph.Bus(label="electricity_dc")
         b_fuel = solph.Bus(label="fuel")
-
         # -------------------- PV --------------------
         self.epc["pv"] = (
             self.crf
@@ -146,7 +122,6 @@ class EnergySystemOptimizer(BaseOptimizer):
         fuel_source = solph.components.Source(
             label="fuel_source", outputs={b_fuel: solph.Flow(variable_costs=fuel_cost)}
         )
-
         # optimize capacity of the fuel generator
         self.epc["diesel_genset"] = (
             self.crf
@@ -156,7 +131,6 @@ class EnergySystemOptimizer(BaseOptimizer):
             )
             + self.diesel_genset["parameters"]["opex"]
         )
-
         if self.diesel_genset["settings"]["is_selected"] is False:
             diesel_genset = solph.components.Transformer(
                 label="diesel_genset",
@@ -271,7 +245,6 @@ class EnergySystemOptimizer(BaseOptimizer):
             )
             + self.inverter["parameters"]["opex"]
         )
-
         if self.inverter["settings"]["is_selected"] is False:
             inverter = solph.components.Transformer(
                 label="inverter",
@@ -674,199 +647,193 @@ class EnergySystemOptimizer(BaseOptimizer):
         print(f"surplus:\t {self.sequences_surplus.max():.0f} kW")
         print(40 * "*")
 
-
-def get_emissions(ensys_opt, user_id, project_id,):
-    if ensys_opt.capacity_genset < 60:
-        co2_emission_factor = 1.580
-    elif ensys_opt.capacity_genset < 300:
-        co2_emission_factor = 0.883
-    else:
-        co2_emission_factor = 0.699
-    # store fuel co2 emissions (kg_CO2 per L of fuel)
-    df = pd.DataFrame()
-    df["non_renewable_electricity_production"] = (
-                np.cumsum(ensys_opt.demand) * co2_emission_factor / 1000)  # tCO2 per year
-    df["hybrid_electricity_production"] = np.cumsum(
-        ensys_opt.sequences_genset) * co2_emission_factor / 1000  # tCO2 per year
-    df["co2_savings"] = \
-        df.loc[:, "non_renewable_electricity_production"] - df.loc[:, "hybrid_electricity_production"]  # tCO2 per year
-    df['h'] = np.arange(1, len(ensys_opt.demand) + 1)
-    df = df.round(3)
-    emissions = sa_tables.Emissions()
-    emissions.id = user_id
-    emissions.project_id = project_id
-    emissions.data = df.reset_index(drop=True).to_json()
-    return df, emissions, co2_emission_factor
+    def get_demand_coverage(self, user_id, project_id):
+        df = pd.DataFrame()
+        df["demand"] = self.sequences_demand
+        df["renewable"] = self.sequences_inverter
+        df["non_renewable"] = self.sequences_genset
+        df["surplus"] = self.sequences_surplus
+        df.index.name = "dt"
+        df = df.reset_index()
+        df = df.round(3)
+        demand_coverage = sa_tables.DemandCoverage()
+        demand_coverage.id = user_id
+        demand_coverage.project_id = project_id
+        demand_coverage.data = df.reset_index(drop=True).to_json()
+        return demand_coverage
 
 
-def calculate_annualized_cost(value, n_days):
-    return value / n_days * 365
+    def get_emissions(self, user_id, project_id, ):
+        if self.capacity_genset < 60:
+            co2_emission_factor = 1.580
+        elif self.capacity_genset < 300:
+            co2_emission_factor = 0.883
+        else:
+            co2_emission_factor = 0.699
+        # store fuel co2 emissions (kg_CO2 per L of fuel)
+        df = pd.DataFrame()
+        df["non_renewable_electricity_production"] = (
+                np.cumsum(self.demand) * co2_emission_factor / 1000)  # tCO2 per year
+        df["hybrid_electricity_production"] = np.cumsum(
+            self.sequences_genset) * co2_emission_factor / 1000  # tCO2 per year
+        df["co2_savings"] = \
+            df.loc[:, "non_renewable_electricity_production"] - df.loc[:, "hybrid_electricity_production"]  # tCO2 per year
+        df['h'] = np.arange(1, len(self.demand) + 1)
+        df = df.round(3)
+        emissions = sa_tables.Emissions()
+        emissions.id = user_id
+        emissions.project_id = project_id
+        emissions.data = df.reset_index(drop=True).to_json()
+        return df, emissions, co2_emission_factor
+
+    def get_energy_flow(self, user_id, project_id):
+        energy_flow_df = pd.DataFrame({
+            "diesel_genset_production": self.sequences_genset,
+            "pv_production": self.sequences_pv,
+            "battery_charge": self.sequences_battery_charge,
+            "battery_discharge": self.sequences_battery_discharge,
+            "battery_content": self.sequences_battery_content,
+            "demand": self.sequences_demand,
+            "surplus": self.sequences_surplus
+        }).round(3)
+        energy_flow = sa_tables.EnergyFlow()
+        energy_flow.id = user_id
+        energy_flow.project_id = project_id
+        energy_flow.data = energy_flow_df.reset_index(drop=True).to_json()
+        return energy_flow
+
+    def get_demand_curve(self, user_id, project_id):
+        df = pd.DataFrame()
+        df["diesel_genset_percentage"] = (100 * np.arange(1, len(self.sequences_genset) + 1)
+                                          / len(self.sequences_genset))
+        df["diesel_genset_duration"] = (100 * np.sort(self.sequences_genset)[::-1] / self.sequences_genset.max())
+        df["pv_percentage"] = (100 * np.arange(1, len(self.sequences_pv) + 1) / len(self.sequences_pv))
+        if self.sequences_pv.max() > 0:
+            div = self.sequences_pv.max()
+        else:
+            div = 1
+        df["pv_duration"] = (100 * np.sort(self.sequences_pv)[::-1] / div)
+        df["rectifier_percentage"] = (100 * np.arange(1, len(self.sequences_rectifier) + 1)
+                                      / len(self.sequences_rectifier))
+        if not self.sequences_rectifier.abs().sum() == 0:
+            df["rectifier_duration"] = 100 * np.nan_to_num(np.sort(self.sequences_rectifier)[::-1]
+                                                           / self.sequences_rectifier.max())
+        else:
+            df["rectifier_duration"] = 0
+        df["inverter_percentage"] = (100 * np.arange(1, len(self.sequences_inverter) + 1)
+                                     / len(self.sequences_inverter))
+        if self.sequences_inverter.max() > 0:
+            div = self.sequences_inverter.max()
+        else:
+            div = 1
+        df["inverter_duration"] = (100 * np.sort(self.sequences_inverter)[::-1] / div)
+        df["battery_charge_percentage"] = (100 * np.arange(1, len(self.sequences_battery_charge) + 1)
+                                           / len(self.sequences_battery_charge))
+        if not self.sequences_battery_charge.max() > 0:
+            div = 1
+        else:
+            div = self.sequences_battery_charge.max()
+        df["battery_charge_duration"] = (100 * np.sort(self.sequences_battery_charge)[::-1] / div)
+        df["battery_discharge_percentage"] = (100 * np.arange(1, len(self.sequences_battery_discharge) + 1)
+                                              / len(self.sequences_battery_discharge))
+        if self.sequences_battery_discharge.max() > 0:
+            div = self.sequences_battery_discharge.max()
+        else:
+            div = 1
+        df["battery_discharge_duration"] = (100 * np.sort(self.sequences_battery_discharge)[::-1] / div)
+        df['h'] = np.arange(1, len(self.sequences_genset) + 1)
+        df = df.round(3)
+        demand_curve = sa_tables.DurationCurve()
+        demand_curve.id = user_id
+        demand_curve.project_id = project_id
+        demand_curve.data = df.reset_index(drop=True).to_json()
+        return demand_curve
 
 
-def get_results_df(ensys_opt,
-                   df,
-                   n_days,
-                   grid_input_parameter,
-                   demand_full_year,
-                   co2_savings,
-                   nodes,
-                   links,
-                   num_households,
-                   end_execution_time,
-                   start_execution_time,
-                    energy_system_design,
-                    co2_emission_factor):
-    df.loc[0, "cost_renewable_assets"] = ensys_opt.total_renewable / n_days * 365
-    df.loc[0, "cost_non_renewable_assets"] = ensys_opt.total_non_renewable / n_days * 365
-    df.loc[0, "cost_fuel"] = ensys_opt.total_fuel / n_days * 365
-    df.loc[0, "epc_total"] = (ensys_opt.total_revenue + df.loc[0, "cost_grid"]) / n_days * 365
-    df.loc[0, "lcoe"] = (100 * (ensys_opt.total_revenue + df.loc[0, "cost_grid"]) / ensys_opt.total_demand)
-    df.loc[0, "cost_grid"] = df.loc[0, "cost_grid"] / n_days * 365
-    df.loc[0, "res"] = ensys_opt.res
-    df.loc[0, "shortage_total"] = ensys_opt.shortage
-    df.loc[0, "surplus_rate"] = ensys_opt.surplus_rate
-    df.loc[0, "pv_capacity"] = ensys_opt.capacity_pv
-    df.loc[0, "battery_capacity"] = ensys_opt.capacity_battery
-    df.loc[0, "inverter_capacity"] = ensys_opt.capacity_inverter
-    df.loc[0, "rectifier_capacity"] = ensys_opt.capacity_rectifier
-    df.loc[0, "diesel_genset_capacity"] = ensys_opt.capacity_genset
-    df.loc[0, "peak_demand"] = ensys_opt.demand.max()
-    df.loc[0, "surplus"] = ensys_opt.sequences_surplus.max()
-    df.loc[0, "infeasible"] = ensys_opt.infeasible
-    # data for sankey diagram - all in MWh
-    df.loc[0, "fuel_to_diesel_genset"] = (ensys_opt.sequences_fuel_consumption.sum() * 0.846 *
-                                          ensys_opt.diesel_genset["parameters"]["fuel_lhv"] / 1000)
-    df.loc[0, "diesel_genset_to_rectifier"] = (ensys_opt.sequences_rectifier.sum() /
-                                               ensys_opt.rectifier["parameters"]["efficiency"] / 1000)
-    df.loc[0, "diesel_genset_to_demand"] = (ensys_opt.sequences_genset.sum() / 1000
-                                            - df.loc[0, "diesel_genset_to_rectifier"])
-    df.loc[0, "rectifier_to_dc_bus"] = ensys_opt.sequences_rectifier.sum() / 1000
-    df.loc[0, "pv_to_dc_bus"] = ensys_opt.sequences_pv.sum() / 1000
-    df.loc[0, "battery_to_dc_bus"] = ensys_opt.sequences_battery_discharge.sum() / 1000
-    df.loc[0, "dc_bus_to_battery"] = ensys_opt.sequences_battery_charge.sum() / 1000
-    if ensys_opt.inverter["parameters"]["efficiency"] > 0:
-        div = ensys_opt.inverter["parameters"]["efficiency"]
-    else:
-        div = 1
-    df.loc[0, "dc_bus_to_inverter"] = (ensys_opt.sequences_inverter.sum() / div / 1000)
-    df.loc[0, "dc_bus_to_surplus"] = ensys_opt.sequences_surplus.sum() / 1000
-    df.loc[0, "inverter_to_demand"] = ensys_opt.sequences_inverter.sum() / 1000
-    df.loc[0, "time_energy_system_design"] = end_execution_time - start_execution_time
-    df.loc[0, "co2_savings"] = co2_savings / n_days * 365
-    df.loc[0, "total_annual_consumption"] = demand_full_year.iloc[:, 0].sum()
-    df.loc[0, "average_annual_demand_per_consumer"] = demand_full_year.iloc[:, 0].mean() / num_households * 1000
-    df.loc[0, "base_load"] = demand_full_year.iloc[:, 0].quantile(0.1)
-    df.loc[0, "max_shortage"] = (ensys_opt.sequences_shortage / ensys_opt.demand).max() * 100
-    n_poles = nodes[nodes['node_type'] == 'pole'].__len__()
+    def get_results_df(self,
+                       df,
+                       n_days,
+                       grid_input_parameter,
+                       demand_full_year,
+                       co2_savings,
+                       nodes,
+                       links,
+                       num_households,
+                       end_execution_time,
+                       start_execution_time,
+                       energy_system_design,
+                       co2_emission_factor):
+        df.loc[0, "cost_renewable_assets"] = self.total_renewable / n_days * 365
+        df.loc[0, "cost_non_renewable_assets"] = self.total_non_renewable / n_days * 365
+        df.loc[0, "cost_fuel"] = self.total_fuel / n_days * 365
+        df.loc[0, "epc_total"] = (self.total_revenue + df.loc[0, "cost_grid"]) / n_days * 365
+        df.loc[0, "lcoe"] = (100 * (self.total_revenue + df.loc[0, "cost_grid"]) / self.total_demand)
+        df.loc[0, "cost_grid"] = df.loc[0, "cost_grid"] / n_days * 365
+        df.loc[0, "res"] = self.res
+        df.loc[0, "shortage_total"] = self.shortage
+        df.loc[0, "surplus_rate"] = self.surplus_rate
+        df.loc[0, "pv_capacity"] = self.capacity_pv
+        df.loc[0, "battery_capacity"] = self.capacity_battery
+        df.loc[0, "inverter_capacity"] = self.capacity_inverter
+        df.loc[0, "rectifier_capacity"] = self.capacity_rectifier
+        df.loc[0, "diesel_genset_capacity"] = self.capacity_genset
+        df.loc[0, "peak_demand"] = self.demand.max()
+        df.loc[0, "surplus"] = self.sequences_surplus.max()
+        df.loc[0, "infeasible"] = self.infeasible
+        # data for sankey diagram - all in MWh
+        df.loc[0, "fuel_to_diesel_genset"] = (self.sequences_fuel_consumption.sum() * 0.846 *
+                                              self.diesel_genset["parameters"]["fuel_lhv"] / 1000)
+        df.loc[0, "diesel_genset_to_rectifier"] = (self.sequences_rectifier.sum() /
+                                                   self.rectifier["parameters"]["efficiency"] / 1000)
+        df.loc[0, "diesel_genset_to_demand"] = (self.sequences_genset.sum() / 1000
+                                                - df.loc[0, "diesel_genset_to_rectifier"])
+        df.loc[0, "rectifier_to_dc_bus"] = self.sequences_rectifier.sum() / 1000
+        df.loc[0, "pv_to_dc_bus"] = self.sequences_pv.sum() / 1000
+        df.loc[0, "battery_to_dc_bus"] = self.sequences_battery_discharge.sum() / 1000
+        df.loc[0, "dc_bus_to_battery"] = self.sequences_battery_charge.sum() / 1000
+        if self.inverter["parameters"]["efficiency"] > 0:
+            div = self.inverter["parameters"]["efficiency"]
+        else:
+            div = 1
+        df.loc[0, "dc_bus_to_inverter"] = (self.sequences_inverter.sum() / div / 1000)
+        df.loc[0, "dc_bus_to_surplus"] = self.sequences_surplus.sum() / 1000
+        df.loc[0, "inverter_to_demand"] = self.sequences_inverter.sum() / 1000
+        df.loc[0, "time_energy_system_design"] = end_execution_time - start_execution_time
+        df.loc[0, "co2_savings"] = co2_savings / n_days * 365
+        df.loc[0, "total_annual_consumption"] = demand_full_year.iloc[:, 0].sum()
+        df.loc[0, "average_annual_demand_per_consumer"] = demand_full_year.iloc[:, 0].mean() / num_households * 1000
+        df.loc[0, "base_load"] = demand_full_year.iloc[:, 0].quantile(0.1)
+        df.loc[0, "max_shortage"] = (self.sequences_shortage / self.demand).max() * 100
+        n_poles = nodes[nodes['node_type'] == 'pole'].__len__()
 
-    links = pd.read_json(links.data) if links is not None else pd.DataFrame()
-    length_dist_cable = links[links['link_type'] == 'distribution']['length'].sum()
-    length_conn_cable = links[links['link_type'] == 'connection']['length'].sum()
+        links = pd.read_json(links.data) if links is not None else pd.DataFrame()
+        length_dist_cable = links[links['link_type'] == 'distribution']['length'].sum()
+        length_conn_cable = links[links['link_type'] == 'connection']['length'].sum()
 
-    df.loc[0, "upfront_invest_grid"] \
-        = n_poles * grid_input_parameter.loc[0, "pole_capex"] + \
-          length_dist_cable * grid_input_parameter.loc[0, "distribution_cable_capex"] + \
-          length_conn_cable * grid_input_parameter.loc[0, "connection_cable_capex"] + \
-          num_households * grid_input_parameter.loc[0, "mg_connection_cost"]
-    df.loc[0, "upfront_invest_diesel_gen"] = df.loc[0, "diesel_genset_capacity"] \
-                                             * energy_system_design['diesel_genset']['parameters']['capex']
-    df.loc[0, "upfront_invest_pv"] = df.loc[0, "pv_capacity"] \
-                                     * energy_system_design['pv']['parameters']['capex']
-    df.loc[0, "upfront_invest_inverter"] = df.loc[0, "inverter_capacity"] \
-                                           * energy_system_design['inverter']['parameters']['capex']
-    df.loc[0, "upfront_invest_rectifier"] = df.loc[0, "rectifier_capacity"] \
-                                            * energy_system_design['rectifier']['parameters']['capex']
-    df.loc[0, "upfront_invest_battery"] = df.loc[0, "battery_capacity"] \
-                                          * energy_system_design['battery']['parameters']['capex']
-    df.loc[0, "co2_emissions"] = ensys_opt.sequences_genset.sum() * co2_emission_factor / 1000 / n_days * 365
-    df.loc[0, "fuel_consumption"] = ensys_opt.sequences_fuel_consumption.sum() / n_days * 365
-    df.loc[0, "epc_pv"] = ensys_opt.epc['pv'] * ensys_opt.capacity_pv
-    df.loc[0, "epc_diesel_genset"] = (ensys_opt.epc["diesel_genset"] * ensys_opt.capacity_genset) \
-                                     + ensys_opt.diesel_genset["parameters"]["variable_cost"] \
-                                     * ensys_opt.sequences_genset.sum(axis=0) * 365 / n_days
-    df.loc[0, "epc_inverter"] = ensys_opt.epc['inverter'] * ensys_opt.capacity_inverter
-    df.loc[0, "epc_rectifier"] = ensys_opt.epc["rectifier"] * ensys_opt.capacity_rectifier
-    df.loc[0, "epc_battery"] = ensys_opt.epc['battery'] * ensys_opt.capacity_battery
+        df.loc[0, "upfront_invest_grid"] \
+            = n_poles * grid_input_parameter.loc[0, "pole_capex"] + \
+              length_dist_cable * grid_input_parameter.loc[0, "distribution_cable_capex"] + \
+              length_conn_cable * grid_input_parameter.loc[0, "connection_cable_capex"] + \
+              num_households * grid_input_parameter.loc[0, "mg_connection_cost"]
+        df.loc[0, "upfront_invest_diesel_gen"] = df.loc[0, "diesel_genset_capacity"] \
+                                                 * energy_system_design['diesel_genset']['parameters']['capex']
+        df.loc[0, "upfront_invest_pv"] = df.loc[0, "pv_capacity"] \
+                                         * energy_system_design['pv']['parameters']['capex']
+        df.loc[0, "upfront_invest_inverter"] = df.loc[0, "inverter_capacity"] \
+                                               * energy_system_design['inverter']['parameters']['capex']
+        df.loc[0, "upfront_invest_rectifier"] = df.loc[0, "rectifier_capacity"] \
+                                                * energy_system_design['rectifier']['parameters']['capex']
+        df.loc[0, "upfront_invest_battery"] = df.loc[0, "battery_capacity"] \
+                                              * energy_system_design['battery']['parameters']['capex']
+        df.loc[0, "co2_emissions"] = self.sequences_genset.sum() * co2_emission_factor / 1000 / n_days * 365
+        df.loc[0, "fuel_consumption"] = self.sequences_fuel_consumption.sum() / n_days * 365
+        df.loc[0, "epc_pv"] = self.epc['pv'] * self.capacity_pv
+        df.loc[0, "epc_diesel_genset"] = (self.epc["diesel_genset"] * self.capacity_genset) \
+                                         + self.diesel_genset["parameters"]["variable_cost"] \
+                                         * self.sequences_genset.sum(axis=0) * 365 / n_days
+        df.loc[0, "epc_inverter"] = self.epc['inverter'] * self.capacity_inverter
+        df.loc[0, "epc_rectifier"] = self.epc["rectifier"] * self.capacity_rectifier
+        df.loc[0, "epc_battery"] = self.epc['battery'] * self.capacity_battery
 
-    df = df.astype(float).round(3)
-    return df
-
-def get_energy_flow(ensys_opt, user_id, project_id):
-    energy_flow_df = pd.DataFrame({
-        "diesel_genset_production": ensys_opt.sequences_genset,
-        "pv_production": ensys_opt.sequences_pv,
-        "battery_charge": ensys_opt.sequences_battery_charge,
-        "battery_discharge": ensys_opt.sequences_battery_discharge,
-        "battery_content": ensys_opt.sequences_battery_content,
-        "demand": ensys_opt.sequences_demand,
-        "surplus": ensys_opt.sequences_surplus
-    }).round(3)
-
-    energy_flow = sa_tables.EnergyFlow()
-    energy_flow.id = user_id
-    energy_flow.project_id = project_id
-    energy_flow.data = energy_flow_df.reset_index(drop=True).to_json()
-    return energy_flow
-
-def get_demand_coverage(ensys_opt, user_id, project_id):
-    df = pd.DataFrame()
-    df["demand"] = ensys_opt.sequences_demand
-    df["renewable"] = ensys_opt.sequences_inverter
-    df["non_renewable"] = ensys_opt.sequences_genset
-    df["surplus"] = ensys_opt.sequences_surplus
-    df.index.name = "dt"
-    df = df.reset_index()
-    df = df.round(3)
-    demand_coverage = sa_tables.DemandCoverage()
-    demand_coverage.id = user_id
-    demand_coverage.project_id = project_id
-    demand_coverage.data = df.reset_index(drop=True).to_json()
-    return demand_coverage
-
-
-def get_demand_curve(ensys_opt, user_id, project_id):
-    df = pd.DataFrame()
-    df["diesel_genset_percentage"] = (100 * np.arange(1, len(ensys_opt.sequences_genset) + 1)
-                                      / len(ensys_opt.sequences_genset))
-    df["diesel_genset_duration"] = (100 * np.sort(ensys_opt.sequences_genset)[::-1]/ ensys_opt.sequences_genset.max())
-    df["pv_percentage"] = (100 * np.arange(1, len(ensys_opt.sequences_pv) + 1) / len(ensys_opt.sequences_pv))
-    if ensys_opt.sequences_pv.max() > 0:
-        div = ensys_opt.sequences_pv.max()
-    else:
-        div = 1
-    df["pv_duration"] = (100 * np.sort(ensys_opt.sequences_pv)[::-1] / div)
-    df["rectifier_percentage"] = (100 * np.arange(1, len(ensys_opt.sequences_rectifier) + 1)
-                                  / len(ensys_opt.sequences_rectifier))
-    if not ensys_opt.sequences_rectifier.abs().sum() == 0:
-        df["rectifier_duration"] = 100 * np.nan_to_num(np.sort(ensys_opt.sequences_rectifier)[::-1]
-                                                       / ensys_opt.sequences_rectifier.max())
-    else:
-        df["rectifier_duration"] = 0
-    df["inverter_percentage"] = (100 * np.arange(1, len(ensys_opt.sequences_inverter) + 1)
-                                 / len(ensys_opt.sequences_inverter))
-    if ensys_opt.sequences_inverter.max() > 0:
-        div = ensys_opt.sequences_inverter.max()
-    else:
-        div = 1
-    df["inverter_duration"] = (100 * np.sort(ensys_opt.sequences_inverter)[::-1]/ div)
-    df["battery_charge_percentage"] = (100 * np.arange(1, len(ensys_opt.sequences_battery_charge) + 1)
-                                       / len(ensys_opt.sequences_battery_charge))
-    if not ensys_opt.sequences_battery_charge.max() > 0:
-        div = 1
-    else:
-        div = ensys_opt.sequences_battery_charge.max()
-    df["battery_charge_duration"] = (100 * np.sort(ensys_opt.sequences_battery_charge)[::-1] / div)
-    df["battery_discharge_percentage"] = (100 * np.arange(1, len(ensys_opt.sequences_battery_discharge) + 1)
-                                          / len(ensys_opt.sequences_battery_discharge))
-    if ensys_opt.sequences_battery_discharge.max() > 0:
-        div = ensys_opt.sequences_battery_discharge.max()
-    else:
-        div = 1
-    df["battery_discharge_duration"] = (100 * np.sort(ensys_opt.sequences_battery_discharge)[::-1]/ div)
-    df['h'] = np.arange(1, len(ensys_opt.sequences_genset) + 1)
-    df = df.round(3)
-    demand_curve = sa_tables.DurationCurve()
-    demand_curve.id = user_id
-    demand_curve.project_id = project_id
-    demand_curve.data = df.reset_index(drop=True).to_json()
-    return demand_curve
+        df = df.astype(float).round(3)
+        return df
