@@ -1,19 +1,12 @@
-from __future__ import division
-import os
 import time
 from datetime import datetime, timedelta
 import pandas as pd
-from pyomo import environ as po
 from fastapi_app.db import sync_queries, sync_inserts, queries_demand
-from fastapi_app import config
 from fastapi_app.db import sa_tables
 from fastapi_app.models.supply_optimizer import EnergySystemOptimizer
-from fastapi_app.models import supply_optimizer
 from fastapi_app.helper.error_logger import logger as error_logger
 from fastapi_app.models.grid_obj import Grid
 from fastapi_app.models.grid_optimizer import GridOptimizer
-from fastapi_app.helper.mail import send_mail
-from fastapi_app.helper.solar_potential import get_dc_feed_in_sync_db_query
 
 
 def optimize_grid(user_id, project_id):
@@ -201,10 +194,9 @@ def optimize_grid(user_id, project_id):
         results.time_grid_design = round(end_execution_time - start_execution_time, 1)
         results.n_distribution_links = int(grid.links[grid.links["link_type"] == "distribution"].shape[0])
         results.n_connection_links = int(grid.links[grid.links["link_type"] == "connection"].shape[0])
-
-
-        df = results.to_df()
-        sync_inserts.insert_results_df(df, user_id, project_id)
+        results.id = user_id
+        results.project_id = project_id
+        sync_inserts.merge_model(results)
     except Exception as exc:
         user_name = 'user with user_id: {}'.format(user_id)
         error_logger.error_log(exc, 'no request', user_name)
@@ -213,89 +205,9 @@ def optimize_grid(user_id, project_id):
 
 def optimize_energy_system(user_id, project_id):
     try:
-        print('start es opt')
-        start_execution_time = time.monotonic()
-        df = sync_queries.get_input_df(user_id, project_id)
-        energy_system_design = sync_queries.get_energy_system_design(user_id, project_id)
-        solver = 'gurobi' if po.SolverFactory('gurobi').available() else 'cbc'
-        if solver == 'cbc':
-            energy_system_design['diesel_genset']['settings']['offset'] = False
-        nodes = sync_queries.get_model_instance(sa_tables.Nodes, user_id, project_id)
-        nodes = pd.read_json(nodes.data)
-        num_households = len(nodes[(nodes['consumer_type'] == 'household') &
-                                   (nodes['is_connected'] == True)].index)
-        if num_households == 0:
-            return False
-        if not nodes[nodes['consumer_type'] == 'power_house'].empty:
-            lat, lon = nodes[nodes['consumer_type'] == 'power_house']['latitude', 'longitude'].to_list()
-        else:
-            lat, lon = nodes[['latitude', 'longitude']].mean().to_list()
-        n_days = min(df.loc[0, "n_days"], int(os.environ.get('MAX_DAYS', 365)))
-        start = pd.to_datetime(df.loc[0, "start_date"])
-        end = start + timedelta(days=int(n_days))
-        solar_potential_df = get_dc_feed_in_sync_db_query(lat, lon, start, end)
-        demand_opt_dict = sync_queries.get_model_instance(sa_tables.Demand, user_id, project_id).to_dict()
-        demand_full_year = queries_demand.get_demand_time_series(nodes, demand_opt_dict).to_frame('Demand')
-        ensys_opt = EnergySystemOptimizer(
-            user_id=user_id,
-            project_id=project_id,
-            start_datetime=df.loc[0, "start_date"],
-            n_days=n_days,
-            project_lifetime=df.loc[0, "project_lifetime"],
-            wacc=df.loc[0, "interest_rate"] / 100,
-            tax=0,
-            solar_potential=solar_potential_df,
-            demand=demand_full_year,
-            solver=solver,
-            pv=energy_system_design['pv'],
-            diesel_genset=energy_system_design['diesel_genset'],
-            battery=energy_system_design['battery'],
-            inverter=energy_system_design['inverter'],
-            rectifier=energy_system_design['rectifier'],
-            shortage=energy_system_design['shortage'], )
+        ensys_opt = EnergySystemOptimizer(user_id=user_id, project_id=project_id)
         ensys_opt._optimize_energy_system()
-        end_execution_time = time.monotonic()
-        if ensys_opt.model.solutions.__len__() == 0:
-            if ensys_opt.infeasible is True:
-                df = sync_queries.get_df(sa_tables.Results, user_id, project_id)
-                df.loc[0, "infeasible"] = ensys_opt.infeasible
-                sync_inserts.insert_results_df(df, user_id, project_id)
-            return False
-        df, emissions, co2_emission_factor = ensys_opt.get_emissions(user_id, project_id)
-        sync_inserts.merge_model(emissions)
-        co2_savings = df.loc[:, "co2_savings"].max()
-        df = sync_queries.get_df(sa_tables.Results, user_id, project_id)
-        grid_input_parameter = sync_queries.get_input_df(user_id, project_id)
-        links = sync_queries.get_model_instance(sa_tables.Links, user_id, project_id)
-        df = ensys_opt.get_results_df(df,
-                                      n_days,
-                                      grid_input_parameter,
-                                      demand_full_year,
-                                      co2_savings,
-                                      nodes,
-                                      links,
-                                      num_households,
-                                      end_execution_time,
-                                      start_execution_time,
-                                      energy_system_design,
-                                      co2_emission_factor)
-        sync_inserts.insert_results_df(df, user_id, project_id)
-        energy_flow = ensys_opt.get_energy_flow(user_id, project_id)
-        sync_inserts.merge_model(energy_flow)
-        demand_coverage = ensys_opt.get_demand_coverage(user_id, project_id)
-        sync_inserts.merge_model(demand_coverage)
-        demand_curve = ensys_opt.get_demand_curve(user_id, project_id)
-        sync_inserts.merge_model(demand_curve)
-        project_setup = sync_queries.get_model_instance(sa_tables.ProjectSetup, user_id, project_id)
-        project_setup.status = "finished"
-        if project_setup.email_notification is True:
-            user = sync_queries.get_user_by_id(user_id)
-            subject = "PeopleSun: Model Calculation finished"
-            msg = "The calculation of your optimization model is finished. You can view the results at: " \
-                  "\n\n{}/simulation_results?project_id={}\n".format(config.DOMAIN, project_id)
-            send_mail(user.email, msg, subject=subject)
-        project_setup.email_notification = False
-        sync_inserts.merge_model(project_setup)
+        ensys_opt.results_to_db()
         return True
     except Exception as exc:
         user_name = 'user with user_id: {}'.format(user_id)

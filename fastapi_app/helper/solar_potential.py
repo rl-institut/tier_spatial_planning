@@ -80,8 +80,8 @@ def retrieve_grid_points(ds):
     return grid_points
 
 
-def get_dc_feed_in_sync_db_query(lat, lon, start, end):
-    weather_df = sync_queries.get_weather_data(lat, lon, start, end)
+def get_dc_feed_in_sync_db_query(lat, lon, dt_index):
+    weather_df = sync_queries.get_weather_data(lat, lon, dt_index[0], dt_index[-1])
     return _get_dc_feed_in(lat, lon, weather_df)
 
 

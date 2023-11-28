@@ -6,7 +6,6 @@ from sqlalchemy import delete, text
 from sqlalchemy.exc import OperationalError
 from fastapi_app.db import sa_tables
 from fastapi_app.db.connections import get_sync_session_maker, sync_engine
-from fastapi_app.db.sync_queries import get_df, get_model_instance
 from fastapi_app.db.async_inserts import df_2_sql
 from fastapi_app.config import DB_RETRY_COUNT, RETRY_DELAY
 from fastapi_app.helper.solar_potential import download_weather_data, prepare_weather_data
@@ -78,16 +77,6 @@ def remove(model_class, user_id, project_id):
     stmt = delete(model_class).where(model_class.id == user_id, model_class.project_id == project_id)
     execute_stmt(stmt)
 
-
-def insert_results_df(df, user_id, project_id):
-    user_id, project_id = int(user_id), int(project_id)
-    df = df.dropna(how='all', axis=0)
-    if not df.empty:
-        model_class = sa_tables.Results
-        remove(model_class, user_id, project_id)
-        df['id'] = int(user_id)
-        df['project_id'] = int(project_id)
-        _insert_df('results', df, if_exists='update')
 
 
 def insert_df(model_class, df, user_id=None, project_id=None):
