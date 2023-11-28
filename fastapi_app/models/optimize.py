@@ -1,7 +1,7 @@
 import time
 from datetime import datetime, timedelta
 import pandas as pd
-from fastapi_app.db import sync_queries, sync_inserts, queries_demand
+from fastapi_app.db import sync_queries, sync_inserts
 from fastapi_app.db import sa_tables
 from fastapi_app.helper.error_logger import logger as error_logger
 from fastapi_app.models.grid_obj import Grid
