@@ -4,12 +4,25 @@ import numpy as np
 import pandas as pd
 import oemof.solph as solph
 import pyomo.environ as po
+from fastapi_app.helper.error_logger import logger as error_logger
 from fastapi_app.models.base_optimizer import BaseOptimizer
 from fastapi_app.db import sa_tables
 from fastapi_app.db import sync_inserts, sync_queries, queries_demand
 from fastapi_app import config
 from fastapi_app.helper.mail import send_mail
 from fastapi_app.helper import solar_potential
+
+
+def optimize_energy_system(user_id, project_id):
+    try:
+        ensys_opt = EnergySystemOptimizer(user_id=user_id, project_id=project_id)
+        ensys_opt.optimize_energy_system()
+        ensys_opt.results_to_db()
+        return True
+    except Exception as exc:
+        user_name = 'user with user_id: {}'.format(user_id)
+        error_logger.error_log(exc, 'no request', user_name)
+        raise exc
 
 
 class EnergySystemOptimizer(BaseOptimizer):
@@ -80,7 +93,7 @@ class EnergySystemOptimizer(BaseOptimizer):
         self.project_setup = project_setup
 
 
-    def _optimize_energy_system(self):
+    def optimize_energy_system(self):
         # define an empty dictionary for all epc values
         start_execution_time = time.monotonic()
         self.epc = {}

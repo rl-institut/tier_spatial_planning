@@ -1,10 +1,8 @@
-from __future__ import division
-
 import asyncio
 import decimal
 import pandas as pd
 import sqlalchemy as sa
-from sqlalchemy import select
+from sqlalchemy import select, and_
 import flatten_dict
 from flatten_dict.splitters import make_splitter
 from jose import jwt, JWTError
@@ -67,16 +65,16 @@ async def get_projects_of_user(user_id):
 
 async def get_project_setup_of_user(user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
-    query = select(sa_tables.ProjectSetup).where(sa_tables.ProjectSetup.id == user_id,
-                                                 sa_tables.ProjectSetup.project_id == project_id)
+    query = select(sa_tables.ProjectSetup).where(and_(sa_tables.ProjectSetup.id == user_id,
+                                                 sa_tables.ProjectSetup.project_id == project_id))
     project_setup = await _execute_with_retry(query, which='first')
     return project_setup
 
 
 async def get_energy_system_design(user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
-    query = select(sa_tables.EnergySystemDesign).where(sa_tables.EnergySystemDesign.id == user_id,
-                                                       sa_tables.EnergySystemDesign.project_id == project_id)
+    query = select(sa_tables.EnergySystemDesign).where(and_(sa_tables.EnergySystemDesign.id == user_id,
+                                                       sa_tables.EnergySystemDesign.project_id == project_id))
     model_inst = await _execute_with_retry(query, which='first')
     df = model_inst.to_df()
     if df.empty:

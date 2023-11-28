@@ -30,7 +30,6 @@ def merge_model(model):
                 raise e
 
 
-
 def execute_stmt(stmt):
     stmt = text(stmt) if isinstance(stmt, str) else stmt
     new_engine = False

@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 import pandas as pd
 from fastapi_app.db import sync_queries, sync_inserts, queries_demand
 from fastapi_app.db import sa_tables
-from fastapi_app.models.supply_optimizer import EnergySystemOptimizer
 from fastapi_app.helper.error_logger import logger as error_logger
 from fastapi_app.models.grid_obj import Grid
 from fastapi_app.models.grid_optimizer import GridOptimizer
@@ -197,18 +196,6 @@ def optimize_grid(user_id, project_id):
         results.id = user_id
         results.project_id = project_id
         sync_inserts.merge_model(results)
-    except Exception as exc:
-        user_name = 'user with user_id: {}'.format(user_id)
-        error_logger.error_log(exc, 'no request', user_name)
-        raise exc
-
-
-def optimize_energy_system(user_id, project_id):
-    try:
-        ensys_opt = EnergySystemOptimizer(user_id=user_id, project_id=project_id)
-        ensys_opt._optimize_energy_system()
-        ensys_opt.results_to_db()
-        return True
     except Exception as exc:
         user_name = 'user with user_id: {}'.format(user_id)
         error_logger.error_log(exc, 'no request', user_name)

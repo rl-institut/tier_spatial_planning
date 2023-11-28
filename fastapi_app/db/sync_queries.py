@@ -2,7 +2,7 @@ import decimal
 import pandas as pd
 import time
 import sqlalchemy.exc
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from sqlalchemy.sql import text
 import flatten_dict
 from flatten_dict.splitters import make_splitter
@@ -14,8 +14,8 @@ from fastapi_app import config
 
 def get_project_setup_of_user(user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
-    query = select(sa_tables.ProjectSetup).where(sa_tables.ProjectSetup.id == user_id,
-                                                 sa_tables.ProjectSetup.project_id == project_id)
+    query = select(sa_tables.ProjectSetup).where(and_(sa_tables.ProjectSetup.id == user_id,
+                                                 sa_tables.ProjectSetup.project_id == project_id))
     project_setup = _execute_with_retry(query, which='first')
     return project_setup
 
@@ -85,8 +85,8 @@ def get_weather_data(lat, lon, start, end):
 
 def get_energy_system_design(user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
-    query = select(sa_tables.EnergySystemDesign).where(sa_tables.EnergySystemDesign.id == user_id,
-                                                       sa_tables.EnergySystemDesign.project_id == project_id)
+    query = select(sa_tables.EnergySystemDesign).where(and_(sa_tables.EnergySystemDesign.id == user_id,
+                                                       sa_tables.EnergySystemDesign.project_id == project_id))
     model_inst = _execute_with_retry(query, which='first')
     df = model_inst.to_df()
     if df.empty:
