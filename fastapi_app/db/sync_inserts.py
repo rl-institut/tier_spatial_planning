@@ -52,39 +52,6 @@ def execute_stmt(stmt):
                 raise e
 
 
-
-def update_nodes_and_links(nodes: bool, links: bool, inlet, user_id, project_id):
-    user_id, project_id = int(user_id), int(project_id)
-    if nodes:
-        nodes = inlet
-        df = nodes
-        df = df.round(decimals=6)
-        if not df.empty:
-            df.latitude = df.latitude.map(lambda x: "%.6f" % x)
-            df.longitude = df.longitude.map(lambda x: "%.6f" % x)
-            if len(df.index) != 0:
-                if 'parent' in df.columns:
-                    df['parent'] = df['parent'].where(df['parent'] != 'unknown', None)
-                nodes = sa_tables.Nodes()
-                nodes.id = user_id
-                nodes.project_id = project_id
-                nodes.data = df.reset_index(drop=True).to_json()
-                merge_model(nodes)
-    if links:
-        links = inlet
-        df = pd.DataFrame.from_dict(links)
-        df.lat_from = df.lat_from.map(lambda x: "%.6f" % x)
-        df.lon_from = df.lon_from.map(lambda x: "%.6f" % x)
-        df.lat_to = df.lat_to.map(lambda x: "%.6f" % x)
-        df.lon_to = df.lon_to.map(lambda x: "%.6f" % x)
-        if len(df.index) != 0:
-            links = sa_tables.Links()
-            links.id = user_id
-            links.project_id = project_id
-            links.data = df.reset_index(drop=True).to_json()
-            merge_model(links)
-
-
 def _insert_df(table: str, df, if_exists='update', chunk_size=None):
     if df.empty:
         return

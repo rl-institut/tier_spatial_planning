@@ -778,7 +778,8 @@ async def query_account_data(project_id: fastapi_app.db.pydantic_schema.ProjectI
             if project_id.project_id is not None:
                 project_id.project_id = int(project_id.project_id)
                 project = await async_queries.get_project_name_by_id(user.id, project_id.project_id)
-                project_name = project.project_name
+                if hasattr(project, 'project_name'):
+                    project_name = project.project_name
         return fastapi_app.db.pydantic_schema.UserOverview(email=name, project_name=project_name)
     else:
         return fastapi_app.db.pydantic_schema.UserOverview(email="", project_name="")

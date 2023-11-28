@@ -54,19 +54,19 @@ def optimize_grid(user_id, project_id):
                             project_lifetime=df.loc[0, "project_lifetime"],
                             wacc=df.loc[0, "interest_rate"] / 100,
                             tax=0, )
-        nodes = sync_queries.get_model_instance(sa_tables.Nodes, user_id, project_id)
-        nodes = pd.read_json(nodes.data)
-        nodes.loc[nodes['shs_options'] == 2, 'is_connected'] = False
-        nodes['is_connected'] = True
-        nodes.index = nodes.index.astype(str)
-        nodes = nodes[nodes['node_type'].isin(['consumer', 'power-house'])]
-        power_house = nodes.loc[nodes['node_type'] == 'power-house']
+        nodes_df = sync_queries.get_model_instance(sa_tables.Nodes, user_id, project_id)
+        nodes_df = pd.read_json(nodes_df.data)
+        nodes_df.loc[nodes_df['shs_options'] == 2, 'is_connected'] = False
+        nodes_df['is_connected'] = True
+        nodes_df.index = nodes_df.index.astype(str)
+        nodes_df = nodes_df[nodes_df['node_type'].isin(['consumer', 'power-house'])]
+        power_house = nodes_df.loc[nodes_df['node_type'] == 'power-house']
         if power_house.index.__len__() > 0 and power_house['how_added'].iat[0] != 'manual':
-            nodes = nodes.drop(index=power_house.index)
+            nodes_df = nodes_df.drop(index=power_house.index)
             power_house = None
         elif power_house.index.__len__() == 0:
             power_house = None
-        if len(nodes) == 0:
+        if len(nodes_df) == 0:
             return {"code": "success", "message": "Empty grid cannot be optimized!"}
 
         epc_distribution_cable = opt.calc_epc("distribution_cable_capex", "distribution_cable_lifetime", df)
@@ -81,7 +81,7 @@ def optimize_grid(user_id, project_id):
         end_datetime = start_datetime + timedelta(days=int(opt.n_days))
 
         demand_opt_dict = sync_queries.get_model_instance(sa_tables.Demand, user_id, project_id).to_dict()
-        demand_full_year = queries_demand.get_demand_time_series(nodes, demand_opt_dict).to_frame('Demand')
+        demand_full_year = queries_demand.get_demand_time_series(nodes_df, demand_opt_dict).to_frame('Demand')
         demand_full_year.index = pd.date_range(start=start_datetime, periods=len(demand_full_year), freq="H")
 
         # Then the demand for the selected time period given by the user will be
@@ -96,12 +96,12 @@ def optimize_grid(user_id, project_id):
             pole_max_connection=df.loc[0, "pole_max_n_connections"],
             max_levelized_grid_cost=df.loc[0, "shs_max_grid_cost"])
 
-        # make sure that the new grid object is empty before adding nodes to it
+        # make sure that the new grid object is empty before adding nodes_df to it
         grid.clear_nodes()
         grid.clear_all_links()
 
         # exclude solar-home-systems and poles from the grid optimization
-        grid.nodes = nodes
+        grid.nodes = nodes_df
 
         # convert all (long,lat) coordinates to (x,y) coordinates and update
         # the Grid object, which is necessary for the GridOptimizer
@@ -109,12 +109,12 @@ def optimize_grid(user_id, project_id):
 
         # in case the grid contains 'poles' from the previous optimization
         # they must be removed, becasue the grid_optimizer will calculate
-        # new locations for poles considering the newly added nodes
+        # new locations for poles considering the newly added nodes_df
         grid.clear_poles()
 
         # Find the number of SHS consumers (temporarily)
         n_total_consumers = grid.nodes.index.__len__()
-        n_shs_consumers = nodes[nodes["is_connected"] == False].index.__len__()
+        n_shs_consumers = nodes_df[nodes_df["is_connected"] == False].index.__len__()
         n_grid_consumers = n_total_consumers - n_shs_consumers
         grid.nodes.sort_index(key=lambda x: x.astype("int64"), inplace=True)
 
@@ -131,11 +131,11 @@ def optimize_grid(user_id, project_id):
                             power_house=power_house)
         distribution_cable_max_length = df.loc[0, "distribution_cable_max_length"]
 
-        # Find the connection links in the network with lengths greater than the
+        # Find the connection links_df in the network with lengths greater than the
         # maximum allowed length for `connection` cables, specified by the user.
         long_links = grid.find_index_longest_distribution_link(max_distance_dist_links=distribution_cable_max_length)
 
-        # Add poles to the identified long `distribution` links, so that the
+        # Add poles to the identified long `distribution` links_df, so that the
         # distance between all poles remains below the maximum allowed distance.
         grid.add_fixed_poles_on_long_links(long_links=long_links, max_allowed_distance=distribution_cable_max_length)
 
@@ -177,23 +177,43 @@ def optimize_grid(user_id, project_id):
         cost_shs =  0 #peak_demand_shs_consumers.sum()
 
         # get all poles obtained by the network relaxation method
-        nodes = grid.nodes.reset_index(drop=True)
-        nodes.drop(labels=["x", "y", "cluster_label", "type_fixed", "n_connection_links", "n_distribution_links",
+        nodes_df = grid.nodes.reset_index(drop=True)
+        nodes_df.drop(labels=["x", "y", "cluster_label", "type_fixed", "n_connection_links", "n_distribution_links",
                            "cost_per_pole", "branch", "parent_branch", "total_grid_cost_per_consumer_per_a",
                            "connection_cost_per_consumer", 'cost_per_branch', 'distribution_cost_per_branch',
                            'yearly_consumption'],
                    axis=1,
                    inplace=True)
-        sync_inserts.update_nodes_and_links(True, False, nodes, user_id, project_id)
-        links = grid.links.reset_index(drop=True)
-        links.drop(labels=["x_from", "y_from", "x_to", "y_to", "n_consumers", "total_power", "from_node", "to_node"],
+        nodes_df = nodes_df.round(decimals=6)
+        if not nodes_df.empty:
+            nodes_df.latitude = nodes_df.latitude.map(lambda x: "%.6f" % x)
+            nodes_df.longitude = nodes_df.longitude.map(lambda x: "%.6f" % x)
+            if len(nodes_df.index) != 0:
+                if 'parent' in nodes_df.columns:
+                    nodes_df['parent'] = nodes_df['parent'].where(nodes_df['parent'] != 'unknown', None)
+                nodes = sa_tables.Nodes()
+                nodes.id = user_id
+                nodes.project_id = project_id
+                nodes.data = nodes_df.reset_index(drop=True).to_json()
+                sync_inserts.merge_model(nodes)
+        links_df = grid.links.reset_index(drop=True)
+        links_df.drop(labels=["x_from", "y_from", "x_to", "y_to", "n_consumers", "total_power", "from_node", "to_node"],
                    axis=1,
                    inplace=True)
-        sync_inserts.update_nodes_and_links(False, True, links.to_dict(), user_id, project_id)
+        links_df.lat_from = links_df.lat_from.map(lambda x: "%.6f" % x)
+        links_df.lon_from = links_df.lon_from.map(lambda x: "%.6f" % x)
+        links_df.lat_to = links_df.lat_to.map(lambda x: "%.6f" % x)
+        links_df.lon_to = links_df.lon_to.map(lambda x: "%.6f" % x)
+        if len(df.index) != 0:
+            links = sa_tables.Links()
+            links.id = user_id
+            links.project_id = project_id
+            links.data = links_df.reset_index(drop=True).to_json()
+            sync_inserts.merge_model(links)
         end_execution_time = time.monotonic()
         results = sa_tables.Results()
         results.n_consumers = len(grid.consumers())
-        results.n_shs_consumers = nodes[nodes["is_connected"] == False].index.__len__()
+        results.n_shs_consumers = nodes_df[nodes_df["is_connected"] == False].index.__len__()
         results.n_poles = len(grid.poles())
         results.length_distribution_cable = int(grid.links[grid.links.link_type == "distribution"]["length"].sum())
         results.length_connection_cable = int(grid.links[grid.links.link_type == "connection"]["length"].sum())
