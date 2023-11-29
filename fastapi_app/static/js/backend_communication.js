@@ -137,9 +137,10 @@ async function remove_buildings_inside_boundary({ boundariesCoordinates } = {}) 
 
 
 
-/************************************************************/
-/*                       OPTIMIZATION                       */
-/************************************************************/
+async function redirect(href)
+    {
+    window.location.href = href;
+    }
 
 
 async function save_energy_system_design(href) {
