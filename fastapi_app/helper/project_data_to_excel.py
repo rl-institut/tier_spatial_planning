@@ -4,7 +4,7 @@ import pandas as pd
 import io
 
 
-def df_to_xlsx(input_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df):
+def project_data_df_to_xlsx(input_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df):
     input_df = pd.concat([input_df.T, energy_system_design.T])
     input_df.columns = ["User specified input parameters"]
     input_df.index.name = ""

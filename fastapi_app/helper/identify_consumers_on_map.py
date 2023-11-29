@@ -6,6 +6,7 @@ import json
 import math
 from shapely import geometry
 
+
 def get_consumer_within_boundaries(df):
     # min and max of latitudes and longitudes are sent to the overpass to get
     # a large rectangle including (maybe) more buildings than selected

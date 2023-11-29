@@ -208,3 +208,12 @@ async def _copy_project(user_from_id, user_to_id, project_from_id, project_to_id
             new_e.id = user_to_id
             new_e.project_id = project_to_id
             await merge_model(new_e)
+
+
+async def remove_results(user_id, project_id):
+    await remove(sa_tables.Results, user_id, project_id)
+    await remove(sa_tables.DemandCoverage, user_id, project_id)
+    await remove(sa_tables.EnergyFlow, user_id, project_id)
+    await remove(sa_tables.Emissions, user_id, project_id)
+    await remove(sa_tables.DurationCurve, user_id, project_id)
+    await remove(sa_tables.Links, user_id, project_id)

@@ -1106,7 +1106,7 @@ function start_calculation(project_id, opt_iter=0) {
     .then(res => {
         if (res.redirect && res.redirect.length > 0) {
             document.getElementById('responseMsg').innerHTML =
-                'Input data is missing for the models. It appears that you have not gone through all the pages to ' +
+                'Input data is missing for the opt_models. It appears that you have not gone through all the pages to ' +
                 'enter the input data. You will be redirected to the corresponding page.';
             const baseURL = window.location.origin;
             document.getElementById('redirectLink').href = baseURL + res.redirect;

@@ -3,14 +3,14 @@ import uuid
 import asyncio
 import base64
 import random
+from datetime import datetime, timedelta
+from typing import Optional
+from jose import jwt
 from typing import Tuple
 from captcha.image import ImageCaptcha
 from passlib.context import CryptContext
 from fastapi_app.db import sa_tables
 from fastapi_app import config
-from datetime import datetime, timedelta
-from typing import Optional
-from jose import jwt
 from fastapi.security.utils import get_authorization_scheme_param
 from fastapi_app.db import async_inserts, async_queries
 from fastapi_app.helper.mail import send_mail

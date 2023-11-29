@@ -196,3 +196,19 @@ async def check_data_availability(user_id, project_id):
         return False, '/energy_system_design/?project_id=' + str(project_id)
     else:
         return True, None
+
+
+async def pause_until_results_are_available(user_id, project_id, status):
+    n_iter = 4 if status == 'unknown' else 2
+    for i in range(n_iter):
+        results = await get_model_instance(sa_tables.Results, user_id, project_id)
+        if hasattr(results, 'lcoe') and results.lcoe is not None:
+            break
+        elif hasattr(results, 'infeasible') and bool(results.infeasible) is True:
+            break
+        elif hasattr(results, 'n_consumers') and hasattr(results, 'n_shs_consumers') and \
+                results.n_consumers == results.n_shs_consumers:
+            break
+        else:
+            await asyncio.sleep(5 + i)
+            print('Results are not available')
