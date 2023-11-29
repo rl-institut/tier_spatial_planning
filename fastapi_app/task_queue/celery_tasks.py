@@ -4,9 +4,6 @@ from fastapi_app.db import async_inserts
 from fastapi_app.opt_models.grid_optimizer import optimize_grid
 from fastapi_app.opt_models.supply_optimizer import optimize_energy_system
 
-"""
-
-"""
 
 @worker.task(name='celery_worker.task_grid_opt',
              force=True,

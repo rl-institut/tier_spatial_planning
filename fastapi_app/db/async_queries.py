@@ -2,9 +2,7 @@ import asyncio
 import decimal
 import pandas as pd
 import sqlalchemy as sa
-from sqlalchemy import select, and_
-import flatten_dict
-from flatten_dict.splitters import make_splitter
+from sqlalchemy import select
 from jose import jwt, JWTError
 from sqlalchemy.exc import OperationalError, NoResultFound
 from fastapi_app.db import sa_tables
@@ -61,27 +59,6 @@ async def get_projects_of_user(user_id):
     query = select(sa_tables.ProjectSetup).where(sa_tables.ProjectSetup.id == user_id)
     projects = await _execute_with_retry(query, which='all')
     return projects
-
-
-async def get_project_setup_of_user(user_id, project_id):
-    user_id, project_id = int(user_id), int(project_id)
-    query = select(sa_tables.ProjectSetup).where(and_(sa_tables.ProjectSetup.id == user_id,
-                                                 sa_tables.ProjectSetup.project_id == project_id))
-    project_setup = await _execute_with_retry(query, which='first')
-    return project_setup
-
-
-async def get_energy_system_design(user_id, project_id):
-    user_id, project_id = int(user_id), int(project_id)
-    query = select(sa_tables.EnergySystemDesign).where(and_(sa_tables.EnergySystemDesign.id == user_id,
-                                                       sa_tables.EnergySystemDesign.project_id == project_id))
-    model_inst = await _execute_with_retry(query, which='first')
-    df = model_inst.to_df()
-    if df.empty:
-        df = sa_tables.Nodes().to_df().iloc[0:0]
-    df = df.drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
-    energy_system_design = flatten_dict.unflatten(df.to_dict('records')[0], splitter=make_splitter('__'))
-    return energy_system_design
 
 
 async def get_model_instance(model, user_id, project_id, which='first'):
@@ -184,15 +161,13 @@ async def check_data_availability(user_id, project_id):
     if nodes_df is None or nodes_df.empty or nodes_df[nodes_df['node_type'] == 'consumer'].index.__len__() == 0:
         return False, '/consumer_selection/?project_id=' + str(project_id)
     demand_opt_dict = await get_model_instance(sa_tables.Demand, user_id, project_id)
-    if demand_opt_dict is not None:
-        demand_opt_dict = demand_opt_dict.to_dict()
-    if demand_opt_dict is None or demand_opt_dict['household_option'] is None:
+    if demand_opt_dict is None or pd.isna(demand_opt_dict.household_option):
         return False, '/demand_estimation/?project_id=' + str(project_id)
-    grid_design = await get_df(sa_tables.GridDesign, user_id, project_id, is_timeseries=False)
-    if grid_design is None or grid_design.empty or pd.isna(grid_design['pole_lifetime'].iat[0]):
+    grid_design = await get_model_instance(sa_tables.GridDesign, user_id, project_id)
+    if grid_design is None or pd.isna(grid_design.pole_lifetime):
         return False, '/grid_design/?project_id=' + str(project_id)
-    energy_system_design = await get_energy_system_design(user_id, project_id)
-    if grid_design is None or energy_system_design['battery']['parameters']['c_rate_in'] is None:
+    energy_system_design = await get_model_instance(sa_tables.EnergySystemDesign, user_id, project_id)
+    if energy_system_design is None or pd.isna(energy_system_design.battery__parameters__c_rate_in):
         return False, '/energy_system_design/?project_id=' + str(project_id)
     else:
         return True, None
