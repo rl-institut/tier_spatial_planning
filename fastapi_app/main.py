@@ -912,36 +912,46 @@ def get_project_id_from_request(request: Request):
     return project_id
 
 
-@app.get("/get_plot_data/{project_id}")
-async def get_plot_data(project_id, request: Request):
+@app.get("/get_plot_data/{project_id}/{plot_type}")
+async def get_plot_data(project_id, plot_type, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
-    df = await async_queries.get_df(sa_tables.Results, user.id, project_id)
-    df = df.astype(str)
-    optimal_capacity_keys = ["pv", "battery", "inverter", "rectifier", "diesel_genset", "peak_demand", "surplus"]
-    optimal_capacities = {key: df.loc[0, f"{key}_capacity"] for key in optimal_capacity_keys[:-2]}
-    optimal_capacities.update({key: df.loc[0, key] for key in optimal_capacity_keys[-2:]})
-    lcoe_breakdown_keys = ["renewable_assets", "non_renewable_assets", "grid", "fuel"]
-    lcoe_breakdown = {key: df.loc[0, f"cost_{key}"] for key in lcoe_breakdown_keys}
-    sankey_keys = ["fuel_to_diesel_genset", "diesel_genset_to_rectifier", "diesel_genset_to_demand",
-                   "rectifier_to_dc_bus", "pv_to_dc_bus", "battery_to_dc_bus", "dc_bus_to_battery",
-                   "dc_bus_to_inverter", "dc_bus_to_surplus", "inverter_to_demand"]
-    sankey_data = {key: df.loc[0, key] for key in sankey_keys}
-    energy_flow = await async_queries.get_model_instance(sa_tables.EnergyFlow, user.id, project_id)
-    energy_flow = pd.read_json(energy_flow.data)
-    energy_flow['battery'] = energy_flow['battery_discharge'] - energy_flow['battery_charge']
-    energy_flow.drop(columns=['battery_charge', 'battery_discharge'], inplace=True)
-    energy_flow.reset_index(drop=True, inplace=True)
-    energy_flow = json.loads(energy_flow.to_json())
-    duration_curve = json.loads((await async_queries.get_model_instance(sa_tables.DurationCurve, user.id, project_id)).data)
-    emissions = json.loads((await async_queries.get_model_instance(sa_tables.Emissions, user.id, project_id)).data)
-    demand_coverage = json.loads((await async_queries.get_model_instance(sa_tables.DemandCoverage, user.id, project_id)).data)
-    return JSONResponse(status_code=200, content={"optimal_capacities": optimal_capacities,
-                                                  "lcoe_breakdown": lcoe_breakdown,
-                                                  "sankey_data": sankey_data,
-                                                  "energy_flow": energy_flow,
-                                                  "duration_curve": duration_curve,
-                                                  "demand_coverage": demand_coverage,
-                                                  "emissions": emissions})
+    if plot_type == 'energy_flow':
+        energy_flow = await async_queries.get_model_instance(sa_tables.EnergyFlow, user.id, project_id)
+        energy_flow = pd.read_json(energy_flow.data)
+        energy_flow['battery'] = energy_flow['battery_discharge'] - energy_flow['battery_charge']
+        energy_flow.drop(columns=['battery_charge', 'battery_discharge'], inplace=True)
+        energy_flow.reset_index(drop=True, inplace=True)
+        energy_flow = json.loads(energy_flow.to_json())
+        return JSONResponse(status_code=200, content={"energy_flow": energy_flow})
+    elif plot_type == 'duration_curve':
+        duration_curve = json.loads(
+            (await async_queries.get_model_instance(sa_tables.DurationCurve, user.id, project_id)).data)
+        for dic in duration_curve.values():
+            dic['0'] = 100 if dic['0'] is None else dic['0']
+        return JSONResponse(status_code=200, content={"duration_curve": duration_curve})
+    elif plot_type == 'emissions':
+        emissions = json.loads((await async_queries.get_model_instance(sa_tables.Emissions, user.id, project_id)).data)
+        return JSONResponse(status_code=200, content={"emissions": emissions})
+    elif plot_type == 'demand_coverage':
+        demand_coverage = json.loads(
+            (await async_queries.get_model_instance(sa_tables.DemandCoverage, user.id, project_id)).data)
+        return JSONResponse(status_code=200, content={"demand_coverage": demand_coverage})
+    else:
+        df = await async_queries.get_df(sa_tables.Results, user.id, project_id)
+        df = df.astype(str)
+        optimal_capacity_keys = ["pv", "battery", "inverter", "rectifier", "diesel_genset", "peak_demand", "surplus"]
+        optimal_capacities = {key: df.loc[0, f"{key}_capacity"] for key in optimal_capacity_keys[:-2]}
+        optimal_capacities.update({key: df.loc[0, key] for key in optimal_capacity_keys[-2:]})
+        lcoe_breakdown_keys = ["renewable_assets", "non_renewable_assets", "grid", "fuel"]
+        lcoe_breakdown = {key: df.loc[0, f"cost_{key}"] for key in lcoe_breakdown_keys}
+
+        sankey_keys = ["fuel_to_diesel_genset", "diesel_genset_to_rectifier", "diesel_genset_to_demand",
+                       "rectifier_to_dc_bus", "pv_to_dc_bus", "battery_to_dc_bus", "dc_bus_to_battery",
+                       "dc_bus_to_inverter", "dc_bus_to_surplus", "inverter_to_demand"]
+        sankey_data = {key: df.loc[0, key] for key in sankey_keys}
+        return JSONResponse(status_code=200, content={"optimal_capacities": optimal_capacities,
+                                                      "lcoe_breakdown": lcoe_breakdown,
+                                                      "sankey_data": sankey_data})
 
 
 @app.get("/get_demand_time_series/{project_id}")
@@ -962,7 +972,7 @@ async def add_buildings_inside_boundary(js_data: fastapi_app.helper.pydantic_sch
         return JSONResponse({'executed': False,
                              'msg': 'The maximum longitude distance selected is too large. '
                                     'Please select a smaller area.'})
-    data, building_coordidates_within_boundaries = identify_consumers_on_map.bi.get_consumer_within_boundaries(df)
+    data, building_coordidates_within_boundaries = identify_consumers_on_map.get_consumer_within_boundaries(df)
     if building_coordidates_within_boundaries is None:
         return JSONResponse({'executed': False, 'msg': 'In the selected area, no buildings could be identified.'})
     nodes = defaultdict(list)
@@ -1002,7 +1012,7 @@ async def remove_buildings_inside_boundary(data: fastapi_app.helper.pydantic_sch
     df = pd.DataFrame.from_records(data.map_elements)
     if not df.empty:
         boundaries = pd.DataFrame.from_records(data.boundary_coordinates[0][0]).values.tolist()
-        df['inside_boundary'] = identify_consumers_on_map.bi.are_points_in_boundaries(df, boundaries=boundaries, )
+        df['inside_boundary'] = identify_consumers_on_map.are_points_in_boundaries(df, boundaries=boundaries, )
         df = df[df['inside_boundary'] == False]
         df = df.drop(columns=['inside_boundary'])
         return JSONResponse({'map_elements': df.to_dict('records')})

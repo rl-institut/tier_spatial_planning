@@ -1,19 +1,33 @@
 function plot() {
     const urlParams = new URLSearchParams(window.location.search);
     project_id = urlParams.get('project_id');
-    fetch('/get_plot_data/' + project_id)
+    fetch('/get_plot_data/' + project_id + '/demand_coverage')
     .then(response => response.json())
     .then(data => {
-        plot_bar_chart(data.optimal_capacities);
-        plot_lcoe_pie(data.lcoe_breakdown);
-        plot_sankey(data.sankey_data);
-        plot_duration_curves(data.duration_curve);
-        plot_co2_emissions(data.emissions);
-        plot_energy_flows(data.energy_flow);
         plot_demand_coverage(data.demand_coverage);
-    })
-    .catch((error) => {
-        console.error('Error:', error);
+    });
+        fetch('/get_plot_data/' + project_id + '/energy_flow')
+    .then(response => response.json())
+    .then(data => {
+        plot_energy_flows(data.energy_flow);
+    });
+        fetch('/get_plot_data/' + project_id + '/other')
+    .then(response => response.json())
+    .then(data => {
+        plot_lcoe_pie(data.lcoe_breakdown);
+        plot_bar_chart(data.optimal_capacities);
+
+        plot_sankey(data.sankey_data);
+    });
+    fetch('/get_plot_data/' + project_id + '/duration_curve')
+    .then(response => response.json())
+    .then(data => {
+        plot_duration_curves(data.duration_curve);
+    });
+    fetch('/get_plot_data/' + project_id + '/emissions')
+    .then(response => response.json())
+    .then(data => {
+        plot_co2_emissions(data.emissions);
     });
     }
 
