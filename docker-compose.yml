@@ -15,8 +15,7 @@ services:
       - DB_HOST=mysql
       - DOCKERIZED=1
     env_file:
-      - fastapi_app.env
-      - mail.env
+      - app.env
     ports:
       - '40000:40000'
     links:
@@ -30,7 +29,7 @@ services:
     container_name: mysql
     build:
       context: .
-      dockerfile: Dockerfile-mysql
+      dockerfile: docker/Dockerfile_mysql
       args:
         - UID_FOR_DB=${UID_FOR_DB}
         - GID_FOR_DB=${GID_FOR_DB}

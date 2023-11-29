@@ -1,5 +1,4 @@
 import time
-import os
 import numpy as np
 import pandas as pd
 import oemof.solph as solph
@@ -10,7 +9,7 @@ from fastapi_app.db import sa_tables
 from fastapi_app.db import sync_inserts, sync_queries
 from fastapi_app import config
 from fastapi_app.helper.mail import send_mail
-from fastapi_app.inputs import solar_potential, demand_estimation
+from fastapi_app.inputs import solar_potential
 
 
 def optimize_energy_system(user_id, project_id):

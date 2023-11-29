@@ -9,7 +9,7 @@ from pvlib.location import Location
 from pvlib.modelchain import ModelChain
 from pvlib.temperature import TEMPERATURE_MODEL_PARAMETERS
 from feedinlib import era5
-from fastapi_app.db import  sync_queries, async_queries
+from fastapi_app.db import sync_queries
 from fastapi_app import config
 
 

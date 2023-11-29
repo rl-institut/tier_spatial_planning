@@ -972,11 +972,11 @@ async def add_buildings_inside_boundary(js_data: fastapi_app.helper.pydantic_sch
         return JSONResponse({'executed': False,
                              'msg': 'The maximum longitude distance selected is too large. '
                                     'Please select a smaller area.'})
-    data, building_coordidates_within_boundaries = identify_consumers_on_map.get_consumer_within_boundaries(df)
-    if building_coordidates_within_boundaries is None:
+    data, building_coordinates_within_boundaries = identify_consumers_on_map.get_consumer_within_boundaries(df)
+    if building_coordinates_within_boundaries is None:
         return JSONResponse({'executed': False, 'msg': 'In the selected area, no buildings could be identified.'})
     nodes = defaultdict(list)
-    for label, coordinates in building_coordidates_within_boundaries.items():
+    for label, coordinates in building_coordinates_within_boundaries.items():
         nodes["latitude"].append(round(coordinates[0], 6))
         nodes["longitude"].append(round(coordinates[1], 6))
         nodes["how_added"].append("automatic")

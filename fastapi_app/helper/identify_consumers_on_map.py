@@ -45,8 +45,6 @@ def convert_overpass_json_to_geojson(json_dict):
     ----------
     json_dict (dict):
         dict obtained using the overpass api.
-        Example: json at https://www.overpass-api.de/api/interpreter?data=[out:json][timeout:2500][bbox:11.390617069027885,9.132004976127066,11.392010636465772,9.133802056167044];(way["building"];relation["building"];);out body;>;out skel qt;
-
     """
     ts = time.time()
     timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')

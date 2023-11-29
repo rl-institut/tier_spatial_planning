@@ -20,8 +20,7 @@ var_list = ['PW',
 if os.environ.get('DOCKERIZED') is None or bool(os.environ.get('DOCKERIZED')) is False:
     # If the environment variable 'DOCKERIZED' is not set, it is assumed that the app is running outside a docker container.
     # In this case, we need to read the environment files and docker secrets files manually.
-    load_dotenv(dotenv_path='fastapi_app.env')
-    load_dotenv(dotenv_path='mail.env')
+    load_dotenv(dotenv_path='app.env')
 
 
 root_path = os.getcwd()
