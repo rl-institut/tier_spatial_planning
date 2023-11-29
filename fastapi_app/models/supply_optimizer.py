@@ -45,15 +45,7 @@ class EnergySystemOptimizer(BaseOptimizer):
         Initialize the grid optimizer object
         """
         print('start es opt')
-        project_setup = {k: v[0] if isinstance(v, tuple) and len(v) == 1 else v for k, v in
-                         sync_queries.get_input_df(user_id, project_id).iloc[0].to_dict().items()}
-        super().__init__(user_id,
-                         project_id,
-                         project_setup["start_date"],
-                         min(project_setup["n_days"], int(os.environ.get('MAX_DAYS', 365))),
-                         project_setup["project_lifetime"],
-                         project_setup["interest_rate"] / 100,
-                         tax=0)
+        super().__init__(user_id, project_id)
         energy_system_design = sync_queries.get_energy_system_design(user_id, project_id)
         if energy_system_design['pv']["settings"]["is_selected"] is True or \
                 energy_system_design['battery']["settings"]["is_selected"] is True:
@@ -72,26 +64,19 @@ class EnergySystemOptimizer(BaseOptimizer):
         self.inverter = energy_system_design['inverter']
         self.rectifier = energy_system_design['rectifier']
         self.shortage = energy_system_design['shortage']
-        nodes = sync_queries.get_model_instance(sa_tables.Nodes, user_id, project_id)
-        nodes = pd.read_json(nodes.data)
-        if not nodes[nodes['consumer_type'] == 'power_house'].empty:
-            lat, lon = nodes[nodes['consumer_type'] == 'power_house']['latitude', 'longitude'].to_list()
+        if not self.nodes[self.nodes['consumer_type'] == 'power_house'].empty:
+            lat, lon = self.nodes[self.nodes['consumer_type'] == 'power_house']['latitude', 'longitude'].to_list()
         else:
-            lat, lon = nodes[['latitude', 'longitude']].mean().to_list()
+            lat, lon = self.nodes[['latitude', 'longitude']].mean().to_list()
         self.solar_potential = solar_potential.get_dc_feed_in_sync_db_query(lat, lon, self.dt_index).loc[self.dt_index]
-        demand_opt_dict = sync_queries.get_model_instance(sa_tables.Demand, user_id, project_id).to_dict()
-        self.demand_full_year = demand_estimation.get_demand_time_series(nodes, demand_opt_dict).to_frame('Demand')
-        self.demand = self.demand_full_year.loc[self.dt_index]['Demand'].copy()
         self.solar_potential_peak = self.solar_potential.max()
         self.demand_peak = self.demand.max()
         self.infeasible = False
-        self.num_households = len(nodes[(nodes['consumer_type'] == 'household') &
-                                   (nodes['is_connected'] == True)].index)
-        self.nodes = nodes
+        self.num_households = len(self.nodes[(self.nodes['consumer_type'] == 'household') &
+                                   (self.nodes['is_connected'] == True)].index)
         links = sync_queries.get_model_instance(sa_tables.Links, user_id, project_id)
         self.links = pd.read_json(links.data)
         self.energy_system_design = energy_system_design
-        self.project_setup = project_setup
 
 
     def optimize_energy_system(self):

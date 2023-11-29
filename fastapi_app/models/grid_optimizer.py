@@ -10,7 +10,7 @@ from scipy.sparse.csgraph import minimum_spanning_tree
 from fastapi_app.helper.error_logger import logger as error_logger
 from fastapi_app.db import sync_inserts, sa_tables, sync_queries
 from fastapi_app.models.base_optimizer import BaseOptimizer
-from fastapi_app.inputs import demand_estimation
+
 
 
 pd.options.mode.chained_assignment = None  # default='warn'
@@ -30,17 +30,13 @@ def optimize_grid(user_id, project_id):
 class GridOptimizer(BaseOptimizer):
 
     def __init__(self, user_id, project_id):
-        project_setup = {k: v[0] if isinstance(v, tuple) and len(v) == 1 else v for k, v in
-                         sync_queries.get_input_df(user_id, project_id).iloc[0].to_dict().items()}
         super().__init__(user_id,
-                         project_id,
-                         project_setup["start_date"],
-                         min(project_setup["n_days"], int(os.environ.get('MAX_DAYS', 365))),
-                         project_setup["project_lifetime"],
-                         project_setup["interest_rate"] / 100,
-                         tax=0)
+                         project_id,)
         self._update_project_status_in_db()
-        links = pd.DataFrame(
+        self.user_id = user_id
+        self.project_id = project_id
+        self.nodes, self.power_house = self._query_nodes()
+        self.links = pd.DataFrame(
             {   "label": pd.Series([], dtype=str),
                 "lat_from": pd.Series([], dtype=np.dtype(float)),
                 "lon_from": pd.Series([], dtype=np.dtype(float)),
@@ -56,26 +52,20 @@ class GridOptimizer(BaseOptimizer):
                 "total_power": pd.Series([], dtype=int),
                 "from_node": pd.Series([], dtype=str),
                 "to_node": pd.Series([], dtype=str),}).set_index("label")
-        self.user_id = user_id
-        self.project_id = project_id
-        self.nodes, self.power_house = self._query_nodes()
-        self.links = links
-        self.pole_max_connection = project_setup["pole_max_n_connections"]
+        self.pole_max_connection = self.project_setup["pole_max_n_connections"]
         self.grid_mst = pd.DataFrame({}, dtype=np.dtype(float))
-        self.epc_distribution_cable = self.calc_epc(project_setup["distribution_cable_capex"],
-                                               project_setup["distribution_cable_lifetime"])
-        self.epc_connection_cable = self.calc_epc(project_setup["connection_cable_capex"],
-                                             project_setup["connection_cable_lifetime"])
-        self.epc_connection = self.calc_epc(project_setup["mg_connection_cost"],
-                                       project_setup["project_lifetime"])
-        self.epc_pole = self.calc_epc(project_setup["pole_capex"],
-                                 project_setup["pole_lifetime"])
-        self.max_levelized_grid_cost = project_setup["shs_max_grid_cost"]
-        self.connection_cable_max_length = project_setup["connection_cable_max_length"]
-        self.distribution_cable_max_length = project_setup["distribution_cable_max_length"]
-        demand_opt_dict = sync_queries.get_model_instance(sa_tables.Demand, user_id, project_id).to_dict()
-        self.demand_full_year = demand_estimation.get_demand_time_series(self.nodes, demand_opt_dict).to_frame('Demand')
-        self.demand = self.demand_full_year.loc[self.dt_index]['Demand'].copy()
+        self.epc_distribution_cable = self.calc_epc(self.project_setup["distribution_cable_capex"],
+                                                    self.project_setup["distribution_cable_lifetime"])
+        self.epc_connection_cable = self.calc_epc(self.project_setup["connection_cable_capex"],
+                                                  self.project_setup["connection_cable_lifetime"])
+        self.epc_connection = self.calc_epc(self.project_setup["mg_connection_cost"],
+                                            self.project_setup["project_lifetime"])
+        self.epc_pole = self.calc_epc(self.project_setup["pole_capex"],
+                                      self.project_setup["pole_lifetime"])
+        self.max_levelized_grid_cost = self.project_setup["shs_max_grid_cost"]
+        self.connection_cable_max_length = self.project_setup["connection_cable_max_length"]
+        self.distribution_cable_max_length = self.project_setup["distribution_cable_max_length"]
+
 
     def optimize_grid(self):
         self.convert_lonlat_xy()
@@ -196,8 +186,7 @@ class GridOptimizer(BaseOptimizer):
         sync_inserts.merge_model(project_setup)
 
     def _query_nodes(self):
-        nodes_df = sync_queries.get_model_instance(sa_tables.Nodes, self.user_id, self.project_id)
-        nodes_df = pd.read_json(nodes_df.data)
+        nodes_df = self.nodes.copy()
         nodes_df.loc[nodes_df['shs_options'] == 2, 'is_connected'] = False
         nodes_df['is_connected'] = True
         nodes_df.index = nodes_df.index.astype(str)
@@ -384,7 +373,7 @@ class GridOptimizer(BaseOptimizer):
 
                 pole_label = f"p-{i+index_last_pole}"
 
-                # In adding the pole, the `how_added` attribute is considerd
+                # In adding the pole, the `how_added` attribute is considered
                 # `long-distance-init`, which means the pole is added because
                 # of long distance in a distribution link.
                 # The reason for using the `long_link` part is to distinguish
@@ -578,7 +567,7 @@ class GridOptimizer(BaseOptimizer):
         # specify the type of the link which is obtained based on the start/end nodes of the link
         if (self.nodes.node_type.loc[label_node_from]
             and self.nodes.node_type.loc[label_node_to]) == "pole":
-            # convention: if two poles are getting connected, the begining will be the one with lower number
+            # convention: if two poles are getting connected, the beginning will be the one with lower number
             (label_node_from, label_node_to) = sorted([label_node_from, label_node_to])
             link_type = "distribution"
         else:
@@ -589,7 +578,7 @@ class GridOptimizer(BaseOptimizer):
             label_node_1=label_node_from, label_node_2=label_node_to
         )
 
-        # define a label for the link and add all other charateristics to the grid object
+        # define a label for the link and add all other characteristics to the grid object
         label = f"({label_node_from}, {label_node_to})"
         self.links.at[label, "lat_from"] = self.nodes.latitude.loc[label_node_from]
         self.links.at[label, "lon_from"] = self.nodes.longitude.loc[label_node_from]
@@ -893,18 +882,13 @@ class GridOptimizer(BaseOptimizer):
         self.nodes.loc[self.nodes[self.nodes['is_connected'] == True].index, 'total_grid_cost_per_consumer_per_a'] \
             = self.nodes['connection_cost_per_consumer']
         leaf_branches = self.nodes[self.nodes['n_distribution_links'] == 1]['branch'].unique()
-        next_branch = False
         for branch in self.nodes['branch'].unique():
-
             if branch is not None:
                 if branch in leaf_branches:
                     poles_of_branch = self.nodes[self.nodes['branch'] == branch]
                     next_pole = poles_of_branch[poles_of_branch['n_distribution_links'] == 1]
                     consumers_down_the_line = []
-                    next_branch = False
                     for _ in range(len(poles_of_branch)):
-                        if next_branch:
-                            break
                         consumers_of_pole = poles_of_branch[(poles_of_branch['node_type'] == 'consumer') &
                                                             (poles_of_branch['is_connected'] == True) &
                                                             (poles_of_branch['parent'] == next_pole.index[0])]
@@ -919,7 +903,6 @@ class GridOptimizer(BaseOptimizer):
                                 cost_of_pole * self.nodes.loc[consumer, 'yearly_consumption'] / total_consumption
                         next_pole = self.nodes[self.nodes.index == next_pole['parent'].iat[0]]
                         if next_pole.index.__len__() == 0:
-                            next_branch = True
                             break
                         elif self.nodes[self.nodes.index == next_pole.index[0]]['branch'].iat[0]  != branch:
                             break
@@ -927,7 +910,6 @@ class GridOptimizer(BaseOptimizer):
                     continue
         self.nodes['total_grid_cost_per_consumer_per_a'] = \
             self.nodes['total_grid_cost_per_consumer_per_a'] / self.nodes['yearly_consumption']
-
     def marginal_cost_per_consumer(self, pole, consumer_of_pole):
         total_consumption = \
             self.nodes[self.nodes.index.isin(consumer_of_pole.index)]['yearly_consumption'].sum()
@@ -1247,6 +1229,8 @@ class GridOptimizer(BaseOptimizer):
                 elif not added_poles_to_from.empty:
                     added_poles = added_poles_to_from
                     to_from = True
+                else:
+                    raise UnboundLocalError('\'added_poles\' unkown')
 
                 # In this part, the long links are broken into smaller links.
                 # `counter` represents the number of the added poles.
@@ -1338,7 +1322,7 @@ class GridOptimizer(BaseOptimizer):
         """
         Uses a k-means clustering algorithm and returns the coordinates of the centroids.
 
-        Pamameters
+        Parameters
         ----------
             grid (~grids.Grid):
                 grid object
@@ -1348,9 +1332,9 @@ class GridOptimizer(BaseOptimizer):
         Return
         ------
             coord_centroids: numpy.ndarray
-                A numpy array containing the coordinates of the cluster centeroids.
+                A numpy array containing the coordinates of the cluster centroids.
                 Suppose there are two cluster with centers at (x1, y1) & (x2, y2),
-                then the output arroy would look like:
+                then the output array would look like:
                     array([
                         [x1, y1],
                         [x2 , y2]
@@ -1423,7 +1407,7 @@ class GridOptimizer(BaseOptimizer):
         Return
         ------
         number_of_poles: int
-            the number of polse corresponding to the minimum cost of the grid
+            the number of poles corresponding to the minimum cost of the grid
         """
         # obtain the location of poles using kmeans clustering method
         self.kmeans_clustering(n_clusters=min_n_clusters)
