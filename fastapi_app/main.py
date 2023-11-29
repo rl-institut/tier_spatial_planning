@@ -7,30 +7,29 @@ import random
 from captcha.image import ImageCaptcha
 import pandas as pd
 from jose import jwt
-import fastapi_app.db.pydantic_schema
-from celery_worker import worker
+import fastapi_app.helper.pydantic_schema
 import os
+import pyutilib.subprocess.GlobalData
 from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 from typing import Dict
-import fastapi_app.helper.identify_consumers_on_map as bi
-from fastapi_app.db import sa_tables
 from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.responses import RedirectResponse, FileResponse, JSONResponse, HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
 from fastapi.staticfiles import StaticFiles
-from fastapi_app.models.grid_optimizer import optimize_grid
-from fastapi_app.models.supply_optimizer import optimize_energy_system
-from fastapi_app.helper.handle_user_accounts import Hasher, create_guid, is_valid_credentials, send_activation_link, activate_mail, \
-    authenticate_user, create_access_token, send_mail, create_default_user_account
-from fastapi_app.helper import handle_user_accounts as accounts
-from fastapi_app.db import async_inserts, async_queries, sync_queries
 from fastapi_app import config
-from fastapi_app.helper.df_to_excel import df_to_xlsx
-import pyutilib.subprocess.GlobalData
+from fastapi_app.opt_models.grid_optimizer import optimize_grid
+from fastapi_app.opt_models.supply_optimizer import optimize_energy_system
+from fastapi_app.helper.handle_user_accounts import Hasher, create_guid, is_valid_credentials, send_activation_link, \
+    activate_mail, authenticate_user, create_access_token, send_mail, create_default_user_account
+from fastapi_app.helper import handle_user_accounts, identify_consumers_on_map
+from fastapi_app.db import async_inserts, async_queries, sync_queries, sa_tables
+from fastapi_app.helper.project_data_to_excel import project_data_df_to_xlsx
 from fastapi_app.helper.error_logger import logger as error_logger
 from fastapi_app.data.demand.demand_time_series import demand_time_series_df
+from fastapi_app.task_queue.celery_tasks import task_grid_opt, task_supply_opt, task_remove_anonymous_users, \
+    get_status_of_task, task_is_finished, worker
 
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 
@@ -43,8 +42,8 @@ captcha_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 @app.on_event("startup")
 async def startup_event():
     if not config.DOCKERIZED and not sync_queries.check_if_weather_data_exists():
-        pass
         # sync_inserts.update_weather_db()
+        pass
     await create_default_user_account()
 
 
@@ -60,7 +59,7 @@ async def get_workshop_slides():
 @app.exception_handler(Exception)
 async def exception_handler(request: Request, exc: Exception):
     try:
-        user = await accounts.get_user_from_cookie(request)
+        user = await handle_user_accounts.get_user_from_cookie(request)
         user_name = user.email
         projects = await async_queries.get_projects_of_user(user.id)
         for project in projects:
@@ -108,7 +107,7 @@ async def captcha():
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     consent = request.cookies.get("consent_cookie")
     if user is None or consent is None:
         return templates.TemplateResponse("landing-page.html",
@@ -145,7 +144,7 @@ async def home(request: Request):
 
 @app.get("/project_setup", response_class=HTMLResponse)
 async def project_setup(request: Request):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     project_id = request.query_params.get('project_id')
     if project_id is None:
         project_id = await async_queries.next_project_id_of_user(user.id)
@@ -207,7 +206,7 @@ async def reset_password(form_data: Dict[str, str]):
     if guid is not None:
         user = await async_queries.get_user_by_guid(guid)
         if user is not None:
-            if accounts.is_valid_password(password):
+            if handle_user_accounts.is_valid_password(password):
                 user.hashed_password = Hasher.get_password_hash(password)
                 user.guid = ''
                 await async_inserts.merge_model(user)
@@ -216,12 +215,12 @@ async def reset_password(form_data: Dict[str, str]):
             else:
                 validation = False
                 res = 'The password needs to be at least 8 characters long'
-            return fastapi_app.db.pydantic_schema.ValidRegistration(validation=validation, msg=res)
+            return fastapi_app.helper.pydantic_schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.get("/account_overview")
 async def account_overview(request: Request):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     if user is None or 'anonymous__' in user.email:
         return RedirectResponse('/')
     else:
@@ -230,7 +229,7 @@ async def account_overview(request: Request):
 
 @app.get("/contact")
 async def contact(request: Request):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     if user is None or 'anonymous__' in user.email:
         email = ''
     else:
@@ -240,7 +239,7 @@ async def contact(request: Request):
 
 @app.get("/example_model")
 async def example_model(request: Request):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     if user is not None:
         await async_inserts.insert_example_project(user.id)
     return JSONResponse(status_code=200, content={'success': True})
@@ -248,7 +247,7 @@ async def example_model(request: Request):
 
 @app.get("/copy_project")
 async def copy_project(request: Request):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     project_id = request.query_params.get('project_id')
     if user is not None and project_id is not None:
         await async_inserts.copy_project(user.id, project_id)
@@ -284,7 +283,7 @@ async def grid_design(request: Request):
 
 @app.post("/remove_project/{project_id}")
 async def remove_project(project_id, request: Request):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     if hasattr(user, 'id'):
         await async_inserts.remove_project(user.id, project_id)
 
@@ -314,7 +313,7 @@ async def simulation_results(request: Request):
 @app.get("/calculating")
 async def calculating(request: Request):
     project_id = request.query_params.get('project_id')
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     try:
         int(project_id)
     except (TypeError, ValueError):
@@ -344,7 +343,7 @@ async def calculating(request: Request):
 
 @app.post("/set_email_notification/{project_id}/{is_active}")
 async def set_email_notification(project_id: int, is_active: bool, request: Request):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     project_setup = await async_queries.get_model_instance(sa_tables.ProjectSetup, user.id, project_id)
     project_setup.email_notification = is_active
     await async_inserts.merge_model(project_setup)
@@ -352,7 +351,7 @@ async def set_email_notification(project_id: int, is_active: bool, request: Requ
 
 @app.get("/db_links_to_js/{project_id}")
 async def db_links_to_js(project_id, request: Request):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     links = await async_queries.get_model_instance(sa_tables.Links, user.id, project_id)
     links_json = json.loads(links.data) if links is not None else json.loads('{}')
     return JSONResponse(content=links_json, status_code=200)
@@ -360,7 +359,7 @@ async def db_links_to_js(project_id, request: Request):
 
 @app.get("/db_nodes_to_js/{project_id}/{markers_only}")
 async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     if project_id == 'undefined':
         project_id = get_project_id_from_request(request)
     nodes = await async_queries.get_model_instance(sa_tables.Nodes, user.id, project_id)
@@ -397,8 +396,8 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
 
 
 @app.post("/consumer_to_db/{project_id}")
-async def consumer_to_db(project_id: str, map_elements: fastapi_app.db.pydantic_schema.MapDataRequest, request: Request):
-    user = await accounts.get_user_from_cookie(request)
+async def consumer_to_db(project_id: str, map_elements: fastapi_app.helper.pydantic_schema.MapDataRequest, request: Request):
+    user = await handle_user_accounts.get_user_from_cookie(request)
     df = pd.DataFrame.from_records(map_elements.map_elements)
     if df.empty is True:
         await async_inserts.remove(sa_tables.Nodes, user.id, project_id)
@@ -446,7 +445,7 @@ async def consumer_to_db(project_id: str, map_elements: fastapi_app.db.pydantic_
 
 @app.get("/load_results/{project_id}")
 async def load_results(project_id, request: Request):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     project_id = int(project_id)
     df = await async_queries.get_df(sa_tables.Results, user.id, project_id)
     infeasible = bool(df.loc[0, 'infeasible']) if df.columns.__contains__('infeasible') else False
@@ -540,7 +539,7 @@ async def load_results(project_id, request: Request):
 
 @app.get("/show_video_tutorial")
 async def show_video_tutorial(request: Request):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     if pd.isna(user.show_tutorial):
         show_tutorial = True
     else:
@@ -550,14 +549,14 @@ async def show_video_tutorial(request: Request):
 
 @app.get("/deactivate_video_tutorial")
 async def deactivate_video_tutorial(request: Request):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     user.show_tutorial = False
     await async_inserts.merge_model(user)
 
 
 @app.get("/load_previous_data/{page_name}")
 async def load_previous_data(page_name, request: Request):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     project_id = request.query_params.get('project_id')
     if page_name == "project_setup":
         if project_id == 'new':
@@ -633,7 +632,7 @@ async def add_user_to_db(data: Dict[str, str]):
             await async_inserts.merge_model(user)
         else:
             res = [False, 'Please enter a valid captcha']
-    return fastapi_app.db.pydantic_schema.ValidRegistration(validation=res[0], msg=res[1])
+    return fastapi_app.helper.pydantic_schema.ValidRegistration(validation=res[0], msg=res[1])
 
 
 @app.post("/anonymous_login/")
@@ -664,11 +663,11 @@ async def anonymous_login(data: Dict[str, str], response: Response):
         validation, res = True, ''
     else:
         validation, res = False, 'Please enter a valid captcha'
-    return fastapi_app.db.pydantic_schema.ValidRegistration(validation=validation, msg=res)
+    return fastapi_app.helper.pydantic_schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/login/")
-async def login(response: Response, credentials: fastapi_app.db.pydantic_schema.Credentials):
+async def login(response: Response, credentials: fastapi_app.helper.pydantic_schema.Credentials):
     if isinstance(credentials.email, str) and len(credentials.email) > 3:
         is_valid, res = await authenticate_user(credentials.email.strip(), credentials.password)
         if is_valid:
@@ -679,10 +678,10 @@ async def login(response: Response, credentials: fastapi_app.db.pydantic_schema.
             del credentials
             access_token = create_access_token(data={"sub": res.email}, expires_delta=access_token_expires)
             response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
-            return fastapi_app.db.pydantic_schema.ValidRegistration(validation=True, msg="")
+            return fastapi_app.helper.pydantic_schema.ValidRegistration(validation=True, msg="")
         else:
             del credentials
-            return fastapi_app.db.pydantic_schema.ValidRegistration(validation=False, msg=res)
+            return fastapi_app.helper.pydantic_schema.ValidRegistration(validation=False, msg=res)
 
 
 @app.post("/consent_cookie/")
@@ -694,14 +693,14 @@ async def consent_cookie(response: Response):
 
 
 @app.post("/change_email/")
-async def change_email(request: Request, credentials: fastapi_app.db.pydantic_schema.Credentials):
+async def change_email(request: Request, credentials: fastapi_app.helper.pydantic_schema.Credentials):
     if isinstance(credentials.email.strip(), str) and len(credentials.email.strip()) > 3:
-        user = await accounts.get_user_from_cookie(request)
+        user = await handle_user_accounts.get_user_from_cookie(request)
         is_valid, res = await authenticate_user(user.email, credentials.password)
         validation = False
         if is_valid:
             user.email = credentials.email.strip()
-            if accounts.is_valid_email(user):
+            if handle_user_accounts.is_valid_email(user):
                 user.is_confirmed = False
                 user.guid = create_guid()
                 await async_inserts.merge_model(user)
@@ -712,16 +711,16 @@ async def change_email(request: Request, credentials: fastapi_app.db.pydantic_sc
                 res = 'Please enter a valid email address.'
         else:
             del credentials
-        return fastapi_app.db.pydantic_schema.ValidRegistration(validation=validation, msg=res)
+        return fastapi_app.helper.pydantic_schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/change_pw/")
 async def change_pw(request: Request, passwords: Dict[str, str]):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     is_valid, res = await authenticate_user(user.email, passwords['old_password'])
     validation = False
     if is_valid:
-        if accounts.is_valid_password(passwords['new_password']):
+        if handle_user_accounts.is_valid_password(passwords['new_password']):
             user.hashed_password = Hasher.get_password_hash(passwords['new_password'])
             await async_inserts.merge_model(user)
             res = 'Password changed successfully.'
@@ -730,7 +729,7 @@ async def change_pw(request: Request, passwords: Dict[str, str]):
             res = 'The password needs to be at least 8 characters long'
     else:
         del passwords
-    return fastapi_app.db.pydantic_schema.ValidRegistration(validation=validation, msg=res)
+    return fastapi_app.helper.pydantic_schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/send_reset_password_email/")
@@ -753,12 +752,12 @@ async def send_reset_password_email(data: Dict[str, str]):
             validation, res = True, 'Please click the link we sent to your email.'
         else:
             validation, res = False, 'Please enter a valid captcha'
-    return fastapi_app.db.pydantic_schema.ValidRegistration(validation=validation, msg=res)
+    return fastapi_app.helper.pydantic_schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/delete_account/")
-async def change_pw(response: Response, request: Request, form_data: fastapi_app.db.pydantic_schema.Password):
-    user = await accounts.get_user_from_cookie(request)
+async def change_pw(response: Response, request: Request, form_data: fastapi_app.helper.pydantic_schema.Password):
+    user = await handle_user_accounts.get_user_from_cookie(request)
     is_valid, res = await authenticate_user(user.email, form_data.password)
     validation = False
     if is_valid:
@@ -766,7 +765,7 @@ async def change_pw(response: Response, request: Request, form_data: fastapi_app
         response.delete_cookie("access_token")
         res = 'Account removed'
         validation = True
-    return fastapi_app.db.pydantic_schema.ValidRegistration(validation=validation, msg=res)
+    return fastapi_app.helper.pydantic_schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/logout/")
@@ -776,8 +775,8 @@ async def logout(response: Response):
 
 
 @app.post("/query_account_data/")
-async def query_account_data(project_id: fastapi_app.db.pydantic_schema.ProjectID, request: Request):
-    user = await accounts.get_user_from_cookie(request)
+async def query_account_data(project_id: fastapi_app.helper.pydantic_schema.ProjectID, request: Request):
+    user = await handle_user_accounts.get_user_from_cookie(request)
     project_name = ''
     if user is not None:
         name = user.email
@@ -789,13 +788,13 @@ async def query_account_data(project_id: fastapi_app.db.pydantic_schema.ProjectI
                 project = await async_queries.get_project_name_by_id(user.id, project_id.project_id)
                 if hasattr(project, 'project_name'):
                     project_name = project.project_name
-        return fastapi_app.db.pydantic_schema.UserOverview(email=name, project_name=project_name)
+        return fastapi_app.helper.pydantic_schema.UserOverview(email=name, project_name=project_name)
     else:
-        return fastapi_app.db.pydantic_schema.UserOverview(email="", project_name="")
+        return fastapi_app.helper.pydantic_schema.UserOverview(email="", project_name="")
 
 
 @app.post("/has_cookie/")
-async def has_cookie(request: Request, has_cookies: fastapi_app.db.pydantic_schema.HasCookies):
+async def has_cookie(request: Request, has_cookies: fastapi_app.helper.pydantic_schema.HasCookies):
     if has_cookies.access_token:
         token = request.cookies.get("access_token")
         if token is None:
@@ -808,8 +807,8 @@ async def has_cookie(request: Request, has_cookies: fastapi_app.db.pydantic_sche
 
 
 @app.post("/save_grid_design/")
-async def save_grid_design(request: Request, data: fastapi_app.db.pydantic_schema.SaveGridDesign):
-    user = await accounts.get_user_from_cookie(request)
+async def save_grid_design(request: Request, data: fastapi_app.helper.pydantic_schema.SaveGridDesign):
+    user = await handle_user_accounts.get_user_from_cookie(request)
     project_id = get_project_id_from_request(request)
     data.grid_design['id'] = user.id
     data.grid_design['project_id'] = project_id
@@ -819,8 +818,8 @@ async def save_grid_design(request: Request, data: fastapi_app.db.pydantic_schem
 
 
 @app.post("/save_demand_estimation/")
-async def save_demand_estimation(request: Request, data: fastapi_app.db.pydantic_schema.SaveDemandEstimation):
-    user = await accounts.get_user_from_cookie(request)
+async def save_demand_estimation(request: Request, data: fastapi_app.helper.pydantic_schema.SaveDemandEstimation):
+    user = await handle_user_accounts.get_user_from_cookie(request)
     project_id = get_project_id_from_request(request)
     custom_calibration = ast.literal_eval(data.demand_estimation['custom_calibration'])
     use_custom_shares_bool = ast.literal_eval(data.demand_estimation['use_custom_shares'])
@@ -872,7 +871,7 @@ async def save_demand_estimation(request: Request, data: fastapi_app.db.pydantic
 
 
 @app.post("/send_mail_route/")
-async def send_mail_route(mail: fastapi_app.db.pydantic_schema.Mail):
+async def send_mail_route(mail: fastapi_app.helper.pydantic_schema.Mail):
     body = 'offgridplanner.org contact form. email from: {}'.format(mail.from_address) + '\n' + mail.body
     subject = 'offgridplanner.org contact form: {}'.format(mail.subject)
     send_mail('internal', body, subject)
@@ -880,8 +879,8 @@ async def send_mail_route(mail: fastapi_app.db.pydantic_schema.Mail):
 
 
 @app.post("/save_project_setup/{project_id}")
-async def save_project_setup(project_id, request: Request, data: fastapi_app.db.pydantic_schema.SaveProjectSetup):
-    user = await accounts.get_user_from_cookie(request)
+async def save_project_setup(project_id, request: Request, data: fastapi_app.helper.pydantic_schema.SaveProjectSetup):
+    user = await handle_user_accounts.get_user_from_cookie(request)
     # project_id = get_project_id_from_request(request)
     timestamp = pd.Timestamp.now()
     data.page_setup['created_at'] = timestamp
@@ -894,8 +893,8 @@ async def save_project_setup(project_id, request: Request, data: fastapi_app.db.
 
 
 @app.post("/save_energy_system_design/")
-async def save_energy_system_design(request: Request, data: fastapi_app.db.pydantic_schema.OptimizeEnergySystemRequest):
-    user = await accounts.get_user_from_cookie(request)
+async def save_energy_system_design(request: Request, data: fastapi_app.helper.pydantic_schema.OptimizeEnergySystemRequest):
+    user = await handle_user_accounts.get_user_from_cookie(request)
     project_id = get_project_id_from_request(request)
     df = data.to_df()
     await async_inserts.insert_energysystemdesign_df(df, user.id, project_id)
@@ -915,7 +914,7 @@ def get_project_id_from_request(request: Request):
 
 @app.get("/get_plot_data/{project_id}")
 async def get_plot_data(project_id, request: Request):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     df = await async_queries.get_df(sa_tables.Results, user.id, project_id)
     df = df.astype(str)
     optimal_capacity_keys = ["pv", "battery", "inverter", "rectifier", "diesel_genset", "peak_demand", "surplus"]
@@ -951,8 +950,8 @@ async def get_demand_time_series(project_id):
 
 
 @app.post("/add_buildings_inside_boundary")
-async def add_buildings_inside_boundary(js_data: fastapi_app.db.pydantic_schema.MapData, request: Request):
-    user = await accounts.get_user_from_cookie(request)
+async def add_buildings_inside_boundary(js_data: fastapi_app.helper.pydantic_schema.MapData, request: Request):
+    user = await handle_user_accounts.get_user_from_cookie(request)
     boundary_coordinates = js_data.boundary_coordinates[0][0]
     df = pd.DataFrame.from_dict(boundary_coordinates).rename(columns={'lat': 'latitude', 'lng': 'longitude'})
     if df['latitude'].max() - df['latitude'].min() > float(os.environ.get("MAX_LAT_LON_DIST", 0.15)):
@@ -963,7 +962,7 @@ async def add_buildings_inside_boundary(js_data: fastapi_app.db.pydantic_schema.
         return JSONResponse({'executed': False,
                              'msg': 'The maximum longitude distance selected is too large. '
                                     'Please select a smaller area.'})
-    data, building_coordidates_within_boundaries = bi.get_consumer_within_boundaries(df)
+    data, building_coordidates_within_boundaries = identify_consumers_on_map.bi.get_consumer_within_boundaries(df)
     if building_coordidates_within_boundaries is None:
         return JSONResponse({'executed': False, 'msg': 'In the selected area, no buildings could be identified.'})
     nodes = defaultdict(list)
@@ -999,68 +998,25 @@ async def add_buildings_inside_boundary(js_data: fastapi_app.db.pydantic_schema.
 
 
 @app.post("/remove_buildings_inside_boundary")
-async def remove_buildings_inside_boundary(data: fastapi_app.db.pydantic_schema.MapData):
+async def remove_buildings_inside_boundary(data: fastapi_app.helper.pydantic_schema.MapData):
     df = pd.DataFrame.from_records(data.map_elements)
     if not df.empty:
         boundaries = pd.DataFrame.from_records(data.boundary_coordinates[0][0]).values.tolist()
-        df['inside_boundary'] = bi.are_points_in_boundaries(df, boundaries=boundaries, )
+        df['inside_boundary'] = identify_consumers_on_map.bi.are_points_in_boundaries(df, boundaries=boundaries, )
         df = df[df['inside_boundary'] == False]
         df = df.drop(columns=['inside_boundary'])
         return JSONResponse({'map_elements': df.to_dict('records')})
 
 
-async def remove_results(user_id, project_id):
-    await async_inserts.remove(sa_tables.Results, user_id, project_id)
-    await async_inserts.remove(sa_tables.DemandCoverage, user_id, project_id)
-    await async_inserts.remove(sa_tables.EnergyFlow, user_id, project_id)
-    await async_inserts.remove(sa_tables.Emissions, user_id, project_id)
-    await async_inserts.remove(sa_tables.DurationCurve, user_id, project_id)
-    await async_inserts.remove(sa_tables.Links, user_id, project_id)
-
-
-@worker.task(name='celery_worker.task_grid_opt',
-             force=True,
-             track_started=True,
-             autoretry_for=(Exception,),
-             retry_kwargs={'max_retries': 1, 'countdown': 10})
-def task_grid_opt(user_id, project_id):
-    result = optimize_grid(user_id, project_id)
-    return result
-
-
-@worker.task(name='celery_worker.task_supply_opt',
-             force=True,
-             track_started=True,
-             autoretry_for=(Exception,),
-             retry_kwargs={'max_retries': 1, 'countdown': 10}
-             )
-def task_supply_opt(user_id, project_id):
-    result = optimize_energy_system(user_id, project_id)
-    return result
-
-
-@worker.task(name='celery_worker.task_remove_anonymous_users', force=True, track_started=True)
-def task_remove_anonymous_users(user_id):
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    if loop.is_running():
-        result = loop.run_until_complete(async_inserts.remove_account(user_id))
-    else:
-        result = asyncio.run(async_inserts.remove_account(user_id))
-    return result
-
 async def optimization(user_id, project_id):
-    await remove_results(user_id, project_id)
+    await async_inserts.remove_results(user_id, project_id)
     project_setup = await async_queries.get_model_instance(sa_tables.ProjectSetup, user_id, project_id)
     project_setup.status = "queued"
     await async_inserts.merge_model(project_setup)
     if bool(os.environ.get('DOCKERIZED')):
         task = task_grid_opt.delay(user_id, project_id)
         return task.id
-    else:
+    else: #  if app is not running in docker, celery isn't available
         optimize_grid(user_id, project_id)
         optimize_energy_system(user_id, project_id)
         return 'no_celery_id'
@@ -1068,30 +1024,16 @@ async def optimization(user_id, project_id):
 
 @app.get("/optimize_without_celery/{project_id}")
 async def forward_if_consumer_selection_exists(project_id: int, request: Request):
-
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     if bool(user.is_superuser) is True:
         optimize_grid(user.id, project_id)
         optimize_energy_system(user.id, project_id)
         return 'no_celery_id'
 
 
-def get_status_of_task(task_id):
-    status = worker.AsyncResult(task_id).status.lower()
-    return status
-
-
-def task_is_finished(task_id):
-    status = get_status_of_task(task_id)
-    if status in ['success', 'failure', 'revoked']:
-        return True
-    else:
-        return False
-
-
 @app.post("/forward_if_no_task_is_pending")
 async def forward_if_no_task_is_pending(request: Request):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     if user.task_id is not None and len(user.task_id) > 20 and not task_is_finished(user.task_id):
         res = {'forward': False, 'task_id': user.task_id}
     else:
@@ -1101,7 +1043,7 @@ async def forward_if_no_task_is_pending(request: Request):
 
 @app.post("/forward_if_consumer_selection_exists/{project_id}")
 async def forward_if_consumer_selection_exists(project_id, request: Request):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     nodes = await async_queries.get_model_instance(sa_tables.Nodes, user.id, project_id)
     if nodes is None:
         res = {'forward': False}
@@ -1118,7 +1060,7 @@ async def forward_if_consumer_selection_exists(project_id, request: Request):
 async def start_calculation(project_id, request: Request):
     if project_id is None:
         project_id = request.query_params.get('project_id')
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     forward, redirect = await async_queries.check_data_availability(user.id, project_id)
     if forward is False:
         return JSONResponse({'task_id': '', 'redirect': redirect})
@@ -1130,21 +1072,7 @@ async def start_calculation(project_id, request: Request):
 
 
 @app.post('/waiting_for_results/')
-async def waiting_for_results(request: Request, data: fastapi_app.db.pydantic_schema.TaskInfo):
-    async def pause_until_results_are_available(user_id, project_id, status):
-        n_iter = 4 if status == 'unknown' else 2
-        for i in range(n_iter):
-            results = await async_queries.get_model_instance(sa_tables.Results, user_id, project_id)
-            if hasattr(results, 'lcoe') and results.lcoe is not None:
-                break
-            elif hasattr(results, 'infeasible') and bool(results.infeasible) is True:
-                break
-            elif hasattr(results, 'n_consumers') and hasattr(results, 'n_shs_consumers') and \
-                results.n_consumers == results.n_shs_consumers:
-                break
-            else:
-                await asyncio.sleep(5 + i)
-                print('Results are not available')
+async def waiting_for_results(request: Request, data: fastapi_app.helper.pydantic_schema.TaskInfo):
     try:
         max_time = 3600 * 24 * 7
         t_wait = -2E-05 *  data.time + 0.0655 *  data.time + 5.7036 if data.time < 1800 else 60
@@ -1165,7 +1093,7 @@ async def waiting_for_results(request: Request, data: fastapi_app.db.pydantic_sc
             res['finished'] = True
         if res['finished'] is True:
             for i in range(4):
-                user = await accounts.get_user_from_cookie(request)
+                user = await handle_user_accounts.get_user_from_cookie(request)
                 if user is not None:
                     break
                 else:
@@ -1200,7 +1128,7 @@ async def waiting_for_results(request: Request, data: fastapi_app.db.pydantic_sc
                     user.task_id = ''
                     user.project_id = None
                     await async_inserts.update_model_by_user_id(user)
-                    await pause_until_results_are_available(user.id, data.project_id, status)
+                    await async_queries.pause_until_results_are_available(user.id, data.project_id, status)
         return JSONResponse(res)
     except Exception as e:
         print(e)
@@ -1211,7 +1139,7 @@ async def waiting_for_results(request: Request, data: fastapi_app.db.pydantic_sc
 
 @app.post('/has_pending_task/{project_id}')
 async def has_pending_task(project_id, request: Request):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     if user.task_id is not None \
             and len(user.task_id) > 20 \
             and not task_is_finished(user.task_id) \
@@ -1222,19 +1150,19 @@ async def has_pending_task(project_id, request: Request):
 
 
 @app.post('/revoke_task/')
-async def revoke_task(request: Request, data: fastapi_app.db.pydantic_schema.TaskID):
+async def revoke_task(request: Request, data: fastapi_app.helper.pydantic_schema.TaskID):
     celery_task = worker.AsyncResult(data.task_id)
     celery_task.revoke(terminate=True, signal='SIGKILL')
-    user = await accounts.get_user_from_cookie(request)
-    await remove_results(user.id, data.project_id)
+    user = await handle_user_accounts.get_user_from_cookie(request)
+    await async_inserts.remove_results(user.id, data.project_id)
 
 
 @app.post('/revoke_users_task/')
 async def revoke_users_task(request: Request):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     celery_task = worker.AsyncResult(user.task_id)
     celery_task.revoke(terminate=True, signal='SIGKILL')
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     user.task_id = ''
     user.project_id = None
     await async_inserts.update_model_by_user_id(user)
@@ -1242,7 +1170,7 @@ async def revoke_users_task(request: Request):
 
 @app.get("/download_data/{project_id}/{file_type}/")
 async def export_data(project_id: int, file_type:str,  request: Request):
-    user = await accounts.get_user_from_cookie(request)
+    user = await handle_user_accounts.get_user_from_cookie(request)
     input_parameters_df = await async_queries.get_input_df(user.id, project_id)
     results_df = await async_queries.get_df(sa_tables.Results, user.id, project_id)
     energy_flow = await async_queries.get_model_instance(sa_tables.EnergyFlow, user.id, project_id)
@@ -1252,7 +1180,7 @@ async def export_data(project_id: int, file_type:str,  request: Request):
     nodes_df = pd.read_json(nodes.data) if nodes is not None else pd.DataFrame()
     links_df = pd.read_json(links.data) if links is not None else pd.DataFrame()
     energy_system_design = await async_queries.get_df(sa_tables.EnergySystemDesign, user.id, project_id)
-    excel_file = df_to_xlsx(input_parameters_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df)
+    excel_file = project_data_df_to_xlsx(input_parameters_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df)
     response = StreamingResponse(excel_file, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_results.xlsx"
     return response

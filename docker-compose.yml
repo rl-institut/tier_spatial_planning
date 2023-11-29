@@ -54,7 +54,7 @@ services:
     container_name: 'celery_default'
     build: .
     restart: always
-    command: celery -A celery_worker.worker worker --loglevel=INFO --pool prefork  --concurrency=16 --queues=default_queue
+    command: celery -A fastapi_app.task_queue.celery_worker.worker worker --loglevel=INFO --pool prefork  --concurrency=16 --queues=default_queue
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
@@ -71,7 +71,7 @@ services:
     container_name: 'celery_milp'
     build: .
     restart: always
-    command: celery -A celery_worker.worker worker --loglevel=INFO --pool prefork  --concurrency=8 --queues=milp_queue
+    command: celery -A fastapi_app.task_queue.celery_worker.worker worker --loglevel=INFO --pool prefork  --concurrency=8 --queues=milp_queue
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
@@ -88,7 +88,7 @@ services:
     container_name: 'flower'
     build: .
     restart: always
-    command: celery -A celery_worker.worker flower --port=5555
+    command: celery -A fastapi_app.task_queue.celery_worker.worker flower --port=5555
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
