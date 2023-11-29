@@ -45,7 +45,8 @@ class EnergySystemOptimizer(BaseOptimizer):
         Initialize the grid optimizer object
         """
         print('start es opt')
-        project_setup = sync_queries.get_input_df(user_id, project_id).iloc[0].to_dict()
+        project_setup = {k: v[0] if isinstance(v, tuple) and len(v) == 1 else v for k, v in
+                         sync_queries.get_input_df(user_id, project_id).iloc[0].to_dict().items()}
         super().__init__(user_id,
                          project_id,
                          project_setup["start_date"],
@@ -693,10 +694,10 @@ class EnergySystemOptimizer(BaseOptimizer):
         self._energy_flow_to_db()
         self._demand_curve_to_db()
         self._demand_coverage_to_db()
-        self._project_setup_to_db()
+        self._update_project_status_in_db()
         return True
 
-    def _project_setup_to_db(self):
+    def _update_project_status_in_db(self):
         project_setup = sync_queries.get_model_instance(sa_tables.ProjectSetup, self.user_id, self.project_id)
         project_setup.status = "finished"
         if project_setup.email_notification is True:

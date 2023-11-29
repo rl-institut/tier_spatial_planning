@@ -20,7 +20,7 @@ from fastapi.responses import RedirectResponse, FileResponse, JSONResponse, HTML
 from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
 from fastapi.staticfiles import StaticFiles
-from fastapi_app.models.optimize import optimize_grid
+from fastapi_app.models.grid_optimizer import optimize_grid
 from fastapi_app.models.supply_optimizer import optimize_energy_system
 from fastapi_app.helper.handle_user_accounts import Hasher, create_guid, is_valid_credentials, send_activation_link, activate_mail, \
     authenticate_user, create_access_token, send_mail, create_default_user_account
