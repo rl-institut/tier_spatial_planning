@@ -129,14 +129,14 @@ function plot_lcoe_pie(lcoe_breakdown) {
             line: {
                 color: 'black',
                 width: 1.5
-              }  
+              }
         },
         textinfo: 'label+percent',
         textposition: 'outside',
         automargin: true,
         opacity: 0.9,
       }]
-      
+
       let layout = {
         plot_bgcolor: '#FAFAFA',
         paper_bgcolor: '#FAFAFA',

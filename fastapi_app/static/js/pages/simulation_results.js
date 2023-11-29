@@ -14,3 +14,4 @@ var callback = function(mutationsList, observer) {
 var observer = new MutationObserver(callback);
 observer.observe(targetNode, config);
 document.getElementById("msgBox").style.zIndex = "9999";
+
