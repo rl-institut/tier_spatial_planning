@@ -1,16 +1,15 @@
 // Create a polygon draw handler object
 var polygonDrawer = new L.Draw.Polygon(map, {
-  shapeOptions: {
-    color: '#1F567D80'
-  }
+    shapeOptions: {
+        color: '#1F567D80'
+    }
 });
 
 var rectangleDrawer = new L.Draw.Rectangle(map, {
-  shapeOptions: {
-    color: '#1F567D80'
-  }
+    shapeOptions: {
+        color: '#1F567D80'
+    }
 });
-
 
 
 let isPowerHouseMarker = false
@@ -25,55 +24,51 @@ map.on('draw:created', function (e) {
 
 // Add a listener that responds to the 'draw:created' event
 map.on(L.Draw.Event.CREATED, function (event) {
-    const layer = event.layer;
+        const layer = event.layer;
 
-    if (event.layerType === 'marker') {
-        const latLng = layer.getLatLng();
-        const lat = latLng.lat;
-        const lng = latLng.lng;
+        if (event.layerType === 'marker') {
+            const latLng = layer.getLatLng();
+            const lat = latLng.lat;
+            const lng = latLng.lng;
 
 
-        if (isPowerHouseMarker) {
-            let existingPowerHouseIndex = map_elements.findIndex(element => element.node_type == 'power-house');
+            if (isPowerHouseMarker) {
+                let existingPowerHouseIndex = map_elements.findIndex(element => element.node_type == 'power-house');
 
-        // If an element is found, remove it
-            if (existingPowerHouseIndex !== -1) {
-                map_elements.splice(existingPowerHouseIndex, 1);
-                remove_marker_from_map();
-                put_markers_on_map(map_elements, true);
+                // If an element is found, remove it
+                if (existingPowerHouseIndex !== -1) {
+                    map_elements.splice(existingPowerHouseIndex, 1);
+                    remove_marker_from_map();
+                    put_markers_on_map(map_elements, true);
                 }
-            add_single_consumer_to_array(lat, lng, 'manual', 'power-house');
-            drawMarker(lat, lng, 'power-house');
-            isPowerHouseMarker = false;  // Reset the flag
-        }
-         else {
+                add_single_consumer_to_array(lat, lng, 'manual', 'power-house');
+                drawMarker(lat, lng, 'power-house');
+                isPowerHouseMarker = false;  // Reset the flag
+            } else {
                 add_single_consumer_to_array(lat, lng, 'manual', 'consumer');
                 drawMarker(lat, lng, 'consumer');
                 setTimeout(() => drawControl._toolbars.draw._modes.marker.handler.enable(), 100);
+            }
+
+            // Add a delay before re-enabling to bypass the default disable action
+
+        } else {
+            drawnItems.addLayer(layer);
+
+            // Save the polygon coordinates in a variable
+            polygonCoordinates.push(layer.getLatLngs());
+
+            polygonDrawer.disable();
+            if (!is_active) {
+                add_buildings_inside_boundary({boundariesCoordinates: polygonCoordinates});
+            } else {
+                remove_buildings_inside_boundary({boundariesCoordinates: polygonCoordinates});
+            }
+            removeBoundaries();
         }
-
-        // Add a delay before re-enabling to bypass the default disable action
-
+        ;
+        count_consumers();
     }
-    else {
-        drawnItems.addLayer(layer);
-
-        // Save the polygon coordinates in a variable
-        polygonCoordinates.push(layer.getLatLngs());
-
-        polygonDrawer.disable();
-        if (!is_active)
-        {
-            add_buildings_inside_boundary({boundariesCoordinates: polygonCoordinates });
-        }
-        else
-        {
-            remove_buildings_inside_boundary({boundariesCoordinates: polygonCoordinates });
-        }
-        removeBoundaries();
-    };
-    count_consumers();
-}
 )
 
 var myCustomMarker = L.Icon.extend({
@@ -122,7 +117,7 @@ const CustomMarkerControl = L.Control.extend({
         position: 'topleft'
     },
 
-    onAdd: function(map) {
+    onAdd: function (map) {
         const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
         L.DomEvent.disableClickPropagation(container);
 
@@ -148,7 +143,7 @@ const CustomMarkerControl = L.Control.extend({
                     }
                 }
 
-                new L.Draw.Marker(map, { icon: iconB }).enable();
+                new L.Draw.Marker(map, {icon: iconB}).enable();
             });
 
 
@@ -161,7 +156,9 @@ map.addControl(new CustomMarkerControl());
 
 function add_single_consumer_to_array(latitude, longitude, how_added, node_type) {
     let consumer_type = 'household';
-    if (node_type === 'power-house') { consumer_type = ''; }
+    if (node_type === 'power-house') {
+        consumer_type = '';
+    }
 
     map_elements.push({
         latitude: latitude,
@@ -183,38 +180,39 @@ function add_single_consumer_to_array(latitude, longitude, how_added, node_type)
 
 
 function remove_marker_from_map() {
-  map.eachLayer((layer) => {
-    if (layer instanceof L.Marker) {
-      map.removeLayer(layer);
-    }
-  });
-  document.getElementById("n_consumers").innerText = 0;
+    map.eachLayer((layer) => {
+        if (layer instanceof L.Marker) {
+            map.removeLayer(layer);
+        }
+    });
+    document.getElementById("n_consumers").innerText = 0;
 }
+
 L.Control.Trashbin = L.Control.extend({
-  options: {
-    position: 'topleft',
-  },
+    options: {
+        position: 'topleft',
+    },
 
-  onAdd: function () {
-    const container = L.DomUtil.create('div', 'leaflet-control-trashbin leaflet-bar');
-    const link = L.DomUtil.create('a', '', container);
-    link.href = '#';
-    link.title = 'Clear all';
-    link.innerHTML = '🗑'; // Use the HTML entity for the trash bin icon (U+1F5D1)
+    onAdd: function () {
+        const container = L.DomUtil.create('div', 'leaflet-control-trashbin leaflet-bar');
+        const link = L.DomUtil.create('a', '', container);
+        link.href = '#';
+        link.title = 'Clear all';
+        link.innerHTML = '🗑'; // Use the HTML entity for the trash bin icon (U+1F5D1)
 
-    L.DomEvent.on(link, 'click', L.DomEvent.stopPropagation)
-      .on(link, 'click', L.DomEvent.preventDefault)
-      .on(link, 'click', customTrashBinAction);
+        L.DomEvent.on(link, 'click', L.DomEvent.stopPropagation)
+            .on(link, 'click', L.DomEvent.preventDefault)
+            .on(link, 'click', customTrashBinAction);
 
-    return container;
-  },
+        return container;
+    },
 });
 
 function customTrashBinAction() {
-  removeBoundaries();
-  remove_marker_from_map();
-  polygonCoordinates = [];
-  map_elements = [];
+    removeBoundaries();
+    remove_marker_from_map();
+    polygonCoordinates = [];
+    map_elements = [];
 }
 
 const trashbinControl = new L.Control.Trashbin();
@@ -224,9 +222,9 @@ map.addControl(trashbinControl);
 const searchProvider = new GeoSearch.OpenStreetMapProvider();
 
 const searchControl = new GeoSearch.GeoSearchControl({
-  provider: searchProvider,
-  position: 'topleft',
-  showMarker: false,
+    provider: searchProvider,
+    position: 'topleft',
+    showMarker: false,
 });
 
 map.addControl(searchControl);
@@ -234,46 +232,45 @@ map.addControl(searchControl);
 const searchInput = document.getElementById('search-input');
 
 searchInput.addEventListener('keypress', async (event) => {
-  if (event.key === 'Enter') {
-    let query = searchInput.value;
-    if (!query) return;
+    if (event.key === 'Enter') {
+        let query = searchInput.value;
+        if (!query) return;
 
-    let results = await searchProvider.search({ query });
+        let results = await searchProvider.search({query});
 
-    // Retry if no results found or if the result is outside Nigeria without having 'Nigeria' in the query
-    if ((!results || results.length === 0 || !isLatLngInMapBounds(results[0].y, results[0].x)) && !query.toLowerCase().includes("nigeria")) {
-      query += ", Nigeria";
-      results = await searchProvider.search({ query });
+        // Retry if no results found or if the result is outside Nigeria without having 'Nigeria' in the query
+        if ((!results || results.length === 0 || !isLatLngInMapBounds(results[0].y, results[0].x)) && !query.toLowerCase().includes("nigeria")) {
+            query += ", Nigeria";
+            results = await searchProvider.search({query});
+        }
+
+        if (results && results.length > 0) {
+            const {x: lng, y: lat} = results[0];
+
+            if (isLatLngInMapBounds(lat, lng)) {
+                map.setView([lat, lng], 13);
+            } else {
+                const responseMsg = document.getElementById("responseMsg");
+                responseMsg.innerHTML = 'Location is outside of Nigeria';
+            }
+        } else {
+            alert('No results found');
+        }
     }
-
-    if (results && results.length > 0) {
-      const { x: lng, y: lat } = results[0];
-
-      if (isLatLngInMapBounds(lat, lng)) {
-        map.setView([lat, lng], 13);
-      } else {
-        const responseMsg = document.getElementById("responseMsg");
-        responseMsg.innerHTML = 'Location is outside of Nigeria';
-      }
-    } else {
-      alert('No results found');
-    }
-  }
 });
 
 function isLatLngInMapBounds(lat, lng) {
-  const latLng = L.latLng(lat, lng);
-  return map.options.maxBounds.contains(latLng);
+    const latLng = L.latLng(lat, lng);
+    return map.options.maxBounds.contains(latLng);
 }
 
 let input = document.getElementById('toggleswitch');
 
 
 function removeBoundaries() {
-        drawnItems.clearLayers();
-        polygonCoordinates = [];
+    drawnItems.clearLayers();
+    polygonCoordinates = [];
 }
-
 
 
 var customControl = L.Control.extend({

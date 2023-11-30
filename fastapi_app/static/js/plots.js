@@ -2,7 +2,7 @@
 // Functions are called from function plot in backend_communication.js
 
 
-function plot_bar_chart(data){
+function plot_bar_chart(data) {
     let yValue = [0, 0, 0, 0, 0, 0, 0];
     let yValue2 = [0];
     let optimal_capacities = data;
@@ -112,14 +112,12 @@ function plot_bar_chart(data){
 }
 
 
-
-
 function plot_lcoe_pie(lcoe_breakdown) {
-      cost_renewable_assets = Number(lcoe_breakdown['renewable_assets']);
-      cost_non_renewable_assets = Number(lcoe_breakdown['non_renewable_assets']);
-      cost_grid = Number(lcoe_breakdown['grid']);
-      cost_fuel = Number(lcoe_breakdown['fuel']);
-      let data = [{
+    cost_renewable_assets = Number(lcoe_breakdown['renewable_assets']);
+    cost_non_renewable_assets = Number(lcoe_breakdown['non_renewable_assets']);
+    cost_grid = Number(lcoe_breakdown['grid']);
+    cost_fuel = Number(lcoe_breakdown['fuel']);
+    let data = [{
         type: 'pie',
         hole: .6,
         values: [cost_renewable_assets, cost_non_renewable_assets, cost_grid, cost_fuel],
@@ -129,15 +127,15 @@ function plot_lcoe_pie(lcoe_breakdown) {
             line: {
                 color: 'black',
                 width: 1.5
-              }
+            }
         },
         textinfo: 'label+percent',
         textposition: 'outside',
         automargin: true,
         opacity: 0.9,
-      }]
+    }]
 
-      let layout = {
+    let layout = {
         plot_bgcolor: '#FAFAFA',
         paper_bgcolor: '#FAFAFA',
         // height: 400,
@@ -145,12 +143,12 @@ function plot_lcoe_pie(lcoe_breakdown) {
         margin: {'t': 0, 'b': 0, 'l': 0, 'r': 0},
         showlegend: false,
         font: {
-          size: 16,
-          color: 'black'
+            size: 16,
+            color: 'black'
         }
-      }
-      Plotly.newPlot(lcoeBreakdown, data, layout)
-  }
+    }
+    Plotly.newPlot(lcoeBreakdown, data, layout)
+}
 
 
 function plot_sankey(data) {
@@ -171,15 +169,15 @@ function plot_sankey(data) {
         type: 'sankey',
         orientation: 'h',
         node: {
-          pad: 10,
-          thickness: 20,
-          valueformat: ".3f",
-          valuesuffix: "MWh",
-          line: {
-            color: 'black',
-            width: 0.5
-          },
-        label: ['Fuel',
+            pad: 10,
+            thickness: 20,
+            valueformat: ".3f",
+            valuesuffix: "MWh",
+            line: {
+                color: 'black',
+                width: 0.5
+            },
+            label: ['Fuel',
                 'Diesel Genset',
                 'Rectifier',
                 'PV',
@@ -188,32 +186,32 @@ function plot_sankey(data) {
                 'Inverter',
                 'Demand',
                 'Surplus'],
-        color: 'rgb(23, 64, 92)',
-            },
+            color: 'rgb(23, 64, 92)',
+        },
 
         link: {
             source: [0, 1, 1, 2, 3, 5, 4, 4, 3, 6], // Modified
             target: [1, 2, 7, 4, 4, 4, 5, 6, 8, 7], // Modified
-            value:  [fuel_to_diesel_genset,
-                     diesel_genset_to_rectifier,
-                     diesel_genset_to_demand,
-                     rectifier_to_dc_bus,
-                     pv_to_dc_bus,
-                     battery_to_dc_bus,
-                     dc_bus_to_battery,
-                     dc_bus_to_inverter,
-                     pv_to_surplus,
-                     inverter_to_demand],
-            label:  ['Fuel supplied to the diesel genset',
-                    'Diesel genset output sent to the rectifier',
-                    'AC demand covered by the diesel genset',
-                    'Diesel genset electricity converted to DC',
-                    'PV electricity generation',
-                    'Battery discharge',
-                    'Battery charge',
-                    'DC electricity sent to the inverter',
-                    'Surplus PV electricity',
-                    'AC demand covered by the PV system'],
+            value: [fuel_to_diesel_genset,
+                diesel_genset_to_rectifier,
+                diesel_genset_to_demand,
+                rectifier_to_dc_bus,
+                pv_to_dc_bus,
+                battery_to_dc_bus,
+                dc_bus_to_battery,
+                dc_bus_to_inverter,
+                pv_to_surplus,
+                inverter_to_demand],
+            label: ['Fuel supplied to the diesel genset',
+                'Diesel genset output sent to the rectifier',
+                'AC demand covered by the diesel genset',
+                'Diesel genset electricity converted to DC',
+                'PV electricity generation',
+                'Battery discharge',
+                'Battery charge',
+                'DC electricity sent to the inverter',
+                'Surplus PV electricity',
+                'AC demand covered by the PV system'],
             color: 'rgb(168, 181, 192)',
         }
     }]
@@ -225,7 +223,7 @@ function plot_sankey(data) {
         font: {size: 16, color: 'black'}
     };
     Plotly.react(sankeyDiagram, data, layout)
-  }
+}
 
 
 // ENERGY FLOWS PLOT
@@ -235,15 +233,15 @@ function plot_energy_flows(energy_flows) {
     const time = [], diesel_genset_production = [], pv_production = [], battery = [],
         battery_content = [], demand = [], surplus = [];
 
-    for (let i=0; i<Object.keys(energy_flows['diesel_genset_production']).length; i++) {
-            time.push( i );
-            diesel_genset_production.push( energy_flows['diesel_genset_production'][i] );
-            pv_production.push( energy_flows['pv_production'][i] );
-            battery.push( energy_flows['battery'][i] );
-            battery_content.push( energy_flows['battery_content'][i] );
-            demand.push( energy_flows['demand'][i] );
-            surplus.push( energy_flows['surplus'][i] );
-          }
+    for (let i = 0; i < Object.keys(energy_flows['diesel_genset_production']).length; i++) {
+        time.push(i);
+        diesel_genset_production.push(energy_flows['diesel_genset_production'][i]);
+        pv_production.push(energy_flows['pv_production'][i]);
+        battery.push(energy_flows['battery'][i]);
+        battery_content.push(energy_flows['battery_content'][i]);
+        demand.push(energy_flows['demand'][i]);
+        surplus.push(energy_flows['surplus'][i]);
+    }
 
     const energyFlows = document.getElementById("energyFlows");
     const trace1 = {
@@ -340,23 +338,23 @@ function plot_energy_flows(energy_flows) {
         // title: 'Energy flows in different components of the system.',
     };
     Plotly.newPlot(energyFlows, data, layout);
-  }
+}
 
 
 // DEMAND COVERAGE PLOT
 function plot_demand_coverage(demand_coverage) {
 
 
-          // push nodes to the map
+    // push nodes to the map
     const time = [], renewable = [], non_renewable = [], demand = [], surplus = [];
 
-    for (let i=0; i<Object.keys(demand_coverage['demand']).length; i++) {
-            time.push( i );
-            demand.push( demand_coverage['demand'][i] );
-            renewable.push( demand_coverage['renewable'][i] );
-            non_renewable.push( demand_coverage['non_renewable'][i] );
-            surplus.push( demand_coverage['surplus'][i]);
-          }
+    for (let i = 0; i < Object.keys(demand_coverage['demand']).length; i++) {
+        time.push(i);
+        demand.push(demand_coverage['demand'][i]);
+        renewable.push(demand_coverage['renewable'][i]);
+        non_renewable.push(demand_coverage['non_renewable'][i]);
+        surplus.push(demand_coverage['surplus'][i]);
+    }
     const demandCoverage = document.getElementById("demandCoverage");
     const trace1 = {
         x: time,
@@ -420,15 +418,14 @@ function plot_demand_coverage(demand_coverage) {
     const data = [trace1, trace2, trace3, trace4];
 
     Plotly.newPlot(demandCoverage, data, layout);
-  }
-
+}
 
 
 // DURATION CURVES
 function plot_duration_curves(data) {
 
-          // push nodes to the map
-          duration_curves = data;
+    // push nodes to the map
+    duration_curves = data;
 
     const diesel_genset_percentage = [], diesel_genset_duration = [], pv_percentage = [],
         pv_duration = [], rectifier_percentage = [], rectifier_duration = [],
@@ -436,20 +433,20 @@ function plot_duration_curves(data) {
         battery_charge_duration = [], battery_discharge_percentage = [],
         battery_discharge_duration = [];
 
-    for (let i=0; i<Object.keys(duration_curves['diesel_genset_percentage']).length; i++) {
-            diesel_genset_percentage.push( duration_curves['diesel_genset_percentage'][i] );
-            diesel_genset_duration.push( duration_curves['diesel_genset_duration'][i] );
-            pv_percentage.push( duration_curves['pv_percentage'][i] );
-            pv_duration.push( duration_curves['pv_duration'][i] );
-            rectifier_percentage.push( duration_curves['rectifier_percentage'][i] );
-            rectifier_duration.push( duration_curves['rectifier_duration'][i] );
-            inverter_percentage.push( duration_curves['inverter_percentage'][i] );
-            inverter_duration.push( duration_curves['inverter_duration'][i] );
-            battery_charge_percentage.push( duration_curves['battery_charge_percentage'][i] );
-            battery_charge_duration.push( duration_curves['battery_charge_duration'][i] );
-            battery_discharge_percentage.push( duration_curves['battery_discharge_percentage'][i] );
-            battery_discharge_duration.push( duration_curves['battery_discharge_duration'][i] );
-          }
+    for (let i = 0; i < Object.keys(duration_curves['diesel_genset_percentage']).length; i++) {
+        diesel_genset_percentage.push(duration_curves['diesel_genset_percentage'][i]);
+        diesel_genset_duration.push(duration_curves['diesel_genset_duration'][i]);
+        pv_percentage.push(duration_curves['pv_percentage'][i]);
+        pv_duration.push(duration_curves['pv_duration'][i]);
+        rectifier_percentage.push(duration_curves['rectifier_percentage'][i]);
+        rectifier_duration.push(duration_curves['rectifier_duration'][i]);
+        inverter_percentage.push(duration_curves['inverter_percentage'][i]);
+        inverter_duration.push(duration_curves['inverter_duration'][i]);
+        battery_charge_percentage.push(duration_curves['battery_charge_percentage'][i]);
+        battery_charge_duration.push(duration_curves['battery_charge_duration'][i]);
+        battery_discharge_percentage.push(duration_curves['battery_discharge_percentage'][i]);
+        battery_discharge_duration.push(duration_curves['battery_discharge_duration'][i]);
+    }
 
     const durationCurves = document.getElementById("durationCurves");
     const trace1 = {
@@ -520,17 +517,17 @@ function plot_duration_curves(data) {
         },
     };
     Plotly.newPlot(durationCurves, data, layout);
-  }
+}
 
 // DEMAND COVERAGE PLOT
 function plot_co2_emissions(data) {
     co2_emissions = data;
     const time = [], non_renewable = [], hybrid = [];
-    for (let i=0; i<Object.keys(co2_emissions['non_renewable_electricity_production']).length; i++) {
-            time.push( i );
-            non_renewable.push( co2_emissions['non_renewable_electricity_production'][i] );
-            hybrid.push( co2_emissions['hybrid_electricity_production'][i] );
-          }
+    for (let i = 0; i < Object.keys(co2_emissions['non_renewable_electricity_production']).length; i++) {
+        time.push(i);
+        non_renewable.push(co2_emissions['non_renewable_electricity_production'][i]);
+        hybrid.push(co2_emissions['hybrid_electricity_production'][i]);
+    }
     const co2Emissions = document.getElementById("co2Emissions");
     const trace1 = {
         x: time,
@@ -575,4 +572,4 @@ function plot_co2_emissions(data) {
         },
     };
     Plotly.newPlot(co2Emissions, data, layout);
-  }
+}

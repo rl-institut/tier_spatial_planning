@@ -1,2 +1,2 @@
 var currentDate = new Date();
-var Year = currentDate.getFullYear();
+var year = currentDate.getFullYear();

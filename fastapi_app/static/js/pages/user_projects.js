@@ -12,11 +12,12 @@ function show_modal_example_model() {
 }
 
 function set_and_show_error_msg() {
-    if(window.location.href.includes("/?internal_error")) {
+    if (window.location.href.includes("/?internal_error")) {
         let message = "An internal server error occurred!";
-        if(navigator.userAgent.indexOf("Firefox") !== -1){
+        if (navigator.userAgent.indexOf("Firefox") !== -1) {
             message = "An internal server error occurred!\nIt appears that you are using the Firefox browser. " +
-                "The error could be related to Firefox. We recommend switching to Chrome or Edge instead.";}
+                "The error could be related to Firefox. We recommend switching to Chrome or Edge instead.";
+        }
         document.getElementById('responseMsg').textContent = message;
         document.getElementById('msgBox').style.display = "block";
     }

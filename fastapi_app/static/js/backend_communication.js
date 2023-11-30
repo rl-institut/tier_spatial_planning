@@ -2,71 +2,71 @@ function plot() {
     const urlParams = new URLSearchParams(window.location.search);
     project_id = urlParams.get('project_id');
     fetch('/get_plot_data/' + project_id + '/demand_coverage')
-    .then(response => response.json())
-    .then(data => {
-        plot_demand_coverage(data.demand_coverage);
-    });
-        fetch('/get_plot_data/' + project_id + '/energy_flow')
-    .then(response => response.json())
-    .then(data => {
-        plot_energy_flows(data.energy_flow);
-    });
-        fetch('/get_plot_data/' + project_id + '/other')
-    .then(response => response.json())
-    .then(data => {
-        plot_lcoe_pie(data.lcoe_breakdown);
-        plot_bar_chart(data.optimal_capacities);
+        .then(response => response.json())
+        .then(data => {
+            plot_demand_coverage(data.demand_coverage);
+        });
+    fetch('/get_plot_data/' + project_id + '/energy_flow')
+        .then(response => response.json())
+        .then(data => {
+            plot_energy_flows(data.energy_flow);
+        });
+    fetch('/get_plot_data/' + project_id + '/other')
+        .then(response => response.json())
+        .then(data => {
+            plot_lcoe_pie(data.lcoe_breakdown);
+            plot_bar_chart(data.optimal_capacities);
 
-        plot_sankey(data.sankey_data);
-    });
+            plot_sankey(data.sankey_data);
+        });
     fetch('/get_plot_data/' + project_id + '/duration_curve')
-    .then(response => response.json())
-    .then(data => {
-        plot_duration_curves(data.duration_curve);
-    });
+        .then(response => response.json())
+        .then(data => {
+            plot_duration_curves(data.duration_curve);
+        });
     fetch('/get_plot_data/' + project_id + '/emissions')
-    .then(response => response.json())
-    .then(data => {
-        plot_co2_emissions(data.emissions);
-    });
-    }
+        .then(response => response.json())
+        .then(data => {
+            plot_co2_emissions(data.emissions);
+        });
+}
 
 function db_links_to_js(project_id) {
-  const url = "db_links_to_js/" + project_id;
+    const url = "db_links_to_js/" + project_id;
 
-  fetch(url)
-    .then((response) => {
-      if (response.ok) {
-        return response.json();
-      } else {
-        throw new Error("Failed to fetch data");
-      }
-    })
-    .then((links) => {
-        removeLinksFromMap(map);
-        put_links_on_map(links)
-    })
-    .catch((error) => {
-      console.error("Error fetching data:", error);
-    });
+    fetch(url)
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error("Failed to fetch data");
+            }
+        })
+        .then((links) => {
+            removeLinksFromMap(map);
+            put_links_on_map(links)
+        })
+        .catch((error) => {
+            console.error("Error fetching data:", error);
+        });
 }
 
 
 async function db_nodes_to_js(project_id, markers_only) {
     fetch("/db_nodes_to_js/" + project_id + '/' + markers_only)
-    .then(response => response.json())
-    .then(data => {
-        if (data !== null) {
-            map_elements = data.map_elements;
-            is_load_center = data.is_load_center;
-            load_legend();
-            if (map_elements !== null) {
-                put_markers_on_map(map_elements, markers_only);
+        .then(response => response.json())
+        .then(data => {
+            if (data !== null) {
+                map_elements = data.map_elements;
+                is_load_center = data.is_load_center;
+                load_legend();
+                if (map_elements !== null) {
+                    put_markers_on_map(map_elements, markers_only);
+                }
+            } else {
+                map_elements = [];
             }
-        } else {
-            map_elements = [];
-        }
-    });
+        });
 }
 
 
@@ -86,38 +86,38 @@ async function consumer_to_db(project_id, href) {
     });
 }
 
-function add_buildings_inside_boundary({ boundariesCoordinates } = {}) {
-  $("*").css("cursor", "wait");
-  fetch("/add_buildings_inside_boundary", {
-    method: "POST",
-    headers: {"Content-Type": "application/json",},
-    body: JSON.stringify({boundary_coordinates: boundariesCoordinates, map_elements: map_elements,}),
-  })
-    .then((response) => {
-      if (response.ok) {
-        return response.json();
-      } else {
-        throw new Error("Failed to fetch data");
-      }
+function add_buildings_inside_boundary({boundariesCoordinates} = {}) {
+    $("*").css("cursor", "wait");
+    fetch("/add_buildings_inside_boundary", {
+        method: "POST",
+        headers: {"Content-Type": "application/json",},
+        body: JSON.stringify({boundary_coordinates: boundariesCoordinates, map_elements: map_elements,}),
     })
-    .then((res) => {
-      $("*").css('cursor','auto');
-      const responseMsg = document.getElementById("responseMsg");
-      responseMsg.innerHTML = res.msg;
-      if (res.executed === false) {
-      } else {
-        responseMsg.innerHTML = "";
-        Array.prototype.push.apply(map_elements, res.new_consumers);
-        put_markers_on_map(res.new_consumers, true);
-      }
-      unique_map_elements();
-    })
-    .catch((error) => {
-      console.error("Error fetching data:", error);
-    });
+        .then((response) => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error("Failed to fetch data");
+            }
+        })
+        .then((res) => {
+            $("*").css('cursor', 'auto');
+            const responseMsg = document.getElementById("responseMsg");
+            responseMsg.innerHTML = res.msg;
+            if (res.executed === false) {
+            } else {
+                responseMsg.innerHTML = "";
+                Array.prototype.push.apply(map_elements, res.new_consumers);
+                put_markers_on_map(res.new_consumers, true);
+            }
+            unique_map_elements();
+        })
+        .catch((error) => {
+            console.error("Error fetching data:", error);
+        });
 }
 
-async function remove_buildings_inside_boundary({ boundariesCoordinates } = {}) {
+async function remove_buildings_inside_boundary({boundariesCoordinates} = {}) {
     $("*").css("cursor", "wait");
 
     try {
@@ -144,17 +144,14 @@ async function remove_buildings_inside_boundary({ boundariesCoordinates } = {}) 
     } catch (error) {
         console.error("There was a problem with the fetch operation:", error.message);
     } finally {
-        $("*").css('cursor','auto');
+        $("*").css('cursor', 'auto');
     }
 }
 
 
-
-
-async function redirect(href)
-    {
+async function redirect(href) {
     window.location.href = href;
-    }
+}
 
 
 async function save_energy_system_design(href) {
@@ -163,9 +160,9 @@ async function save_energy_system_design(href) {
         pv: {
             'settings': {
                 'is_selected': selectPv.checked,
-                 'design': pvDesign.checked,
+                'design': pvDesign.checked,
             },
-             'parameters': {
+            'parameters': {
                 'nominal_capacity': pvNominalCapacity.value,
                 'lifetime': pvLifetime.value,
                 'capex': pvCapex.value,
@@ -175,7 +172,7 @@ async function save_energy_system_design(href) {
         diesel_genset: {
             'settings': {
                 'is_selected': selectDieselGenset.checked,
-                 'design': dieselGensetDesign.checked,
+                'design': dieselGensetDesign.checked,
             },
             'parameters': {
                 'nominal_capacity': dieselGensetNominalCapacity.value,
@@ -185,27 +182,27 @@ async function save_energy_system_design(href) {
                 'variable_cost': dieselGensetVariableCost.value,
                 'fuel_cost': dieselGensetFuelCost.value,
                 'fuel_lhv': dieselGensetFuelLhv.value,
-                'min_load': dieselGensetMinLoad.value/100,
-                'max_efficiency': dieselGensetMaxEfficiency.value/100,
-                'max_load': dieselGensetMaxLoad.value/100,
-                'min_efficiency': dieselGensetMinEfficiency.value/100,
+                'min_load': dieselGensetMinLoad.value / 100,
+                'max_efficiency': dieselGensetMaxEfficiency.value / 100,
+                'max_load': dieselGensetMaxLoad.value / 100,
+                'min_efficiency': dieselGensetMinEfficiency.value / 100,
             }
         },
         battery: {
             'settings': {
                 'is_selected': selectBattery.checked,
-                 'design': batteryDesign.checked,
+                'design': batteryDesign.checked,
             },
-            'parameters':{
+            'parameters': {
                 'nominal_capacity': batteryNominalCapacity.value,
                 'lifetime': batteryLifetime.value,
                 'capex': batteryCapex.value,
                 'opex': batteryOpex.value,
-                'soc_min': batterySocMin.value/100,
-                'soc_max': batterySocMax.value/100,
+                'soc_min': batterySocMin.value / 100,
+                'soc_max': batterySocMax.value / 100,
                 'c_rate_in': batteryCrateIn.value,
                 'c_rate_out': batteryCrateOut.value,
-                'efficiency': batteryEfficiency.value/100,
+                'efficiency': batteryEfficiency.value / 100,
             }
         },
         inverter: {
@@ -218,7 +215,7 @@ async function save_energy_system_design(href) {
                 'lifetime': inverterLifetime.value,
                 'capex': inverterCapex.value,
                 'opex': inverterOpex.value,
-                'efficiency': inverterEfficiency.value/100,
+                'efficiency': inverterEfficiency.value / 100,
             },
         },
         rectifier: {
@@ -231,7 +228,7 @@ async function save_energy_system_design(href) {
                 'lifetime': rectifierLifetime.value,
                 'capex': rectifierCapex.value,
                 'opex': rectifierOpex.value,
-                'efficiency': rectifierEfficiency.value/100
+                'efficiency': rectifierEfficiency.value / 100
             },
         },
         shortage: {
@@ -239,8 +236,8 @@ async function save_energy_system_design(href) {
                 'is_selected': selectShortage.checked,
             },
             'parameters': {
-                'max_shortage_total': shortageMaxTotal.value/100,
-                'max_shortage_timestep': shortageMaxTimestep.value/100,
+                'max_shortage_total': shortageMaxTotal.value / 100,
+                'max_shortage_timestep': shortageMaxTimestep.value / 100,
                 'shortage_penalty_cost': shortagePenaltyCost.value
             },
         },
@@ -261,7 +258,7 @@ async function save_energy_system_design(href) {
 
         await response.json(); // Wait for response to be parsed
         if (href.length > 0) {
-        window.location.href = href; // navigate after fetch request is complete
+            window.location.href = href; // navigate after fetch request is complete
         }
     } catch (err) {
         console.log("An error occurred while saving the energy system design.");
@@ -272,18 +269,18 @@ let hasRetried = false;
 
 async function load_results(project_id) {
     try {
-            const url = "load_results/" + project_id;
-            const response = await fetch(url);
+        const url = "load_results/" + project_id;
+        const response = await fetch(url);
 
-    if (!response.ok) {
-        console.error("Network response was not ok");
-        return;
-    }
+        if (!response.ok) {
+            console.error("Network response was not ok");
+            return;
+        }
 
-    const results = await response.json();
+        const results = await response.json();
 
-    if (results['n_consumers'] > 0) {
-        document.getElementById('noResults').style.display='none';
+        if (results['n_consumers'] > 0) {
+            document.getElementById('noResults').style.display = 'none';
             document.getElementById("nConsumers").innerText = Number(results['n_consumers']) - Number(results['n_shs_consumers']);
             document.getElementById("nGridConsumers").innerText = Number(results['n_consumers']) - Number(results['n_shs_consumers']);
             document.getElementById("nShsConsumers").innerText = results['n_shs_consumers'];
@@ -340,37 +337,37 @@ async function load_results(project_id) {
             db_nodes_to_js(project_id, false);
             db_links_to_js(project_id);
 
-        if (results['lcoe'] === null || results['lcoe'] === undefined || results['lcoe'].includes('None')) {
-            if (results['responseMsg'].length === 0) {
-                document.getElementById('responseMsg').innerHTML = 'Something went wrong. There are no results of the energy system optimization.';
+            if (results['lcoe'] === null || results['lcoe'] === undefined || results['lcoe'].includes('None')) {
+                if (results['responseMsg'].length === 0) {
+                    document.getElementById('responseMsg').innerHTML = 'Something went wrong. There are no results of the energy system optimization.';
+                } else {
+                    document.getElementById('responseMsg').innerHTML = results['responseMsg'];
+                }
             } else {
-                document.getElementById('responseMsg').innerHTML = results['responseMsg'];
+                plot();
             }
+
         } else {
-            plot();
-        }
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('map').style.display = 'none';
+            document.getElementById('noResults').style.display = 'block';
 
-    } else {
-        document.getElementById('dashboard').style.display = 'none';
-        document.getElementById('map').style.display = 'none';
-        document.getElementById('noResults').style.display = 'block';
+            const res = await fetch("has_pending_task/" + project_id, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
 
-        const res = await fetch("has_pending_task/" + project_id, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
+            const data = await res.json();
+
+            if (data.has_pending_task === true) {
+                document.getElementById("pendingTaskMSG").innerText = 'Calculation is still running.';
+            } else {
+                document.getElementById("pendingTaskMSG").innerText = 'There is no ongoing calculation.\n' +
+                    'Do you want to start a new calculation?';
             }
-        });
-
-        const data = await res.json();
-
-        if (data.has_pending_task === true) {
-            document.getElementById("pendingTaskMSG").innerText = 'Calculation is still running.';
-        } else {
-            document.getElementById("pendingTaskMSG").innerText = 'There is no ongoing calculation.\n' +
-                'Do you want to start a new calculation?';
         }
-    }
 
     } catch (error) {
         console.error("An error occurred:", error);
@@ -386,9 +383,9 @@ async function load_results(project_id) {
 }
 
 
-
 /************************************************************/
 /*                    User Registration                     */
+
 /************************************************************/
 
 
@@ -428,7 +425,6 @@ async function add_user_to_db() {
     }
     $("*").css('cursor', 'auto');
 }
-
 
 
 async function change_email() {
@@ -552,7 +548,6 @@ async function delete_account() {
 }
 
 
-
 async function login() {
     try {
         const response = await fetch("login/", {
@@ -653,7 +648,6 @@ async function anonymous_login() {
 }
 
 
-
 async function logout() {
     try {
         const response = await fetch("logout/", {
@@ -673,7 +667,6 @@ async function logout() {
         console.error("There was a problem with the fetch operation:", error.message);
     }
 }
-
 
 
 async function save_project_setup(project_id, href) {
@@ -710,7 +703,7 @@ async function save_project_setup(project_id, href) {
 async function save_grid_design(href) {
     try {
         let shs_max_grid_cost_value;
-        if(document.getElementById('shs_max_grid_cost').disabled) {
+        if (document.getElementById('shs_max_grid_cost').disabled) {
             shs_max_grid_cost_value = 999;
         } else {
             shs_max_grid_cost_value = document.getElementById('shs_max_grid_cost').value;
@@ -745,7 +738,6 @@ async function save_grid_design(href) {
 }
 
 
-
 function save_demand_estimation(href) {
     let custom_calibration = document.getElementById("toggleswitch").checked;
     let use_custom_shares = document.getElementById("use_custom_shares").checked;
@@ -772,7 +764,7 @@ function save_demand_estimation(href) {
 }
 
 
-function  load_previous_data(page_name){
+function load_previous_data(page_name) {
     var xhr = new XMLHttpRequest();
     url = "load_previous_data/" + page_name;
     xhr.open("GET", url, true);
@@ -784,7 +776,7 @@ function  load_previous_data(page_name){
             if (this.readyState == 4 && this.status == 200) {
                 // push nodes to the map
                 results = this.response;
-                if (results !== null && Object.keys(results).length > 1){
+                if (results !== null && Object.keys(results).length > 1) {
                     document.getElementById("projectName").value = results['project_name'];
                     document.getElementById("projectDescription").value = results['project_description'];
                     document.getElementById("interestRate").value = results['interest_rate'];
@@ -810,21 +802,21 @@ function  load_previous_data(page_name){
                     document.getElementById("poleMaxNumberOfConnections").value = results['pole_max_n_connections'];
                     document.getElementById("mgConnectionCost").value = results['mg_connection_cost'];
                     document.getElementById("shs_max_grid_cost").value = results['shs_max_grid_cost'];
-                if (results['shs_max_grid_cost'] === 999 || isNaN(results['shs_max_grid_cost']) || results['shs_max_grid_cost'] === null) {
-                    document.getElementById('shs_max_grid_cost').value = '';
-                    document.getElementById('selectShsBox').classList.add('box--not-selected');
-                    document.getElementById('selectShs').checked = false;
-                    document.getElementById('lblShsLifetime').classList.add('disabled');
-                    document.getElementById('shsLifetimeUnit').classList.add('disabled');
-                    document.getElementById('shs_max_grid_cost').disabled = true;
-                } else {
-                    document.getElementById('shs_max_grid_cost').value = results['shs_max_grid_cost'];
-                    document.getElementById('selectShsBox').classList.remove('box--not-selected');
-                    document.getElementById('selectShs').checked = true;
-                    document.getElementById('lblShsLifetime').classList.remove('disabled');
-                    document.getElementById('shsLifetimeUnit').classList.remove('disabled');
-                    document.getElementById('shs_max_grid_cost').disabled = false;
-                }
+                    if (results['shs_max_grid_cost'] === 999 || isNaN(results['shs_max_grid_cost']) || results['shs_max_grid_cost'] === null) {
+                        document.getElementById('shs_max_grid_cost').value = '';
+                        document.getElementById('selectShsBox').classList.add('box--not-selected');
+                        document.getElementById('selectShs').checked = false;
+                        document.getElementById('lblShsLifetime').classList.add('disabled');
+                        document.getElementById('shsLifetimeUnit').classList.add('disabled');
+                        document.getElementById('shs_max_grid_cost').disabled = true;
+                    } else {
+                        document.getElementById('shs_max_grid_cost').value = results['shs_max_grid_cost'];
+                        document.getElementById('selectShsBox').classList.remove('box--not-selected');
+                        document.getElementById('selectShs').checked = true;
+                        document.getElementById('lblShsLifetime').classList.remove('disabled');
+                        document.getElementById('shsLifetimeUnit').classList.remove('disabled');
+                        document.getElementById('shs_max_grid_cost').disabled = false;
+                    }
                 }
                 change_shs_box_visibility();
             }
@@ -843,41 +835,38 @@ function  load_previous_data(page_name){
 
                     let accordionItem2 = new bootstrap.Collapse(document.getElementById('collapseTwo'),
                         {toggle: false});
-                    if (results['custom_calibration'] == true){
+                    if (results['custom_calibration'] == true) {
                         accordionItem2.show();
                         const radioButton2 = document.querySelector(`input[name="options2"][id="option${results['calibration_options'] + 6}"]`);
                         if (radioButton2) {
-                          radioButton2.checked = true;
-                          if (results['calibration_options'] === 2) {
-                            document.getElementById("maximum_peak_load").disabled = false;
-                            document.getElementById("average_daily_energy").disabled = true;
+                            radioButton2.checked = true;
+                            if (results['calibration_options'] === 2) {
+                                document.getElementById("maximum_peak_load").disabled = false;
+                                document.getElementById("average_daily_energy").disabled = true;
+                            }
                         }
-                        }
-                    }
-                    else {
+                    } else {
                         accordionItem2.hide();
                     }
 
-                    if (results['use_custom_shares'] == true){
+                    if (results['use_custom_shares'] == true) {
                         document.getElementById("custom_share_1").value = results['custom_share_1'];
                         document.getElementById("custom_share_2").value = results['custom_share_2'];
                         document.getElementById("custom_share_3").value = results['custom_share_3'];
                         document.getElementById("custom_share_4").value = results['custom_share_4'];
                         document.getElementById("custom_share_5").value = results['custom_share_5'];
-                    }
-                    else {
+                    } else {
 
                     }
 
-                  const radioButton = document.querySelector(`input[name="options"][id="option${results['household_option'] + 1}"]`);
-                  if (radioButton) {
-                    radioButton.checked = true;
-                  }
+                    const radioButton = document.querySelector(`input[name="options"][id="option${results['household_option'] + 1}"]`);
+                    if (radioButton) {
+                        radioButton.checked = true;
                     }
                 }
             }
         }
-    else if (page_name.includes("energy_system_design")) {
+    } else if (page_name.includes("energy_system_design")) {
         xhr.onreadystatechange = function () {
             if (this.readyState == 4 && this.status == 200) {
                 // push nodes to the map
@@ -934,14 +923,14 @@ function  load_previous_data(page_name){
                     document.getElementById("batteryNominalCapacity").value = results['battery__parameters__nominal_capacity'];
                     refreshBlocksOnDiagramOnLoad();
                     check_box_visibility('shortage');
-                    }
                 }
             }
         }
+    }
 }
 
 
-function show_email_and_project_in_navbar(project_id=null) {
+function show_email_and_project_in_navbar(project_id = null) {
     fetch("query_account_data/", {
         method: "POST",
         headers: {"Content-Type": "application/json",},
@@ -1014,7 +1003,6 @@ async function remove_project(project_id) {
 }
 
 
-
 let shouldStop = false;
 
 
@@ -1030,7 +1018,7 @@ async function wait_for_results(project_id, task_id, time, model, opt_iter) {
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ 'project_id': project_id, 'task_id': task_id, 'time': time, 'model': model})
+                body: JSON.stringify({'project_id': project_id, 'task_id': task_id, 'time': time, 'model': model})
             });
 
             if (response.ok) {
@@ -1040,8 +1028,7 @@ async function wait_for_results(project_id, task_id, time, model, opt_iter) {
                     opt_iter = opt_iter + 1;
                     if (opt_iter <= 0) {
                         start_calculation(project_id, opt_iter)
-                    }
-                    else {
+                    } else {
                         window.location.href = window.location.origin + '/simulation_results?project_id=' + project_id;
                     }
                 } else if (!shouldStop) {
@@ -1088,7 +1075,6 @@ async function forward_if_no_task_is_pending(project_id) {
 }
 
 
-
 async function revoke_users_task() {
     try {
         const response = await fetch("revoke_users_task/", {
@@ -1109,30 +1095,28 @@ async function revoke_users_task() {
 }
 
 
-
-function start_calculation(project_id, opt_iter=0) {
+function start_calculation(project_id, opt_iter = 0) {
     fetch("start_calculation/" + project_id, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         }
     })
-    .then(response => response.json())
-    .then(res => {
-        if (res.redirect && res.redirect.length > 0) {
-            document.getElementById('responseMsg').innerHTML =
-                'Input data is missing for the opt_models. It appears that you have not gone through all the pages to ' +
-                'enter the input data. You will be redirected to the corresponding page.';
-            const baseURL = window.location.origin;
-            document.getElementById('redirectLink').href = baseURL + res.redirect;
-            document.getElementById('msgBox').style.display = 'block';
-        } else {
-            wait_for_results(project_id, res.task_id, 0, 'grid', opt_iter);
-        }
-    })
-    .catch(error => console.error('There was an error!', error));
+        .then(response => response.json())
+        .then(res => {
+            if (res.redirect && res.redirect.length > 0) {
+                document.getElementById('responseMsg').innerHTML =
+                    'Input data is missing for the opt_models. It appears that you have not gone through all the pages to ' +
+                    'enter the input data. You will be redirected to the corresponding page.';
+                const baseURL = window.location.origin;
+                document.getElementById('redirectLink').href = baseURL + res.redirect;
+                document.getElementById('msgBox').style.display = 'block';
+            } else {
+                wait_for_results(project_id, res.task_id, 0, 'grid', opt_iter);
+            }
+        })
+        .catch(error => console.error('There was an error!', error));
 }
-
 
 
 async function forward_if_consumer_selection_exists(project_id) {
@@ -1185,7 +1169,7 @@ async function show_cookie_consent() {
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({ 'access_token': false, 'consent_cookie': true })
+            body: JSON.stringify({'access_token': false, 'consent_cookie': true})
         });
 
         const data = await response.json();
@@ -1255,20 +1239,20 @@ function reset_pw(guid) {
             password: newUserPassword1.value
         })
     })
-    .then(response => response.json())
-    .then(async (data) => {
-        document.getElementById("responseMsg2").innerHTML = data.msg;
-        let fontcolor = data.validation ? 'green' : 'red';
-        document.getElementById("responseMsg2").style.color = fontcolor;
+        .then(response => response.json())
+        .then(async (data) => {
+            document.getElementById("responseMsg2").innerHTML = data.msg;
+            let fontcolor = data.validation ? 'green' : 'red';
+            document.getElementById("responseMsg2").style.color = fontcolor;
 
-        if (data.validation) {
-            await new Promise(r => setTimeout(r, 3000));
-            window.location.href = window.location.origin;
-        }
-    })
-    .catch(error => {
-        console.error("There was an error:", error);
-    });
+            if (data.validation) {
+                await new Promise(r => setTimeout(r, 3000));
+                window.location.href = window.location.origin;
+            }
+        })
+        .catch(error => {
+            console.error("There was an error:", error);
+        });
 }
 
 
@@ -1288,47 +1272,46 @@ function create_example_project() {
 
 
 function show_video_tutorial() {
-        fetch("/show_video_tutorial/")
-  .then(response => response.json())
-  .then(res => {
-    let show_tutorial = res;
-    if (show_tutorial === true) {
-        document.getElementById('videoTutorial').style.display='block';
-        }
-    else {
-        document.getElementById('videoTutorial').style.display='none';
-    }
-  })
+    fetch("/show_video_tutorial/")
+        .then(response => response.json())
+        .then(res => {
+            let show_tutorial = res;
+            if (show_tutorial === true) {
+                document.getElementById('videoTutorial').style.display = 'block';
+            } else {
+                document.getElementById('videoTutorial').style.display = 'none';
+            }
+        })
 }
 
 function deactivate_video_tutorial() {
-  fetch("/deactivate_video_tutorial/")
+    fetch("/deactivate_video_tutorial/")
 }
 
 function copyProject(url) {
     fetch(url)
-    .then(response => response.json())
-    .then(data => {
-        if(data.success) {
-            location.reload();
-        } else {
-            alert('Failed to copy project');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred');
-    });
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to copy project');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred');
+        });
 }
 
 
-document.addEventListener('DOMContentLoaded', function() {
-  var tooltipTriggerList = [].slice.call(document.querySelectorAll('.icon[data-bs-toggle="tooltip"]'));
-  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-    return new bootstrap.Tooltip(tooltipTriggerEl, {
-      trigger: 'hover click'
+document.addEventListener('DOMContentLoaded', function () {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('.icon[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            trigger: 'hover click'
+        });
     });
-  });
 });
 
 
@@ -1336,67 +1319,68 @@ const img = document.getElementById("captcha_img");
 const img2 = document.getElementById("captcha_img2");
 const img3 = document.getElementById("captcha_img3");
 let hashedCaptcha;
-function get_captcha(){
-fetch("/get_captcha")
-  .then(response => response.json())
-  .then(data => {
-    img.src = "data:image/jpeg;base64," + data.img;
-    img2.src = "data:image/jpeg;base64," + data.img;
-    img3.src = "data:image/jpeg;base64," + data.img;
-    hashedCaptcha = data.hashed_captcha;
-  });}
 
+function get_captcha() {
+    fetch("/get_captcha")
+        .then(response => response.json())
+        .then(data => {
+            img.src = "data:image/jpeg;base64," + data.img;
+            img2.src = "data:image/jpeg;base64," + data.img;
+            img3.src = "data:image/jpeg;base64," + data.img;
+            hashedCaptcha = data.hashed_captcha;
+        });
+}
 
 
 async function sendMail() {
-  // Getting values from the HTML elements
-  const from_address = document.getElementById("from_address").value;
-  const subject = document.getElementById("subject").value;
-  const body = document.getElementById("body").value;
+    // Getting values from the HTML elements
+    const from_address = document.getElementById("from_address").value;
+    const subject = document.getElementById("subject").value;
+    const body = document.getElementById("body").value;
 
-  function handleError() {
-      const responseMsgElement = document.getElementById("responseMsg");
-      responseMsgElement.innerText = "Something went wrong";
-      responseMsgElement.style.color = "red";
+    function handleError() {
+        const responseMsgElement = document.getElementById("responseMsg");
+        responseMsgElement.innerText = "Something went wrong";
+        responseMsgElement.style.color = "red";
     }
 
-  // Creating the mail object
-  const mail = {
-    from_address: from_address,
-    subject: subject,
-    body: body
-  };
+    // Creating the mail object
+    const mail = {
+        from_address: from_address,
+        subject: subject,
+        body: body
+    };
 
-  // Reference to the responseMsg element
-  const responseMsgElement = document.getElementById("responseMsg");
+    // Reference to the responseMsg element
+    const responseMsgElement = document.getElementById("responseMsg");
 
-  // Sending the mail object to the FastAPI route
-  try {
-    const response = await fetch("/send_mail_route/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(mail)
-    });
+    // Sending the mail object to the FastAPI route
+    try {
+        const response = await fetch("/send_mail_route/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(mail)
+        });
 
-    if (response.status === 200) {
-      const result = await response.json();
-      if (result.message === "Success") {
-        responseMsgElement.innerText = "Email successfully sent";
-        responseMsgElement.style.color = "green";
+        if (response.status === 200) {
+            const result = await response.json();
+            if (result.message === "Success") {
+                responseMsgElement.innerText = "Email successfully sent";
+                responseMsgElement.style.color = "green";
 
-        // Redirect to the base URL after 1.5 seconds
-        setTimeout(() => {
-          window.location.href = "/";
-        }, 2500);
-      } else {
+                // Redirect to the base URL after 1.5 seconds
+                setTimeout(() => {
+                    window.location.href = "/";
+                }, 2500);
+            } else {
+                handleError();
+            }
+        } else {
+            handleError();
+        }
+    } catch (error) {
         handleError();
-      }
-    } else {
-      handleError();
     }
-  } catch (error) {
-    handleError();
-  }
 }

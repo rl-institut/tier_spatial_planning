@@ -1,7 +1,7 @@
 var targetNode = document.getElementById('responseMsg');
-var config = { childList: true, subtree: true, characterData: true };
-var callback = function(mutationsList, observer) {
-    for(let mutation of mutationsList) {
+var config = {childList: true, subtree: true, characterData: true};
+var callback = function (mutationsList, observer) {
+    for (let mutation of mutationsList) {
         if ((mutation.type === 'childList' || mutation.type === 'characterData') && targetNode.textContent.trim() !== '') {
             var modal = document.getElementById('msgBox');
             modal.style.display = "block";
@@ -27,6 +27,7 @@ var lineCorrectionLengthFlow = 1;
 
 /************************************************************/
 /*                ENABLING DISABLING OPTIONS                */
+
 /************************************************************/
 
 function check_optimization_strategy(id) {
@@ -37,16 +38,17 @@ function check_optimization_strategy(id) {
     styleArrow(id);
     styleInformation(id);
 
-    if (document.getElementById(id+"Design").checked) {
-        document.getElementById(id+"NominalCapacity").disabled = true; 
-        document.getElementById("lbl"+toTitleCase(id)+"NominalCapacity").classList.add('disabled');
-        document.getElementById(id+"NominalCapacityUnit").classList.add('disabled');
+    if (document.getElementById(id + "Design").checked) {
+        document.getElementById(id + "NominalCapacity").disabled = true;
+        document.getElementById("lbl" + toTitleCase(id) + "NominalCapacity").classList.add('disabled');
+        document.getElementById(id + "NominalCapacityUnit").classList.add('disabled');
     } else {
-        document.getElementById(id+"NominalCapacity").disabled = false; 
-        document.getElementById("lbl"+toTitleCase(id)+"NominalCapacity").classList.remove('disabled');
-        document.getElementById(id+"NominalCapacityUnit").classList.remove('disabled');
+        document.getElementById(id + "NominalCapacity").disabled = false;
+        document.getElementById("lbl" + toTitleCase(id) + "NominalCapacity").classList.remove('disabled');
+        document.getElementById(id + "NominalCapacityUnit").classList.remove('disabled');
     }
 }
+
 function check_box_visibility(id) {
     if (id === 'inverter' && !document.getElementById('selectInverter').checked) {
         // If it's not checked, then uncheck 'selectPv' and 'selectBattery'
@@ -92,13 +94,13 @@ function change_box_visibility(id) {
     // of the box components will be changed
     var component_specifications = {
         'dieselGenset': [
-            'Design', 'Dispatch', 
+            'Design', 'Dispatch',
             'NominalCapacity', 'Lifetime', 'Capex', 'Opex',
-            'VariableCost', 'FuelCost', 'FuelLhv', 
+            'VariableCost', 'FuelCost', 'FuelLhv',
             'MinEfficiency', 'MaxEfficiency', 'MinLoad', 'MaxLoad'
         ],
         'battery': [
-            'Design', 'Dispatch', 
+            'Design', 'Dispatch',
             'NominalCapacity', 'Lifetime', 'Capex', 'Opex',
             'SocMin', 'SocMax', 'CrateIn', 'CrateOut', 'Efficiency'
         ],
@@ -114,34 +116,34 @@ function change_box_visibility(id) {
             'Design', 'Dispatch',
             'NominalCapacity', 'Lifetime', 'Capex', 'Opex', 'Efficiency',
         ],
-        'shortage':[
+        'shortage': [
             'MaxTotal', 'MaxTimestep', 'PenaltyCost'
         ]
     };
-    
+
     // ---------- ENABLING ITEMS ---------- //
-    if (document.getElementById("select"+toTitleCase(id)).checked) {
+    if (document.getElementById("select" + toTitleCase(id)).checked) {
         // Change the border color.
         // document.getElementById("select"+toTitleCase(id)+"Box").style.border = '2px solid #198754';
-        document.getElementById("select"+toTitleCase(id)+"Box").classList.remove('box--not-selected');
+        document.getElementById("select" + toTitleCase(id) + "Box").classList.remove('box--not-selected');
 
         for (index in component_specifications[id]) {
             // First, get the property listed in the above dictionary.
             property = component_specifications[id][index]
-            
+
             // All fields as well as the `design` and `dispatch` buttons.
-            document.getElementById(id+property).disabled = false;
-            
+            document.getElementById(id + property).disabled = false;
+
             // All labels.
-            if (document.getElementById("lbl"+toTitleCase(id)+property)) {
-                document.getElementById("lbl"+toTitleCase(id)+property).classList.remove('disabled');
+            if (document.getElementById("lbl" + toTitleCase(id) + property)) {
+                document.getElementById("lbl" + toTitleCase(id) + property).classList.remove('disabled');
             }
-            
+
             // All units and in case of PV, the button for impoting solar potential.
-            if (document.getElementById(id+property+"Unit")) {
-                document.getElementById(id+property+"Unit").classList.remove('disabled');
-            } else if (document.getElementById("btn"+toTitleCase(id)+property)) {
-                document.getElementById("btn"+toTitleCase(id)+property).classList.remove('disabled');
+            if (document.getElementById(id + property + "Unit")) {
+                document.getElementById(id + property + "Unit").classList.remove('disabled');
+            } else if (document.getElementById("btn" + toTitleCase(id) + property)) {
+                document.getElementById("btn" + toTitleCase(id) + property).classList.remove('disabled');
             }
 
             // Check the optimization mode for enabling/disabling capacity.
@@ -149,54 +151,53 @@ function change_box_visibility(id) {
                 check_optimization_strategy(id);
             }
         }
-    // ---------- DISABLING ITEMS ---------- //
+        // ---------- DISABLING ITEMS ---------- //
     } else {
         // Change the border color.
         // document.getElementById("select"+toTitleCase(id)+"Box").style.border = '2px solid #dc3545';  
-        document.getElementById("select"+toTitleCase(id)+"Box").classList.add('box--not-selected');
+        document.getElementById("select" + toTitleCase(id) + "Box").classList.add('box--not-selected');
 
         for (index in component_specifications[id]) {
             // First, get the property listed in the above dictionary.
             property = component_specifications[id][index]
 
             // All fields as well as the `diesgn` and `dispatch` buttons.
-            document.getElementById(id+property).disabled = true;
+            document.getElementById(id + property).disabled = true;
 
             // All labels.
-            if (document.getElementById("lbl"+toTitleCase(id)+property)) {
-                document.getElementById("lbl"+toTitleCase(id)+property).classList.add('disabled');
+            if (document.getElementById("lbl" + toTitleCase(id) + property)) {
+                document.getElementById("lbl" + toTitleCase(id) + property).classList.add('disabled');
             }
 
             // All units and in case of PV, the button for impoting solar potential.
-            if (document.getElementById(id+property+"Unit")) {
-                document.getElementById(id+property+"Unit").classList.add('disabled');
-            } else if (document.getElementById("btn"+toTitleCase(id)+property)) {
-                document.getElementById("btn"+toTitleCase(id)+property).classList.add('disabled');
+            if (document.getElementById(id + property + "Unit")) {
+                document.getElementById(id + property + "Unit").classList.add('disabled');
+            } else if (document.getElementById("btn" + toTitleCase(id) + property)) {
+                document.getElementById("btn" + toTitleCase(id) + property).classList.add('disabled');
             }
         }
-   }
+    }
 }
 
 
-function refreshBlocksOnDiagramOnLoad(){
+function refreshBlocksOnDiagramOnLoad() {
     const component = [
-        'pv', 
-        'battery', 
-        'dieselGenset', 
-        'inverter', 
+        'pv',
+        'battery',
+        'dieselGenset',
+        'inverter',
         'rectifier',
         'shortage',
         // 'surplus',
     ];
 
-    for (let i=0; i<component.length; i++) {
+    for (let i = 0; i < component.length; i++) {
         refreshBlocksOnDiagram(component[i]);
-        if (component[i] !== 'shortage'){
-        // if (component[i] !== 'shortage' && component [i] !== 'surplus'){
+        if (component[i] !== 'shortage') {
+            // if (component[i] !== 'shortage' && component [i] !== 'surplus'){
             check_box_visibility(component[i]);
             check_optimization_strategy(component[i]);
-        }
-        else {
+        } else {
             change_box_visibility(component[i]);
         }
     }
@@ -206,9 +207,10 @@ function refreshBlocksOnDiagramOnLoad(){
 
 /************************************************************/
 /*                 DRAW AND STYLE THE BLOCKS                */
+
 /************************************************************/
 function drawBlock(id, x, y) {
-    const block = document.getElementById("block"+toTitleCase(id));
+    const block = document.getElementById("block" + toTitleCase(id));
 
     if (id.slice(2, 6) === "Bus") {
         rxy = roundCornerBus;
@@ -229,13 +231,13 @@ function drawBlock(id, x, y) {
 }
 
 function styleBlock(id) {
-    const block = document.getElementById("block"+toTitleCase(id));
+    const block = document.getElementById("block" + toTitleCase(id));
     if (id === 'demand') {
         block.classList.add('components-block--demand');
     } else if (id === 'shortage') {
-    // } else if (id === 'shortage' || id === 'surplus') {
+        // } else if (id === 'shortage' || id === 'surplus') {
         block.classList.add('components-block--constraints');
-    } else if (document.getElementById(id+"Design").checked) {
+    } else if (document.getElementById(id + "Design").checked) {
         block.classList.remove('components-block--dispatch');
         block.classList.add('components-block--design');
     } else {
@@ -247,37 +249,38 @@ function styleBlock(id) {
 
 /************************************************************/
 /*                    WRITE THE BLOCK TEXT                  */
+
 /************************************************************/
 function writeText(id, x, y) {
-    const text = document.getElementById("text"+toTitleCase(id));
+    const text = document.getElementById("text" + toTitleCase(id));
 
     text.setAttribute('x', x);
     text.setAttribute('y', y);
 }
 
 function writeInformation(id, x, y) {
-    const information = document.getElementById("information"+toTitleCase(id));
-    
+    const information = document.getElementById("information" + toTitleCase(id));
+
     if (id !== 'demand') {
         information.setAttribute('x', x);
         information.setAttribute('y', y);
-        if (id == 'shortage'){
-            const informationSecondLine = document.getElementById("information"+toTitleCase(id)+"SecondLine");
+        if (id == 'shortage') {
+            const informationSecondLine = document.getElementById("information" + toTitleCase(id) + "SecondLine");
             informationSecondLine.setAttribute('x', x);
-            informationSecondLine.setAttribute('y', 0.9*y);
+            informationSecondLine.setAttribute('y', 0.9 * y);
         }
     }
 }
 
 function styleText(id) {
-    const text = document.getElementById("text"+toTitleCase(id));
+    const text = document.getElementById("text" + toTitleCase(id));
 
     if (id === 'demand') {
         text.classList.add('components-text--demand');
     } else if (id === 'shortage') {
-    // } else if (id === 'shortage' || id === 'surplus') {
+        // } else if (id === 'shortage' || id === 'surplus') {
         text.classList.add('components-text--constraints');
-    } else if (document.getElementById(id+"Design").checked) {
+    } else if (document.getElementById(id + "Design").checked) {
         text.classList.remove('components-text--dispatch');
         text.classList.add('components-text--design');
     } else {
@@ -288,27 +291,27 @@ function styleText(id) {
 }
 
 function styleInformation(id) {
-    const information = document.getElementById("information"+toTitleCase(id));
+    const information = document.getElementById("information" + toTitleCase(id));
     if (id === 'demand') {
-        
+
     } else if (id === 'shortage') {
         // } else if (id === 'shortage' || id === 'surplus') {
-        const informationSecondLine = document.getElementById("information"+toTitleCase(id)+"SecondLine");
-        const percentageTotal = document.getElementById(id+"MaxTotal").value;
-        const percentageTimestep = document.getElementById(id+"MaxTimestep").value;
-        const unit = document.getElementById(id+"MaxTotalUnit").innerText;
-        information.textContent="max. each timestep " + percentageTimestep + unit;
-        informationSecondLine.textContent="max. total " + percentageTotal + unit;
+        const informationSecondLine = document.getElementById("information" + toTitleCase(id) + "SecondLine");
+        const percentageTotal = document.getElementById(id + "MaxTotal").value;
+        const percentageTimestep = document.getElementById(id + "MaxTimestep").value;
+        const unit = document.getElementById(id + "MaxTotalUnit").innerText;
+        information.textContent = "max. each timestep " + percentageTimestep + unit;
+        informationSecondLine.textContent = "max. total " + percentageTotal + unit;
         information.classList.add('components-information--constraints');
         informationSecondLine.classList.add('components-information--constraints');
-    } else if (document.getElementById(id+"Design").checked) {
-        information.textContent="optimized capacity";
+    } else if (document.getElementById(id + "Design").checked) {
+        information.textContent = "optimized capacity";
         information.classList.remove('components-information--dispatch');
         information.classList.add('components-information--design');
     } else {
-        const capacity = document.getElementById(id+"NominalCapacity").value;
-        const unit = document.getElementById(id+"NominalCapacityUnit").innerText;
-        information.textContent="fixed capacity - " + capacity + " " + unit;
+        const capacity = document.getElementById(id + "NominalCapacity").value;
+        const unit = document.getElementById(id + "NominalCapacityUnit").innerText;
+        information.textContent = "fixed capacity - " + capacity + " " + unit;
         information.classList.remove('components-information--design');
         information.classList.add('components-information--dispatch');
     }
@@ -319,7 +322,7 @@ function drawLine(id, linePoints1, linePoints2) {
     // Lines always start from one side of the blocks and end at the bus
 
     // id is in form of for example linePV or lineDieselGenset
-    const line1 = document.getElementById("line"+toTitleCase(id));
+    const line1 = document.getElementById("line" + toTitleCase(id));
 
     line1.setAttribute('x1', linePoints1[0][0]);
     line1.setAttribute('y1', linePoints1[0][1]);
@@ -328,7 +331,7 @@ function drawLine(id, linePoints1, linePoints2) {
 
     // For inverter and rectifier there should be two lines.
     if (linePoints2.length > 0) {
-        const line2 = document.getElementById("line"+toTitleCase(id)+"2");
+        const line2 = document.getElementById("line" + toTitleCase(id) + "2");
 
         line2.setAttribute('x1', linePoints2[0][0]);
         line2.setAttribute('y1', linePoints2[0][1]);
@@ -337,15 +340,15 @@ function drawLine(id, linePoints1, linePoints2) {
     }
 }
 
-function styleLine(id){
-    const line1 = document.getElementById("line"+toTitleCase(id));
+function styleLine(id) {
+    const line1 = document.getElementById("line" + toTitleCase(id));
 
     if (id === 'demand') {
         line1.classList.add('components-flow--demand');
     } else if (id === 'shortage') {
-    // } else if (id === 'shortage' || id === 'surplus') {
+        // } else if (id === 'shortage' || id === 'surplus') {
         line1.classList.add('components-flow--constraints');
-    } else if (document.getElementById(id+"Design").checked) {
+    } else if (document.getElementById(id + "Design").checked) {
         line1.classList.remove('components-flow--dispatch');
         line1.classList.add('components-flow--design');
     } else {
@@ -355,12 +358,12 @@ function styleLine(id){
 
     // For inverter and rectifier there should be two lines.
     if (id === "inverter" || id === "rectifier") {
-        const line2 = document.getElementById("line"+toTitleCase(id)+"2");
+        const line2 = document.getElementById("line" + toTitleCase(id) + "2");
 
-        if (document.getElementById(id+"Design").checked) {
+        if (document.getElementById(id + "Design").checked) {
             line2.classList.remove('components-flow--dispatch');
             line2.classList.add('components-flow--design');
-            
+
         } else {
             line2.classList.remove('components-flow--design');
             line2.classList.add('components-flow--dispatch');
@@ -375,111 +378,114 @@ function drawArrow(id, arrowOutPoints1, arrowInPoints1, arrowOutPoints2, arrowIn
     // entering a block (bus ---> block).
 
     // points should be in the format [[x1,y1], [x2,y2], [x3,y3]]
-    const arrowOut1 = document.getElementById("arrowOut"+toTitleCase(id));
-    const arrowIn1 = document.getElementById("arrowIn"+toTitleCase(id));
+    const arrowOut1 = document.getElementById("arrowOut" + toTitleCase(id));
+    const arrowIn1 = document.getElementById("arrowIn" + toTitleCase(id));
 
     arrowOut1.setAttribute('points', arrowOutPoints1);
     arrowIn1.setAttribute('points', arrowInPoints1);
 
     // For inverter and rectifier there are two lines and therefore, two arrows are required
     if (arrowOutPoints2.length > 0) {
-        const arrowOut2 = document.getElementById("arrowOut"+toTitleCase(id)+"2");
-        const arrowIn2 = document.getElementById("arrowIn"+toTitleCase(id)+"2");
+        const arrowOut2 = document.getElementById("arrowOut" + toTitleCase(id) + "2");
+        const arrowIn2 = document.getElementById("arrowIn" + toTitleCase(id) + "2");
 
         arrowOut2.setAttribute('points', arrowOutPoints2);
         arrowIn2.setAttribute('points', arrowInPoints2);
     }
 }
 
-function styleArrow(id){
-    const arrowOut1 = document.getElementById("arrowOut"+toTitleCase(id));
-    const arrowIn1 = document.getElementById("arrowIn"+toTitleCase(id));
+function styleArrow(id) {
+    const arrowOut1 = document.getElementById("arrowOut" + toTitleCase(id));
+    const arrowIn1 = document.getElementById("arrowIn" + toTitleCase(id));
 
-    if (id === 'demand' ) {        
+    if (id === 'demand') {
         $(arrowOut1).attr("visibility", "hidden");
         arrowIn1.classList.add('components-flow--demand');
-    } else if (id === 'shortage') {        
+    } else if (id === 'shortage') {
         $(arrowIn1).attr("visibility", "hidden");
         arrowOut1.classList.add('components-flow--constraints');
-    // } else if (id === 'surplus') {        
-    //     $(arrowOut1).attr("visibility", "hidden");
-    //     arrowIn1.classList.add('components-flow--constraints');
-    } else if (document.getElementById(id+"Design").checked) {
-        if (id === 'pv' || id === 'dieselGenset' || id === 'shortage'){
+        // } else if (id === 'surplus') {
+        //     $(arrowOut1).attr("visibility", "hidden");
+        //     arrowIn1.classList.add('components-flow--constraints');
+    } else if (document.getElementById(id + "Design").checked) {
+        if (id === 'pv' || id === 'dieselGenset' || id === 'shortage') {
             $(arrowIn1).attr("visibility", "hidden");
             arrowOut1.classList.remove('components-flow--dispatch');
-            arrowOut1.classList.add('components-flow--design');        
-        } else if (id === 'battery'){
+            arrowOut1.classList.add('components-flow--design');
+        } else if (id === 'battery') {
             arrowOut1.classList.remove('components-flow--dispatch');
             arrowIn1.classList.remove('components-flow--dispatch');
-            arrowOut1.classList.add('components-flow--design');        
-            arrowIn1.classList.add('components-flow--design');        
+            arrowOut1.classList.add('components-flow--design');
+            arrowIn1.classList.add('components-flow--design');
         } else {
-            const arrowOut2 = document.getElementById("arrowOut"+toTitleCase(id)+"2");
-            const arrowIn2 = document.getElementById("arrowIn"+toTitleCase(id)+"2");
+            const arrowOut2 = document.getElementById("arrowOut" + toTitleCase(id) + "2");
+            const arrowIn2 = document.getElementById("arrowIn" + toTitleCase(id) + "2");
             if (id === 'rectifier') {
                 $(arrowOut1).attr("visibility", "hidden");
                 $(arrowIn2).attr("visibility", "hidden");
                 arrowOut2.classList.remove('components-flow--dispatch');
                 arrowIn1.classList.remove('components-flow--dispatch');
-                arrowOut2.classList.add('components-flow--design');        
-                arrowIn1.classList.add('components-flow--design');        
+                arrowOut2.classList.add('components-flow--design');
+                arrowIn1.classList.add('components-flow--design');
             } else {
                 $(arrowOut2).attr("visibility", "hidden");
                 $(arrowIn1).attr("visibility", "hidden");
                 arrowOut1.classList.remove('components-flow--dispatch');
                 arrowIn2.classList.remove('components-flow--dispatch');
-                arrowOut1.classList.add('components-flow--design');        
-                arrowIn2.classList.add('components-flow--design');        
+                arrowOut1.classList.add('components-flow--design');
+                arrowIn2.classList.add('components-flow--design');
             }
-        };
+        }
+        ;
     } else {
-        if (id === 'pv' || id === 'dieselGenset' || id === 'shortage'){
+        if (id === 'pv' || id === 'dieselGenset' || id === 'shortage') {
             $(arrowIn1).attr("visibility", "hidden");
             arrowOut1.classList.add('components-flow--dispatch');
-            arrowOut1.classList.remove('components-flow--design');        
-        } else if (id === 'battery'){
+            arrowOut1.classList.remove('components-flow--design');
+        } else if (id === 'battery') {
             arrowOut1.classList.add('components-flow--dispatch');
             arrowIn1.classList.add('components-flow--dispatch');
-            arrowOut1.classList.remove('components-flow--design');        
-            arrowIn1.classList.remove('components-flow--design');        
+            arrowOut1.classList.remove('components-flow--design');
+            arrowIn1.classList.remove('components-flow--design');
         } else {
-            const arrowOut2 = document.getElementById("arrowOut"+toTitleCase(id)+"2");
-            const arrowIn2 = document.getElementById("arrowIn"+toTitleCase(id)+"2");
+            const arrowOut2 = document.getElementById("arrowOut" + toTitleCase(id) + "2");
+            const arrowIn2 = document.getElementById("arrowIn" + toTitleCase(id) + "2");
             if (id === 'inverter') {
                 $(arrowOut1).attr("visibility", "hidden");
                 $(arrowIn2).attr("visibility", "hidden");
                 arrowOut2.classList.add('components-flow--dispatch');
                 arrowIn1.classList.add('components-flow--dispatch');
-                arrowOut2.classList.remove('components-flow--design');        
-                arrowIn1.classList.remove('components-flow--design');        
+                arrowOut2.classList.remove('components-flow--design');
+                arrowIn1.classList.remove('components-flow--design');
             } else {
                 $(arrowOut2).attr("visibility", "hidden");
                 $(arrowIn1).attr("visibility", "hidden");
                 arrowOut1.classList.add('components-flow--dispatch');
                 arrowIn2.classList.add('components-flow--dispatch');
-                arrowOut1.classList.remove('components-flow--design');        
-                arrowIn2.classList.remove('components-flow--design');        
+                arrowOut1.classList.remove('components-flow--design');
+                arrowIn2.classList.remove('components-flow--design');
             }
-        };    }
+        }
+        ;
+    }
 
     // For inverter and rectifier there should be two lines.
     if (id === "inverter" || id === "rectifier") {
-        const line2 = document.getElementById("line"+toTitleCase(id)+"2");
+        const line2 = document.getElementById("line" + toTitleCase(id) + "2");
 
-        if (document.getElementById(id+"Design").checked) {
+        if (document.getElementById(id + "Design").checked) {
             line2.classList.remove('components-flow--dispatch');
             line2.classList.add('components-flow--design');
-            
+
         } else {
             line2.classList.remove('components-flow--design');
             line2.classList.add('components-flow--dispatch');
         }
     }
-    
+
 }
 
-function refreshBusesOnDiagram(){
+function refreshBusesOnDiagram() {
     // This function draw/remove AC and DC buses and their texts in the diagram 
     // depending on if the attached blocks to them are selected or not. 
     const groupDcBus = document.getElementById("groupDcBus");
@@ -504,29 +510,29 @@ function refreshBusesOnDiagram(){
     // Since there is always demand, AC bus is always visible
     $(groupAcBus).attr("visibility", "visible");
     drawBlock(
-        id="acBus", 
-        x=busCoordinates.acBus.x,
-        y=busCoordinates.acBus.y,
+        id = "acBus",
+        x = busCoordinates.acBus.x,
+        y = busCoordinates.acBus.y,
     )
     writeText(
-        id="acBus", 
-        x=busCoordinates.acBus.x + 0.5 * widthBus,
-        y=0.7*busCoordinates.acBus.y
+        id = "acBus",
+        x = busCoordinates.acBus.x + 0.5 * widthBus,
+        y = 0.7 * busCoordinates.acBus.y
     )
 
     // DC bus is not necessarily always visible
     if (selectPv || selectBattery || selectInverter || selectRectifier) {
         $(groupDcBus).attr("visibility", "visible");
         drawBlock(
-            id="dcBus", 
-            x=busCoordinates.dcBus.x,
-            y=busCoordinates.dcBus.y,
+            id = "dcBus",
+            x = busCoordinates.dcBus.x,
+            y = busCoordinates.dcBus.y,
         )
         writeText(
-            id="dcBus", 
-            x=busCoordinates.dcBus.x + 0.5 * widthBus,
-            y=0.7*busCoordinates.dcBus.y
-            )
+            id = "dcBus",
+            x = busCoordinates.dcBus.x + 0.5 * widthBus,
+            y = 0.7 * busCoordinates.dcBus.y
+        )
     } else {
         // First make the SVG group visible
         $(groupDcBus).attr("visibility", "hidden");
@@ -534,23 +540,23 @@ function refreshBusesOnDiagram(){
 
 }
 
-function refreshBlocksOnDiagram(id){
+function refreshBlocksOnDiagram(id) {
     // This function draw/remove all blocks and their texts and flows in the diagram depending on
     // if they are selected by user or not. 
     // For AC and DC buses, the function `refreshBusesOnDiagram` does the same work.
-    const groupId = document.getElementById("group"+toTitleCase(id));
+    const groupId = document.getElementById("group" + toTitleCase(id));
 
     if (id === 'demand') {
         var isSelected = true;
     } else if (id === 'shortage') {
-    // } else if (id === 'shortage' || id === 'surplus') {
-        if (document.getElementById("selectShortage").checked){
-            var isSelected = document.getElementById("select"+toTitleCase(id)).checked;
+        // } else if (id === 'shortage' || id === 'surplus') {
+        if (document.getElementById("selectShortage").checked) {
+            var isSelected = document.getElementById("select" + toTitleCase(id)).checked;
         } else {
             var isSelected = false;
         }
     } else {
-        var isSelected = document.getElementById("select"+toTitleCase(id)).checked;
+        var isSelected = document.getElementById("select" + toTitleCase(id)).checked;
     }
 
     var blockCoordinates = {
@@ -575,15 +581,15 @@ function refreshBlocksOnDiagram(id){
             'y': yTop - heightBlock / 2 + 4 * heightBlock,
         },
         'shortage': {
-            'x': xLeft+ 2 * widthBlock + 4 * lengthFlow + 2 * widthBus,
+            'x': xLeft + 2 * widthBlock + 4 * lengthFlow + 2 * widthBus,
             'y': yTop + 0.5 * heightBlock,
         },
         'demand': {
-            'x': xLeft+ 2 * widthBlock + 4 * lengthFlow + 2 * widthBus,
+            'x': xLeft + 2 * widthBlock + 4 * lengthFlow + 2 * widthBus,
             'y': yTop - heightBlock + 3.5 * heightBlock,
         },
         'surplus': {
-            'x': xLeft+ 2 * widthBlock + 4 * lengthFlow + 2 * widthBus,
+            'x': xLeft + 2 * widthBlock + 4 * lengthFlow + 2 * widthBus,
             'y': yTop - heightBlock + 5 * heightBlock,
         },
     };
@@ -596,41 +602,42 @@ function refreshBlocksOnDiagram(id){
         /*   BLOCKS   */
         /**************/
         drawBlock(
-            id=id, 
-            x=blockCoordinates[id].x,
-            y=blockCoordinates[id].y,
+            id = id,
+            x = blockCoordinates[id].x,
+            y = blockCoordinates[id].y,
         )
-        styleBlock(id=id);
-        
+        styleBlock(id = id);
+
         /*************/
         /*   TEXTS   */
         /*************/
         writeText(
-            id=id,
-            x=blockCoordinates[id].x + 0.5 * widthBlock,
-            y=blockCoordinates[id].y + 0.5 * heightBlock
+            id = id,
+            x = blockCoordinates[id].x + 0.5 * widthBlock,
+            y = blockCoordinates[id].y + 0.5 * heightBlock
         )
         styleText(id);
-        
+
         writeInformation(
-            id=id,
-            x=blockCoordinates[id].x,
-            y=blockCoordinates[id].y - 0.1 * heightBlock,
+            id = id,
+            x = blockCoordinates[id].x,
+            y = blockCoordinates[id].y - 0.1 * heightBlock,
         );
         styleInformation(id);
 
-        
+
         /***********************/
         /*   LINES AND ARROWS  */
         /***********************/
         if (id === 'demand' || id === 'shortage') {
-        // if (id === 'demand' || id === 'surplus' || id === 'shortage') {
+            // if (id === 'demand' || id === 'surplus' || id === 'shortage') {
             lineCorrectionWidthBlock = 0;
             lineCorrectionLengthFlow = -1;
         } else {
             lineCorrectionWidthBlock = 1;
             lineCorrectionLengthFlow = 1;
-        };    
+        }
+        ;
         linePoints1 = [
             [blockCoordinates[id].x + lineCorrectionWidthBlock * widthBlock, blockCoordinates[id].y + 0.5 * heightBlock],
             [blockCoordinates[id].x + lineCorrectionWidthBlock * widthBlock + lineCorrectionLengthFlow * lengthFlow, blockCoordinates[id].y + 0.5 * heightBlock]
@@ -680,7 +687,7 @@ function refreshBlocksOnDiagram(id){
                     linePoints2[1][1] + lineCorrectionLengthFlow * 0.1 * lengthFlow
                 ],
             ];
-    
+
             arrowInPoints2 = [
                 [
                     linePoints2[0][0] + lineCorrectionLengthFlow * 0.15 * lengthFlow,
@@ -698,18 +705,18 @@ function refreshBlocksOnDiagram(id){
             arrowInPoints2 = [];
         }
         drawLine(
-            id=id,
-            linePoints1=linePoints1,
-            linePoints2=linePoints2
+            id = id,
+            linePoints1 = linePoints1,
+            linePoints2 = linePoints2
         )
         styleLine(id);
 
         drawArrow(
-            id=id,
-            arrowOutPoints1=arrowOutPoints1,
-            arrowInPoints1=arrowInPoints1,
-            arrowOutPoints2=arrowOutPoints2,
-            arrowInPoints2=arrowInPoints2,
+            id = id,
+            arrowOutPoints1 = arrowOutPoints1,
+            arrowInPoints1 = arrowInPoints1,
+            arrowOutPoints2 = arrowOutPoints2,
+            arrowInPoints2 = arrowInPoints2,
         )
         styleArrow(id);
 
