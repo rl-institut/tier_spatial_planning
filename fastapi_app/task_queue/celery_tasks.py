@@ -1,8 +1,9 @@
 import asyncio
-from fastapi_app.task_queue.celery_worker import worker
+
 from fastapi_app.db import async_inserts
 from fastapi_app.opt_models.grid_optimizer import optimize_grid
 from fastapi_app.opt_models.supply_optimizer import optimize_energy_system
+from fastapi_app.task_queue.celery_worker import worker
 
 
 @worker.task(name='celery_worker.task_grid_opt',

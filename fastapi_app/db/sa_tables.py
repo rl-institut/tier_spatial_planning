@@ -1,14 +1,15 @@
-import sqlalchemy as sa
+import inspect
+import json
+from typing import Any
+
 import flatten_dict
+import pandas as pd
+import sqlalchemy as sa
 from flatten_dict.reducers import make_reducer
 from sqlalchemy import Boolean, Column, VARCHAR, Numeric, DateTime
 from sqlalchemy.dialects.mysql import TINYINT, SMALLINT, FLOAT, INTEGER
-import json
-import inspect
-import pandas as pd
-from typing import Any
-from sqlalchemy.ext.declarative import as_declarative, declared_attr
 from sqlalchemy.dialects.mysql.json import JSON
+from sqlalchemy.ext.declarative import as_declarative, declared_attr
 
 
 @as_declarative()

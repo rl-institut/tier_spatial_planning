@@ -1,9 +1,10 @@
-import numpy as np
-import urllib.request
 import datetime
-import time
 import json
+import time
+import urllib.request
+
 import math
+import numpy as np
 from shapely import geometry
 
 

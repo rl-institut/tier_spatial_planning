@@ -1,33 +1,35 @@
-import uuid
 import ast
 import asyncio
-import json
 import base64
-import random
-from captcha.image import ImageCaptcha
-import pandas as pd
-from jose import jwt
-import fastapi_app.helper.pydantic_schema
+import json
 import os
-import pyutilib.subprocess.GlobalData
-from datetime import datetime, timedelta, timezone
+import random
+import uuid
 from collections import defaultdict
+from datetime import datetime, timedelta, timezone
 from typing import Dict
+
+import pandas as pd
+import pyutilib.subprocess.GlobalData
+from captcha.image import ImageCaptcha
 from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.responses import RedirectResponse, FileResponse, JSONResponse, HTMLResponse, StreamingResponse
-from fastapi.templating import Jinja2Templates
-from passlib.context import CryptContext
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from jose import jwt
+from passlib.context import CryptContext
+
+import fastapi_app.helper.pydantic_schema
 from fastapi_app import config
-from fastapi_app.opt_models.grid_optimizer import optimize_grid
-from fastapi_app.opt_models.supply_optimizer import optimize_energy_system
+from fastapi_app.data.demand.demand_time_series import demand_time_series_df
+from fastapi_app.db import async_inserts, async_queries, sync_queries, sa_tables
+from fastapi_app.helper import handle_user_accounts, identify_consumers_on_map
+from fastapi_app.helper.error_logger import logger as error_logger
 from fastapi_app.helper.handle_user_accounts import Hasher, create_guid, is_valid_credentials, send_activation_link, \
     activate_mail, authenticate_user, create_access_token, send_mail, create_default_user_account
-from fastapi_app.helper import handle_user_accounts, identify_consumers_on_map
-from fastapi_app.db import async_inserts, async_queries, sync_queries, sa_tables
 from fastapi_app.helper.project_data_to_excel import project_data_df_to_xlsx
-from fastapi_app.helper.error_logger import logger as error_logger
-from fastapi_app.data.demand.demand_time_series import demand_time_series_df
+from fastapi_app.opt_models.grid_optimizer import optimize_grid
+from fastapi_app.opt_models.supply_optimizer import optimize_energy_system
 from fastapi_app.task_queue.celery_tasks import task_grid_opt, task_supply_opt, task_remove_anonymous_users, \
     get_status_of_task, task_is_finished, worker
 

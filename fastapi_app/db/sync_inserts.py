@@ -1,13 +1,15 @@
-import time
-import pandas as pd
 import calendar
 import os
+import time
+
+import pandas as pd
 from sqlalchemy import delete, text
 from sqlalchemy.exc import OperationalError
-from fastapi_app.db import sa_tables
-from fastapi_app.db.connections import get_sync_session_maker, sync_engine
-from fastapi_app.db.async_inserts import df_2_sql
+
 from fastapi_app.config import DB_RETRY_COUNT, RETRY_DELAY
+from fastapi_app.db import sa_tables
+from fastapi_app.db.async_inserts import df_2_sql
+from fastapi_app.db.connections import get_sync_session_maker, sync_engine
 from fastapi_app.inputs.solar_potential import download_weather_data, prepare_weather_data
 
 

@@ -1,9 +1,9 @@
 import inspect
 from typing import List, Dict, Union, Optional
+
 import flatten_dict
 import pandas as pd
 from flatten_dict.reducers import make_reducer
-
 from pydantic import BaseModel
 
 

@@ -1,15 +1,17 @@
 import decimal
-import pandas as pd
 import time
-import sqlalchemy.exc
-from sqlalchemy import select, and_
-from sqlalchemy.sql import text
+
 import flatten_dict
+import pandas as pd
+import sqlalchemy.exc
 from flatten_dict.splitters import make_splitter
+from sqlalchemy import select, and_
 from sqlalchemy.exc import OperationalError
+from sqlalchemy.sql import text
+
+from fastapi_app import config
 from fastapi_app.db import sa_tables
 from fastapi_app.db.connections import get_sync_session_maker, sync_engine
-from fastapi_app import config
 
 
 def get_project_setup_of_user(user_id, project_id):

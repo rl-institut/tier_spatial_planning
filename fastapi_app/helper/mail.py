@@ -1,7 +1,8 @@
-import warnings
 import smtplib
-from email.mime.text import MIMEText
+import warnings
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
 from fastapi_app import config
 
 

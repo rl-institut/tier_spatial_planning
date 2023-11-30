@@ -1,5 +1,7 @@
 import os
+
 import pandas as pd
+
 from fastapi_app.db import sync_queries, sa_tables
 from fastapi_app.inputs import demand_estimation
 

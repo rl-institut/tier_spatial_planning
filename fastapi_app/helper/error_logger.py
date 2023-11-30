@@ -1,7 +1,8 @@
 import logging
 import os
-import traceback
 import socket
+import traceback
+
 from fastapi_app import config
 from fastapi_app.helper.mail import send_mail
 

@@ -1,5 +1,5 @@
 import pandas as pd
-import h3
+
 from fastapi_app import config
 
 

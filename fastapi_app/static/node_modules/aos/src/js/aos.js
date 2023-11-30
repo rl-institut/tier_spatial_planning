@@ -5,8 +5,6 @@
  * *******************************************************
  */
 
-import styles from './../sass/aos.scss';
-
 // Modules & helpers
 import throttle from 'lodash.throttle';
 import debounce from 'lodash.debounce';

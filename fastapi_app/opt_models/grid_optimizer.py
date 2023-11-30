@@ -1,13 +1,15 @@
 import copy
-import math
 import time
+
+import math
 import numpy as np
 import pandas as pd
-from pyproj import Proj
 from k_means_constrained import KMeansConstrained
+from pyproj import Proj
 from scipy.sparse.csgraph import minimum_spanning_tree
-from fastapi_app.helper.error_logger import logger as error_logger
+
 from fastapi_app.db import sync_inserts, sa_tables, sync_queries
+from fastapi_app.helper.error_logger import logger as error_logger
 from fastapi_app.opt_models.base_optimizer import BaseOptimizer
 
 pd.options.mode.chained_assignment = None  # default='warn'
