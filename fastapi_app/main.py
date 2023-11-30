@@ -94,7 +94,7 @@ async def renew_token(request: Request):
 
 @app.get('/favicon.ico', include_in_schema=False)
 async def favicon():
-    path = "fastapi_app/files/media_files/assets/favicon/favicon.ico"
+    path = "fastapi_app/files/public/media_files/assets/favicon/favicon.ico"
     return FileResponse(path)
 
 
