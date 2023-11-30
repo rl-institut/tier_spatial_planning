@@ -1,7 +1,7 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light navbar--scenario">
     <div class="container-fluid">
     <span class="navbar-brand">
-        <a href="/"><img src="{{ url_for('static', path='assets/logos/peoplesun_logo.webp') }}"
+        <a href="/"><img src="{{ url_for('public', path='media_files/images/PeopleSunLogo.png') }}"
                          alt="peoplesun Logo"></a>
     </span>
 
@@ -38,7 +38,8 @@
                             data-bs-toggle="dropdown"
                             aria-expanded="false"
                     >
-                        <img src="{{ url_for('static', path='assets/icons/i_profile.svg') }}" alt="Profile icon"/>
+                        <img src="{{ url_for('public', path='media_files/assets/icons/i_profile.svg') }}"
+                             alt="Profile icon"/>
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                         <li><a class="dropdown-item" href="/">Projects</a></li>

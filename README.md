@@ -2,7 +2,7 @@
 ---
 #  Web-Application
 The open-source tool originated from the PeopleSuN project and serves the planning of off-grid systems in Nigeria. The tool aims to perform a spatial optimization of the distribution grid as well as the design of the energy converters and energy storage.
-![Docker Network Diagram](./fastapi_app/static/images/results_example.jpg)
+![Docker Network Diagram](fastapi_app/files/public/media_files/images/results_example.jpg)
 ## Features
 The features of the tool are listed below:
 - **Automatic Identification of Buildings from OpenStreetMap:** Utilizes OpenStreetMap data to automatically identify building locations.
@@ -14,7 +14,7 @@ The features of the tool are listed below:
 # Server Configuration and Docker-Container
 
 The following describes the server configuration created for the Optimization Tool, aimed at ensuring secure and reliable operation. Client requests are received by NGINX, a so-called reverse proxy server, which establishes encrypted communication using SSL/TLS certification and forwards them to the appropriate destinations. The web tool consists of several applications, including database systems and applications for database visualization, monitoring of asynchronous tasks, user data analysis, and load management.
-![Docker Network Diagram](./fastapi_app/static/images/docker_network.svg)
+![Docker Network Diagram](fastapi_app/files/public/media_files/images/docker_network.svg)
 
 <ins>**Web Application Container**</ins>  
 This container hosts the actual web application, responding to NGINX requests. It includes the FastAPI application, website elements like HTML, CSS, and JavaScript, database interfaces, and energy system models. It runs Gunicorn, a Python-based HTTP server, supporting multiple worker processes to handle requests and enable parallel operation of FastAPI instances. The container also includes the open-source CBC solver for mixed-integer linear programming, as a fallback when no licensed Gurobi solver is available.

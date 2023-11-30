@@ -76,13 +76,13 @@ var myCustomMarker = L.Icon.extend({
         shadowUrl: null,
         iconAnchor: new L.Point(12, 12),
         iconSize: new L.Point(24, 24),
-        iconUrl: "fastapi_app/static/assets/icons/i_consumer.svg"
+        iconUrl: "fastapi_app/files/public/media_files/icons/i_consumer.svg"
     }
 });
 
 
 const iconB = L.icon({
-    iconUrl: "fastapi_app/static/assets/icons/i_power_house.svg",
+    iconUrl: "fastapi_app/files/public/media_files/icons/i_power_house.svg",
     iconSize: [12, 12], // size of the icon
     iconAnchor: [12, 12], // point of the icon which will correspond to marker's location
     popupAnchor: [1, -12] // point from which the popup should open relative to the iconAnchor
@@ -127,7 +127,7 @@ const CustomMarkerControl = L.Control.extend({
 
         // add an image inside the link
         const image = L.DomUtil.create('img', 'my-marker-icon', link);
-        image.src = 'fastapi_app/static/assets/icons/i_power_house_grey.svg';
+        image.src = 'fastapi_app/files/public/media_files/icons/i_power_house_grey.svg';
         image.alt = 'Marker';
         image.style.width = '12px';
         image.style.height = '12px';

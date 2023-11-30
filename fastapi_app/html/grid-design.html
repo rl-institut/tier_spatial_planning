@@ -289,7 +289,7 @@
                 </span>
                             </div>
                             <img
-                                    src="{{ url_for('static', path='/assets/icons/qm.svg') }}"
+                                    src="{{ url_for('public', path='media_files/assets/icons/qm.svg') }}"
                                     alt="Icon"
                                     style="width: 100px; cursor: pointer; padding-top: 0.5rem; padding-bottom: 0.5rem"
                                     onclick="document.getElementById('videoTutorial').style.display='block'"
@@ -324,7 +324,7 @@
                 <h1 style="margin-bottom: 0;">Video Tutorial</h1>
                 <div style="padding: 15px;">
                     <video id="tutorialVideo" width="568" height="360" controls>
-                        <source src="{{ url_for('static', path='/videos/tut_shs.mp4') }}" type="video/mp4">
+                        <source src="{{ url_for('public', path='media_files//videos/tut_shs.mp4') }}" type="video/mp4">
                         Your browser does not support the video tag.
                     </video>
                 </div>

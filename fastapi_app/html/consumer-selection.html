@@ -19,7 +19,7 @@
 {% include '_wizard.html' %}
 <main>
     <div id="fixed-symbol" style="position: fixed; bottom: 60px; left: 20px;">
-        <img src="{{ url_for('static', path='/assets/icons/qm.svg') }}" alt="Icon"
+        <img src="{{ url_for('public', path='media_files/assets/icons/qm.svg') }}" alt="Icon"
              style="width: 100px; cursor: pointer;"
              onclick="document.getElementById('videoTutorial').style.display='block'">
     </div>
@@ -212,7 +212,7 @@
                 <h1 style="margin-bottom: 0;">Video Tutorial</h1>
                 <div style="padding: 15px;">
                     <video id="tutorialVideo" width="568" height="360" controls>
-                        <source src="{{ url_for('static', path='/videos/tut_consumer_selection.mp4') }}"
+                        <source src="{{ url_for('public', path='media_files/videos/tut_consumer_selection.mp4') }}"
                                 type="video/mp4">
                         Your browser does not support the video tag.
                     </video>

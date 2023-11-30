@@ -9,7 +9,7 @@ venv/
 *secret*
 *.DS_Store
 /fastapi_app/data/*
-!/fastapi_app/data/demand/
+!/fastapi_app/files/model_input/demand/
 scratch.py
 fastapi_app/python/db/dev_config.py
 /.db_data/

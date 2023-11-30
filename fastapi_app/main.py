@@ -39,6 +39,7 @@ pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 app = FastAPI()
 app.mount("/fastapi_app/js", StaticFiles(directory="fastapi_app/js"), name="js")
 app.mount("/fastapi_app/css", StaticFiles(directory="fastapi_app/css"), name="css")
+app.mount("/fastapi_app/files/public", StaticFiles(directory="fastapi_app/files/public"), name="public")
 app.mount("/fastapi_app/static", StaticFiles(directory="fastapi_app/static"), name="static")
 templates = Jinja2Templates(directory="fastapi_app/html")
 captcha_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -94,7 +95,7 @@ async def renew_token(request: Request):
 
 @app.get('/favicon.ico', include_in_schema=False)
 async def favicon():
-    path = "fastapi_app/static/assets/favicon/favicon.ico"
+    path = "fastapi_app/files/media_files/assets/favicon/favicon.ico"
     return FileResponse(path)
 
 

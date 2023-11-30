@@ -47,37 +47,37 @@ let map_elements = [];
 
 
 var markerConsumer = new L.Icon({
-    iconUrl: "fastapi_app/static/assets/icons/i_consumer.svg",
+    iconUrl: "fastapi_app/files/public/media_files/assets/icons/i_consumer.svg",
     iconSize: [18, 18],
 });
 
 
 var markerEnterprise = new L.Icon({
-    iconUrl: "fastapi_app/static/assets/icons/i_enterprise.svg",
+    iconUrl: "fastapi_app/files/public/media_files/assets/icons/i_enterprise.svg",
     iconSize: [18, 18],
 });
 
 
 var markerPublicservice = new L.Icon({
-    iconUrl: "fastapi_app/static/assets/icons/i_public_service.svg",
+    iconUrl: "fastapi_app/files/public/media_files/icons/i_public_service.svg",
     iconSize: [18, 18],
 });
 
 
 var markerPowerHouse = new L.Icon({
-    iconUrl: "fastapi_app/static/assets/icons/i_power_house.svg",
+    iconUrl: "fastapi_app/files/public/media_files/assets/icons/i_power_house.svg",
     iconSize: [12, 12],
 });
 
 
 var markerPole = new L.Icon({
-    iconUrl: "fastapi_app/static/assets/icons/i_pole.svg",
+    iconUrl: "fastapi_app/files/public/media_files/assets/icons/i_pole.svg",
     iconSize: [10, 10],
 });
 
 
 var markerShs = new L.Icon({
-    iconUrl: "fastapi_app/static/assets/icons/i_shs.svg",
+    iconUrl: "fastapi_app/files/public/media_files/assets/icons/i_shs.svg",
     iconSize: [16, 16],
 });
 
@@ -239,7 +239,7 @@ var zoomAllControl = L.Control.extend({
     onAdd: function (map) {
         var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
         let baseUrl = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port : '');
-        let address = "url(" + baseUrl + "/fastapi_app/static/images/imgZoomToAll.png)"
+        let address = "url(" + baseUrl + "fastapi_app/files/public/media_files/images/imgZoomToAll.png)"
         container.style.backgroundColor = 'white';
         container.style.backgroundImage = address;
         container.style.backgroundSize = "28px 28px";
@@ -258,14 +258,14 @@ map.addControl(new zoomAllControl());
 
 
 var image = [
-    "fastapi_app/static/assets/icons/i_power_house.svg",
-    "fastapi_app/static/assets/icons/i_consumer.svg",
-    "fastapi_app/static/assets/icons/i_enterprise.svg",
-    "fastapi_app/static/assets/icons/i_public_service.svg",
-    "fastapi_app/static/assets/icons/i_pole.svg",
-    "fastapi_app/static/assets/icons/i_shs.svg",
-    "fastapi_app/static/assets/icons/i_distribution.svg",
-    "fastapi_app/static/assets/icons/i_connection.svg",
+    "fastapi_app/files/public/media_files/icons/i_power_house.svg",
+    "fastapi_app/files/public/media_files/icons/i_consumer.svg",
+    "fastapi_app/files/public/media_files/icons/i_enterprise.svg",
+    "fastapi_app/files/public/media_files/icons/i_public_service.svg",
+    "fastapi_app/files/public/media_files/icons/i_pole.svg",
+    "fastapi_app/files/public/media_files/assets/icons/i_shs.svg",
+    "fastapi_app/files/public/media_files/assets/icons/i_distribution.svg",
+    "fastapi_app/files/public/media_files/assets/icons/i_connection.svg",
 ];
 
 var legend = L.control({position: "bottomright"});
