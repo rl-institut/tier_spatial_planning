@@ -21,7 +21,7 @@ from passlib.context import CryptContext
 
 import fastapi_app.python.helper.pydantic_schema
 from fastapi_app import config
-from fastapi_app.data.demand.demand_time_series import demand_time_series_df
+from fastapi_app.python.inputs.demand_estimation import demand_time_series_df
 from fastapi_app.python.db import async_inserts, sync_queries, async_queries, sync_inserts, sa_tables, \
     handle_user_accounts
 from fastapi_app.python.helper import identify_consumers_on_map
@@ -37,6 +37,7 @@ from fastapi_app.python.task_queue.celery_tasks import task_grid_opt, task_suppl
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 
 app = FastAPI()
+app.mount("/fastapi_app/js", StaticFiles(directory="fastapi_app/js"), name="js")
 app.mount("/fastapi_app/static", StaticFiles(directory="fastapi_app/static"), name="static")
 templates = Jinja2Templates(directory="fastapi_app/html")
 captcha_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
