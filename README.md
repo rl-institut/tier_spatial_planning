@@ -1,6 +1,6 @@
 
 ---
-#  The Tool
+#  Web-Application
 The open-source tool originated from the PeopleSuN project and serves the planning of off-grid systems in Nigeria. The tool aims to perform a spatial optimization of the distribution grid as well as the design of the energy converters and energy storage.
 ![Docker Network Diagram](./fastapi_app/static/images/results_example.jpg)
 ## Features
