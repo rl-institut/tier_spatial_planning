@@ -115,7 +115,6 @@ def read_wealth_lookup(filepath=None):
 
 
 def resample_to_hourly(profile):
-    ##TODO
     # Not used yet. Full profile results uploaded and read already as hourly timeseries
     resampled_mean = profile.resample("H").mean()
     resampled_min = profile.resample("H").min()
@@ -252,7 +251,7 @@ def combine_and_calibrate_total_profile(df_hh_profiles, df_ent_profiles, calibra
     else:
         df_total_profile = df_hh_profiles + df_ent_profiles
 
-    if calibration_option != None:
+    if calibration_option is not None:
         if calibration_option == "kWh":
             uncalibrated_profile_total = df_total_profile.sum() / 1000
             calibration_factor = calibration_target_value / uncalibrated_profile_total
