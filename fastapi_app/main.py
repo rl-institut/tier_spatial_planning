@@ -38,7 +38,7 @@ pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 
 app = FastAPI()
 app.mount("/fastapi_app/static", StaticFiles(directory="fastapi_app/static"), name="static")
-templates = Jinja2Templates(directory="fastapi_app/pages")
+templates = Jinja2Templates(directory="fastapi_app/html")
 captcha_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
