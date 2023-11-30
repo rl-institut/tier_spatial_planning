@@ -77,7 +77,7 @@ $button-border-radius: 8px;
 $gray-border: 2px solid $primary-gray-color-1;
 
 // Anchors
-$anchor-hover-transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out; // from Bootstrap
+$anchor-hover-transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out; // from Bootstrap
 $anchor-pseudo-classes: "&:link, &:hover, &:focus, &:visited, &:active";
 $anchor-pseudo-classes-active-state: "&:hover, &:focus, &:active";
 $anchor-pseudo-classes-active-states: ":hover, :focus, :active";
@@ -109,43 +109,43 @@ $component-border-color--storage: #90F1EF;
 $component-border-color--demand: #FFD6E0;
 $component-border-color--bus: #F4CC9E;
 $component-categories: (
-  'providers': $component-border-color--providers, 
-  'production': $component-border-color--production, 
-  'conversion': $component-border-color--conversion, 
-  'storage': $component-border-color--storage, 
-  'demand': $component-border-color--demand, 
-  'bus': $component-border-color--bus
+        'providers': $component-border-color--providers,
+        'production': $component-border-color--production,
+        'conversion': $component-border-color--conversion,
+        'storage': $component-border-color--storage,
+        'demand': $component-border-color--demand,
+        'bus': $component-border-color--bus
 );
 
 $component-categories-mapping: (
-    "dso": "providers",
-    "gas_dso": "providers",
-    "h2_dso": "providers",
-    "heat_dso": "providers",
-    "pv_plant": "production",
-    "wind_plant": "production",
-    "biogas_plant": "production",
-    "geothermal_conversion": "production",
-    "solar_thermal_plant": "production",
-    "transformer_station_in": "conversion",
-    "transformer_station_out": "conversion",
-    "storage_charge_controller_in": "conversion",
-    "storage_charge_controller_out": "conversion",
-    "solar_inverter": "conversion",
-    "diesel_generator": "conversion",
-    "fuel_cell": "conversion",
-    "gas_boiler": "conversion",
-    "electrolyzer": "conversion",
-    "heat_pump": "conversion",
-    "bess": "storage",
-    "gess": "storage",
-    "h2ess": "storage",
-    "hess": "storage",
-    "demand": "demand",
-    "gas_demand": "demand",
-    "h2_demand": "demand",
-    "heat_demand": "demand",
-    "bus": "bus",
+        "dso": "providers",
+        "gas_dso": "providers",
+        "h2_dso": "providers",
+        "heat_dso": "providers",
+        "pv_plant": "production",
+        "wind_plant": "production",
+        "biogas_plant": "production",
+        "geothermal_conversion": "production",
+        "solar_thermal_plant": "production",
+        "transformer_station_in": "conversion",
+        "transformer_station_out": "conversion",
+        "storage_charge_controller_in": "conversion",
+        "storage_charge_controller_out": "conversion",
+        "solar_inverter": "conversion",
+        "diesel_generator": "conversion",
+        "fuel_cell": "conversion",
+        "gas_boiler": "conversion",
+        "electrolyzer": "conversion",
+        "heat_pump": "conversion",
+        "bess": "storage",
+        "gess": "storage",
+        "h2ess": "storage",
+        "hess": "storage",
+        "demand": "demand",
+        "gas_demand": "demand",
+        "h2_demand": "demand",
+        "heat_demand": "demand",
+        "bus": "bus",
 );
 $gui-component-bg-size: 4.5rem;
 $gui-component-img-size: 3rem;

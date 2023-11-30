@@ -11,7 +11,7 @@ def get_consumer_within_boundaries(df):
     # min and max of latitudes and longitudes are sent to the overpass to get
     # a large rectangle including (maybe) more buildings than selected
     min_latitude, min_longitude, max_latitude, max_longitude \
-        = df['latitude'].min(), df['longitude'].min(), df['latitude'].max(),  df['longitude'].max()
+        = df['latitude'].min(), df['longitude'].min(), df['latitude'].max(), df['longitude'].max()
     url = (f'https://www.overpass-api.de/api/interpreter?data=[out:json][timeout:2500]'
            f'[bbox:{min_latitude},{min_longitude},{max_latitude},{max_longitude}];'
            f'way["building"="yes"];(._;>;);out;')
@@ -49,7 +49,7 @@ def convert_overpass_json_to_geojson(json_dict):
     ts = time.time()
     timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 
-    node_coordinates = {element["id"]:  [element["lat"], element["lon"]]
+    node_coordinates = {element["id"]: [element["lat"], element["lon"]]
                         for element in json_dict["elements"] if element["type"] == "node"}
 
     geojson = {
@@ -76,7 +76,6 @@ def convert_overpass_json_to_geojson(json_dict):
 
 
 def obtain_areas_and_mean_coordinates_from_geojson(geojson: dict):
-
     building_mean_coordinates = {}
     building_surface_areas = {}
 
@@ -197,7 +196,7 @@ def xy_coordinates_from_latitude_longitude(latitude, longitude, ref_latitude, re
             (x, y) plane coordinates.
     """
 
-    r = 6371000     # Radius of the earth [m]
+    r = 6371000  # Radius of the earth [m]
     latitude_rad = math.radians(latitude)
     longitude_rad = math.radians(longitude)
     ref_latitude_rad = math.radians(ref_latitude)

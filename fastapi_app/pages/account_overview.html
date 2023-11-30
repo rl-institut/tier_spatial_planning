@@ -1,180 +1,186 @@
 <!DOCTYPE html>
 <html lang="en-us">
-  <head>
+<head>
     {% set title= 'Account' %}
     {% include '_head.html' %}
-  </head>
-  <body onload=" redirect_if_cookie_is_missing(true, true); show_email_and_project_in_navbar();">
-      {% include '_navbar.html' %}
-    <main>
-     <section class="dashboard" style="width: 500px; display: block;  margin-left: auto;  margin-right: auto;">
-        <div >
-          <div class="row">
-            <div class="col">
-              <div class="chart" style="border: 15px solid #FAFAFA; height: auto;">
-                <div class="chart__header">
-                  <a class="title">Account: {{ email }}</a>
-                </div>
-                  <hr>
-                   <a href='#'
-                      onclick="document.getElementById('changeEmail').style.display='block'"
-                      class="btn btn--long text-right"
-                      style="background-color: grey"
-                   >Change Email
-                   </a>
-                  <p></p>
-                   <a href='#'
-                      onclick="document.getElementById('changePW').style.display='block'"
-                      class="btn btn--long text-right"
-                      style="background-color: grey"
-                   >Change Password
-                   </a>
-                  <p></p>
-                   <a href='#'
-                      onclick="document.getElementById('deleteAccount').style.display='block'"
-                      class="btn btn--long text-right"
-                      style="background-color: grey"
-                   >Delete Account
-                   </a>
-                  <p></p>
-                   <a href='/'
-                      class="btn btn--long text-right"
-                   >Projects Overview
-                   </a>
+</head>
+<body onload=" redirect_if_cookie_is_missing(true, true); show_email_and_project_in_navbar();">
+{% include '_navbar.html' %}
+<main>
+    <section class="dashboard" style="width: 500px; display: block;  margin-left: auto;  margin-right: auto;">
+        <div>
+            <div class="row">
+                <div class="col">
+                    <div class="chart" style="border: 15px solid #FAFAFA; height: auto;">
+                        <div class="chart__header">
+                            <a class="title">Account: {{ email }}</a>
+                        </div>
+                        <hr>
+                        <a href='#'
+                           onclick="document.getElementById('changeEmail').style.display='block'"
+                           class="btn btn--long text-right"
+                           style="background-color: grey"
+                        >Change Email
+                        </a>
+                        <p></p>
+                        <a href='#'
+                           onclick="document.getElementById('changePW').style.display='block'"
+                           class="btn btn--long text-right"
+                           style="background-color: grey"
+                        >Change Password
+                        </a>
+                        <p></p>
+                        <a href='#'
+                           onclick="document.getElementById('deleteAccount').style.display='block'"
+                           class="btn btn--long text-right"
+                           style="background-color: grey"
+                        >Delete Account
+                        </a>
+                        <p></p>
+                        <a href='/'
+                           class="btn btn--long text-right"
+                        >Projects Overview
+                        </a>
                     </div>
-                  </div>
                 </div>
-              </div>
-      </section>
-            <div id=changeEmail class="modal">
-              <form class="modal-content" action="/action_page.php">
-                <div class="container">
-                  <h1>Change Email</h1>
-                                <form>
-              <div class="input-item" style="text-align: left">
-                <p style="display:inline">
-                  Enter the new email-address
-                </p>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="userEmail1"
-                  placeholder="Enter your new mail address"
-                  value=""
-                  required
-                />
-              </div>
-              <div class="input-item" style="text-align: left">
-                <p style="display:inline">
-                  Repeat the new email-address
-                </p>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="userEmail2"
-                  placeholder="Enter your new mail address"
-                  value=""
-                  required
-                />
-              </div>
-                <div class="input-item" style="text-align: left">
-                <p style="display:inline">
-                  Enter your valid password
-                </p>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="userPassword"
-                  placeholder="Enter your password"
-                  value=""
-                  required
-                />
-              </div>
-            </form>
-                    <p id="responseMsg1"></p>
-                    <button onclick="change_email()" type="button" class="deletebtn">Change Email</button>
-                    <button onclick="document.getElementById('changeEmail').style.display='none'" type="button" class="cancelbtn">Cancel</button>
-                  </div>
-              </form>
             </div>
-            <div id=changePW class="modal">
-              <form class="modal-content" action="/action_page.php">
-                <div class="container">
-                  <h1>Change Password</h1>
-                                <form>
-              <div class="input-item" style="text-align: left">
-                <p style="display:inline">
-                  Enter your old password
-                </p>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="oldUserPassword"
-                  placeholder="Enter your old password"
-                  value=""
-                  required
-                />
-              </div>
-              <div class="input-item" style="text-align: left">
-                <p style="display:inline">
-                  Enter your new password
-                </p>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="newUserPassword1"
-                  placeholder="Enter your new password"
-                  value=""
-                  required
-                />
-              </div>
-                <div class="input-item" style="text-align: left">
-                <p style="display:inline">
-                  Repeat you new password
-                </p>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="newUserPassword2"
-                  placeholder="Enter your new password"
-                  value=""
-                  required
-                />
-              </div>
-            </form>
-                    <p id="responseMsg2"></p>
-                    <button onclick="change_pw();" type="button" class="deletebtn">Change Password</button>
-                    <button onclick="document.getElementById('changePW').style.display='none'" type="button" class="cancelbtn">Cancel</button>
-                  </div>
-              </form>
+        </div>
+    </section>
+    <div id=changeEmail class="modal">
+        <form class="modal-content" action="/action_page.php">
+            <div class="container">
+                <h1>Change Email</h1>
+                <form>
+                    <div class="input-item" style="text-align: left">
+                        <p style="display:inline">
+                            Enter the new email-address
+                        </p>
+                        <input
+                                type="text"
+                                class="form-control"
+                                id="userEmail1"
+                                placeholder="Enter your new mail address"
+                                value=""
+                                required
+                        />
+                    </div>
+                    <div class="input-item" style="text-align: left">
+                        <p style="display:inline">
+                            Repeat the new email-address
+                        </p>
+                        <input
+                                type="text"
+                                class="form-control"
+                                id="userEmail2"
+                                placeholder="Enter your new mail address"
+                                value=""
+                                required
+                        />
+                    </div>
+                    <div class="input-item" style="text-align: left">
+                        <p style="display:inline">
+                            Enter your valid password
+                        </p>
+                        <input
+                                type="password"
+                                class="form-control"
+                                id="userPassword"
+                                placeholder="Enter your password"
+                                value=""
+                                required
+                        />
+                    </div>
+                </form>
+                <p id="responseMsg1"></p>
+                <button onclick="change_email()" type="button" class="deletebtn">Change Email</button>
+                <button onclick="document.getElementById('changeEmail').style.display='none'" type="button"
+                        class="cancelbtn">Cancel
+                </button>
             </div>
-              <div id=deleteAccount class="modal">
-              <form class="modal-content" action="/action_page.php">
-                <div class="container">
-                  <h1>Remove Account</h1>
-                                <form>
-              <div class="input-item" style="text-align: left">
-                <p style="display:inline">
-                  Enter your password
-                </p>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="Password"
-                  placeholder="Enter your password"
-                  value=""
-                  required
-                />
-              </div>
-            </form>
-                    <p id="responseMsg3"></p>
-                    <button onclick="delete_account()" type="button" class="deletebtn">Remove Account</button>
-                    <button onclick="document.getElementById('deleteAccount').style.display='none'" type="button" class="cancelbtn">Cancel</button>
-                  </div>
-              </form>
+        </form>
+    </div>
+    <div id=changePW class="modal">
+        <form class="modal-content" action="/action_page.php">
+            <div class="container">
+                <h1>Change Password</h1>
+                <form>
+                    <div class="input-item" style="text-align: left">
+                        <p style="display:inline">
+                            Enter your old password
+                        </p>
+                        <input
+                                type="password"
+                                class="form-control"
+                                id="oldUserPassword"
+                                placeholder="Enter your old password"
+                                value=""
+                                required
+                        />
+                    </div>
+                    <div class="input-item" style="text-align: left">
+                        <p style="display:inline">
+                            Enter your new password
+                        </p>
+                        <input
+                                type="password"
+                                class="form-control"
+                                id="newUserPassword1"
+                                placeholder="Enter your new password"
+                                value=""
+                                required
+                        />
+                    </div>
+                    <div class="input-item" style="text-align: left">
+                        <p style="display:inline">
+                            Repeat you new password
+                        </p>
+                        <input
+                                type="password"
+                                class="form-control"
+                                id="newUserPassword2"
+                                placeholder="Enter your new password"
+                                value=""
+                                required
+                        />
+                    </div>
+                </form>
+                <p id="responseMsg2"></p>
+                <button onclick="change_pw();" type="button" class="deletebtn">Change Password</button>
+                <button onclick="document.getElementById('changePW').style.display='none'" type="button"
+                        class="cancelbtn">Cancel
+                </button>
             </div>
-    </main>
-  {% include '_footer.html' %}
-  </body>
+        </form>
+    </div>
+    <div id=deleteAccount class="modal">
+        <form class="modal-content" action="/action_page.php">
+            <div class="container">
+                <h1>Remove Account</h1>
+                <form>
+                    <div class="input-item" style="text-align: left">
+                        <p style="display:inline">
+                            Enter your password
+                        </p>
+                        <input
+                                type="password"
+                                class="form-control"
+                                id="Password"
+                                placeholder="Enter your password"
+                                value=""
+                                required
+                        />
+                    </div>
+                </form>
+                <p id="responseMsg3"></p>
+                <button onclick="delete_account()" type="button" class="deletebtn">Remove Account</button>
+                <button onclick="document.getElementById('deleteAccount').style.display='none'" type="button"
+                        class="cancelbtn">Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</main>
+{% include '_footer.html' %}
+</body>
 {% include '_scripts.html' %}
 </html>

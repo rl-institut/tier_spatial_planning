@@ -36,12 +36,12 @@ def download_weather_data(start_date, end_date, country='Nigeria', target_file='
     variable = "pvlib"
     create_cdsapirc_file()
     data_xr = era5.get_era5_data_from_datespan_and_position(
-                variable=variable,
-                start_date=start_date.strftime('%Y-%m-%d'),
-                end_date=end_date.strftime('%Y-%m-%d'),
-                latitude=lat,
-                longitude=lon,
-                target_file=target_file)
+        variable=variable,
+        start_date=start_date.strftime('%Y-%m-%d'),
+        end_date=end_date.strftime('%Y-%m-%d'),
+        latitude=lat,
+        longitude=lon,
+        target_file=target_file)
     return data_xr
 
 
@@ -99,4 +99,3 @@ def _get_dc_feed_in(lat, lon, weather_df):
     mc.run_model(weather=weather_df)
     dc_power = mc.results.dc['p_mp'].clip(0).fillna(0) / 1000
     return dc_power
-

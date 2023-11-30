@@ -43,6 +43,7 @@ async def execute_stmt(stmt):
             else:
                 raise e
 
+
 async def update_model_by_user_id(model):
     stmt = (update(model.metadata.tables[model.__name__().lower()])
             .where(model.__mapper__.primary_key[0] == model.id).values(**model.to_dict()))
@@ -109,8 +110,10 @@ async def remove_account(user_id):
 
 
 async def remove_project(user_id, project_id):
-    for model_class in [sa_tables.Nodes, sa_tables.Links, sa_tables.Results, sa_tables.DemandCoverage, sa_tables.EnergyFlow,
-                        sa_tables.Emissions, sa_tables.DurationCurve, sa_tables.ProjectSetup, sa_tables.EnergySystemDesign,
+    for model_class in [sa_tables.Nodes, sa_tables.Links, sa_tables.Results, sa_tables.DemandCoverage,
+                        sa_tables.EnergyFlow,
+                        sa_tables.Emissions, sa_tables.DurationCurve, sa_tables.ProjectSetup,
+                        sa_tables.EnergySystemDesign,
                         sa_tables.GridDesign]:
         await remove(model_class, user_id, project_id)
 
@@ -191,8 +194,10 @@ async def copy_project(user_id, project_id):
 
 
 async def _copy_project(user_from_id, user_to_id, project_from_id, project_to_id):
-    for model_class in [sa_tables.Nodes, sa_tables.Links, sa_tables.Results, sa_tables.DemandCoverage, sa_tables.EnergyFlow,
-                        sa_tables.Emissions, sa_tables.DurationCurve, sa_tables.ProjectSetup, sa_tables.EnergySystemDesign,
+    for model_class in [sa_tables.Nodes, sa_tables.Links, sa_tables.Results, sa_tables.DemandCoverage,
+                        sa_tables.EnergyFlow,
+                        sa_tables.Emissions, sa_tables.DurationCurve, sa_tables.ProjectSetup,
+                        sa_tables.EnergySystemDesign,
                         sa_tables.GridDesign, sa_tables.Demand]:
         model_instance = await get_model_instance(model_class, user_from_id, project_from_id, 'all')
         if model_class == sa_tables.ProjectSetup:

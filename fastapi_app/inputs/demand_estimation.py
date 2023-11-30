@@ -4,7 +4,7 @@ from fastapi_app import config
 
 
 def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distribution_lookup=None):
-    #print(nodes)
+    # print(nodes)
 
     num_households = get_number_of_households(nodes)
     lat, lon = get_location_gps(nodes).values()
@@ -22,18 +22,18 @@ def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distributi
                                          demand_par_dict=demand_par_dict,
                                          option=hh_demand_option)
     enterprises = get_all_enterprise_customer_nodes(nodes)
-    #print(enterprises)
+    # print(enterprises)
     df_ent_profiles = combine_ent_profiles(all_profiles, enterprises)
 
-    #print("demand_par_dict:", demand_par_dict)
-    #print("use_custom_shares", demand_par_dict["use_custom_shares"])
-    #print("enterprises consumer type:", enterprises.consumer_type.iloc[0])
-    #print("enterprises consumer detail:", enterprises.consumer_detail.iloc[0])
-    #print("enterprises node_type:", enterprises.node_type.iloc[0])
-    #print("enterprises data:", enterprises.custom_specification.iloc[0])
-    #print("hh_demand_option: ", hh_demand_option)
-    #print("calibration_option:", calibration_option)
-    #print("calibration_target_value:", calibration_target_value)
+    # print("demand_par_dict:", demand_par_dict)
+    # print("use_custom_shares", demand_par_dict["use_custom_shares"])
+    # print("enterprises consumer type:", enterprises.consumer_type.iloc[0])
+    # print("enterprises consumer detail:", enterprises.consumer_detail.iloc[0])
+    # print("enterprises node_type:", enterprises.node_type.iloc[0])
+    # print("enterprises data:", enterprises.custom_specification.iloc[0])
+    # print("hh_demand_option: ", hh_demand_option)
+    # print("calibration_option:", calibration_option)
+    # print("calibration_target_value:", calibration_target_value)
 
     calibrated_profile = combine_and_calibrate_total_profile(
         df_hh_profiles=df_hh_profiles,
@@ -42,8 +42,8 @@ def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distributi
         calibration_option=calibration_option) / 1000
     # calibration totals/setpoints are in kW
     # profiles are still in W
-    #print("calibrated_profile_max:", calibrated_profile.max())
-    #print("calibrated_profile_sum:", calibrated_profile.sum())
+    # print("calibrated_profile_max:", calibrated_profile.max())
+    # print("calibrated_profile_sum:", calibrated_profile.sum())
 
     return calibrated_profile
 
@@ -69,7 +69,7 @@ def get_number_of_households(nodes):
 
 def get_number_of_enterprise(nodes):
     num_enterprise = len(nodes[((nodes['consumer_type'] == 'enterprise') |
-                               (nodes['consumer_type'] == 'public_service')) &
+                                (nodes['consumer_type'] == 'public_service')) &
                                (nodes['is_connected'] == True)].index)
     return num_enterprise
 
@@ -91,7 +91,7 @@ def get_all_enterprise_customer_nodes(nodes):
     # Dummy function
     # Returns a list or dataframe of all of the enterprise node "strings" of the community
     nodes = nodes[((nodes['consumer_type'] == 'enterprise') |
-                  (nodes['consumer_type'] == 'public_service')) &
+                   (nodes['consumer_type'] == 'public_service')) &
                   (nodes['is_connected'] == True)]
     return nodes
 
@@ -130,43 +130,47 @@ def combine_ent_profiles(all_profiles, enterprises):
 
     standard_ents = enterprises.query("consumer_type == 'enterprise'")
 
-    common_ent_profile = all_profiles["Enterprise_Large Load_Milling Machine"].copy() # placeholder copy to keep same format before building up profile
+    common_ent_profile = all_profiles[
+        "Enterprise_Large Load_Milling Machine"].copy()  # placeholder copy to keep same format before building up profile
     common_ent_profile *= 0
 
     if not standard_ents.empty:
         for enterprise_index in standard_ents.index:
             enterprise_type = standard_ents.loc[enterprise_index].consumer_detail.strip()
-            column_select_string = "Enterprise_"+enterprise_type
+            column_select_string = "Enterprise_" + enterprise_type
             common_ent_profile += all_profiles[column_select_string]
 
     public_services = enterprises.query("consumer_type == 'public_service'")
 
-    public_services_profile = all_profiles["Enterprise_Large Load_Milling Machine"].copy() # placeholder copy to keep same format before building up profile
+    public_services_profile = all_profiles[
+        "Enterprise_Large Load_Milling Machine"].copy()  # placeholder copy to keep same format before building up profile
     public_services_profile *= 0
 
     if not public_services.empty:
         for public_service_index in public_services.index:
             public_service_type = public_services.loc[public_service_index].consumer_detail.strip()
-            column_select_string = "Public Service_"+public_service_type
+            column_select_string = "Public Service_" + public_service_type
             public_services_profile += all_profiles[column_select_string]
 
-    large_load_ents = enterprises.query("(custom_specification.notnull()) & (consumer_type == 'enterprise')", engine = 'python')
-    #print(large_load_ents.custom_specification)
-    #print(large_load_ents)
+    large_load_ents = enterprises.query("(custom_specification.notnull()) & (consumer_type == 'enterprise')",
+                                        engine='python')
+    # print(large_load_ents.custom_specification)
+    # print(large_load_ents)
 
-    large_load_profile = all_profiles["Enterprise_Large Load_Milling Machine"].copy() # placeholder copy to keep same format before building up profile
+    large_load_profile = all_profiles[
+        "Enterprise_Large Load_Milling Machine"].copy()  # placeholder copy to keep same format before building up profile
     large_load_profile *= 0
 
     if not large_load_ents.empty:
         for enterprise_index in large_load_ents.index:
             large_loads_list = large_load_ents.loc[enterprise_index].custom_specification.split(';')
-            #print("large_loads_list:", large_loads_list)
+            # print("large_loads_list:", large_loads_list)
             if large_loads_list[0] != '':
                 for load_type_and_count in large_loads_list:
                     load_count = int(load_type_and_count.split("x")[0].strip())
                     load_type = load_type_and_count.split("x")[1].split("(")[0].strip()
                     enterprise_type = large_load_ents.loc[enterprise_index].consumer_detail.strip()
-                    column_select_string = "Enterprise_Large Load_"+load_type
+                    column_select_string = "Enterprise_Large Load_" + load_type
                     large_load_profile += (load_count * all_profiles[column_select_string])
 
     total_non_household_profile = common_ent_profile + public_services_profile + large_load_profile
@@ -185,7 +189,7 @@ def hh_location_estimate(all_profiles, lat, lon, num_households, wealth_lookup):
 
 
 def combine_hh_profiles_distribution_based(all_profiles, num_households, percentages):
-    hh_per_cat = (percentages * num_households).round(0) #does not check for percentages adding up to 100%
+    hh_per_cat = (percentages * num_households).round(0)  # does not check for percentages adding up to 100%
 
     df_hh_profiles_distribution_based = \
         all_profiles["Household_Distribution_Based_Very Low Consumption"] * hh_per_cat["Very Low"] + \
@@ -220,7 +224,7 @@ def combine_hh_profiles(all_profiles, lat, lon, num_households, distribution_loo
             df_hh_profiles = combine_hh_profiles_distribution_based(all_profiles, num_households, percentages)
 
     elif demand_par_dict["use_custom_shares"] == 1:
-        percentages = distribution_lookup.loc["National"]["percentages"] #placeholder to be overwritten below
+        percentages = distribution_lookup.loc["National"]["percentages"]  # placeholder to be overwritten below
 
         percentages["Very Low"] = float(demand_par_dict["custom_share_1"])
         percentages["Low"] = float(demand_par_dict["custom_share_2"])
@@ -232,7 +236,7 @@ def combine_hh_profiles(all_profiles, lat, lon, num_households, distribution_loo
 
         df_hh_profiles = combine_hh_profiles_distribution_based(all_profiles, num_households, percentages)
 
-    else: #fallback default in case "use_custom_shares" gets unexpected value.
+    else:  # fallback default in case "use_custom_shares" gets unexpected value.
         percentages = distribution_lookup.loc["National"]["percentages"]
         df_hh_profiles = combine_hh_profiles_distribution_based(all_profiles, num_households, percentages)
 

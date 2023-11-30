@@ -22,7 +22,6 @@ if os.environ.get('DOCKERIZED') is None or bool(os.environ.get('DOCKERIZED')) is
     # In this case, we need to read the environment files and docker secrets files manually.
     load_dotenv(dotenv_path='app.env')
 
-
 root_path = os.getcwd()
 secret_path = os.path.join(root_path, 'secrets')
 if not os.path.exists(secret_path):
@@ -43,11 +42,13 @@ for var_name, file_path in file_paths.items():
         with open(file_path, 'r') as file:
             os.environ[var_name] = file.read().strip()
 
+
 def is_set(var_name):
     if os.environ.get(var_name) == 'tbd' or os.environ.get(var_name) is None:
         return False
     else:
         return True
+
 
 for var in mail_vars:
     if is_set(var) is False:
@@ -63,7 +64,6 @@ if is_set('KEY_FOR_ACCESS_TOKEN') is False:
 if is_set('EXAMPLE_USER_PW') is False:
     print("To set up the default_example user, you need to define the environment variable EXAMPLE_USER_PW")
 
-
 DB_RETRY_COUNT = int(os.environ.get('DB_RETRY_COUNT'))
 RETRY_DELAY = float(os.environ.get('DB_RETRY_DELAY'))
 TOKEN_ALG = os.environ.get('TOKEN_ALG')
@@ -71,16 +71,16 @@ KEY_FOR_ACCESS_TOKEN = os.environ.get('KEY_FOR_ACCESS_TOKEN')
 ACCESS_TOKEN_EXPIRE_MINUTES = int(float(os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES')))
 ACCESS_TOKEN_EXPIRE_MINUTES_ANONYMOUS = int(float(os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES_ANONYMOUS')))
 ACCESS_TOKEN_EXPIRE_MINUTES_EXTENDED = int(float(os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES_EXTENDED')))
-DB_USER_NAME=os.environ.get('DB_USER_NAME')
-PW=os.environ.get('PW')
-DB_HOST=os.environ.get('DB_HOST')
-DB_PORT=os.environ.get('DB_PORT')
-DB_NAME=os.environ.get('DB_NAME')
-DOMAIN=os.environ.get('DOMAIN')
-EXAMPLE_USER_PW=os.environ.get('EXAMPLE_USER_PW')
-MAIL_PW=os.environ.get('MAIL_PW')
-MAIL_ADDRESS=os.environ.get('MAIL_ADDRESS')
-MAIL_ADDRESS_LOGGER=os.environ.get('MAIL_ADDRESS_LOGGER')
-HEADER_ADDRESS=os.environ.get('HEADER_ADDRESS')
-CDS_API_KEY=os.environ.get('CDS_API_KEY')
-DOCKERIZED=os.environ.get('DOCKERIZED')
+DB_USER_NAME = os.environ.get('DB_USER_NAME')
+PW = os.environ.get('PW')
+DB_HOST = os.environ.get('DB_HOST')
+DB_PORT = os.environ.get('DB_PORT')
+DB_NAME = os.environ.get('DB_NAME')
+DOMAIN = os.environ.get('DOMAIN')
+EXAMPLE_USER_PW = os.environ.get('EXAMPLE_USER_PW')
+MAIL_PW = os.environ.get('MAIL_PW')
+MAIL_ADDRESS = os.environ.get('MAIL_ADDRESS')
+MAIL_ADDRESS_LOGGER = os.environ.get('MAIL_ADDRESS_LOGGER')
+HEADER_ADDRESS = os.environ.get('HEADER_ADDRESS')
+CDS_API_KEY = os.environ.get('CDS_API_KEY')
+DOCKERIZED = os.environ.get('DOCKERIZED')

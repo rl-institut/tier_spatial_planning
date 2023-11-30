@@ -1,661 +1,665 @@
 <!DOCTYPE html>
 <html lang="en-us">
-  <head>
+<head>
     {% set title= 'Simulation Results' %}
     {% include '_head.html' %}
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-      <style>
-    .item__name {
-        height: 80px;
-        font-weight: bold;
-    }
-    .chart {
-      max-height: 9999px;
-    }
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+        .item__name {
+            height: 80px;
+            font-weight: bold;
+        }
 
-</style>
-  </head>
-  <body onload="redirect_if_cookie_is_missing(true, true);
-                load_results({{ project_id }});
-                show_email_and_project_in_navbar({{ project_id }});">
-  {% include '_navbar.html' %}
-  {% include '_wizard.html' %}
-    <main>
-      <section id="dashboard" class="dashboard">
+        .chart {
+            max-height: 9999px;
+        }
+
+    </style>
+</head>
+<body onload="redirect_if_cookie_is_missing(true, true);
+        load_results({{ project_id }});
+        show_email_and_project_in_navbar({{ project_id }});">
+{% include '_navbar.html' %}
+{% include '_wizard.html' %}
+<main>
+    <section id="dashboard" class="dashboard">
         <div>
-          <div class="row">
-            <div class="col col-md-6">
-              <div class="chart">
-                <div class="chart__header">
-                  <div>
-                    <span class="title">Grid Layout</span>
-                  </div>
-                  <div class="dropdown">
-                    <button
-                      class="btn dropdown-toggle btn--transparent"
-                      type="button"
-                      id="dropdownMenuButton1"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <span class="icon icon-more"></span>
-                    </button>
-                    <ul
-                      class="dropdown-menu"
-                      aria-labelledby="dropdownMenuButton1"
-                    >
-                      <li>
-                        <a class="dropdown-item" href="#">Export as .xls</a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="#">Export as PDF</a>
-                      </li>
-                    </ul>
-                  </div>
+            <div class="row">
+                <div class="col col-md-6">
+                    <div class="chart">
+                        <div class="chart__header">
+                            <div>
+                                <span class="title">Grid Layout</span>
+                            </div>
+                            <div class="dropdown">
+                                <button
+                                        class="btn dropdown-toggle btn--transparent"
+                                        type="button"
+                                        id="dropdownMenuButton1"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                >
+                                    <span class="icon icon-more"></span>
+                                </button>
+                                <ul
+                                        class="dropdown-menu"
+                                        aria-labelledby="dropdownMenuButton1"
+                                >
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as .xls</a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as PDF</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="map">
+                            <div id="map" style="width: 100%; height: 100%"></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="map">
-                    <div id="map" style="width: 100%; height: 100%"></div>
+                <div class="col col-md-6" style="display: flex; justify-content: center;">
+                    <div class="chart">
+                        <div class="chart__header">
+                            <span class="title">Summary of Results</span>
+                        </div>
+                        <div class="chart__content">
+                            <span class="subtitle"></span>
+                            <div class="row">
+                                <div class="item item--best">
+                                    <div class="item__name">Levelized Cost of Electricity (w/o SHS)</div>
+                                    <div id="lcoe" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Total upfront Investment Cost</div>
+                                    <div id="totalUpfrontInvestmentCost" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Share of Generation-Related Costs in LCOE</div>
+                                    <div id="esLcoe" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Share of Grid-Related Costs in the LCOE</div>
+                                    <div id="gridLcoe" class="item__value"></div>
+                                </div>
+                            </div>
+                            <span class="subtitle"></span>
+                            <div class="row">
+                                <div class="item item--best">
+                                    <div class="item__name">Capacity PV</div>
+                                    <div id="capPV" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Capacity Battery</div>
+                                    <div id="capBattery" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Capacity Diesel Generator</div>
+                                    <div id="capDiesel" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Renewable Energy Share</div>
+                                    <div id="res" class="item__value"></div>
+                                </div>
+                            </div>
+                            <span class="subtitle"></span>
+                            <div class="row">
+                                <div class="item item--best">
+                                    <div class="item__name">Number of grid-connected Consumers</div>
+                                    <div id="nGridConsumers" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Total annual Consumption (w/o SHS)</div>
+                                    <div id="totalConsumption" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Annual average Demand per Consumer</div>
+                                    <div id="consumptionPerConsumer" class="item__value"></div>
+                                </div>
+                                <div class="item item--worst">
+                                    <div class="item__name">Calculation Time</div>
+                                    <div id="time" class="item__value"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-              </div>
             </div>
-            <div class="col col-md-6"   style="display: flex; justify-content: center;">
-              <div class="chart">
-                <div class="chart__header">
-                  <span class="title">Summary of Results</span>
+            <div class="row" style="padding: 12px">
+                <div style="display: flex; width: 100%; padding: 0; margin: 0;">
+                    <a id="downloadCSV"
+                       class="btn btn--medium"
+                       style="height: 32px; display: flex; align-items: center; justify-content: center; width: 50%; margin-right: 10px;"
+                       href="#">Download Results (xlsx-format)</a>
+                    <a id="rerunCalculation"
+                       class="btn btn--medium"
+                       style="height: 32px; display: flex; align-items: center; justify-content: center; width: 50%; margin-left: 10px;"
+                       href="javascript:void(0);"
+                       onclick="forward_if_no_task_is_pending({{ project_id }});">Recalculate</a>
                 </div>
-                <div class="chart__content">
-                  <span class="subtitle"></span>
-                    <div class="row">
-                        <div class="item item--best">
-                            <div class="item__name">Levelized Cost of Electricity (w/o SHS)</div>
-                            <div id="lcoe" class="item__value"></div>
-                        </div>
-                        <div class="item item--best">
-                            <div class="item__name">Total upfront Investment Cost</div>
-                            <div id="totalUpfrontInvestmentCost" class="item__value"></div>
-                        </div>
-                        <div class="item item--best">
-                            <div class="item__name">Share of Generation-Related Costs in LCOE</div>
-                            <div id="esLcoe" class="item__value"></div>
-                        </div>
-                        <div class="item item--best">
-                            <div class="item__name">Share of Grid-Related Costs in the LCOE</div>
-                            <div id="gridLcoe" class="item__value"></div>
-                        </div>
-                    </div>
-                  <span class="subtitle"></span>
-                  <div class="row">
-                    <div class="item item--best">
-                      <div class="item__name">Capacity PV</div>
-                      <div id="capPV" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Capacity Battery</div>
-                      <div id="capBattery" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Capacity Diesel Generator</div>
-                      <div id="capDiesel" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Renewable Energy Share</div>
-                      <div id="res" class="item__value"></div>
-                    </div>
-                  </div>
-                  <span class="subtitle"></span>
-                    <div class="row">
-                    <div class="item item--best">
-                        <div class="item__name">Number of grid-connected Consumers</div>
-                        <div id="nGridConsumers" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Total annual Consumption (w/o SHS)</div>
-                      <div id="totalConsumption" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Annual average Demand per Consumer</div>
-                      <div id="consumptionPerConsumer" class="item__value"></div>
-                    </div>
-                    <div class="item item--worst">
-                      <div class="item__name">Calculation Time</div>
-                      <div id="time" class="item__value"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+
+
             </div>
-          </div>
-          <div class="row" style="padding: 12px">
-<div style="display: flex; width: 100%; padding: 0; margin: 0;">
-  <a id="downloadCSV"
-     class="btn btn--medium"
-     style="height: 32px; display: flex; align-items: center; justify-content: center; width: 50%; margin-right: 10px;"
-     href="#">Download Results (xlsx-format)</a>
-  <a id="rerunCalculation"
-     class="btn btn--medium"
-     style="height: 32px; display: flex; align-items: center; justify-content: center; width: 50%; margin-left: 10px;"
-     href="javascript:void(0);"
-     onclick="forward_if_no_task_is_pending({{ project_id }});">Recalculate</a>
-</div>
+            <div class="row">
+                <div class="col" style="display: flex; justify-content: center;">
+                    <div class="chart" style="height: auto;">
+                        <div class="chart__header">
+                            <span class="title">Results</span>
+                        </div>
+                        <div class="chart__content" style="height: auto;">
+                            <span class="subtitle">GRID</span>
+                            <div class="row">
+                                <div class="item item--best">
+                                    <div class="item__name">Number of grid-connected Consumers</div>
+                                    <div id="nConsumers" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Number of SHS Consumers</div>
+                                    <div id="nShsConsumers" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Number of Poles</div>
+                                    <div id="nPoles" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Distribution Cable Length</div>
+                                    <div
+                                            id="lengthDistributionCable"
+                                            class="item__value"
+                                    ></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Average Length Distribution</div>
+                                    <div
+                                            id="averageLengthDistributionCable"
+                                            class="item__value"
+                                    ></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Connection Cable Length</div>
+                                    <div id="lengthConnectionCable" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Average Length Connection</div>
+                                    <div
+                                            id="averageLengthConnectionCable"
+                                            class="item__value"
+                                    ></div>
+                                </div>
+                            </div>
+                            <span class="subtitle">ENERGY CONVERTERS</span>
+                            <div class="row">
+                                <div class="item item--best">
+                                    <div class="item__name">Renewable Energy Share</div>
+                                    <div id="res2" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Surplus Electricity</div>
+                                    <div id="surplusRate" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Total Amount of Shortage</div>
+                                    <div id="shortageTotal" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Capacity PV</div>
+                                    <div id="capPV2" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Capacity Battery</div>
+                                    <div id="capBattery2" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Capacity Inverter</div>
+                                    <div id="capInverter" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Capacity Diesel Generator</div>
+                                    <div id="capDiesel2" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Capacity Rectifier</div>
+                                    <div id="capRect" class="item__value"></div>
+                                </div>
+                            </div>
 
+                            <div class="row">
+                                <div class="item item--best">
+                                    <div class="item__name">Annual Fuel Consumption</div>
+                                    <div id="fuelConsumption" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Annual CO<sub>2</sub> Emissions</div>
+                                    <div id="coTwoEmissions" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Annual CO<sub>2</sub> Savings due to PV</div>
+                                    <div id="coTwoSavings" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name"></div>
+                                </div>
+                            </div>
 
-          </div>
-          <div class="row">
-            <div class="col"   style="display: flex; justify-content: center;">
-              <div class="chart" style="height: auto;">
-                <div class="chart__header">
-                  <span class="title">Results</span>
+                            <span class="subtitle">DEMAND</span>
+                            <div class="row">
+                                <div class="item item--best">
+                                    <div class="item__name">Total annual Consumption</div>
+                                    <div id="totalConsumption2" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Peak Demand</div>
+                                    <div id="peakDemand" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Base Load</div>
+                                    <div id="baseLoad" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Annual average Demand per Consumer</div>
+                                    <div id="consumptionPerConsumer2" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Total annual Shortage</div>
+                                    <div id="shortage" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Max. Shortage per Time Step</div>
+                                    <div id="max_shortage" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Total annual Surplus</div>
+                                    <div
+                                            id="surplus"
+                                            class="item__value"
+                                    ></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name"></div>
+                                </div>
+                            </div>
+                            <span class="subtitle">ECONOMIC DATA</span>
+                            <div class="row">
+                                <div class="item item--best">
+                                    <div class="item__name">Total upfront Investment Cost</div>
+                                    <div id="totalUpfrontInvestmentCost2" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Grid upfront Investment Cost</div>
+                                    <div id="GridUpfrontInvestmentCost" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">PV upfront Investment Cost</div>
+                                    <div id="PVUpfrontInvestmentCost" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Battery upfront Investment Cost</div>
+                                    <div id="BatteryUpfrontInvestmentCost" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Inverter upfront Investment Cost</div>
+                                    <div id="InverterUpfrontInvestmentCost" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Diesel Generator upfront Investment Cost</div>
+                                    <div id="DieselUpfrontInvestmentCost" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Rectifier Investment Cost</div>
+                                    <div id="RectifierUpfrontInvestmentCost" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Annual Fuel Cost</div>
+                                    <div id="fuelCost" class="item__value"></div>
+                                    <div
+                                            id="averageLengthConnectionCable"
+                                            class="item__value"
+                                    ></div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="item item--best">
+                                    <div class="item__name">Total annualized Cost
+                                        <span
+                                                class="icon icon-question"
+                                                data-bs-toggle="tooltip"
+                                                title="Annualized costs provide a comprehensive view of the expenses related to an investment over its duration. These costs include the initial investment expenses, the costs for replacing assets with a lifespan shorter than the project, variable costs, fuel expenses, and the residual value at the end of the project's lifecycle. By incorporating the time value of money using a specified interest rate, annualized costs translate these multifaceted expenditures into a standardized yearly figure. The Capital Recovery Factor (CRF) is utilized in the calculation to ensure a consistent and accurate understanding of the total costs over time."
+                                        ></span>
+                                    </div>
+                                    <div id="epc_total" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Grid's annualized Cost</div>
+                                    <div id="cost_grid" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">PV's annualized Cost</div>
+                                    <div id="epc_pv" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Battery's annualized Cost</div>
+                                    <div id="epc_battery" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Inverter's annualized Cost</div>
+                                    <div id="epc_inverter" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Diesel Generator's annualized Cost</div>
+                                    <div id="epc_diesel_genset" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Rectifier's annualized Cost</div>
+                                    <div id="epc_rectifier" class="item__value"></div>
+                                </div>
+                                <div class="item item--best">
+                                    <div class="item__name">Levelized Cost of Electricity (w/o SHS)</div>
+                                    <div id="LCOE" class="item__value"></div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
                 </div>
-                <div class="chart__content" style="height: auto;">
-                  <span class="subtitle">GRID</span>
-                  <div class="row">
-                    <div class="item item--best">
-                      <div class="item__name">Number of grid-connected Consumers</div>
-                      <div id="nConsumers" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Number of SHS Consumers</div>
-                      <div id="nShsConsumers" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Number of Poles</div>
-                      <div id="nPoles" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Distribution Cable Length</div>
-                      <div
-                        id="lengthDistributionCable"
-                        class="item__value"
-                      ></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Average Length Distribution</div>
-                      <div
-                        id="averageLengthDistributionCable"
-                        class="item__value"
-                      ></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Connection Cable Length</div>
-                      <div id="lengthConnectionCable" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Average Length Connection</div>
-                      <div
-                        id="averageLengthConnectionCable"
-                        class="item__value"
-                      ></div>
-                    </div>
-                  </div>
-                  <span class="subtitle">ENERGY CONVERTERS</span>
-                  <div class="row">
-                    <div class="item item--best">
-                      <div class="item__name">Renewable Energy Share</div>
-                      <div id="res2" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Surplus Electricity</div>
-                      <div id="surplusRate" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Total Amount of Shortage</div>
-                      <div id="shortageTotal" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Capacity PV</div>
-                      <div id="capPV2" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Capacity Battery</div>
-                      <div id="capBattery2" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Capacity Inverter</div>
-                      <div id="capInverter" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Capacity Diesel Generator</div>
-                      <div id="capDiesel2" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Capacity Rectifier</div>
-                      <div id="capRect" class="item__value"></div>
-                    </div>
-                  </div>
-
-                <div class="row">
-                    <div class="item item--best">
-                      <div class="item__name">Annual Fuel Consumption</div>
-                      <div id="fuelConsumption" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Annual CO<sub>2</sub> Emissions</div>
-                      <div id="coTwoEmissions" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Annual CO<sub>2</sub> Savings due to PV</div>
-                      <div id="coTwoSavings" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name"></div>
-                    </div>
-                  </div>
-
-                  <span class="subtitle">DEMAND</span>
-                  <div class="row">
-                    <div class="item item--best">
-                      <div class="item__name">Total annual Consumption</div>
-                      <div id="totalConsumption2" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Peak Demand</div>
-                      <div id="peakDemand" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Base Load</div>
-                      <div id="baseLoad" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Annual average Demand per Consumer</div>
-                      <div id="consumptionPerConsumer2" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Total annual Shortage</div>
-                      <div id="shortage" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Max. Shortage per Time Step</div>
-                      <div id="max_shortage" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Total annual Surplus</div>
-                      <div
-                        id="surplus"
-                        class="item__value"
-                      ></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name"></div>
-                    </div>
-                  </div>
-                  <span class="subtitle">ECONOMIC DATA</span>
-                  <div class="row">
-                   <div class="item item--best">
-                      <div class="item__name">Total upfront Investment Cost</div>
-                      <div id="totalUpfrontInvestmentCost2" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Grid upfront Investment Cost</div>
-                      <div id="GridUpfrontInvestmentCost" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">PV upfront Investment Cost</div>
-                      <div id="PVUpfrontInvestmentCost" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Battery upfront Investment Cost</div>
-                      <div id="BatteryUpfrontInvestmentCost" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Inverter upfront Investment Cost</div>
-                      <div id="InverterUpfrontInvestmentCost" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Diesel Generator upfront Investment Cost</div>
-                      <div id="DieselUpfrontInvestmentCost" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Rectifier Investment Cost</div>
-                      <div id="RectifierUpfrontInvestmentCost" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Annual Fuel Cost</div>
-                        <div id="fuelCost" class="item__value"></div>
-                      <div
-                        id="averageLengthConnectionCable"
-                        class="item__value"
-                      ></div>
-                    </div>
-                  </div>
-                  <div class="row">
-                   <div class="item item--best">
-                      <div class="item__name">Total annualized Cost
-                      <span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Annualized costs provide a comprehensive view of the expenses related to an investment over its duration. These costs include the initial investment expenses, the costs for replacing assets with a lifespan shorter than the project, variable costs, fuel expenses, and the residual value at the end of the project's lifecycle. By incorporating the time value of money using a specified interest rate, annualized costs translate these multifaceted expenditures into a standardized yearly figure. The Capital Recovery Factor (CRF) is utilized in the calculation to ensure a consistent and accurate understanding of the total costs over time."
-                  ></span>
-                      </div>
-                      <div id="epc_total" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Grid's annualized Cost</div>
-                      <div id="cost_grid" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">PV's annualized Cost</div>
-                      <div id="epc_pv" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Battery's annualized Cost</div>
-                      <div id="epc_battery" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Inverter's annualized Cost</div>
-                      <div id="epc_inverter" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Diesel Generator's annualized Cost</div>
-                      <div id="epc_diesel_genset" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Rectifier's annualized Cost</div>
-                      <div id="epc_rectifier" class="item__value"></div>
-                    </div>
-                    <div class="item item--best">
-                      <div class="item__name">Levelized Cost of Electricity (w/o SHS)</div>
-                        <div id="LCOE" class="item__value"></div>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
             </div>
-          </div>
 
-          <div class="row">
-            <div class="col">
-              <div class="chart">
-                <div class="chart__header">
-                  <div>
+            <div class="row">
+                <div class="col">
+                    <div class="chart">
+                        <div class="chart__header">
+                            <div>
                     <span class="title"
-                      >Demand Coverage by Renewable and Non-Renewable
+                    >Demand Coverage by Renewable and Non-Renewable
                       Resources</span
                     >
-                  </div>
-                  <div class="dropdown">
-                    <button
-                      class="btn dropdown-toggle btn--transparent"
-                      type="button"
-                      id="dropdownMenuButton1"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <span class="icon icon-more"></span>
-                    </button>
-                    <ul
-                      class="dropdown-menu"
-                      aria-labelledby="dropdownMenuButton1"
-                    >
-                      <li>
-                        <a class="dropdown-item" href="#">Export as .xls</a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="#">Export as PDF</a>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                <div class="chart__plot">
-                  <div id="demandCoverage"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col">
-              <div class="chart">
-                <div class="chart__header">
-                  <div>
-                    <span class="title"
-                      >Annual Energy Flows with 1-Hour Resolution</span
-                    >
-                  </div>
-                  <div class="dropdown">
-                    <button
-                      class="btn dropdown-toggle btn--transparent"
-                      type="button"
-                      id="dropdownMenuButton1"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <span class="icon icon-more"></span>
-                    </button>
-                    <ul
-                      class="dropdown-menu"
-                      aria-labelledby="dropdownMenuButton1"
-                    >
-                      <li>
-                        <a class="dropdown-item" href="#">Export as .xls</a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="#">Export as PDF</a>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                <div class="chart__plot">
-                  <div id="energyFlows"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col col-md-6">
-              <div class="chart">
-                <div class="chart__header">
-                  <div>
-                    <span class="title">Optimal Capacity of Components</span>
-                  </div>
-                  <div class="dropdown">
-                    <button
-                      class="btn dropdown-toggle btn--transparent"
-                      type="button"
-                      id="dropdownMenuButton1"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <span class="icon icon-more"></span>
-                    </button>
-                    <ul
-                      class="dropdown-menu"
-                      aria-labelledby="dropdownMenuButton1"
-                    >
-                      <li>
-                        <a class="dropdown-item" href="#">Export as .xls</a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="#">Export as PDF</a>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                <div class="chart__plot">
-                  <div id="optimalSizes"></div>
-                </div>
-              </div>
-            </div>
-            <div class="col col-md-6">
-              <div class="chart">
-                <div class="chart__header">
-                  <div>
-                    <span class="title">Breakdown of the LCOE</span>
-                  </div>
-                  <div class="dropdown">
-                    <button
-                      class="btn dropdown-toggle btn--transparent"
-                      type="button"
-                      id="dropdownMenuButton1"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <span class="icon icon-more"></span>
-                    </button>
-                    <ul
-                      class="dropdown-menu"
-                      aria-labelledby="dropdownMenuButton1"
-                    >
-                      <li>
-                        <a class="dropdown-item" href="#">Export as .xls</a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="#">Export as PDF</a>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                <div class="chart__plot">
-                  <div id="lcoeBreakdown"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col col-md-6">
-              <div class="chart">
-                <div class="chart__header">
-                  <div>
-                    <span class="title"
-                      >Duration Curves for All Components</span
-                    >
-                  </div>
-                  <div class="dropdown">
-                    <button
-                      class="btn dropdown-toggle btn--transparent"
-                      type="button"
-                      id="dropdownMenuButton1"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <span class="icon icon-more"></span>
-                    </button>
-                    <ul
-                      class="dropdown-menu"
-                      aria-labelledby="dropdownMenuButton1"
-                    >
-                      <li>
-                        <a class="dropdown-item" href="#">Export as .xls</a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="#">Export as PDF</a>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                <div class="chart__plot">
-                  <div id="durationCurves"></div>
-                </div>
-              </div>
-            </div>
-            <div class="col col-md-6">
-              <div class="chart">
-                <div class="chart__header">
-                  <div>
-                    <span class="title">Cumulative CO<sub>2</sub> Emissions</span>
-                  </div>
-                  <div class="dropdown">
-                    <button
-                      class="btn dropdown-toggle btn--transparent"
-                      type="button"
-                      id="dropdownMenuButton1"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <span class="icon icon-more"></span>
-                    </button>
-                    <ul
-                      class="dropdown-menu"
-                      aria-labelledby="dropdownMenuButton1"
-                    >
-                      <li>
-                        <a class="dropdown-item" href="#">Export as .xls</a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="#">Export as PDF</a>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                <div class="chart__plot">
-                    <div id="co2Emissions" ></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          <div class="row">
-            <div class="col">
-              <div class="chart">
-                <div class="chart__header">
-                  <div>
-                    <span class="title"
-                      >Sankey Diagram Representing the Energy Flow in the
-                      System</span
-                    >
-                  </div>
-                  <div class="dropdown">
-                    <button
-                      class="btn dropdown-toggle btn--transparent"
-                      type="button"
-                      id="dropdownMenuButton1"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                    >
-                      <span class="icon icon-more"></span>
-                    </button>
-                    <ul
-                      class="dropdown-menu"
-                      aria-labelledby="dropdownMenuButton1"
-                    >
-                      <li>
-                        <a class="dropdown-item" href="#">Export as .xls</a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="#">Export as PDF</a>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                <div class="chart__plot">
-                  <div id="sankeyDiagram"></div>
-                </div>
-                  <p style="font-size: 12px">
-                      *electricity surplus is not shown
-                  </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-        <div id="noResults" class="modal" style="padding: 20px;">
-            <span class="close" title="Close Modal">&times;</span>
-            <form class="modal-content" action="/action_page.php">
-                <div class="container">
-                    <h1>No results</h1>
-                    <p id="pendingTaskMSG"></p>
-                    <div style="text-align: center;"> <!-- Added text-align here -->
-                        <a href="javascript:void(0);" onclick="forward_if_no_task_is_pending({{ project_id }});" class="btn btn--long" style="display: block; margin: 10px auto; max-width: 300px;">Yes, start calculation</a>
-                        <a href="project_setup?project_id={{ project_id }}" class="btn btn--long" style="display: block; margin: 10px auto; max-width: 300px;">No, go to project setup</a>
-                        <a href="/" class="btn btn--long" style="display: block; margin: 10px auto; max-width: 300px;">Cancel</a>
+                            </div>
+                            <div class="dropdown">
+                                <button
+                                        class="btn dropdown-toggle btn--transparent"
+                                        type="button"
+                                        id="dropdownMenuButton1"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                >
+                                    <span class="icon icon-more"></span>
+                                </button>
+                                <ul
+                                        class="dropdown-menu"
+                                        aria-labelledby="dropdownMenuButton1"
+                                >
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as .xls</a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as PDF</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="chart__plot">
+                            <div id="demandCoverage"></div>
+                        </div>
                     </div>
                 </div>
-            </form>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <div class="chart">
+                        <div class="chart__header">
+                            <div>
+                    <span class="title"
+                    >Annual Energy Flows with 1-Hour Resolution</span
+                    >
+                            </div>
+                            <div class="dropdown">
+                                <button
+                                        class="btn dropdown-toggle btn--transparent"
+                                        type="button"
+                                        id="dropdownMenuButton1"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                >
+                                    <span class="icon icon-more"></span>
+                                </button>
+                                <ul
+                                        class="dropdown-menu"
+                                        aria-labelledby="dropdownMenuButton1"
+                                >
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as .xls</a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as PDF</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="chart__plot">
+                            <div id="energyFlows"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col col-md-6">
+                    <div class="chart">
+                        <div class="chart__header">
+                            <div>
+                                <span class="title">Optimal Capacity of Components</span>
+                            </div>
+                            <div class="dropdown">
+                                <button
+                                        class="btn dropdown-toggle btn--transparent"
+                                        type="button"
+                                        id="dropdownMenuButton1"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                >
+                                    <span class="icon icon-more"></span>
+                                </button>
+                                <ul
+                                        class="dropdown-menu"
+                                        aria-labelledby="dropdownMenuButton1"
+                                >
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as .xls</a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as PDF</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="chart__plot">
+                            <div id="optimalSizes"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col col-md-6">
+                    <div class="chart">
+                        <div class="chart__header">
+                            <div>
+                                <span class="title">Breakdown of the LCOE</span>
+                            </div>
+                            <div class="dropdown">
+                                <button
+                                        class="btn dropdown-toggle btn--transparent"
+                                        type="button"
+                                        id="dropdownMenuButton1"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                >
+                                    <span class="icon icon-more"></span>
+                                </button>
+                                <ul
+                                        class="dropdown-menu"
+                                        aria-labelledby="dropdownMenuButton1"
+                                >
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as .xls</a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as PDF</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="chart__plot">
+                            <div id="lcoeBreakdown"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col col-md-6">
+                    <div class="chart">
+                        <div class="chart__header">
+                            <div>
+                    <span class="title"
+                    >Duration Curves for All Components</span
+                    >
+                            </div>
+                            <div class="dropdown">
+                                <button
+                                        class="btn dropdown-toggle btn--transparent"
+                                        type="button"
+                                        id="dropdownMenuButton1"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                >
+                                    <span class="icon icon-more"></span>
+                                </button>
+                                <ul
+                                        class="dropdown-menu"
+                                        aria-labelledby="dropdownMenuButton1"
+                                >
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as .xls</a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as PDF</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="chart__plot">
+                            <div id="durationCurves"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col col-md-6">
+                    <div class="chart">
+                        <div class="chart__header">
+                            <div>
+                                <span class="title">Cumulative CO<sub>2</sub> Emissions</span>
+                            </div>
+                            <div class="dropdown">
+                                <button
+                                        class="btn dropdown-toggle btn--transparent"
+                                        type="button"
+                                        id="dropdownMenuButton1"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                >
+                                    <span class="icon icon-more"></span>
+                                </button>
+                                <ul
+                                        class="dropdown-menu"
+                                        aria-labelledby="dropdownMenuButton1"
+                                >
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as .xls</a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as PDF</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="chart__plot">
+                            <div id="co2Emissions"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col">
+                    <div class="chart">
+                        <div class="chart__header">
+                            <div>
+                    <span class="title"
+                    >Sankey Diagram Representing the Energy Flow in the
+                      System</span
+                    >
+                            </div>
+                            <div class="dropdown">
+                                <button
+                                        class="btn dropdown-toggle btn--transparent"
+                                        type="button"
+                                        id="dropdownMenuButton1"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                >
+                                    <span class="icon icon-more"></span>
+                                </button>
+                                <ul
+                                        class="dropdown-menu"
+                                        aria-labelledby="dropdownMenuButton1"
+                                >
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as .xls</a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as PDF</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="chart__plot">
+                            <div id="sankeyDiagram"></div>
+                        </div>
+                        <p style="font-size: 12px">
+                            *electricity surplus is not shown
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div id=pendingTask class="modal">
-        <span  class="close" title="Close Modal">&times;</span>
+    </section>
+    <div id="noResults" class="modal" style="padding: 20px;">
+        <span class="close" title="Close Modal">&times;</span>
+        <form class="modal-content" action="/action_page.php">
+            <div class="container">
+                <h1>No results</h1>
+                <p id="pendingTaskMSG"></p>
+                <div style="text-align: center;"> <!-- Added text-align here -->
+                    <a href="javascript:void(0);" onclick="forward_if_no_task_is_pending({{ project_id }});"
+                       class="btn btn--long" style="display: block; margin: 10px auto; max-width: 300px;">Yes, start
+                        calculation</a>
+                    <a href="project_setup?project_id={{ project_id }}" class="btn btn--long"
+                       style="display: block; margin: 10px auto; max-width: 300px;">No, go to project setup</a>
+                    <a href="/" class="btn btn--long" style="display: block; margin: 10px auto; max-width: 300px;">Cancel</a>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div id=pendingTask class="modal">
+        <span class="close" title="Close Modal">&times;</span>
         <form class="modal-content" action="/action_page.php">
             <div class="container">
                 <h1>Revoke pending calculation?</h1>
@@ -676,15 +680,15 @@
             </div>
         </form>
     </div>
-        {% include '_warningBox.html' %}
-    </main>
-    {% include '_footer.html' %}
-  </body>
-  {% include '_scripts.html' %}
-    <script src="{{ url_for('static', path='js/integrate_map.js') }}"></script>
-    <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-    <script src="{{ url_for('static', path='js/third_party/plotly.js') }}"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.0/jspdf.umd.min.js"></script>
-    <script src="{{ url_for('static', path='js/pages/simulation_results.js') }}"></script>
-    <script src="{{ url_for('static', path='js/plots.js') }}"></script>
+    {% include '_warningBox.html' %}
+</main>
+{% include '_footer.html' %}
+</body>
+{% include '_scripts.html' %}
+<script src="{{ url_for('static', path='js/integrate_map.js') }}"></script>
+<script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="{{ url_for('static', path='js/third_party/plotly.js') }}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.0/jspdf.umd.min.js"></script>
+<script src="{{ url_for('static', path='js/pages/simulation_results.js') }}"></script>
+<script src="{{ url_for('static', path='js/plots.js') }}"></script>
 </html>

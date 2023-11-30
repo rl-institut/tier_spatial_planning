@@ -77,7 +77,6 @@ def remove(model_class, user_id, project_id):
     execute_stmt(stmt)
 
 
-
 def insert_df(model_class, df, user_id=None, project_id=None):
     if user_id is not None and project_id is not None:
         user_id, project_id = int(user_id), int(project_id)
@@ -133,4 +132,3 @@ def update_weather_db(country='Nigeria', year=None):
         data_xr = download_weather_data(start_date, end_date, country=country, target_file=file_name).copy()
         df = prepare_weather_data(data_xr)
         insert_df(sa_tables.WeatherData, df)
-

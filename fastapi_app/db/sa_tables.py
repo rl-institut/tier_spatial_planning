@@ -11,7 +11,6 @@ from sqlalchemy.ext.declarative import as_declarative, declared_attr
 from sqlalchemy.dialects.mysql.json import JSON
 
 
-
 @as_declarative()
 class Base:
     id: Any
@@ -75,7 +74,7 @@ class ProjectSetup(Base):
     project_name = Column(VARCHAR(51), nullable=True, unique=False)
     project_description = Column(VARCHAR(201), nullable=True, unique=False)
     created_at = Column(DateTime, nullable=False, server_default=sa.func.now())
-    updated_at = Column(DateTime, nullable=False, server_default=sa.func.now(), server_onupdate=sa.func.now(),)
+    updated_at = Column(DateTime, nullable=False, server_default=sa.func.now(), server_onupdate=sa.func.now(), )
     interest_rate = Column(FLOAT(unsigned=True), nullable=False)
     project_lifetime = Column(TINYINT(unsigned=True), nullable=False, server_default="25")
     start_date = Column(DateTime, nullable=False, default=pd.to_datetime(str(pd.Timestamp.now().year - 1)))
@@ -104,6 +103,7 @@ class GridDesign(Base):
     pole_max_n_connections = Column(TINYINT(unsigned=True))
     mg_connection_cost = Column(FLOAT(precision=5, scale=1, unsigned=True))
     shs_max_grid_cost = Column(FLOAT(precision=5, scale=2, unsigned=True))
+
 
 class EnergySystemDesign(Base):
 
@@ -251,7 +251,7 @@ class Results(Base):
     time_energy_system_design = Column(Numeric(10, 3))
     time = Column(Numeric(10, 3))
     co2_savings = Column(Numeric(10, 3))
-    max_voltage_drop = Column(Numeric(3, 1)) # not used anymore (backwards compatibility old db data)
+    max_voltage_drop = Column(Numeric(3, 1))  # not used anymore (backwards compatibility old db data)
     infeasible = Column(TINYINT(unsigned=True))
     average_annual_demand_per_consumer = Column(Numeric(10, 1))
     total_annual_consumption = Column(Numeric(10, 1))
@@ -264,8 +264,8 @@ class Results(Base):
     co2_emissions = Column(Numeric(10, 1))
     fuel_consumption = Column(Numeric(10, 1))
     base_load = Column(Numeric(10, 1))
-    max_shortage =  Column(Numeric(10, 1))
-    epc_total =  Column(Numeric(10, 1))
+    max_shortage = Column(Numeric(10, 1))
+    epc_total = Column(Numeric(10, 1))
     epc_pv = Column(Numeric(10, 1))
     epc_diesel_genset = Column(Numeric(10, 1))
     epc_inverter = Column(Numeric(10, 1))

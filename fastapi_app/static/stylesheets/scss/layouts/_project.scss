@@ -3,7 +3,7 @@
   padding-right: .5rem;
   padding-left: 1rem;
 
-  &> div {
+  & > div {
     @include section-width;
     position: relative;
     padding-bottom: 4rem;
@@ -137,7 +137,7 @@
       .btn--action {
         margin-top: 0;
       }
-      
+
       .btn--action.results {
         @include project-btn;
         margin-top: 0;
@@ -156,7 +156,7 @@
     .add-scenario {
       @include flex-row;
       justify-content: flex-end;
-      
+
       .dropdown {
         transform: translateY(-1rem);
       }

@@ -2,7 +2,7 @@
   padding-top: $top-nav-height;
   @include flex-row-justify-center;
 
-  &> div {
+  & > div {
     @include section-width;
     @include flex-row;
   }

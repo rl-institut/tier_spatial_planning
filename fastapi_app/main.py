@@ -126,7 +126,8 @@ async def home(request: Request):
                 else:
                     status = 'success'
                 if status in ['success', 'failure', 'revoked']:
-                    project_setup = await async_queries.get_model_instance(sa_tables.ProjectSetup, user.id, user.project_id)
+                    project_setup = await async_queries.get_model_instance(sa_tables.ProjectSetup, user.id,
+                                                                           user.project_id)
                     user.task_id = ''
                     user.project_id = None
                     await async_inserts.update_model_by_user_id(user)
@@ -227,6 +228,7 @@ async def account_overview(request: Request):
         return templates.TemplateResponse("account_overview.html", {"request": request,
                                                                     'email': user.email})
 
+
 @app.get("/contact")
 async def contact(request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
@@ -254,6 +256,7 @@ async def copy_project(request: Request):
         return JSONResponse(status_code=200, content={'success': True})
     else:
         return JSONResponse(status_code=400, content={'success': False})
+
 
 @app.get("/consumer_selection")
 async def consumer_selection(request: Request):
@@ -388,7 +391,7 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
         df['is_connected'] = df['is_connected'].astype(bool)
         nodes_list = df.to_dict('records')
         is_load_center = True
-        if len(power_house.index) > 0 and power_house['how_added'].iat[0] =='manual':
+        if len(power_house.index) > 0 and power_house['how_added'].iat[0] == 'manual':
             is_load_center = False
         return JSONResponse(status_code=200, content={'is_load_center': is_load_center, "map_elements": nodes_list})
     else:
@@ -396,7 +399,8 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
 
 
 @app.post("/consumer_to_db/{project_id}")
-async def consumer_to_db(project_id: str, map_elements: fastapi_app.helper.pydantic_schema.MapDataRequest, request: Request):
+async def consumer_to_db(project_id: str, map_elements: fastapi_app.helper.pydantic_schema.MapDataRequest,
+                         request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
     df = pd.DataFrame.from_records(map_elements.map_elements)
     if df.empty is True:
@@ -508,7 +512,8 @@ async def load_results(project_id, request: Request):
                  'epc_total': 'USD/a'
                  }
     if int(df['n_consumers'].iat[0]) != int(df['n_shs_consumers'].iat[0]) and not infeasible:
-        df['upfront_invest_converters'] = sum(df[col].iat[0] for col in df.columns if 'upfront' in col and 'grid' not in col)
+        df['upfront_invest_converters'] = sum(
+            df[col].iat[0] for col in df.columns if 'upfront' in col and 'grid' not in col)
         df['upfront_invest_total'] = df['upfront_invest_converters'] + df['upfront_invest_grid']
     else:
         df['upfront_invest_converters'] = None
@@ -534,7 +539,6 @@ async def load_results(project_id, request: Request):
     else:
         results['responseMsg'] = ''
     return JSONResponse(content=results, status_code=200)
-
 
 
 @app.get("/show_video_tutorial")
@@ -585,7 +589,7 @@ async def load_previous_data(page_name, request: Request):
         except (ValueError, TypeError):
             return None
         demand_estimation = await async_queries.get_model_instance(sa_tables.Demand, user.id, project_id)
-        if demand_estimation is None or not hasattr(demand_estimation,'maximum_peak_load'):
+        if demand_estimation is None or not hasattr(demand_estimation, 'maximum_peak_load'):
             return None
         demand_estimation.maximum_peak_load = str(demand_estimation.maximum_peak_load) \
             if demand_estimation.maximum_peak_load is not None else ''
@@ -864,7 +868,7 @@ async def save_demand_estimation(request: Request, data: fastapi_app.helper.pyda
                   'custom_share_2': custom_share_2,
                   'custom_share_3': custom_share_3,
                   'custom_share_4': custom_share_4,
-                  'custom_share_5': custom_share_5,}
+                  'custom_share_5': custom_share_5, }
     demand_estimation = sa_tables.Demand(**dictionary)
     await async_inserts.merge_model(demand_estimation)
     return JSONResponse(status_code=200, content={"message": "Success"})
@@ -893,7 +897,8 @@ async def save_project_setup(project_id, request: Request, data: fastapi_app.hel
 
 
 @app.post("/save_energy_system_design/")
-async def save_energy_system_design(request: Request, data: fastapi_app.helper.pydantic_schema.OptimizeEnergySystemRequest):
+async def save_energy_system_design(request: Request,
+                                    data: fastapi_app.helper.pydantic_schema.OptimizeEnergySystemRequest):
     user = await handle_user_accounts.get_user_from_cookie(request)
     project_id = get_project_id_from_request(request)
     df = data.to_df()
@@ -1026,7 +1031,7 @@ async def optimization(user_id, project_id):
     if bool(os.environ.get('DOCKERIZED')):
         task = task_grid_opt.delay(user_id, project_id)
         return task.id
-    else: #  if app is not running in docker, celery isn't available
+    else:  # if app is not running in docker, celery isn't available
         optimize_grid(user_id, project_id)
         optimize_energy_system(user_id, project_id)
         return 'no_celery_id'
@@ -1085,7 +1090,7 @@ async def start_calculation(project_id, request: Request):
 async def waiting_for_results(request: Request, data: fastapi_app.helper.pydantic_schema.TaskInfo):
     try:
         max_time = 3600 * 24 * 7
-        t_wait = -2E-05 *  data.time + 0.0655 *  data.time + 5.7036 if data.time < 1800 else 60
+        t_wait = -2E-05 * data.time + 0.0655 * data.time + 5.7036 if data.time < 1800 else 60
         res = {'time': int(data.time) + t_wait, 'status': '', 'task_id': data.task_id, 'model': data.model}
         if len(data.task_id) > 12 and max_time > res['time']:
             if not data.time == 0:
@@ -1179,7 +1184,7 @@ async def revoke_users_task(request: Request):
 
 
 @app.get("/download_data/{project_id}/{file_type}/")
-async def export_data(project_id: int, file_type:str,  request: Request):
+async def export_data(project_id: int, file_type: str, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
     input_parameters_df = await async_queries.get_input_df(user.id, project_id)
     results_df = await async_queries.get_df(sa_tables.Results, user.id, project_id)
@@ -1190,7 +1195,9 @@ async def export_data(project_id: int, file_type:str,  request: Request):
     nodes_df = pd.read_json(nodes.data) if nodes is not None else pd.DataFrame()
     links_df = pd.read_json(links.data) if links is not None else pd.DataFrame()
     energy_system_design = await async_queries.get_df(sa_tables.EnergySystemDesign, user.id, project_id)
-    excel_file = project_data_df_to_xlsx(input_parameters_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df)
-    response = StreamingResponse(excel_file, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    excel_file = project_data_df_to_xlsx(input_parameters_df, energy_system_design, energy_flow_df, results_df,
+                                         nodes_df, links_df)
+    response = StreamingResponse(excel_file,
+                                 media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_results.xlsx"
     return response

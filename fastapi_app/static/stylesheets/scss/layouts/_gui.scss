@@ -68,7 +68,7 @@
       }
 
       @each $component-category, $component-color in $component-categories {
-        &--#{$component-category} .section__component{
+        &--#{$component-category} .section__component {
           border-left-color: $component-color;
         }
       }
@@ -113,20 +113,20 @@
   }
 
   .parent-node .drawflow-delete {
-        content: 'X';
-        position: absolute;
-        top: 0;
-        right: 0;
-        background-color: $white;
-        color: black;
-        width: 1.15rem;
-        height: 1.15rem;
-        font-weight: 700;
-        line-height: 1rem;
-        padding-left: .25rem;
-        border: 1px solid $primary-gray-color-4;
-        border-radius: 100%;
-        cursor: pointer;
+    content: 'X';
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: $white;
+    color: black;
+    width: 1.15rem;
+    height: 1.15rem;
+    font-weight: 700;
+    line-height: 1rem;
+    padding-left: .25rem;
+    border: 1px solid $primary-gray-color-4;
+    border-radius: 100%;
+    cursor: pointer;
   }
 
   .drawflow .drawflow-node {
@@ -195,21 +195,21 @@
       }
     }
 
-     @each $component-name, $component-category in $component-categories-mapping {
-              @if $component-category == "providers" or $component-category == "production" {
-                  &.#{$component-name} .input{
-                    display: none;
-                  }
-              }
-            }
+    @each $component-name, $component-category in $component-categories-mapping {
+      @if $component-category == "providers" or $component-category == "production" {
+        &.#{$component-name} .input {
+          display: none;
+        }
+      }
+    }
 
     @each $component-name, $component-category in $component-categories-mapping {
-              @if $component-category == "demand" {
-                &.#{$component-name} .output {
-                  display: none;
-                }
-              }
-            }
+      @if $component-category == "demand" {
+        &.#{$component-name} .output {
+          display: none;
+        }
+      }
+    }
 
 
     .img {
@@ -225,9 +225,9 @@
 
     // components images
     @each $component-name, $component-category in $component-categories-mapping {
-              &.#{$component-category} {
-                      border-bottom-color: map-get($component-categories, $component-category);
-                    }
+      &.#{$component-category} {
+        border-bottom-color: map-get($component-categories, $component-category);
+      }
 
       &.#{$component-name} .img::before {
         @include gui-component-image(url('/static/assets/gui/#{$component-name}.svg'));

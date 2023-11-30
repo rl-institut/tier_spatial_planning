@@ -14,7 +14,7 @@
 .actions .btn--action {
   .icon:not(.icon-results)::before {
     color: $primary-color-2;
-}
+  }
 
   &:hover .icon:not(.icon-results)::before {
     color: $primary-color-2-light;
@@ -22,5 +22,5 @@
 }
 
 .tooltip-inner {
-  max-width: 350px!important;
+  max-width: 350px !important;
 }

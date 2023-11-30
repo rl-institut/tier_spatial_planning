@@ -12,18 +12,19 @@ from fastapi_app.config import DB_RETRY_COUNT, RETRY_DELAY
 
 
 async def get_user_by_username(username):
-    query =select(sa_tables.User).where(sa_tables.User.email == username)
+    query = select(sa_tables.User).where(sa_tables.User.email == username)
     user = await _execute_with_retry(query, which='first')
     return user
 
+
 async def get_user_by_id(user_id):
-    query =select(sa_tables.User).where(sa_tables.User.id == user_id)
+    query = select(sa_tables.User).where(sa_tables.User.id == user_id)
     user = await _execute_with_retry(query, which='first')
     return user
 
 
 async def get_user_by_guid(guid):
-    query =select(sa_tables.User).where(sa_tables.User.guid == guid)
+    query = select(sa_tables.User).where(sa_tables.User.guid == guid)
     user = await _execute_with_retry(query, which='first')
     return user
 
@@ -36,7 +37,8 @@ async def get_project_name_by_id(user_id, project_id):
 
 
 async def get_max_project_id_of_user(user_id):
-    subqry = select(sa.func.max(sa_tables.ProjectSetup.project_id)).filter(sa_tables.ProjectSetup.id == user_id).as_scalar()
+    subqry = select(sa.func.max(sa_tables.ProjectSetup.project_id)).filter(
+        sa_tables.ProjectSetup.id == user_id).as_scalar()
     query = select(sa_tables.ProjectSetup).filter(sa_tables.ProjectSetup.id == user_id,
                                                   sa_tables.ProjectSetup.project_id == subqry)
     res = await _execute_with_retry(query, which='first')
@@ -81,6 +83,7 @@ async def get_df(model, user_id, project_id, is_timeseries=True):
     query = select(model).where(model.id == user_id, model.project_id == project_id)
     df = await _get_df(query, is_timeseries=is_timeseries)
     return df
+
 
 async def _get_df(query, is_timeseries=True):
     if is_timeseries:

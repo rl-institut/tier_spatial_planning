@@ -1,4 +1,6 @@
-body { text-align: justify;}
+body {
+    text-align: justify;
+}
 
 .image-container {
     display: flex;
@@ -6,10 +8,10 @@ body { text-align: justify;}
 }
 
 .image-container img {
-    width: 150px;  /* Adjust width as needed */
-    height: auto;  /* Maintains aspect ratio */
+    width: 150px; /* Adjust width as needed */
+    height: auto; /* Maintains aspect ratio */
 }
 
 .row {
-  animation: loadingEffect 1s;
+    animation: loadingEffect 1s;
 }

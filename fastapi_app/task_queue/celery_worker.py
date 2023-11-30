@@ -26,5 +26,5 @@ worker.conf.task_queues = {
 worker.conf.task_routes = {
     'celery_worker.task_grid_opt': {'queue': 'default_queue'},
     'celery_worker.task_supply_opt': {'queue': 'milp_queue'},
-    'celery_worker.task_remove_anonymous_users': {'queue':'default_queue'},
+    'celery_worker.task_remove_anonymous_users': {'queue': 'default_queue'},
 }

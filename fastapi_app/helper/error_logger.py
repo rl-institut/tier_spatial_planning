@@ -7,7 +7,6 @@ from fastapi_app.helper.mail import send_mail
 
 directory = os.getcwd() + '/logs'
 
-
 if not os.path.exists(directory):
     os.makedirs(directory)
 
@@ -27,7 +26,7 @@ class CustomLogger(logging.Logger):
         msg += '; ' + user_name
         msg += '; ' + str(request.url) if hasattr(request, 'url') else ''
         try:
-            msg += '; ' + str(request.scope) if hasattr(request,'scope') else ''
+            msg += '; ' + str(request.scope) if hasattr(request, 'scope') else ''
         except Exception:
             msg += ''
         msg += '\n\n'
@@ -50,4 +49,3 @@ handler = logging.FileHandler(directory + '/error_logs.txt')
 formatter = logging.Formatter('%(asctime)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
-

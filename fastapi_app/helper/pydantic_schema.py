@@ -131,6 +131,7 @@ class SaveProjectSetup(BaseModel):
 class SaveGridDesign(BaseModel):
     grid_design: Dict[str, str]
 
+
 class SaveDemandEstimation(BaseModel):
     demand_estimation: Dict[str, str]
 
@@ -147,6 +148,7 @@ class OptimizeEnergySystemRequest(BaseModel):
     inverter: Dict[str, Union[Dict[str, bool], Dict[str, float]]]
     rectifier: Dict[str, Union[Dict[str, bool], Dict[str, float]]]
     shortage: Dict[str, Union[Dict[str, bool], Dict[str, float]]]
+
     # path_data: str
 
     def to_dict(self):

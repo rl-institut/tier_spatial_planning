@@ -8,11 +8,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from mysql.connector import DatabaseError, ProgrammingError, InterfaceError
 from fastapi_app.config import DB_USER_NAME, PW, DB_HOST, DB_PORT, DB_NAME
 
-
 BASE_URL = 'mysql+package://{}:{}@{}:{}/{}'.format(DB_USER_NAME, PW, DB_HOST, DB_PORT, DB_NAME)
 SYNC_DB_URL = BASE_URL.replace('package', 'mysqlconnector')
 ASYNC_DB_URL = BASE_URL.replace('package', 'aiomysql')
-
 
 for i in range(400):
     try:
@@ -45,4 +43,3 @@ def get_sync_session_maker(sync_engine, new_engine=False):
         sync_engine = create_engine(SYNC_DB_URL)
     sync_session = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
     return sync_session()
-

@@ -1,20 +1,21 @@
-import re
-import uuid
 import asyncio
 import base64
 import random
+import re
+import uuid
 from datetime import datetime, timedelta
 from typing import Optional
-from jose import jwt
 from typing import Tuple
-from captcha.image import ImageCaptcha
-from passlib.context import CryptContext
-from fastapi_app.db import sa_tables
-from fastapi_app import config
-from fastapi.security.utils import get_authorization_scheme_param
-from fastapi_app.db import async_inserts, async_queries
-from fastapi_app.helper.mail import send_mail
 
+from captcha.image import ImageCaptcha
+from fastapi.security.utils import get_authorization_scheme_param
+from jose import jwt
+from passlib.context import CryptContext
+
+from fastapi_app import config
+from fastapi_app.db import async_inserts, async_queries
+from fastapi_app.db import sa_tables
+from fastapi_app.helper.mail import send_mail
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -67,7 +68,7 @@ def create_guid():
 
 def send_activation_link(mail, guid):
     url = '{}/activation_mail?guid={}'.format(config.DOMAIN, guid)
-    msg = f"A PeopleSun account was created with this email.\nIf you want to activate the account follow the link:\n\n"\
+    msg = f"A PeopleSun account was created with this email.\nIf you want to activate the account follow the link:\n\n" \
           f"{url}\n\nOtherwise ignore this message."
     send_mail(mail, msg)
 
@@ -137,18 +138,18 @@ async def generate_captcha_image() -> Tuple[str, str]:
 async def create_default_user_account():
     if await async_queries.get_user_by_username('default_example') is None:
         user = sa_tables.User(email='default_example',
-                           hashed_password=Hasher.get_password_hash(config.EXAMPLE_USER_PW),
-                           guid='',
-                           is_confirmed=True,
-                           is_active=False,
-                           is_superuser=False)
+                              hashed_password=Hasher.get_password_hash(config.EXAMPLE_USER_PW),
+                              guid='',
+                              is_confirmed=True,
+                              is_active=False,
+                              is_superuser=False)
         await async_inserts.merge_model(user)
         user = sa_tables.User(email='admin',
-                           hashed_password=Hasher.get_password_hash(config.PW),
-                           guid='',
-                           is_confirmed=True,
-                           is_active=False,
-                           is_superuser=True)
+                              hashed_password=Hasher.get_password_hash(config.PW),
+                              guid='',
+                              is_confirmed=True,
+                              is_active=False,
+                              is_superuser=True)
         await async_inserts.merge_model(user)
 
 

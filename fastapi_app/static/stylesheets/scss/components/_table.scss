@@ -30,7 +30,7 @@ table.table {
     }
   }
 
-  &>:not(caption)>*>* {
+  & > :not(caption) > * > * {
     padding: .75rem;
   }
 }

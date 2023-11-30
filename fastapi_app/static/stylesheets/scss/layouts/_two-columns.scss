@@ -11,7 +11,7 @@
       flex: 1 1 0;
     }
 
-    &> div {
+    & > div {
       width: 100%;
 
       @media only screen and (min-width: $large-screen) {
@@ -23,7 +23,7 @@
   .left {
     justify-content: flex-end;
 
-    &> div {
+    & > div {
       padding-left: 1rem;
       padding-right: $space-between-project-elements;
     }
@@ -42,7 +42,7 @@
   .right {
     justify-content: flex-start;
 
-    &> div {
+    & > div {
       padding-right: 1rem;
     }
 

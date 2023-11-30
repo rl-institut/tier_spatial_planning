@@ -1,4 +1,5 @@
 import warnings
+
 warnings.filterwarnings('ignore', category=FutureWarning, module='pandas')
 import pandas as pd
 import io
@@ -8,7 +9,7 @@ def project_data_df_to_xlsx(input_df, energy_system_design, energy_flow_df, resu
     input_df = pd.concat([input_df.T, energy_system_design.T])
     input_df.columns = ["User specified input parameters"]
     input_df.index.name = ""
-    input_df = input_df.rename(index = {'shs_max_grid_cost': 'shs_max_specific_marginal_grid_cost'})
+    input_df = input_df.rename(index={'shs_max_grid_cost': 'shs_max_specific_marginal_grid_cost'})
     input_df['Unit'] = ''
     input_df = input_df.drop(['status', 'temporal_resolution'])
     input_df.index.str.replace('__parameters__', '_parameter: ')
@@ -49,7 +50,7 @@ def project_data_df_to_xlsx(input_df, energy_system_design, energy_flow_df, resu
     results_df.loc[results_df.index.str.contains('capacity'), 'Unit'] = 'USD/kW'
     results_df.loc[['Battery capacity'], 'Unit'] = 'USD/kWh'
     results_df.loc[['Max voltage drop', 'RES share', 'Surplus rate', 'Shortage total', 'Max shortage'], 'Unit'] = '%'
-    results_df.loc[['Average annual demand per consumer', 'Fuel consumption' , 'Total annual consumption', 'Surplus'],
+    results_df.loc[['Average annual demand per consumer', 'Fuel consumption', 'Total annual consumption', 'Surplus'],
     'Unit'] = 'kWh/a'
     results_df = results_df[~results_df.index.str.contains('Time')]
     results_df = results_df[~results_df.index.str.contains(' to ')]
@@ -121,17 +122,18 @@ def set_column_width(worksheet, df, col_format=None):
 
 
 def format_first_col(df):
-    df.iloc[:, 0] = df.iloc[:, 0].astype(str)\
-        .str.replace('shs', 'SHS')\
-        .str.replace('_', ' ')\
-        .str.capitalize()\
-        .str.replace('Mg', 'Mini-grid')\
+    df.iloc[:, 0] = df.iloc[:, 0].astype(str) \
+        .str.replace('shs', 'SHS') \
+        .str.replace('_', ' ') \
+        .str.capitalize() \
+        .str.replace('Mg', 'Mini-grid') \
         .str.replace('Lcoe', 'LCOE') \
         .str.replace('Pv', 'PV') \
         .str.replace(' dc ', ' DC ') \
         .str.replace('Co2', 'CO2') \
         .str.replace('Res', 'RES share')
     return df
+
 
 def format_column_names(df):
     df.columns = [col.replace('_', ' ').capitalize() for col in df.columns]

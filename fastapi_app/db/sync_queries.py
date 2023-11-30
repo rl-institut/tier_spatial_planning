@@ -15,7 +15,7 @@ from fastapi_app import config
 def get_project_setup_of_user(user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     query = select(sa_tables.ProjectSetup).where(and_(sa_tables.ProjectSetup.id == user_id,
-                                                 sa_tables.ProjectSetup.project_id == project_id))
+                                                      sa_tables.ProjectSetup.project_id == project_id))
     project_setup = _execute_with_retry(query, which='first')
     return project_setup
 
@@ -54,6 +54,7 @@ def _get_df(query, is_timeseries=True):
         df = df.set_index('dt')
     return df
 
+
 def get_model_instance(model, user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     query = select(model).where(model.id == user_id, model.project_id == project_id)
@@ -62,7 +63,7 @@ def get_model_instance(model, user_id, project_id):
 
 
 def get_user_by_id(user_id):
-    query =select(sa_tables.User).where(sa_tables.User.id == user_id)
+    query = select(sa_tables.User).where(sa_tables.User.id == user_id)
     user = _execute_with_retry(query, which='first')
     return user
 
@@ -86,7 +87,7 @@ def get_weather_data(lat, lon, start, end):
 def get_energy_system_design(user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     query = select(sa_tables.EnergySystemDesign).where(and_(sa_tables.EnergySystemDesign.id == user_id,
-                                                       sa_tables.EnergySystemDesign.project_id == project_id))
+                                                            sa_tables.EnergySystemDesign.project_id == project_id))
     model_inst = _execute_with_retry(query, which='first')
     df = model_inst.to_df()
     if df.empty:
@@ -142,6 +143,7 @@ def _execute_with_retry(query, which='first'):
             else:
                 print(f"Failed to execute query after {config.DB_RETRY_COUNT} retries")
                 raise e
+
 
 def get_closest_grid_point(lat, lon):
     lats = pd.Series([14.442, 14.192, 13.942, 13.692, 13.442, 13.192, 12.942, 12.692, 12.442,

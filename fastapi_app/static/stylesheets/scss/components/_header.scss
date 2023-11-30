@@ -3,7 +3,7 @@
   @include flex-row-justify-center;
   padding-bottom: 2rem;
 
-  &> div {
+  & > div {
     padding-top: 7rem;
     @include section-width;
     @include flex-row-space-between;
@@ -43,7 +43,7 @@
   height: $header-dashboard-height;
   margin-bottom: $header-dashboard-margin-bottom;
 
-  &> div {
+  & > div {
     width: 100%;
     @include flex-row-space-between;
     @include section-width;

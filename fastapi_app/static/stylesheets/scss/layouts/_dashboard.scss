@@ -4,7 +4,7 @@
   min-height: calc(100vh - #{$main-padding-top} - #{$header-dashboard-height} - #{$header-dashboard-margin-bottom} - #{$footer-height});
   padding: 3rem 0 4rem;
 
-  &> div {
+  & > div {
     @include section-width;
   }
 
@@ -24,7 +24,7 @@
 
     &__item {
       background-color: $primary-gray-color-2;
-      border-radius:3px;
+      border-radius: 3px;
       color: $primary-gray-color-4;
       padding: 0.25rem 0.5rem;
       margin-top: .75rem;
@@ -112,10 +112,11 @@
 
       &__ud1 {
         font-size: $font-size-small;
-                font-weight: 700;
+        font-weight: 700;
         white-space: nowrap;
 
       }
+
       &--best .item__value {
         font-weight: 700;
         color: $dashboard-profitable-value;

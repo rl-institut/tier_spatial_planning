@@ -5,13 +5,13 @@
   padding-right: $top-nav-padding-xsmall;
   margin: 0 auto;
 
-  @media screen and (min-width:$small-screen) {
+  @media screen and (min-width: $small-screen) {
     width: calc(100% - (#{$top-nav-padding-small} * 2));
     padding-left: $top-nav-padding-small;
     padding-right: $top-nav-padding-small;
   }
 
-  @media screen and (min-width:$medium-screen) {
+  @media screen and (min-width: $medium-screen) {
     width: calc(100% - (#{$top-nav-padding-large} * 2));
     padding-left: $padding-sides-normal;
     padding-right: $padding-sides-normal;
@@ -95,15 +95,15 @@
 // User select
 @mixin user-select-none {
   -webkit-user-select: none;
-     -moz-user-select: none;
-      -ms-user-select: none;
-          user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 // UL
 @mixin ul-horizontal {
   list-style: none;
-	margin-bottom: 0;
+  margin-bottom: 0;
   padding-left: 0;
 }
 
