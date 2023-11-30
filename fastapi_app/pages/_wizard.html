@@ -19,11 +19,11 @@
         <div class="wizard__steps">
             <ul id="wiz">
                 <li {% if title == 'Project Setup' %}class="active"{% endif %}
-                    onclick="{{ func_name }}'project_setup.css?project_id={{ project_id }}');">
+                    onclick="{{ func_name }}'project_setup?project_id={{ project_id }}');">
                     <a href="javascript:void(0);">Project Setup</a>
                 </li>
                 <li {% if title == 'Consumer Selection' %}class="active"{% endif %}
-                    onclick="{{ func_name }}'consumer_selection.css?project_id={{ project_id }}');">
+                    onclick="{{ func_name }}'consumer_selection?project_id={{ project_id }}');">
                     <a href="javascript:void(0);">Consumer Selection</a>
                 </li>
                 <li {% if title == 'Demand Estimation' %}class="active"{% endif %}
