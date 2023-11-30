@@ -1,6 +1,6 @@
 import asyncio
 
-from fastapi_app.python.db import async_inserts
+from fastapi_app.python.db import async_inserts, sync_inserts, sync_queries
 from fastapi_app.python.opt_models.grid_optimizer import optimize_grid
 from fastapi_app.python.opt_models.supply_optimizer import optimize_energy_system
 from fastapi_app.python.task_queue.celery_worker import worker
@@ -52,3 +52,11 @@ def task_is_finished(task_id):
         return True
     else:
         return False
+
+
+@worker.task(name='celery_worker.task_startup', force=True, track_started=True)
+def task_startup():
+    if not sync_queries.check_if_weather_data_exists():
+        sync_inserts.update_weather_db()
+    sync_inserts.create_default_user_account()
+

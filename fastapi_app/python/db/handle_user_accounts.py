@@ -134,23 +134,5 @@ async def generate_captcha_image() -> Tuple[str, str]:
     return captcha_text, base64_image
 
 
-async def create_default_user_account():
-    if await async_queries.get_user_by_username('default_example') is None:
-        user = sa_tables.User(email='default_example',
-                              hashed_password=Hasher.get_password_hash(config.EXAMPLE_USER_PW),
-                              guid='',
-                              is_confirmed=True,
-                              is_active=False,
-                              is_superuser=False)
-        await async_inserts.merge_model(user)
-        user = sa_tables.User(email='admin',
-                              hashed_password=Hasher.get_password_hash(config.PW),
-                              guid='',
-                              is_confirmed=True,
-                              is_active=False,
-                              is_superuser=True)
-        await async_inserts.merge_model(user)
-
-
 if __name__ == '__main__':
     pass

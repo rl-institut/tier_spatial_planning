@@ -69,6 +69,11 @@ def get_user_by_id(user_id):
     user = _execute_with_retry(query, which='first')
     return user
 
+def get_user_by_username(username):
+    query = select(sa_tables.User).where(sa_tables.User.email == username)
+    user = _execute_with_retry(query, which='first')
+    return user
+
 
 def get_weather_data(lat, lon, start, end):
     index = pd.date_range(start, end, freq='1H')

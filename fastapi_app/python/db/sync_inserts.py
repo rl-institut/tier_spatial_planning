@@ -4,14 +4,15 @@ import time
 import warnings
 
 import pandas as pd
-from sqlalchemy import delete, text
+from sqlalchemy import delete, text, select
 from sqlalchemy.exc import OperationalError
 
-from fastapi_app.config import DB_RETRY_COUNT, RETRY_DELAY
-from fastapi_app.python.db import sa_tables
+from fastapi_app.config import DB_RETRY_COUNT, RETRY_DELAY, PW, EXAMPLE_USER_PW
+from fastapi_app.python.db import sa_tables, sync_queries
 from fastapi_app.python.db.async_inserts import df_2_sql
 from fastapi_app.python.db.connections import get_sync_session_maker, sync_engine
 from fastapi_app.python.inputs.solar_potential import download_weather_data, prepare_weather_data
+from fastapi_app.python.db.handle_user_accounts import Hasher
 
 
 def merge_model(model):
@@ -140,3 +141,22 @@ def update_weather_db(country='Nigeria', year=None):
         data_xr = download_weather_data(start_date, end_date, country=country, target_file=file_name).copy()
         df = prepare_weather_data(data_xr)
         insert_df(sa_tables.WeatherData, df)
+
+
+def create_default_user_account():
+    if sync_queries.get_user_by_username('default_example') is None:
+        user = sa_tables.User(email='default_example',
+                                  hashed_password=Hasher.get_password_hash(EXAMPLE_USER_PW),
+                                  guid='',
+                                  is_confirmed=True,
+                                  is_active=False,
+                                  is_superuser=False)
+        merge_model(user)
+    if sync_queries.get_user_by_username('admin') is None:
+        user = sa_tables.User(email='admin',
+                                  hashed_password=Hasher.get_password_hash(PW),
+                                  guid='',
+                                  is_confirmed=True,
+                                  is_active=False,
+                                  is_superuser=True)
+        merge_model(user)

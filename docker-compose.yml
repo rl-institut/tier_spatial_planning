@@ -29,7 +29,7 @@ services:
     container_name: mysql
     build:
       context: .
-      dockerfile: docker/Dockerfile_mysql
+      dockerfile: Dockerfile_mysql
       args:
         - UID_FOR_DB=${UID_FOR_DB}
         - GID_FOR_DB=${GID_FOR_DB}

@@ -27,7 +27,7 @@ from fastapi_app.python.db import async_inserts, sync_queries, async_queries, sy
 from fastapi_app.python.helper import identify_consumers_on_map
 from fastapi_app.python.helper.error_logger import logger as error_logger
 from fastapi_app.python.db.handle_user_accounts import Hasher, create_guid, is_valid_credentials, \
-    send_activation_link, activate_mail, authenticate_user, create_access_token, send_mail, create_default_user_account
+    send_activation_link, activate_mail, authenticate_user, create_access_token, send_mail
 from fastapi_app.python.helper.project_data_to_excel import project_data_df_to_xlsx
 from fastapi_app.python.opt_models.grid_optimizer import optimize_grid
 from fastapi_app.python.opt_models.supply_optimizer import optimize_energy_system
@@ -46,9 +46,10 @@ captcha_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 @app.on_event("startup")
 async def startup_event():
+    # if it is not
     if not config.DOCKERIZED and not sync_queries.check_if_weather_data_exists():
         sync_inserts.update_weather_db()
-    await create_default_user_account()
+    sync_inserts.create_default_user_account()
 
 
 @app.get("/workshop_tasks")
