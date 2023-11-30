@@ -994,7 +994,7 @@ async def add_buildings_inside_boundary(js_data: fastapi_app.helper.pydantic_sch
         nodes['shs_options'].append(0)
         nodes['is_connected'].append(True)
     if user.email.split('__')[0] == 'anonymous':
-        max_consumer = int(os.environ.get("MAX_CONSUMER_ANONNYMOUS", 150))
+        max_consumer = int(os.environ.get("MAX_CONSUMER_ANONYMOUS", 150))
     else:
         max_consumer = int(os.environ.get("MAX_CONSUMER", 1000))
     if len(nodes['latitude']) > max_consumer:
@@ -1004,8 +1004,8 @@ async def add_buildings_inside_boundary(js_data: fastapi_app.helper.pydantic_sch
                             .format(len(data['elements']), max_consumer)})
     df = pd.DataFrame.from_dict(nodes)
     df['is_connected'] = df['is_connected']
-    df_exisiting = pd.DataFrame.from_records(js_data.map_elements)
-    df = pd.concat([df_exisiting, df], ignore_index=True)
+    df_existing = pd.DataFrame.from_records(js_data.map_elements)
+    df = pd.concat([df_existing, df], ignore_index=True)
     df = df.drop_duplicates(subset=['longitude', 'latitude'], keep='first')
     df['shs_options'] = df['shs_options'].fillna(0)
     df['custom_specification'] = df['custom_specification'].fillna('')

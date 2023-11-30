@@ -1036,27 +1036,6 @@ class GridOptimizer(BaseOptimizer):
                 links = links.rename(index={row_idxs: new_row_idxs})
             return links
 
-        def check_all_child_poles(parent_pole_list, links, examined_pole_list):
-            new_parent_pole_list = []
-            for parent_pole in parent_pole_list:
-                child_pole_list \
-                    = distribution_links[(distribution_links['poles'].str.contains(parent_pole + ',')) |
-                                         ((distribution_links['poles'] + '#').str.contains(parent_pole + '#'))] \
-                    ['poles'].str.split(',')
-                for child_pole in child_pole_list:
-                    if child_pole[0] not in examined_pole_list and child_pole[1] not in examined_pole_list:
-                        pos = 0 if consumer_to_power_house else 1
-                        if child_pole[pos] == parent_pole:
-                            tmp_parent_pole = copy.deepcopy(child_pole[0])
-                            child_pole = child_pole[1]
-                        else:
-                            tmp_parent_pole = copy.deepcopy(child_pole[1])
-                            child_pole = child_pole[0]
-                        self.nodes.loc[child_pole, 'parent'] = tmp_parent_pole
-                        new_parent_pole_list.append(child_pole)
-                        links = change_direction_of_links(child_pole, parent_pole, links)
-            examined_pole_list += parent_pole_list
-            return new_parent_pole_list, links, examined_pole_list
 
         def check_all_parent_poles(child_pole_list, links, examined_pole_list):
             new_child_pole_list = []
@@ -1225,7 +1204,7 @@ class GridOptimizer(BaseOptimizer):
                     added_poles = added_poles_to_from
                     to_from = True
                 else:
-                    raise UnboundLocalError('\'added_poles\' unkown')
+                    raise UnboundLocalError('\'added_poles\' unknown')
 
                 # In this part, the long links are broken into smaller links.
                 # `counter` represents the number of the added poles.

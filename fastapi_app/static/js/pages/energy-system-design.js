@@ -139,7 +139,7 @@ function change_box_visibility(id) {
                 document.getElementById("lbl" + toTitleCase(id) + property).classList.remove('disabled');
             }
 
-            // All units and in case of PV, the button for impoting solar potential.
+            // All units and in case of PV, the button for importing solar potential.
             if (document.getElementById(id + property + "Unit")) {
                 document.getElementById(id + property + "Unit").classList.remove('disabled');
             } else if (document.getElementById("btn" + toTitleCase(id) + property)) {
@@ -161,7 +161,7 @@ function change_box_visibility(id) {
             // First, get the property listed in the above dictionary.
             property = component_specifications[id][index]
 
-            // All fields as well as the `diesgn` and `dispatch` buttons.
+            // All fields as well as the `design` and `dispatch` buttons.
             document.getElementById(id + property).disabled = true;
 
             // All labels.
@@ -169,7 +169,7 @@ function change_box_visibility(id) {
                 document.getElementById("lbl" + toTitleCase(id) + property).classList.add('disabled');
             }
 
-            // All units and in case of PV, the button for impoting solar potential.
+            // All units and in case of PV, the button for importing solar potential.
             if (document.getElementById(id + property + "Unit")) {
                 document.getElementById(id + property + "Unit").classList.add('disabled');
             } else if (document.getElementById("btn" + toTitleCase(id) + property)) {

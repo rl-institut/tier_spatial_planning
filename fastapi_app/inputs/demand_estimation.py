@@ -89,7 +89,7 @@ def get_user_household_demand_option_selection(demand_par_dict):
 
 def get_all_enterprise_customer_nodes(nodes):
     # Dummy function
-    # Returns a list or dataframe of all of the enterprise node "strings" of the community
+    # Returns a list or dataframe of all the enterprise node "strings" of the community
     nodes = nodes[((nodes['consumer_type'] == 'enterprise') |
                    (nodes['consumer_type'] == 'public_service')) &
                   (nodes['is_connected'] == True)]

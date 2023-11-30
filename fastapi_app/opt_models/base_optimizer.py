@@ -51,7 +51,7 @@ class BaseOptimizer:
         for count_of_replacements in range(1, number_of_investments):
             if count_of_replacements * component_lifetime != self.project_lifetime:
                 capex += first_time_investment / ((1 + self.wacc) ** (count_of_replacements * component_lifetime))
-        # Substraction of component value at end of life with last replacement (= number_of_investments - 1)
+        # Subtraction of component value at end of life with last replacement (= number_of_investments - 1)
         # This part calculates the salvage costs
         if number_of_investments * component_lifetime > self.project_lifetime:
             last_investment = first_time_investment / (

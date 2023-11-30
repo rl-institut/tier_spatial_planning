@@ -38,7 +38,7 @@ class CustomLogger(logging.Logger):
             pass
         msg += '\n\n'
         try:
-            send_mail(subject='Error - {} - {}'.format(user_name, host), msg=msg, to_adress=config.MAIL_ADDRESS_LOGGER)
+            send_mail(subject='Error - {} - {}'.format(user_name, host), msg=msg, to_address=config.MAIL_ADDRESS_LOGGER)
         except Exception:
             pass
         self.error(msg)

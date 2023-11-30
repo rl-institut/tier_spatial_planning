@@ -16,14 +16,14 @@ def get_consumer_within_boundaries(df):
     url = (f'https://www.overpass-api.de/api/interpreter?data=[out:json][timeout:2500]'
            f'[bbox:{min_latitude},{min_longitude},{max_latitude},{max_longitude}];'
            f'way["building"="yes"];(._;>;);out;')
-    url_formated = url.replace(" ", "+")
-    with urllib.request.urlopen(url_formated) as url:
+    url_formatted = url.replace(" ", "+")
+    with urllib.request.urlopen(url_formatted) as url:
         res = url.read().decode()
         if len(res) > 0:
             data = json.loads(res)
         else:
             return None, None
-    # first converting the json file, which is delievered by overpass to geojson,
+    # first converting the json file, which is delivered by overpass to geojson,
     # then obtaining coordinates and surface areas of all buildings inside the
     # 'big' rectangle.
     geojson_data = convert_overpass_json_to_geojson(data)
@@ -32,9 +32,9 @@ def get_consumer_within_boundaries(df):
     # excluding the buildings which are outside the drawn boundary
     mask_building_within_boundaries = {key: is_point_in_boundaries(value, df.values.tolist())
                                        for key, value in building_coord.items()}
-    building_coordidates_within_boundaries = \
+    building_coordinates_within_boundaries = \
         {key: value for key, value in building_coord.items() if mask_building_within_boundaries[key]}
-    return data, building_coordidates_within_boundaries
+    return data, building_coordinates_within_boundaries
 
 
 def convert_overpass_json_to_geojson(json_dict):
@@ -55,7 +55,7 @@ def convert_overpass_json_to_geojson(json_dict):
 
     geojson = {
         "type": "FeatureCollection",
-        "generator": "overpass-ide, formated by PeopleSun WP4 Tool",
+        "generator": "overpass-ide, formatted by PeopleSun WP4 Tool",
         "timestamp": timestamp,
         "features": [
             {
@@ -107,8 +107,8 @@ def obtain_areas_and_mean_coordinates_from_geojson(geojson: dict):
 
 def obtain_mean_coordinates_from_geojson(df):
     """
-    This function creates a dictionnary with the 'id' of each building as a key
-    and the mean loaction of the building as value in the form [lat, long].
+    This function creates a dictionary with the 'id' of each building as a key
+    and the mean location of the building as value in the form [lat, long].
 
     Parameters
     ----------
@@ -149,7 +149,7 @@ def obtain_mean_coordinates_from_geojson(df):
 def is_point_in_boundaries(point_coordinates: tuple,
                            boundaries: tuple):
     """ 
-    Function that checks whether or not 2D point lies within boundaries
+    Function that checks whether 2D point lies within boundaries
 
     Parameter
     ---------
