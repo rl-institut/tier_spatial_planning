@@ -2,12 +2,14 @@
 ---
 #  The Tool
 The open-source tool originated from the PeopleSuN project and serves the planning of off-grid systems in Nigeria. The tool aims to perform a spatial optimization of the distribution grid as well as the design of the energy converters and energy storage.
+![Docker Network Diagram](./fastapi_app/static/images/results_example.jpg)
 ## Features
 The features of the tool are listed below:
 - **Automatic Identification of Buildings from OpenStreetMap:** Utilizes OpenStreetMap data to automatically identify building locations.
 - **Spatial Optimization of the Distribution Grid:** Enhances the efficiency of the distribution grid through spatial optimization techniques.
 - **Design Optimization of Generation Systems:** Optimizes the design of PV systems, battery systems, inverters, and diesel-engines.
 - **Automatic Identification for Individual Solar Home Systems:** Identifies buildings that are more suitably served by individual solar home systems.
+
 ---
 # Server Configuration and Docker-Container
 
@@ -54,6 +56,9 @@ This tool is designed to operate within a Docker environment, with detailed inst
    Adjust the parameters in the app.env file to fit your application's specific needs. This includes settings related to various functionalities of the application. It's particularly important to provide accurate values for the email-sending variables. If these mail parameters are not correctly configured, the application will be unable to send activation emails. This lack of email functionality becomes a critical issue during user registration, as new users will not receive the necessary activation links, requiring you to manually activate each user account in the database.
 
 These steps ensure that you are prepared to either proceed with Docker integration or work in a non-Docker environment as per your preference. Remember to refer to the specific instructions for setting up and maintaining the MySQL database when not using Docker.
+
+<ins>Note</ins>: Before publishing the app, ensure to include legal information and privacy statements (refer to the section at the end of this document).
+
 ## Running the App in Docker Environment (Production Environment)
 1. **Run Docker Compose on Linux:**
    If you're using a Linux system, set up your Docker environment by executing the following command in the terminal. This command sets your user ID and group ID for the database and starts the Docker containers:
@@ -164,3 +169,25 @@ map $http_upgrade $connection_upgrade {
 
 ```
 ---
+# Providing legal information and privacy statements
+Before the tool is made publicly available, it's crucial that an imprint (legal notice) and privacy statements are already integrated. In the footer of every page of the web application, links to the privacy policy page are included, directing users to the /privacy subpage. This page can be found at `/fastapi_app/static/pages/legal_notes.html`. When a user accesses this page, the files `_imprint_de.html`, `_imprint_en.html`, `_privacy_de.html`, and `_privacy_en.html` (available in both German and English) are dynamically included in the response template through Jinja2 commands. The necessary content for these legal notices and privacy statements should be prepared and inserted into these files in advance.
+```
+    <section class="dashboard">
+        <div style="text-align: left">
+            {% if page == 'imprint' %}
+                {% if language == 'de_DE' %}
+                    {% include '_imprint_de.html' %}
+                {% else %}
+                    {% include '_imprint_en.html' %}
+                {% endif %}
+            {% else %}
+                {% if language == 'de_DE' %}
+                    {% include '_privacy_de.html' %}
+                {% else %}
+                    {% include '_privacy_en.html' %}
+                {% endif %}
+            {% endif %}
+        </div>
+        >
+    </section>
+```
