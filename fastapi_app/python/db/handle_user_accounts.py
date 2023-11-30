@@ -13,9 +13,8 @@ from jose import jwt
 from passlib.context import CryptContext
 
 from fastapi_app import config
-from fastapi_app.db import async_inserts, async_queries
-from fastapi_app.db import sa_tables
-from fastapi_app.helper.mail import send_mail
+from fastapi_app.python.db import async_inserts, async_queries, sa_tables
+from fastapi_app.python.helper.mail import send_mail
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

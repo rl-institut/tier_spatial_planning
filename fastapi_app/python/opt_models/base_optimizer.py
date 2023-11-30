@@ -2,8 +2,8 @@ import os
 
 import pandas as pd
 
-from fastapi_app.db import sync_queries, sa_tables
-from fastapi_app.inputs import demand_estimation
+from fastapi_app.python.db import sync_queries, sa_tables
+from fastapi_app.python.inputs import demand_estimation
 
 
 class BaseOptimizer:

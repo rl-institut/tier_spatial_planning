@@ -6,12 +6,11 @@ import pandas as pd
 import pyomo.environ as po
 
 from fastapi_app import config
-from fastapi_app.db import sa_tables
-from fastapi_app.db import sync_inserts, sync_queries
-from fastapi_app.helper.error_logger import logger as error_logger
-from fastapi_app.helper.mail import send_mail
-from fastapi_app.inputs import solar_potential
-from fastapi_app.opt_models.base_optimizer import BaseOptimizer
+from fastapi_app.python.db import sync_queries, sync_inserts, sa_tables
+from fastapi_app.python.helper.error_logger import logger as error_logger
+from fastapi_app.python.helper.mail import send_mail
+from fastapi_app.python.inputs import solar_potential
+from fastapi_app.python.opt_models.base_optimizer import BaseOptimizer
 
 
 def optimize_energy_system(user_id, project_id):

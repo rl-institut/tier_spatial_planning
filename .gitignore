@@ -11,7 +11,7 @@ venv/
 /fastapi_app/data/*
 !/fastapi_app/data/demand/
 scratch.py
-fastapi_app/db/dev_config.py
+fastapi_app/python/db/dev_config.py
 /.db_data/
 fastapi_app/data/weather/ERA5_weather_data1.nc
 fastapi_app/data/weather/ERA5_weather_data2.nc

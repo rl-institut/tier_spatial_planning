@@ -10,8 +10,8 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.sql import text
 
 from fastapi_app import config
-from fastapi_app.db import sa_tables
-from fastapi_app.db.connections import get_sync_session_maker, sync_engine
+from fastapi_app.python.db import sa_tables
+from fastapi_app.python.db.connections import get_sync_session_maker, sync_engine
 
 
 def get_project_setup_of_user(user_id, project_id):
