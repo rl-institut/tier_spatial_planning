@@ -558,7 +558,7 @@ async def deactivate_video_tutorial(request: Request):
 async def load_previous_data(page_name, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
     project_id = request.query_params.get('project_id')
-    if page_name == "project_setup":
+    if page_name == "project_setup.css":
         if project_id == 'new':
             project_id = await async_queries.next_project_id_of_user(user.id)
             return sa_tables.ProjectSetup(project_id=project_id)

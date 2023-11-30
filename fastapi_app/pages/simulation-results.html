@@ -683,7 +683,8 @@
   {% include '_scripts.html' %}
     <script src="{{ url_for('static', path='js/integrate_map.js') }}"></script>
     <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-    <script src="{{ url_for('static', path='js/plotly.js') }}"></script>
+    <script src="{{ url_for('static', path='js/third_party/plotly.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.0/jspdf.umd.min.js"></script>
-    <script src="{{ url_for('static', path='js/simulation_results.js') }}"></script>
+    <script src="{{ url_for('static', path='js/pages/simulation_results.js') }}"></script>
+    <script src="{{ url_for('static', path='js/plots.js') }}"></script>
 </html>

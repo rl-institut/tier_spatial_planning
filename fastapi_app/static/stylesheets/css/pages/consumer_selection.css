@@ -1,0 +1,42 @@
+.leaflet-control-trashbin a {
+    font-size: 20px;
+    line-height: 20px;
+    width: 26px;
+    height: 26px;
+    display: block;
+    text-align: center;
+    text-decoration: none;
+}
+
+#search-container {
+    width: 100%;
+}
+
+#search-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 5px;
+}
+
+
+.list_container {
+    display: flex;
+}
+
+
+.list {
+    border: 1px solid black;
+    min-height: 100px;
+}
+
+
+#load_list > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+
+.input-item select, .input-group input, .input-group-text, .btn btn--medium {
+    height: 32px; /* Adjust this value to your preference */
+}

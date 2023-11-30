@@ -1,122 +1,46 @@
 <!DOCTYPE html>
 <html lang="en-us">
-  <head>
+<head>
     {% set title= 'Calculating' %}
     {% include '_head.html' %}
-      <style>
-
-{% include '_toggle.html' %}
-
-.loader,
-.loader:before,
-.loader:after {
-  border-radius: 50%;
-}
-.loader {
-  color: #1F567D;
-  font-size: 11px;
-  text-indent: -99999em;
-  margin: 55px auto;
-  position: relative;
-  width: 10em;
-  height: 10em;
-  box-shadow: inset 0 0 0 1em;
-  -webkit-transform: translateZ(0);
-  -ms-transform: translateZ(0);
-  transform: translateZ(0);
-}
-.loader:before,
-.loader:after {
-  position: absolute;
-  content: '';
-}
-.loader:before {
-  width: 5.2em;
-  height: 10.2em;
-  background: #FAFAFA;
-  border-radius: 10.2em 0 0 10.2em;
-  top: -0.1em;
-  left: -0.1em;
-  -webkit-transform-origin: 5.1em 5.1em;
-  transform-origin: 5.1em 5.1em;
-  -webkit-animation: load2 2s infinite ease 1.5s;
-  animation: load2 2s infinite ease 1.5s;
-}
-.loader:after {
-  width: 5.2em;
-  height: 10.2em;
-  background: #FAFAFA;
-  border-radius: 0 10.2em 10.2em 0;
-  top: -0.1em;
-  left: 4.9em;
-  -webkit-transform-origin: 0.1em 5.1em;
-  transform-origin: 0.1em 5.1em;
-  -webkit-animation: load2 2s infinite ease;
-  animation: load2 2s infinite ease;
-}
-@-webkit-keyframes load2 {
-  0% {
-    -webkit-transform: rotate(0deg);
-    transform: rotate(0deg);
-  }
-  100% {
-    -webkit-transform: rotate(360deg);
-    transform: rotate(360deg);
-  }
-}
-@keyframes load2 {
-  0% {
-    -webkit-transform: rotate(0deg);
-    transform: rotate(0deg);
-  }
-  100% {
-    -webkit-transform: rotate(360deg);
-    transform: rotate(360deg);
-  }
-}
-
-     </style>
-  </head>
-  <body onload="redirect_if_cookie_is_missing(true, true);
-                show_email_and_project_in_navbar({{ project_id }});
-                start_calculation('{{ project_id }}');">
-  {% include '_navbar.html' %}
-    <main>
-      <section class="dashboard" style="width: 500px; display: block;  margin-left: auto;  margin-right: auto;">
-        <div >
-          <div class="row">
-            <div class="col">
-              <div class="chart" style="border: 15px solid #FAFAFA; height: auto;">
-                <div class="chart__header">
-                  <a class="title">Model Calculation</a>
-                </div>
-                   <hr>
-                  <div class="loader" align="center"></div>
+</head>
+<body onload="redirect_if_cookie_is_missing(true, true);
+        show_email_and_project_in_navbar({{ project_id }});
+        start_calculation('{{ project_id }}');">
+{% include '_navbar.html' %}
+<main>
+    <section class="dashboard" style="width: 500px; display: block;  margin-left: auto;  margin-right: auto;">
+        <div>
+            <div class="row">
+                <div class="col">
+                    <div class="chart" style="border: 15px solid #FAFAFA; height: auto;">
+                        <div class="chart__header">
+                            <a class="title">Model Calculation</a>
+                        </div>
+                        <hr>
+                        <div class="loader" align="center"></div>
                         <a>Status: </a>
                         <a id="statusMsg">task status is retrieved...</a>
-                   <hr>
-                  {% if email_opt == true %}
-                      <label class="switch">
-                      <input type="checkbox" id="toggleswitch">
-                      <span class="slider round"></span>
-                      </label>
-                      <a>&nbsp;&nbsp;Send email when calculation is finished.</a>
-                      <p></p>
-                  {% endif %}
-                  <a>{{ msg }}</a>
-                  <p></p>
-                   <a href='energy_system_design/?project_id={{ project_id }}'
-                      class="btn btn--long text-right"
-                      onclick="revoke_users_task();"
-                   >Abort Calculation</a>
+                        <hr>
+                        {% if email_opt == true %}
+                            <label class="switch">
+                                <input type="checkbox" id="toggleswitch">
+                                <span class="slider round"></span>
+                            </label>
+                            <a>&nbsp;&nbsp;Send email when calculation is finished.</a>
+                            <p></p>
+                        {% endif %}
+                        <a>{{ msg }}</a>
+                        <p></p>
+                        <a href='energy_system_design/?project_id={{ project_id }}'
+                           class="btn btn--long text-right"
+                           onclick="revoke_users_task();"
+                        >Abort Calculation</a>
                     </div>
-                  </div>
                 </div>
-              </div>
             </div>
-          </div>
         </div>
-      </section>
+    </section>
     <div id="msgBox" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999; text-align: left">
         <form class="modal-content" style="max-width: 24rem">
             <div class="container">
@@ -126,16 +50,16 @@
             </div>
         </form>
     </div>
-    </main>
-  {% include '_footer.html' %}
-  </body>
-  {% include '_scripts.html' %}
-  {% if email_opt == true %}
+</main>
+{% include '_footer.html' %}
+</body>
+{% include '_scripts.html' %}
+{% if email_opt == true %}
     <script>
         let input = document.getElementById('toggleswitch');
         let is_active = false;
-        input.addEventListener('change',function(){
-            if(this.checked) {
+        input.addEventListener('change', function () {
+            if (this.checked) {
                 is_active = true;
             } else {
                 is_active = false;

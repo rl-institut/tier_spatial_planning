@@ -1,1271 +1,1284 @@
 <!DOCTYPE html>
 <html lang="en-us">
-  <head>
+<head>
     {% set title='Energy System Design' %}
     {% include '_head.html' %}
-      <style>
-
-      </style>
-  </head>
-  <body onload="redirect_if_cookie_is_missing(true, true);
-                refreshBlocksOnDiagramOnLoad();
-                load_previous_data('energy_system_design?project_id={{ project_id }}');
-                check_box_visibility('shortage');
-                show_email_and_project_in_navbar({{ project_id }});">
-  {% include '_navbar.html' %}
-  {% include '_wizard.html' %}
-    <main>
-      <section class="dashboard">
+</head>
+<body onload="redirect_if_cookie_is_missing(true, true);
+        load_previous_data('energy_system_design?project_id={{ project_id }}');
+        show_email_and_project_in_navbar({{ project_id }});">
+{% include '_navbar.html' %}
+{% include '_wizard.html' %}
+<main>
+    <section class="dashboard">
         <div>
-          <div class="row">
-            <div class="col-md-4">
-              <div class="box" id="selectDieselGensetBox"  style="height: 34.5rem">
-                <div class="box__header">
-                  <form class="was-validated">
-                    <div class="form-check">
-                      <input
-                        type="checkbox"
-                        class="form-check-input"
-                        id="selectDieselGenset"
-                        required
-                        checked
-                        onclick="
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="box" id="selectDieselGensetBox" style="height: 34.5rem">
+                        <div class="box__header">
+                            <form class="was-validated">
+                                <div class="form-check">
+                                    <input
+                                            type="checkbox"
+                                            class="form-check-input"
+                                            id="selectDieselGenset"
+                                            required
+                                            checked
+                                            onclick="
                         check_box_visibility('dieselGenset');
                         refreshBlocksOnDiagram('dieselGenset');
                         "
-                      />
-                      <label class="form-check-label" for="selectDieselGenset"
-                        >Diesel Genset</label
-                      >
-                    </div>
-                  </form>
-                </div>
-                <div class="row align-items-end">
-                  <!-- First Row for Radio Buttons -->
-                  <div class="col-12">
-                    <div class="btn-group d-flex">
-                      <input
-                        type="radio"
-                        class="btn-check"
-                        name="dieselGensetOptimizationStrategy"
-                        id="dieselGensetDesign"
-                        autocomplete="off"
-                        onclick="check_optimization_strategy('dieselGenset');"
-                        checked
-                      />
-                      <label class="btn btn-outline-secondary" for="dieselGensetDesign">Optimized Capacity</label>
-                      <input
-                        type="radio"
-                        class="btn-check"
-                        name="dieselGensetOptimizationStrategy"
-                        id="dieselGensetDispatch"
-                        autocomplete="off"
-                        onclick="check_optimization_strategy('dieselGenset');"
-                      />
-                      <label class="btn btn-outline-secondary" for="dieselGensetDispatch">Fixed Capacity</label>
-                    </div>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col-12">
-                    <div class="input-group">
-                      <span id="lblDieselGensetNominalCapacity" class="input-group-text">Capacity</span>
-                      <input
-                        type="number"
-                        class="form-control"
-                        id="dieselGensetNominalCapacity"
-                        value="8"
-                        required
-                        disabled
-                        onChange="styleInformation('dieselGenset');"
-                      />
-                      <span id="dieselGensetNominalCapacityUnit" class="input-group-text">kW</span>
-                    </div>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                    />
+                                    <label class="form-check-label" for="selectDieselGenset"
+                                    >Diesel Genset</label
+                                    >
+                                </div>
+                            </form>
+                        </div>
+                        <div class="row align-items-end">
+                            <!-- First Row for Radio Buttons -->
+                            <div class="col-12">
+                                <div class="btn-group d-flex">
+                                    <input
+                                            type="radio"
+                                            class="btn-check"
+                                            name="dieselGensetOptimizationStrategy"
+                                            id="dieselGensetDesign"
+                                            autocomplete="off"
+                                            onclick="check_optimization_strategy('dieselGenset');"
+                                            checked
+                                    />
+                                    <label class="btn btn-outline-secondary" for="dieselGensetDesign">Optimized
+                                        Capacity</label>
+                                    <input
+                                            type="radio"
+                                            class="btn-check"
+                                            name="dieselGensetOptimizationStrategy"
+                                            id="dieselGensetDispatch"
+                                            autocomplete="off"
+                                            onclick="check_optimization_strategy('dieselGenset');"
+                                    />
+                                    <label class="btn btn-outline-secondary" for="dieselGensetDispatch">Fixed
+                                        Capacity</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="input-group">
+                                    <span id="lblDieselGensetNominalCapacity" class="input-group-text">Capacity</span>
+                                    <input
+                                            type="number"
+                                            class="form-control"
+                                            id="dieselGensetNominalCapacity"
+                                            value="8"
+                                            required
+                                            disabled
+                                            onChange="styleInformation('dieselGenset');"
+                                    />
+                                    <span id="dieselGensetNominalCapacityUnit" class="input-group-text">kW</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblDieselGensetLifetime" class="input-group-text"
-                      >Lifetime
+                    >Lifetime
                                       <span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Lifespan of the component, after expiration a replacement investment must be made."
-                  ></span></span
+                                              class="icon icon-question"
+                                              data-bs-toggle="tooltip"
+                                              title="Lifespan of the component, after expiration a replacement investment must be made."
+                                      ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="dieselGensetLifetime"
-                      value="8"
-                      required
-                    />
-                    <span id="dieselGensetLifetimeUnit" class="input-group-text"
-                      >Year</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="dieselGensetLifetime"
+                                        value="8"
+                                        required
+                                />
+                                <span id="dieselGensetLifetimeUnit" class="input-group-text"
+                                >Year</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblDieselGensetCapex" class="input-group-text">
                       CapEx
-                      <span class="icon icon-question" data-bs-toggle="tooltip" title="Capital Expenditure (CapEx) is the money that has to be spent to purchase the component."></span>
+                      <span class="icon icon-question" data-bs-toggle="tooltip"
+                            title="Capital Expenditure (CapEx) is the money that has to be spent to purchase the component."></span>
                     </span>
-                    <input type="number" class="form-control" id="dieselGensetCapex" value="350" required />
-                    <span id="dieselGensetCapexUnit" class="input-group-text">USD/kW</span>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input type="number" class="form-control" id="dieselGensetCapex" value="350" required/>
+                                <span id="dieselGensetCapexUnit" class="input-group-text">USD/kW</span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblDieselGensetOpex" class="input-group-text"
-                      >OpEx
+                    >OpEx
                     <span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Operating Expense (OpEx) refers to the fixed annual costs incurred in the operation of a component, specifically excluding fuel and other variable expenses."
-                  ></span>
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Operating Expense (OpEx) refers to the fixed annual costs incurred in the operation of a component, specifically excluding fuel and other variable expenses."
+                    ></span>
                     </span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="dieselGensetOpex"
-                      value="25"
-                      required
-                    />
-                    <span id="dieselGensetOpexUnit" class="input-group-text"
-                      >USD/(kW•a)</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="dieselGensetOpex"
+                                        value="25"
+                                        required
+                                />
+                                <span id="dieselGensetOpexUnit" class="input-group-text"
+                                >USD/(kW•a)</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span
-                      id="lblDieselGensetVariableCost"
-                      class="input-group-text"
-                      >Variable Cost
+                            id="lblDieselGensetVariableCost"
+                            class="input-group-text"
+                    >Variable Cost
                         <span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Variable costs per kWh of electricity, excluding fuel costs."
-                  ></span></span
+                                class="icon icon-question"
+                                data-bs-toggle="tooltip"
+                                title="Variable costs per kWh of electricity, excluding fuel costs."
+                        ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="dieselGensetVariableCost"
-                      value="0.045"
-                      required
-                    />
-                    <span
-                      id="dieselGensetVariableCostUnit"
-                      class="input-group-text"
-                      >USD/kWh</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="dieselGensetVariableCost"
+                                        value="0.045"
+                                        required
+                                />
+                                <span
+                                        id="dieselGensetVariableCostUnit"
+                                        class="input-group-text"
+                                >USD/kWh</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblDieselGensetFuelCost" class="input-group-text"
-                      >Fuel Cost</span
+                    >Fuel Cost</span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="dieselGensetFuelCost"
-                      placeholder="Fuel cost"
-                      value="1.671"
-                      step="0.01"
-                      required
-                    />
-                    <span id="dieselGensetFuelCostUnit" class="input-group-text"
-                      >USD/L</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="dieselGensetFuelCost"
+                                        placeholder="Fuel cost"
+                                        value="1.671"
+                                        step="0.01"
+                                        required
+                                />
+                                <span id="dieselGensetFuelCostUnit" class="input-group-text"
+                                >USD/L</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblDieselGensetFuelLhv" class="input-group-text"
-                      >Fuel LHV<span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Lower Heating Value (LHV) is the heat energy released by a fuel when combusted, excluding the energy contained in evaporated water."
-                  ></span></span
+                    >Fuel LHV<span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Lower Heating Value (LHV) is the heat energy released by a fuel when combusted, excluding the energy contained in evaporated water."
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="dieselGensetFuelLhv"
-                      placeholder="LHV"
-                      value="11.83"
-                      required
-                    />
-                    <span id="dieselGensetFuelLhvUnit" class="input-group-text"
-                      >kWh/kg</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="dieselGensetFuelLhv"
+                                        placeholder="LHV"
+                                        value="11.83"
+                                        required
+                                />
+                                <span id="dieselGensetFuelLhvUnit" class="input-group-text"
+                                >kWh/kg</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span
-                      id="lblDieselGensetMinEfficiency"
-                      class="input-group-text"
-                      >Minimum Efficiency<span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Efficiency at minimum load."
-                  ></span></span
+                            id="lblDieselGensetMinEfficiency"
+                            class="input-group-text"
+                    >Minimum Efficiency<span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Efficiency at minimum load."
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="dieselGensetMinEfficiency"
-                      value="22"
-                      required
-                    />
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="dieselGensetMinEfficiency"
+                                        value="22"
+                                        required
+                                />
+                                <span
+                                        id="dieselGensetMinEfficiencyUnit"
+                                        class="input-group-text"
+                                >%</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span
-                      id="dieselGensetMinEfficiencyUnit"
-                      class="input-group-text"
-                      >%</span
+                            id="lblDieselGensetMaxEfficiency"
+                            class="input-group-text"
+                    >Maximum Efficiency<span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Efficiency at maximum load."
+                    ></span></span
                     >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
-                    <span
-                      id="lblDieselGensetMaxEfficiency"
-                      class="input-group-text"
-                      >Maximum Efficiency<span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Efficiency at maximum load."
-                  ></span></span
-                    >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="dieselGensetMaxEfficiency"
-                      value="30"
-                      required
-                    />
-                    <span
-                      id="dieselGensetMaxEfficiencyUnit"
-                      class="input-group-text"
-                      >%</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="dieselGensetMaxEfficiency"
+                                        value="30"
+                                        required
+                                />
+                                <span
+                                        id="dieselGensetMaxEfficiencyUnit"
+                                        class="input-group-text"
+                                >%</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblDieselGensetMinLoad" class="input-group-text"
-                      >Minimum Load<span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Minimum load in percent relative to the installed capacity of the diesel generator."
-                  ></span></span
+                    >Minimum Load<span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Minimum load in percent relative to the installed capacity of the diesel generator."
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="dieselGensetMinLoad"
-                      value="20"
-                      required
-                    />
-                    <span id="dieselGensetMinLoadUnit" class="input-group-text"
-                      >%</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="dieselGensetMinLoad"
+                                        value="20"
+                                        required
+                                />
+                                <span id="dieselGensetMinLoadUnit" class="input-group-text"
+                                >%</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblDieselGensetMaxLoad" class="input-group-text"
-                      >Maximum Load<span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Maximum load in percent relative to the installed capacity of the diesel generator."
-                  ></span></span
+                    >Maximum Load<span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Maximum load in percent relative to the installed capacity of the diesel generator."
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="dieselGensetMaxLoad"
-                      value="100"
-                      required
-                    />
-                    <span id="dieselGensetMaxLoadUnit" class="input-group-text"
-                      >%</span
-                    >
-                  </div>
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="dieselGensetMaxLoad"
+                                        value="100"
+                                        required
+                                />
+                                <span id="dieselGensetMaxLoadUnit" class="input-group-text"
+                                >%</span
+                                >
+                            </div>
+                        </div>
+                    </div>
                 </div>
-              </div>
-            </div>
-            <div class="col-md-8">
-              <div class="chart">
-                <div class="chart__header">
-                  <div>
+                <div class="col-md-8">
+                    <div class="chart">
+                        <div class="chart__header">
+                            <div>
                     <span class="title"
-                      >Schematic of the Selected Off-Grid System</span
+                    >Schematic of the Selected Off-Grid System</span
                     >
-                  </div>
-                </div>
-                <svg id="blockDiagram" width="850" height="450">
-                  <!-- DEMAND -->
-                  <g id="groupDemand" visibility="hidden">
-                    <g>
-                      <line id="lineDemand"></line>
-                      <polyline id="arrowOutDemand"></polyline>
-                      <polyline id="arrowInDemand"></polyline>
-                    </g>
-                    <rect id="blockDemand" />
-                    <text
-                      id="textDemand"
-                      class="components-text--design"
-                      dominant-baseline="middle"
-                      text-anchor="middle"
-                    >
-                      Demand
-                    </text>
-                    <text id="informationDemand" dominant-baseline="bottom">
-                      100% covered
-                    </text>
-                  </g>
-                  <!-- SHORTAGE -->
-                  <g id="groupShortage" visibility="hidden">
-                    <g>
-                      <line id="lineShortage"></line>
-                      <polyline id="arrowOutShortage"></polyline>
-                      <polyline id="arrowInShortage"></polyline>
-                    </g>
-                    <rect id="blockShortage" />
-                    <text
-                      id="textShortage"
-                      class="components-text--design"
-                      dominant-baseline="middle"
-                      text-anchor="middle"
-                    >
-                      Shortage
-                    </text>
-                    <text
-                      id="informationShortage"
-                      dominant-baseline="bottom"
-                    ></text>
-                    <text
-                      id="informationShortageSecondLine"
-                      dominant-baseline="bottom"
-                    ></text>
-                  </g>
-                  <!-- SURPLUS -->
-                  <g id="groupSurplus" visibility="hidden">
-                    <g>
-                      <line id="lineSurplus"></line>
-                      <polyline id="arrowOutSurplus"></polyline>
-                      <polyline id="arrowInSurplus"></polyline>
-                    </g>
-                    <rect id="blockSurplus" />
-                    <text
-                      id="textSurplus"
-                      class="components-text--design"
-                      dominant-baseline="middle"
-                      text-anchor="middle"
-                    >
-                      Surplus
-                    </text>
-                    <text
-                      id="informationSurplus"
-                      dominant-baseline="bottom"
-                    ></text>
-                  </g>
-                  <!-- PV -->
-                  <g id="groupPv" visibility="hidden">
-                    <g>
-                      <line id="linePv"></line>
-                      <polyline id="arrowOutPv"></polyline>
-                      <polyline id="arrowInPv"></polyline>
-                    </g>
-                    <rect id="blockPv" />
-                    <text
-                      id="textPv"
-                      dominant-baseline="middle"
-                      text-anchor="middle"
-                    >
-                      PV
-                    </text>
-                    <text id="informationPv" dominant-baseline="bottom">
-                      design
-                    </text>
-                  </g>
-                  <!-- BATTERY -->
-                  <g id="groupBattery" visibility="hidden">
-                    <g>
-                      <line id="lineBattery"></line>
-                      <polyline id="arrowOutBattery"></polyline>
-                      <polyline id="arrowInBattery"></polyline>
-                    </g>
-                    <rect id="blockBattery" />
-                    <text
-                      id="textBattery"
-                      dominant-baseline="middle"
-                      text-anchor="middle"
-                    >
-                      Battery
-                    </text>
-                    <text id="informationBattery" dominant-baseline="bottom">
-                      design
-                    </text>
-                  </g>
-                  <!-- DIESEL GENSET -->
-                  <g id="groupDieselGenset" visibility="hidden">
-                    <g>
-                      <line id="lineDieselGenset"></line>
-                      <polyline id="arrowOutDieselGenset"></polyline>
-                      <polyline id="arrowInDieselGenset"></polyline>
-                    </g>
-                    <rect id="blockDieselGenset" />
-                    <text
-                      id="textDieselGenset"
-                      dominant-baseline="middle"
-                      text-anchor="middle"
-                    >
-                      Diesel Genset
-                    </text>
-                    <text
-                      id="informationDieselGenset"
-                      dominant-baseline="bottom"
-                    >
-                      design
-                    </text>
-                  </g>
-                  <!-- INVERTER -->
-                  <g id="groupInverter" visibility="hidden">
-                    <g>
-                      <line id="lineInverter"></line>
-                      <polyline id="arrowOutInverter"></polyline>
-                      <polyline id="arrowInInverter"></polyline>
-                      <line id="lineInverter2"></line>
-                      <polyline id="arrowOutInverter2"></polyline>
-                      <polyline id="arrowInInverter2"></polyline>
-                    </g>
-                    <rect id="blockInverter" />
-                    <text
-                      id="textInverter"
-                      dominant-baseline="middle"
-                      text-anchor="middle"
-                    >
-                      Inverter
-                    </text>
-                    <text id="informationInverter" dominant-baseline="bottom">
-                      design
-                    </text>
-                  </g>
-                  <!-- RECTIFIER -->
-                  <g id="groupRectifier" visibility="hidden">
-                    <g>
-                      <line id="lineRectifier"></line>
-                      <polyline id="arrowOutRectifier"></polyline>
-                      <polyline id="arrowInRectifier"></polyline>
-                      <line id="lineRectifier2"></line>
-                      <polyline id="arrowOutRectifier2"></polyline>
-                      <polyline id="arrowInRectifier2"></polyline>
-                    </g>
-                    <rect id="blockRectifier" />
-                    <text
-                      id="textRectifier"
-                      dominant-baseline="middle"
-                      text-anchor="middle"
-                    >
-                      Rectifier
-                    </text>
-                    <text id="informationRectifier" dominant-baseline="bottom">
-                      design
-                    </text>
-                  </g>
-                  <!-- AC BUS -->
-                  <g id="groupAcBus" visibility="hidden">
-                    <rect id="blockAcBus" />
-                    <text
-                      id="textAcBus"
-                      class="components-text--design"
-                      dominant-baseline="middle"
-                      text-anchor="middle"
-                    >
-                      AC Bus
-                    </text>
-                  </g>
-                  <!-- DC BUS -->
-                  <g id="groupDcBus" visibility="hidden">
-                    <rect id="blockDcBus" />
-                    <text
-                      id="textDcBus"
-                      class="components-text--design"
-                      dominant-baseline="middle"
-                      text-anchor="middle"
-                    >
-                      DC Bus
-                    </text>
-                  </g>
-                </svg>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-4">
-              <div class="box" id="selectBatteryBox"  style="height: 36.25rem">
-                <div class="box__header">
-                  <form class="was-validated">
-                    <div class="form-check">
-                      <input
-                        type="checkbox"
-                        class="form-check-input"
-                        id="selectBattery"
-                        required
-                        checked
-                        onclick="check_box_visibility('battery');refreshBlocksOnDiagram('battery');"
-                      />
-                      <label class="form-check-label" for="selectBattery"
-                        >Battery</label
-                      >
+                            </div>
+                        </div>
+                        <svg id="blockDiagram" width="850" height="450">
+                            <!-- DEMAND -->
+                            <g id="groupDemand" visibility="hidden">
+                                <g>
+                                    <line id="lineDemand"></line>
+                                    <polyline id="arrowOutDemand"></polyline>
+                                    <polyline id="arrowInDemand"></polyline>
+                                </g>
+                                <rect id="blockDemand"/>
+                                <text
+                                        id="textDemand"
+                                        class="components-text--design"
+                                        dominant-baseline="middle"
+                                        text-anchor="middle"
+                                >
+                                    Demand
+                                </text>
+                                <text id="informationDemand" dominant-baseline="bottom">
+                                    100% covered
+                                </text>
+                            </g>
+                            <!-- SHORTAGE -->
+                            <g id="groupShortage" visibility="hidden">
+                                <g>
+                                    <line id="lineShortage"></line>
+                                    <polyline id="arrowOutShortage"></polyline>
+                                    <polyline id="arrowInShortage"></polyline>
+                                </g>
+                                <rect id="blockShortage"/>
+                                <text
+                                        id="textShortage"
+                                        class="components-text--design"
+                                        dominant-baseline="middle"
+                                        text-anchor="middle"
+                                >
+                                    Shortage
+                                </text>
+                                <text
+                                        id="informationShortage"
+                                        dominant-baseline="bottom"
+                                ></text>
+                                <text
+                                        id="informationShortageSecondLine"
+                                        dominant-baseline="bottom"
+                                ></text>
+                            </g>
+                            <!-- SURPLUS -->
+                            <g id="groupSurplus" visibility="hidden">
+                                <g>
+                                    <line id="lineSurplus"></line>
+                                    <polyline id="arrowOutSurplus"></polyline>
+                                    <polyline id="arrowInSurplus"></polyline>
+                                </g>
+                                <rect id="blockSurplus"/>
+                                <text
+                                        id="textSurplus"
+                                        class="components-text--design"
+                                        dominant-baseline="middle"
+                                        text-anchor="middle"
+                                >
+                                    Surplus
+                                </text>
+                                <text
+                                        id="informationSurplus"
+                                        dominant-baseline="bottom"
+                                ></text>
+                            </g>
+                            <!-- PV -->
+                            <g id="groupPv" visibility="hidden">
+                                <g>
+                                    <line id="linePv"></line>
+                                    <polyline id="arrowOutPv"></polyline>
+                                    <polyline id="arrowInPv"></polyline>
+                                </g>
+                                <rect id="blockPv"/>
+                                <text
+                                        id="textPv"
+                                        dominant-baseline="middle"
+                                        text-anchor="middle"
+                                >
+                                    PV
+                                </text>
+                                <text id="informationPv" dominant-baseline="bottom">
+                                    design
+                                </text>
+                            </g>
+                            <!-- BATTERY -->
+                            <g id="groupBattery" visibility="hidden">
+                                <g>
+                                    <line id="lineBattery"></line>
+                                    <polyline id="arrowOutBattery"></polyline>
+                                    <polyline id="arrowInBattery"></polyline>
+                                </g>
+                                <rect id="blockBattery"/>
+                                <text
+                                        id="textBattery"
+                                        dominant-baseline="middle"
+                                        text-anchor="middle"
+                                >
+                                    Battery
+                                </text>
+                                <text id="informationBattery" dominant-baseline="bottom">
+                                    design
+                                </text>
+                            </g>
+                            <!-- DIESEL GENSET -->
+                            <g id="groupDieselGenset" visibility="hidden">
+                                <g>
+                                    <line id="lineDieselGenset"></line>
+                                    <polyline id="arrowOutDieselGenset"></polyline>
+                                    <polyline id="arrowInDieselGenset"></polyline>
+                                </g>
+                                <rect id="blockDieselGenset"/>
+                                <text
+                                        id="textDieselGenset"
+                                        dominant-baseline="middle"
+                                        text-anchor="middle"
+                                >
+                                    Diesel Genset
+                                </text>
+                                <text
+                                        id="informationDieselGenset"
+                                        dominant-baseline="bottom"
+                                >
+                                    design
+                                </text>
+                            </g>
+                            <!-- INVERTER -->
+                            <g id="groupInverter" visibility="hidden">
+                                <g>
+                                    <line id="lineInverter"></line>
+                                    <polyline id="arrowOutInverter"></polyline>
+                                    <polyline id="arrowInInverter"></polyline>
+                                    <line id="lineInverter2"></line>
+                                    <polyline id="arrowOutInverter2"></polyline>
+                                    <polyline id="arrowInInverter2"></polyline>
+                                </g>
+                                <rect id="blockInverter"/>
+                                <text
+                                        id="textInverter"
+                                        dominant-baseline="middle"
+                                        text-anchor="middle"
+                                >
+                                    Inverter
+                                </text>
+                                <text id="informationInverter" dominant-baseline="bottom">
+                                    design
+                                </text>
+                            </g>
+                            <!-- RECTIFIER -->
+                            <g id="groupRectifier" visibility="hidden">
+                                <g>
+                                    <line id="lineRectifier"></line>
+                                    <polyline id="arrowOutRectifier"></polyline>
+                                    <polyline id="arrowInRectifier"></polyline>
+                                    <line id="lineRectifier2"></line>
+                                    <polyline id="arrowOutRectifier2"></polyline>
+                                    <polyline id="arrowInRectifier2"></polyline>
+                                </g>
+                                <rect id="blockRectifier"/>
+                                <text
+                                        id="textRectifier"
+                                        dominant-baseline="middle"
+                                        text-anchor="middle"
+                                >
+                                    Rectifier
+                                </text>
+                                <text id="informationRectifier" dominant-baseline="bottom">
+                                    design
+                                </text>
+                            </g>
+                            <!-- AC BUS -->
+                            <g id="groupAcBus" visibility="hidden">
+                                <rect id="blockAcBus"/>
+                                <text
+                                        id="textAcBus"
+                                        class="components-text--design"
+                                        dominant-baseline="middle"
+                                        text-anchor="middle"
+                                >
+                                    AC Bus
+                                </text>
+                            </g>
+                            <!-- DC BUS -->
+                            <g id="groupDcBus" visibility="hidden">
+                                <rect id="blockDcBus"/>
+                                <text
+                                        id="textDcBus"
+                                        class="components-text--design"
+                                        dominant-baseline="middle"
+                                        text-anchor="middle"
+                                >
+                                    DC Bus
+                                </text>
+                            </g>
+                        </svg>
                     </div>
-                  </form>
                 </div>
-                <div class="row align-items-end">
-              <!-- First Row for Radio Buttons -->
-              <div class="col-12">
-                <div class="btn-group d-flex">
-                  <input
-                    type="radio"
-                    class="btn-check"
-                    name="batteryOptimizationStrategy"
-                    id="batteryDesign"
-                    autocomplete="off"
-                    onclick="check_optimization_strategy('battery');"
-                    checked
-                  />
-                  <label class="btn btn-outline-secondary" for="batteryDesign">Optimized Capacity</label>
-                  <input
-                    type="radio"
-                    class="btn-check"
-                    name="batteryOptimizationStrategy"
-                    id="batteryDispatch"
-                    autocomplete="off"
-                    onclick="check_optimization_strategy('battery');"
-                  />
-                  <label class="btn btn-outline-secondary" for="batteryDispatch">Fixed Capacity</label>
-                </div>
-              </div>
             </div>
-
             <div class="row">
-              <!-- Second Row for Input Group -->
-              <div class="col-12">
-                <div class="input-group">
-                  <span id="lblBatteryNominalCapacity" class="input-group-text">Capacity</span>
-                  <input
-                    type="number"
-                    class="form-control"
-                    id="batteryNominalCapacity"
-                    value="7"
-                    required
-                    disabled
-                    onChange="styleInformation('battery');"
-                  />
-                  <span id="batteryNominalCapacityUnit" class="input-group-text">kWh</span>
-                </div>
-              </div>
-            </div>
-                <div class="row">
-                  <div class="input-group">
+                <div class="col-md-4">
+                    <div class="box" id="selectBatteryBox" style="height: 36.25rem">
+                        <div class="box__header">
+                            <form class="was-validated">
+                                <div class="form-check">
+                                    <input
+                                            type="checkbox"
+                                            class="form-check-input"
+                                            id="selectBattery"
+                                            required
+                                            checked
+                                            onclick="check_box_visibility('battery');refreshBlocksOnDiagram('battery');"
+                                    />
+                                    <label class="form-check-label" for="selectBattery"
+                                    >Battery</label
+                                    >
+                                </div>
+                            </form>
+                        </div>
+                        <div class="row align-items-end">
+                            <!-- First Row for Radio Buttons -->
+                            <div class="col-12">
+                                <div class="btn-group d-flex">
+                                    <input
+                                            type="radio"
+                                            class="btn-check"
+                                            name="batteryOptimizationStrategy"
+                                            id="batteryDesign"
+                                            autocomplete="off"
+                                            onclick="check_optimization_strategy('battery');"
+                                            checked
+                                    />
+                                    <label class="btn btn-outline-secondary" for="batteryDesign">Optimized
+                                        Capacity</label>
+                                    <input
+                                            type="radio"
+                                            class="btn-check"
+                                            name="batteryOptimizationStrategy"
+                                            id="batteryDispatch"
+                                            autocomplete="off"
+                                            onclick="check_optimization_strategy('battery');"
+                                    />
+                                    <label class="btn btn-outline-secondary" for="batteryDispatch">Fixed
+                                        Capacity</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Second Row for Input Group -->
+                            <div class="col-12">
+                                <div class="input-group">
+                                    <span id="lblBatteryNominalCapacity" class="input-group-text">Capacity</span>
+                                    <input
+                                            type="number"
+                                            class="form-control"
+                                            id="batteryNominalCapacity"
+                                            value="7"
+                                            required
+                                            disabled
+                                            onChange="styleInformation('battery');"
+                                    />
+                                    <span id="batteryNominalCapacityUnit" class="input-group-text">kWh</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblBatteryLifetime" class="input-group-text"
-                      >Lifetime
+                    >Lifetime
                         <span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Lifespan of the component, after expiration a replacement investment must be made."
-                  ></span></span
+                                class="icon icon-question"
+                                data-bs-toggle="tooltip"
+                                title="Lifespan of the component, after expiration a replacement investment must be made."
+                        ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="batteryLifetime"
-                      value="7"
-                      required
-                    />
-                    <span id="batteryLifetimeUnit" class="input-group-text"
-                      >Year</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="batteryLifetime"
+                                        value="7"
+                                        required
+                                />
+                                <span id="batteryLifetimeUnit" class="input-group-text"
+                                >Year</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblBatteryCapex" class="input-group-text"
-                      >CapEx<span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Capital Expenditure (CapEx) is the money that has to be spent to purchase the component."
-                  ></span></span
+                    >CapEx<span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Capital Expenditure (CapEx) is the money that has to be spent to purchase the component."
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="batteryCapex"
-                      value="314"
-                      required
-                    />
-                    <span id="batteryCapexUnit" class="input-group-text"
-                      >USD/kWh</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="batteryCapex"
+                                        value="314"
+                                        required
+                                />
+                                <span id="batteryCapexUnit" class="input-group-text"
+                                >USD/kWh</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblBatteryOpex" class="input-group-text"
-                      >OpEx <span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Operating Expense (OpEx) is the cost associated with the operation of the component"
-                  ></span></span
+                    >OpEx <span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Operating Expense (OpEx) is the cost associated with the operation of the component"
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="batteryOpex"
-                      value="24"
-                      required
-                    />
-                    <span id="batteryOpexUnit" class="input-group-text"
-                      >USD/(kW•a)</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="batteryOpex"
+                                        value="24"
+                                        required
+                                />
+                                <span id="batteryOpexUnit" class="input-group-text"
+                                >USD/(kW•a)</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblBatterySocMin" class="input-group-text"
-                      >Minimum SOC<span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Minimum State of Charge (SOC) of a battery refers to the lowest level at which the battery is allowed to discharge in order to prevent damage and prolong its lifespan."
-                  ></span></span
+                    >Minimum SOC<span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Minimum State of Charge (SOC) of a battery refers to the lowest level at which the battery is allowed to discharge in order to prevent damage and prolong its lifespan."
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="batterySocMin"
-                      value="0"
-                      required
-                    />
-                    <span id="batterySocMinUnit" class="input-group-text"
-                      >%</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="batterySocMin"
+                                        value="0"
+                                        required
+                                />
+                                <span id="batterySocMinUnit" class="input-group-text"
+                                >%</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblBatterySocMax" class="input-group-text"
-                      >Maximum SOC<span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Maximum State of Charge (SOC) of a battery refers to the highest level at which the battery can be safely charged to prevent overcharging and ensure longevity."
-                  ></span></span
+                    >Maximum SOC<span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Maximum State of Charge (SOC) of a battery refers to the highest level at which the battery can be safely charged to prevent overcharging and ensure longevity."
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="batterySocMax"
-                      value="100"
-                      required
-                    />
-                    <span id="batterySocMaxUnit" class="input-group-text"
-                      >%</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="batterySocMax"
+                                        value="100"
+                                        required
+                                />
+                                <span id="batterySocMaxUnit" class="input-group-text"
+                                >%</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblBatteryCrateIn" class="input-group-text"
-                      >C-Rate in<span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="C-Rate in for a battery refers to the rate at which the battery is charged, calculated as a multiple of the battery's capacity."
-                  ></span></span
+                    >C-Rate in<span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="C-Rate in for a battery refers to the rate at which the battery is charged, calculated as a multiple of the battery's capacity."
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="batteryCrateIn"
-                      value="1"
-                      required
-                    />
-                    <span id="batteryCrateInUnit" class="input-group-text"
-                      >-</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="batteryCrateIn"
+                                        value="1"
+                                        required
+                                />
+                                <span id="batteryCrateInUnit" class="input-group-text"
+                                >-</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblBatteryCrateOut" class="input-group-text"
-                      >C-Rate out<span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="C-Rate out for a battery refers to the rate at which the battery is discharged, calculated as a multiple of the battery's capacity."
-                  ></span></span
+                    >C-Rate out<span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="C-Rate out for a battery refers to the rate at which the battery is discharged, calculated as a multiple of the battery's capacity."
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="batteryCrateOut"
-                      value="1"
-                      required
-                    />
-                    <span id="batteryCrateOutUnit" class="input-group-text"
-                      >-</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="batteryCrateOut"
+                                        value="1"
+                                        required
+                                />
+                                <span id="batteryCrateOutUnit" class="input-group-text"
+                                >-</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblBatteryEfficiency" class="input-group-text"
-                      >Roundtrip Efficiency<span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Roundtrip Efficiency of a battery refers to the ratio of energy output to energy input, accounting for losses during charging and discharging cycles."
-                  ></span></span
+                    >Roundtrip Efficiency<span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Roundtrip Efficiency of a battery refers to the ratio of energy output to energy input, accounting for losses during charging and discharging cycles."
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="batteryEfficiency"
-                      value="96"
-                      required
-                    />
-                    <span id="batteryEfficiencyUnit" class="input-group-text"
-                      >%</span
-                    >
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-4">
-                <div class="box box--small" id="selectPvBox" style="height: 16.5rem">
-                <div class="box__header">
-                  <form class="was-validated">
-                    <div class="form-check">
-                      <input
-                        type="checkbox"
-                        class="form-check-input"
-                        id="selectPv"
-                        required
-                        checked
-                        onclick="check_box_visibility('pv');refreshBlocksOnDiagram('pv');"
-                      />
-                      <label class="form-check-label" for="selectPv">PV</label>
-                    </div>
-                  </form>
-                </div>
-                  <div class="row align-items-end">
-                      <!-- First Row for Radio Buttons -->
-                      <div class="col-12">
-                        <div class="btn-group d-flex">
-                          <input
-                            type="radio"
-                            class="btn-check"
-                            name="pvOptimizationStrategy"
-                            id="pvDesign"
-                            autocomplete="off"
-                            onclick="check_optimization_strategy('pv');"
-                            checked
-                          />
-                          <label class="btn btn-outline-secondary" for="pvDesign">Optimized Capacity</label>
-                          <input
-                            type="radio"
-                            class="btn-check"
-                            name="pvOptimizationStrategy"
-                            id="pvDispatch"
-                            autocomplete="off"
-                            onclick="check_optimization_strategy('pv');"
-                          />
-                          <label class="btn btn-outline-secondary" for="pvDispatch">Fixed Capacity</label>
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="batteryEfficiency"
+                                        value="96"
+                                        required
+                                />
+                                <span id="batteryEfficiencyUnit" class="input-group-text"
+                                >%</span
+                                >
+                            </div>
                         </div>
-                      </div>
                     </div>
-                    <div class="row">
-                      <!-- Second Row for Input Group -->
-                      <div class="col-12">
-                        <div class="input-group">
-                          <span id="lblPvNominalCapacity" class="input-group-text">Capacity</span>
-                          <input
-                            type="number"
-                            class="form-control"
-                            id="pvNominalCapacity"
-                            value="20"
-                            required
-                            disabled
-                            onChange="styleInformation('pv');"
-                          />
-                          <span id="pvNominalCapacityUnit" class="input-group-text">kW</span>
+                </div>
+                <div class="col-md-4">
+                    <div class="box box--small" id="selectPvBox" style="height: 16.5rem">
+                        <div class="box__header">
+                            <form class="was-validated">
+                                <div class="form-check">
+                                    <input
+                                            type="checkbox"
+                                            class="form-check-input"
+                                            id="selectPv"
+                                            required
+                                            checked
+                                            onclick="check_box_visibility('pv');refreshBlocksOnDiagram('pv');"
+                                    />
+                                    <label class="form-check-label" for="selectPv">PV</label>
+                                </div>
+                            </form>
                         </div>
-                      </div>
-                    </div>
-                <div class="row">
-                  <div class="input-group">
+                        <div class="row align-items-end">
+                            <!-- First Row for Radio Buttons -->
+                            <div class="col-12">
+                                <div class="btn-group d-flex">
+                                    <input
+                                            type="radio"
+                                            class="btn-check"
+                                            name="pvOptimizationStrategy"
+                                            id="pvDesign"
+                                            autocomplete="off"
+                                            onclick="check_optimization_strategy('pv');"
+                                            checked
+                                    />
+                                    <label class="btn btn-outline-secondary" for="pvDesign">Optimized Capacity</label>
+                                    <input
+                                            type="radio"
+                                            class="btn-check"
+                                            name="pvOptimizationStrategy"
+                                            id="pvDispatch"
+                                            autocomplete="off"
+                                            onclick="check_optimization_strategy('pv');"
+                                    />
+                                    <label class="btn btn-outline-secondary" for="pvDispatch">Fixed Capacity</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <!-- Second Row for Input Group -->
+                            <div class="col-12">
+                                <div class="input-group">
+                                    <span id="lblPvNominalCapacity" class="input-group-text">Capacity</span>
+                                    <input
+                                            type="number"
+                                            class="form-control"
+                                            id="pvNominalCapacity"
+                                            value="20"
+                                            required
+                                            disabled
+                                            onChange="styleInformation('pv');"
+                                    />
+                                    <span id="pvNominalCapacityUnit" class="input-group-text">kW</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblPvLifetime" class="input-group-text"
-                      >Lifetime
+                    >Lifetime
                     <span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Lifespan of the component, after expiration a replacement investment must be made."
-                  ></span></span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Lifespan of the component, after expiration a replacement investment must be made."
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="pvLifetime"
-                      value="25"
-                      required
-                    />
-                    <span id="pvLifetimeUnit" class="input-group-text"
-                      >Year</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="pvLifetime"
+                                        value="25"
+                                        required
+                                />
+                                <span id="pvLifetimeUnit" class="input-group-text"
+                                >Year</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblPvCapex" class="input-group-text">CapEx
                     <span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Capital Expenditure (CapEx) is the money that has to be spent to purchase the component."
-                  ></span></span>
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="pvCapex"
-                      value="441"
-                      required
-                    />
-                    <span id="pvCapexUnit" class="input-group-text"
-                      >USD/kW</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Capital Expenditure (CapEx) is the money that has to be spent to purchase the component."
+                    ></span></span>
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="pvCapex"
+                                        value="441"
+                                        required
+                                />
+                                <span id="pvCapexUnit" class="input-group-text"
+                                >USD/kW</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblPvOpex" class="input-group-text">OpEx <span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Operating Expense (OpEx) is the cost associated with the operation of the component."
-                  ></span></span>
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="pvOpex"
-                      value="8.82"
-                      required
-                    />
-                    <span id="pvOpexUnit" class="input-group-text"
-                      >USD/(kW•a)</span
-                    >
-                  </div>
-                </div>
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Operating Expense (OpEx) is the cost associated with the operation of the component."
+                    ></span></span>
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="pvOpex"
+                                        value="8.82"
+                                        required
+                                />
+                                <span id="pvOpexUnit" class="input-group-text"
+                                >USD/(kW•a)</span
+                                >
+                            </div>
+                        </div>
 
-              </div>
-              <div class="box box--medium" id="selectInverterBox" style="height: 19rem" >
-                <div class="box__header">
-                  <form class="was-validated">
-                    <div class="form-check">
-                      <input
-                        type="checkbox"
-                        class="form-check-input"
-                        id="selectInverter"
-                        required
-                        checked
-                        onclick="check_box_visibility('inverter');refreshBlocksOnDiagram('inverter');"
-                      />
-                      <label class="form-check-label" for="selectInverter"
-                        >Inverter</label
-                      >
                     </div>
-                  </form>
-                </div>
-                <div class="row align-items-end">
-              <div class="col-12">
-                <div class="btn-group d-flex">
-                  <input
-                    type="radio"
-                    class="btn-check"
-                    name="inverterOptimizationStrategy"
-                    id="inverterDesign"
-                    autocomplete="off"
-                    onclick="check_optimization_strategy('inverter');"
-                    checked
-                  />
-                  <label class="btn btn-outline-secondary" for="inverterDesign">Optimized Capacity</label>
-                  <input
-                    type="radio"
-                    class="btn-check"
-                    name="inverterOptimizationStrategy"
-                    id="inverterDispatch"
-                    autocomplete="off"
-                    onclick="check_optimization_strategy('inverter');"
-                  />
-                  <label class="btn btn-outline-secondary" for="inverterDispatch">Fixed Capacity</label>
-                </div>
-              </div>
-            </div>
+                    <div class="box box--medium" id="selectInverterBox" style="height: 19rem">
+                        <div class="box__header">
+                            <form class="was-validated">
+                                <div class="form-check">
+                                    <input
+                                            type="checkbox"
+                                            class="form-check-input"
+                                            id="selectInverter"
+                                            required
+                                            checked
+                                            onclick="check_box_visibility('inverter');refreshBlocksOnDiagram('inverter');"
+                                    />
+                                    <label class="form-check-label" for="selectInverter"
+                                    >Inverter</label
+                                    >
+                                </div>
+                            </form>
+                        </div>
+                        <div class="row align-items-end">
+                            <div class="col-12">
+                                <div class="btn-group d-flex">
+                                    <input
+                                            type="radio"
+                                            class="btn-check"
+                                            name="inverterOptimizationStrategy"
+                                            id="inverterDesign"
+                                            autocomplete="off"
+                                            onclick="check_optimization_strategy('inverter');"
+                                            checked
+                                    />
+                                    <label class="btn btn-outline-secondary" for="inverterDesign">Optimized
+                                        Capacity</label>
+                                    <input
+                                            type="radio"
+                                            class="btn-check"
+                                            name="inverterOptimizationStrategy"
+                                            id="inverterDispatch"
+                                            autocomplete="off"
+                                            onclick="check_optimization_strategy('inverter');"
+                                    />
+                                    <label class="btn btn-outline-secondary" for="inverterDispatch">Fixed
+                                        Capacity</label>
+                                </div>
+                            </div>
+                        </div>
 
-            <div class="row">
-              <!-- Second Row for Input Group -->
-              <div class="col-12">
-                <div class="input-group">
-                  <span id="lblInverterNominalCapacity" class="input-group-text">Capacity</span>
-                  <input
-                    type="number"
-                    class="form-control"
-                    id="inverterNominalCapacity"
-                    value="9"
-                    required
-                    disabled
-                    onChange="styleInformation('inverter');"
-                  />
-                  <span id="inverterNominalCapacityUnit" class="input-group-text">kW</span>
-                </div>
-              </div>
-            </div>
-                <div class="row">
-                  <div class="input-group">
+                        <div class="row">
+                            <!-- Second Row for Input Group -->
+                            <div class="col-12">
+                                <div class="input-group">
+                                    <span id="lblInverterNominalCapacity" class="input-group-text">Capacity</span>
+                                    <input
+                                            type="number"
+                                            class="form-control"
+                                            id="inverterNominalCapacity"
+                                            value="9"
+                                            required
+                                            disabled
+                                            onChange="styleInformation('inverter');"
+                                    />
+                                    <span id="inverterNominalCapacityUnit" class="input-group-text">kW</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblInverterLifetime" class="input-group-text"
-                      >Lifetime
+                    >Lifetime
                                       <span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Lifespan of the component, after expiration a replacement investment must be made."
-                  ></span></span
+                                              class="icon icon-question"
+                                              data-bs-toggle="tooltip"
+                                              title="Lifespan of the component, after expiration a replacement investment must be made."
+                                      ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="inverterLifetime"
-                      value="25"
-                      required
-                    />
-                    <span id="inverterLifetimeUnit" class="input-group-text"
-                      >Year</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="inverterLifetime"
+                                        value="25"
+                                        required
+                                />
+                                <span id="inverterLifetimeUnit" class="input-group-text"
+                                >Year</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblInverterCapex" class="input-group-text"
-                      >CapEx<span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Capital Expenditure (CapEx) is the money that has to be spent to purchase the component."
-                  ></span></span
+                    >CapEx<span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Capital Expenditure (CapEx) is the money that has to be spent to purchase the component."
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="inverterCapex"
-                      value="415"
-                      required
-                    />
-                    <span id="inverterCapexUnit" class="input-group-text"
-                      >USD/kW</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="inverterCapex"
+                                        value="415"
+                                        required
+                                />
+                                <span id="inverterCapexUnit" class="input-group-text"
+                                >USD/kW</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblInverterOpex" class="input-group-text"
-                      >OpEx <span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Operating Expense (OpEx) is the cost associated with the operation of the component"
-                  ></span></span
+                    >OpEx <span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Operating Expense (OpEx) is the cost associated with the operation of the component"
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="inverterOpex"
-                      value="9"
-                      required
-                    />
-                    <span id="inverterOpexUnit" class="input-group-text"
-                      >USD/(kW•a)</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="inverterOpex"
+                                        value="9"
+                                        required
+                                />
+                                <span id="inverterOpexUnit" class="input-group-text"
+                                >USD/(kW•a)</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblInverterEfficiency" class="input-group-text"
-                      >Efficiency<span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Efficiency of an inverter refers to the ratio of output power to input power, representing how effectively the inverter converts DC power to AC power."
-                  ></span></span
+                    >Efficiency<span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Efficiency of an inverter refers to the ratio of output power to input power, representing how effectively the inverter converts DC power to AC power."
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="inverterEfficiency"
-                      value="95"
-                      required
-                    />
-                    <span id="inverterEfficiencyUnit" class="input-group-text"
-                      >%</span
-                    >
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-4">
-                <div class="box box--small" id="selectShortageBox" style="height: 16.5rem">
-                <div class="box__header">
-                  <form class="was-validated">
-                    <div class="form-check">
-                      <input
-                        type="checkbox"
-                        class="form-check-input"
-                        id="selectShortage"
-                        required
-                        onclick="check_box_visibility('shortage');refreshBlocksOnDiagram('shortage');"
-                      />
-                      <label class="form-check-label" for="selectShortage"
-                        >Shortage</label
-                      >
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="inverterEfficiency"
+                                        value="95"
+                                        required
+                                />
+                                <span id="inverterEfficiencyUnit" class="input-group-text"
+                                >%</span
+                                >
+                            </div>
+                        </div>
                     </div>
-                  </form>
                 </div>
-                <div class="row">
-                  <div class="input-group">
+                <div class="col-md-4">
+                    <div class="box box--small" id="selectShortageBox" style="height: 16.5rem">
+                        <div class="box__header">
+                            <form class="was-validated">
+                                <div class="form-check">
+                                    <input
+                                            type="checkbox"
+                                            class="form-check-input"
+                                            id="selectShortage"
+                                            required
+                                            onclick="check_box_visibility('shortage');refreshBlocksOnDiagram('shortage');"
+                                    />
+                                    <label class="form-check-label" for="selectShortage"
+                                    >Shortage</label
+                                    >
+                                </div>
+                            </form>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblShortageMaxTotal" class="input-group-text"
-                      >Max. Total Shortage<span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="A parameter indicating the allowable extent of electricity demand under-coverage throughout the entire observation period."
-                  ></span></span
+                    >Max. Total Shortage<span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="A parameter indicating the allowable extent of electricity demand under-coverage throughout the entire observation period."
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="shortageMaxTotal"
-                      value="10"
-                      required
-                      onChange="styleInformation('shortage');"
-                    />
-                    <span id="shortageMaxTotalUnit" class="input-group-text"
-                      >%</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="shortageMaxTotal"
+                                        value="10"
+                                        required
+                                        onChange="styleInformation('shortage');"
+                                />
+                                <span id="shortageMaxTotalUnit" class="input-group-text"
+                                >%</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblShortageMaxTimestep" class="input-group-text"
-                      >Max. Shortage Each Timestep<span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Parameter defining the maximum permitted deficit in electricity supply during any single model time step."
-                  ></span></span
+                    >Max. Shortage Each Timestep<span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Parameter defining the maximum permitted deficit in electricity supply during any single model time step."
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="shortageMaxTimestep"
-                      value="20"
-                      required
-                      onChange="styleInformation('shortage');"
-                    />
-                    <span id="shortageMaxTimestepUnit" class="input-group-text"
-                      >%</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="shortageMaxTimestep"
+                                        value="20"
+                                        required
+                                        onChange="styleInformation('shortage');"
+                                />
+                                <span id="shortageMaxTimestepUnit" class="input-group-text"
+                                >%</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblShortagePenaltyCost" class="input-group-text"
-                      >Shortage Penalty Cost<span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="These costs are added to the objective function in case of a shortfall in demand. This ensures that the shortfall in demand is only utilized when the cost of meeting the demand exceeds the defined threshold value."
-                  ></span></span
+                    >Shortage Penalty Cost<span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="These costs are added to the objective function in case of a shortfall in demand. This ensures that the shortfall in demand is only utilized when the cost of meeting the demand exceeds the defined threshold value."
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="shortagePenaltyCost"
-                      value="0.8"
-                      required
-                      onChange="styleInformation('shortage');"
-                    />
-                    <span id="shortagePenaltyCostUnit" class="input-group-text"
-                      >USD/kWh</span
-                    >
-                  </div>
-                </div>
-              </div>
-              <div class="box box--medium" id="selectRectifierBox" style="height: 19rem">
-                <div class="box__header">
-                  <form class="was-validated">
-                    <div class="form-check">
-                      <input
-                        type="checkbox"
-                        class="form-check-input"
-                        id="selectRectifier"
-                        required
-                        onclick="check_box_visibility('rectifier'); refreshBlocksOnDiagram('rectifier');"
-                      />
-                      <label class="form-check-label" for="selectRectifier"
-                        >Rectifier</label
-                      >
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="shortagePenaltyCost"
+                                        value="0.8"
+                                        required
+                                        onChange="styleInformation('shortage');"
+                                />
+                                <span id="shortagePenaltyCostUnit" class="input-group-text"
+                                >USD/kWh</span
+                                >
+                            </div>
+                        </div>
                     </div>
-                  </form>
-                </div>
-                <div class="row align-items-end">
-  <!-- First Row for Radio Buttons -->
-  <div class="col-12">
-    <div class="btn-group d-flex">
-      <input
-        type="radio"
-        class="btn-check"
-        name="rectifierOptimizationStrategy"
-        id="rectifierDesign"
-        autocomplete="off"
-        onclick="check_optimization_strategy('rectifier');"
-        checked
-      />
-      <label class="btn btn-outline-secondary" for="rectifierDesign">Optimized Capacity</label>
-      <input
-        type="radio"
-        class="btn-check"
-        name="rectifierOptimizationStrategy"
-        id="rectifierDispatch"
-        autocomplete="off"
-        onclick="check_optimization_strategy('rectifier');"
-      />
-      <label class="btn btn-outline-secondary" for="rectifierDispatch">Fixed Capacity</label>
-    </div>
-  </div>
-</div>
-                <div class="row">
-                  <!-- Second Row for Input Group -->
-                  <div class="col-12">
-                    <div class="input-group">
-                      <span id="lblRectifierNominalCapacity" class="input-group-text">Capacity</span>
-                      <input
-                        type="number"
-                        class="form-control"
-                        id="rectifierNominalCapacity"
-                        value="5"
-                        required
-                        disabled
-                        onChange="styleInformation('rectifier');"
-                      />
-                      <span id="rectifierNominalCapacityUnit" class="input-group-text">kW</span>
-                    </div>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                    <div class="box box--medium" id="selectRectifierBox" style="height: 19rem">
+                        <div class="box__header">
+                            <form class="was-validated">
+                                <div class="form-check">
+                                    <input
+                                            type="checkbox"
+                                            class="form-check-input"
+                                            id="selectRectifier"
+                                            required
+                                            onclick="check_box_visibility('rectifier'); refreshBlocksOnDiagram('rectifier');"
+                                    />
+                                    <label class="form-check-label" for="selectRectifier"
+                                    >Rectifier</label
+                                    >
+                                </div>
+                            </form>
+                        </div>
+                        <div class="row align-items-end">
+                            <!-- First Row for Radio Buttons -->
+                            <div class="col-12">
+                                <div class="btn-group d-flex">
+                                    <input
+                                            type="radio"
+                                            class="btn-check"
+                                            name="rectifierOptimizationStrategy"
+                                            id="rectifierDesign"
+                                            autocomplete="off"
+                                            onclick="check_optimization_strategy('rectifier');"
+                                            checked
+                                    />
+                                    <label class="btn btn-outline-secondary" for="rectifierDesign">Optimized
+                                        Capacity</label>
+                                    <input
+                                            type="radio"
+                                            class="btn-check"
+                                            name="rectifierOptimizationStrategy"
+                                            id="rectifierDispatch"
+                                            autocomplete="off"
+                                            onclick="check_optimization_strategy('rectifier');"
+                                    />
+                                    <label class="btn btn-outline-secondary" for="rectifierDispatch">Fixed
+                                        Capacity</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <!-- Second Row for Input Group -->
+                            <div class="col-12">
+                                <div class="input-group">
+                                    <span id="lblRectifierNominalCapacity" class="input-group-text">Capacity</span>
+                                    <input
+                                            type="number"
+                                            class="form-control"
+                                            id="rectifierNominalCapacity"
+                                            value="5"
+                                            required
+                                            disabled
+                                            onChange="styleInformation('rectifier');"
+                                    />
+                                    <span id="rectifierNominalCapacityUnit" class="input-group-text">kW</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblRectifierLifetime" class="input-group-text"
-                      >Lifetime
+                    >Lifetime
                                       <span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Lifespan of the component, after expiration a replacement investment must be made."
-                  ></span></span
+                                              class="icon icon-question"
+                                              data-bs-toggle="tooltip"
+                                              title="Lifespan of the component, after expiration a replacement investment must be made."
+                                      ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="rectifierLifetime"
-                      value="25"
-                      required
-                    />
-                    <span id="rectifierLifetimeUnit" class="input-group-text"
-                      >Year</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="rectifierLifetime"
+                                        value="25"
+                                        required
+                                />
+                                <span id="rectifierLifetimeUnit" class="input-group-text"
+                                >Year</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblRectifierCapex" class="input-group-text"
-                      >CapEx<span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Capital Expenditure (CapEx) is the money that has to be spent to purchase the component."
-                  ></span></span
+                    >CapEx<span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Capital Expenditure (CapEx) is the money that has to be spent to purchase the component."
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="rectifierCapex"
-                      value="415"
-                      required
-                    />
-                    <span id="rectifierCapexUnit" class="input-group-text"
-                      >USD/kW</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="rectifierCapex"
+                                        value="415"
+                                        required
+                                />
+                                <span id="rectifierCapexUnit" class="input-group-text"
+                                >USD/kW</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblRectifierOpex" class="input-group-text"
-                      >OpEx <span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Operating Expense (OpEx) is the cost associated with the operation of the component"
-                  ></span></span
+                    >OpEx <span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Operating Expense (OpEx) is the cost associated with the operation of the component"
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="rectifierOpex"
-                      value="0"
-                      required
-                    />
-                    <span id="rectifierOpexUnit" class="input-group-text"
-                      >USD/(kW•a)</span
-                    >
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-group">
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="rectifierOpex"
+                                        value="0"
+                                        required
+                                />
+                                <span id="rectifierOpexUnit" class="input-group-text"
+                                >USD/(kW•a)</span
+                                >
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
                     <span id="lblRectifierEfficiency" class="input-group-text"
-                      >Efficiency<span
-                    class="icon icon-question"
-                    data-bs-toggle="tooltip"
-                    title="Efficiency of a rectifier refers to the ratio of output power to input power, indicating how effectively it converts AC power into DC power."
-                  ></span></span
+                    >Efficiency<span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="Efficiency of a rectifier refers to the ratio of output power to input power, indicating how effectively it converts AC power into DC power."
+                    ></span></span
                     >
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="rectifierEfficiency"
-                      value="95"
-                      required
-                    />
-                    <span id="rectifierEfficiencyUnit" class="input-group-text"
-                      >%</span
-                    >
-                  </div>
+                                <input
+                                        type="number"
+                                        class="form-control"
+                                        id="rectifierEfficiency"
+                                        value="95"
+                                        required
+                                />
+                                <span id="rectifierEfficiencyUnit" class="input-group-text"
+                                >%</span
+                                >
+                            </div>
+                        </div>
+                    </div>
                 </div>
-              </div>
             </div>
-          </div>
-          <div class="row">
-            <p style="font-size: 12px;">
-                Sources: <br>
-                <a href="https://openknowledge.worldbank.org/server/api/core/bitstreams/32287154-1ccb-46ce-83af-08facf7a3b49/content">Mini Grids for Half a Billion People: Market Outlook and Handbook for Decision Makers</a>, <i>ESMAP - World Bank</i>, 2022 <br>
-                <a href="https://www.nrel.gov/docs/fy18osti/69044.pdf">Tariff Considerations for Micro-Grids in Sub-Saharan Africa</a>, <i>National Renewable Energy Laboratory</i>, 2018 <br>
-                <a href="https://rmi.org/wp-content/uploads/2018/12/rmi-seeds-minigrid-report.pdf"> Minigrids in the Money: Six Ways to Reduce Minigrid Costs by 60% for Rural Electrification</a>, <i>Rocky Mountain Institute</i>, 2018 <br>
-                <a href="https://www.globalpetrolprices.com/Nigeria/diesel_prices/"> Nigeria Diesel prices, litre, 04-Sep-2023 </a>, <i>GlobalPetrolPrices.com - with +50% markup for logistics and losses/theft</i>, September 2022<br>
+            <div class="row">
+                <p style="font-size: 12px;">
+                    Sources: <br>
+                    <a href="https://openknowledge.worldbank.org/server/api/core/bitstreams/32287154-1ccb-46ce-83af-08facf7a3b49/content">Mini
+                        Grids for Half a Billion People: Market Outlook and Handbook for Decision Makers</a>, <i>ESMAP -
+                    World Bank</i>, 2022 <br>
+                    <a href="https://www.nrel.gov/docs/fy18osti/69044.pdf">Tariff Considerations for Micro-Grids in
+                        Sub-Saharan Africa</a>, <i>National Renewable Energy Laboratory</i>, 2018 <br>
+                    <a href="https://rmi.org/wp-content/uploads/2018/12/rmi-seeds-minigrid-report.pdf"> Minigrids in the
+                        Money: Six Ways to Reduce Minigrid Costs by 60% for Rural Electrification</a>, <i>Rocky Mountain
+                    Institute</i>, 2018 <br>
+                    <a href="https://www.globalpetrolprices.com/Nigeria/diesel_prices/"> Nigeria Diesel prices, litre,
+                        04-Sep-2023 </a>, <i>GlobalPetrolPrices.com - with +50% markup for logistics and
+                    losses/theft</i>, September 2022<br>
 
-              The PV modules are simulated via <a href="https://pvlib-python.readthedocs.io/en/">pvlib</a>, incorporating the
-                <a href="https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview">ERA5 radiation data</a>.
-            </p>
+                    The PV modules are simulated via <a href="https://pvlib-python.readthedocs.io/en/">pvlib</a>,
+                    incorporating the
+                    <a href="https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview">ERA5
+                        radiation data</a>.
+                </p>
             </div>
         </div>
-      </section>
+    </section>
     <div id=pendingTask class="modal">
-        <span  class="close" title="Close Modal">&times;</span>
+        <span class="close" title="Close Modal">&times;</span>
         <form class="modal-content" action="/action_page.php">
             <div class="container">
                 <h1>Revoke pending calculation?</h1>
@@ -1287,10 +1300,10 @@
         </form>
     </div>
     {% include '_warningBox.html' %}
-    </main>
-  {% include '_footer.html' %}
-  </body>
-  {% include '_scripts.html' %}
-  <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-  <script src="{{ url_for('static', path='js/energy-system-design.js') }}"></script>
+</main>
+{% include '_footer.html' %}
+</body>
+{% include '_scripts.html' %}
+<script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="{{ url_for('static', path='js/pages/energy-system-design.js') }}"></script>
 </html>

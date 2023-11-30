@@ -1,123 +1,116 @@
 <!DOCTYPE html>
 <html lang="en-us">
-  <head>
+<head>
     {% set title='Demand Estimation' %}
     {% include '_head.html' %}
-
-      <style>
-          {% include '_toggle.html' %}
-
-
-
-.input-item select, .input-group input, .input-group-text, .btn btn--medium {
-    height: 32px; /* Adjust this value to your preference */
-}
-
-.btn-custom {
-    color: black;
-    background-color: transparent;
-    border-color: transparent;
-    justify-content: flex-start;
-    text-align: left;
-}
-
-.btn-custom:hover, .btn-custom:active, .btn-custom.focus, .btn-custom:focus, .btn-custom.active {
-    background-color: transparent;
-    border-color: transparent;
-}
-
-.btn-custom input[type='radio'] {
-    margin-right: 5px;
-}
-
-      </style>
-  </head>
-  <body onload="redirect_if_cookie_is_missing(true, true);
-                load_previous_data('demand_estimation?project_id={{ project_id }}');
-                show_email_and_project_in_navbar({{ project_id }});
-                demand_ts({{ project_id }});">
-  {% include '_navbar.html' %}
-  {% include '_wizard.html' %}
-    <main>
-        <section id="section" class="dashboard" style="height: auto">
-            <div class="row" style="height: auto">
-                <div class="chart" style="height: auto">
-                                        <div class="accordion" id="accordionExample" style="margin-top: 12px">
-                      <div class="accordion-item" style="padding: 10px">
+    <link href="{{ url_for('static', path='stylesheets/css/pages/consumer_selection.css') }}" rel="stylesheet"/>
+</head>
+<body onload="redirect_if_cookie_is_missing(true, true);
+        load_previous_data('demand_estimation?project_id={{ project_id }}');
+        show_email_and_project_in_navbar({{ project_id }});
+        demand_ts({{ project_id }});">
+{% include '_navbar.html' %}
+{% include '_wizard.html' %}
+<main>
+    <section id="section" class="dashboard" style="height: auto">
+        <div class="row" style="height: auto">
+            <div class="chart" style="height: auto">
+                <div class="accordion" id="accordionExample" style="margin-top: 12px">
+                    <div class="accordion-item" style="padding: 10px">
                         <h2 class="accordion-header" id="headingOne">
-                          <button class="accordion-button no-arrow" type="button">
-                            Select Household Demand Options
-                          </button>
+                            <button class="accordion-button no-arrow" type="button">
+                                Select Household Demand Options
+                            </button>
                         </h2>
-                        <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
-                          <div class="accordion-body">
-                            <div class="row">
-                                <p>Several typical standardized household demand profiles have been developed from roughly 3600 energy appliance ownership and usage surveys that were conducted across Nigeria in 2020 in 3 prioritized geopolitical zones. Survey details can be found in the publication here: <a href="https://www.nature.com/articles/s41597-023-02185-0">PeopleSuN (2023) Electricity supply quality and use among rural and peri-urban households and small firms in Nigeria</a></p>
-                                <p>The open-source Remote Area Multi-Energy Profiles simulation software (RAMP) has been used to develop 5 typical non-urban Nigerian household energy consumption categories (from Very Low to Very High). The pre-created default options below represent weighted combinations of each of these consumption categories that match the observed data in each of the geographic zones. <br><i>Open-access journal publication, methodological details, open-source code, and full data release forthcoming.</i></p>
-                                <p><b>Select a default combination of user profiles for the household community demand profiles from one of the following options:</b></p>
-                                <div class="col-lg-6">
-                                    <div class="btn-group-vertical btn-group-toggle" data-toggle="buttons">
-                                        <label class="btn btn-custom active d-flex align-items-center">
-                                            <input type="radio" name="options" id="option1" autocomplete="off" checked> National Distribution - Combination of Modelled Consumption Categories
-                                        </label>
-                                        <label class="btn btn-custom d-flex align-items-center">
-                                            <input type="radio" name="options" id="option2" autocomplete="off"> South-South Zone - Combination of Modelled Consumption Categories
-                                        </label>
-                                        <label class="btn btn-custom d-flex align-items-center">
-                                            <input type="radio" name="options" id="option3" autocomplete="off"> North-West Zone - Combination of Modelled Consumption Categories
-                                        </label>
-                                        <label class="btn btn-custom d-flex align-items-center">
-                                            <input type="radio" name="options" id="option4" autocomplete="off"> North-Central Zone - Combination of Modelled Consumption Categories
-                                        </label>
+                        <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne"
+                             data-bs-parent="#accordionExample">
+                            <div class="accordion-body">
+                                <div class="row">
+                                    <p>Several typical standardized household demand profiles have been developed from
+                                        roughly 3600 energy appliance ownership and usage surveys that were conducted
+                                        across Nigeria in 2020 in 3 prioritized geopolitical zones. Survey details can
+                                        be found in the publication here: <a
+                                                href="https://www.nature.com/articles/s41597-023-02185-0">PeopleSuN
+                                            (2023) Electricity supply quality and use among rural and peri-urban
+                                            households and small firms in Nigeria</a></p>
+                                    <p>The open-source Remote Area Multi-Energy Profiles simulation software (RAMP) has
+                                        been used to develop 5 typical non-urban Nigerian household energy consumption
+                                        categories (from Very Low to Very High). The pre-created default options below
+                                        represent weighted combinations of each of these consumption categories that
+                                        match the observed data in each of the geographic zones. <br><i>Open-access
+                                            journal publication, methodological details, open-source code, and full data
+                                            release forthcoming.</i></p>
+                                    <p><b>Select a default combination of user profiles for the household community
+                                        demand profiles from one of the following options:</b></p>
+                                    <div class="col-lg-6">
+                                        <div class="btn-group-vertical btn-group-toggle" data-toggle="buttons">
+                                            <label class="btn btn-custom active d-flex align-items-center">
+                                                <input type="radio" name="options" id="option1" autocomplete="off"
+                                                       checked> National Distribution - Combination of Modelled
+                                                Consumption Categories
+                                            </label>
+                                            <label class="btn btn-custom d-flex align-items-center">
+                                                <input type="radio" name="options" id="option2" autocomplete="off">
+                                                South-South Zone - Combination of Modelled Consumption Categories
+                                            </label>
+                                            <label class="btn btn-custom d-flex align-items-center">
+                                                <input type="radio" name="options" id="option3" autocomplete="off">
+                                                North-West Zone - Combination of Modelled Consumption Categories
+                                            </label>
+                                            <label class="btn btn-custom d-flex align-items-center">
+                                                <input type="radio" name="options" id="option4" autocomplete="off">
+                                                North-Central Zone - Combination of Modelled Consumption Categories
+                                            </label>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="col-lg-6">
+                                    <div class="col-lg-6">
 
-                                </div>
-                                <div class="chart__plot">
+                                    </div>
+                                    <div class="chart__plot">
                                         <div id="demand_plot"></div>
                                     </div>
+                                </div>
                             </div>
-                        </div>
 
-                            </div>
-                              <span style="padding: 2rem">
+                        </div>
+                        <span style="padding: 2rem">
                               <a>Show Advanced Demand Options</a>
                               <label class="switch">
                               <input type="checkbox" id="toggleswitch">
                               <span class="slider round"></span>
                               </label>
                               </span>
-                        </div>
-                      </div>
-                    <div class="accordion-item" style="border-top: none; padding: 10px">
-                        <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo">
-                          <div class="accordion-body">
-                                <p><a>Set Own Custom Shares of Households Allocated per Consumption Category (Optional)</a></p>
+                    </div>
+                </div>
+                <div class="accordion-item" style="border-top: none; padding: 10px">
+                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo">
+                        <div class="accordion-body">
+                            <p><a>Set Own Custom Shares of Households Allocated per Consumption Category (Optional)</a>
+                            </p>
 
-                                <span style="width: 600px">
+                            <span style="width: 600px">
                                   Enable User-defined Percentage Shares Per Household Category (Advanced)
                                   <label class="switch">
                                   <input type="checkbox" id="use_custom_shares">
                                   <span class="slider round"></span>
                                   </label>
                                 </span>
-                              <p><br></p>
+                            <p><br></p>
 
-                              <label class="input-group align-items-center">
+                            <label class="input-group align-items-center">
                                 <span style="width: 500px">
                                     Very Low Consumption Households - Set Share % (0.6kWh/hh/day)
                                 </span>
                                 <div class="input-group" style="max-width: 200px">
                                     <input
-                                        type="number"
-                                        class="form-control"
-                                        id="custom_share_1"
-                                        placeholder="66.3"
-                                        value=""
-                                        min="0"
-                                        max="100"
-                                        step="0.1"
+                                            type="number"
+                                            class="form-control"
+                                            id="custom_share_1"
+                                            placeholder="66.3"
+                                            value=""
+                                            min="0"
+                                            max="100"
+                                            step="0.1"
                                     />
                                     <span class="input-group-text" style="margin-right: 8px;">%</span>
                                 </div>
@@ -128,14 +121,14 @@
                                 </span>
                                 <div class="input-group" style="max-width: 200px">
                                     <input
-                                        type="number"
-                                        class="form-control"
-                                        id="custom_share_2"
-                                        placeholder="21.5"
-                                        value=""
-                                        min="0"
-                                        max="100"
-                                        step="0.1"
+                                            type="number"
+                                            class="form-control"
+                                            id="custom_share_2"
+                                            placeholder="21.5"
+                                            value=""
+                                            min="0"
+                                            max="100"
+                                            step="0.1"
                                     />
                                     <span class="input-group-text" style="margin-right: 8px;">%</span>
                                 </div>
@@ -146,14 +139,14 @@
                                 </span>
                                 <div class="input-group" style="max-width: 200px">
                                     <input
-                                        type="number"
-                                        class="form-control"
-                                        id="custom_share_3"
-                                        placeholder="7.6"
-                                        value=""
-                                        min="0"
-                                        max="100"
-                                        step="0.1"
+                                            type="number"
+                                            class="form-control"
+                                            id="custom_share_3"
+                                            placeholder="7.6"
+                                            value=""
+                                            min="0"
+                                            max="100"
+                                            step="0.1"
                                     />
                                     <span class="input-group-text" style="margin-right: 8px;">%</span>
                                 </div>
@@ -164,14 +157,14 @@
                                 </span>
                                 <div class="input-group" style="max-width: 200px">
                                     <input
-                                        type="number"
-                                        class="form-control"
-                                        id="custom_share_4"
-                                        placeholder="3.1"
-                                        value=""
-                                        min="0"
-                                        max="100"
-                                        step="0.1"
+                                            type="number"
+                                            class="form-control"
+                                            id="custom_share_4"
+                                            placeholder="3.1"
+                                            value=""
+                                            min="0"
+                                            max="100"
+                                            step="0.1"
                                     />
                                     <span class="input-group-text" style="margin-right: 8px;">%</span>
                                 </div>
@@ -182,85 +175,85 @@
                                 </span>
                                 <div class="input-group" style="max-width: 200px">
                                     <input
-                                        type="number"
-                                        class="form-control"
-                                        id="custom_share_5"
-                                        placeholder="1.5"
-                                        value=""
-                                        min="0"
-                                        max="100"
-                                        step="0.1"
+                                            type="number"
+                                            class="form-control"
+                                            id="custom_share_5"
+                                            placeholder="1.5"
+                                            value=""
+                                            min="0"
+                                            max="100"
+                                            step="0.1"
                                     />
                                     <span class="input-group-text" style="margin-right: 8px;">%</span>
                                 </div>
                             </label>
 
-                              <p><a><br>Set Custom Total Profile Calibration Values (Optional)</a></p>
-                              <p>These options will calibrate the total community demand profile to set value below <b>(including enterprises and any other non-household demands chosen previously)</b>.<br>They can be calibrated either by total annual mini-grid energy demand OR maximum peak demand over the year - both cannot be chosen together.<br>This is compatible with choosing custom percentage shares of consumption categories, but the total will be re-scaled accordingly.</p>
+                            <p><a><br>Set Custom Total Profile Calibration Values (Optional)</a></p>
+                            <p>These options will calibrate the total community demand profile to set value below <b>(including
+                                enterprises and any other non-household demands chosen previously)</b>.<br>They can be
+                                calibrated either by total annual mini-grid energy demand OR maximum peak demand over
+                                the year - both cannot be chosen together.<br>This is compatible with choosing custom
+                                percentage shares of consumption categories, but the total will be re-scaled
+                                accordingly.</p>
 
-                          <div class="btn-group-vertical btn-group-toggle" data-toggle="buttons">
-                            <label class="btn btn-custom active d-flex align-items-center justify-content-between">
+                            <div class="btn-group-vertical btn-group-toggle" data-toggle="buttons">
+                                <label class="btn btn-custom active d-flex align-items-center justify-content-between">
                                 <span style="width: 450px">
                                     <input type="radio" name="options2" id="option7" autocomplete="off" checked>
                                     Set Average Total Annual Energy (kWh/year)
                                 </span>
-                                <div class="input-group" style="max-width: 200px">
-                                    <input
-                                        type="number"
-                                        class="form-control"
-                                        id="average_daily_energy"
-                                        placeholder=""
-                                        value=""
-                                        min="0"
-                                        max="10000000"
-                                        step="0.1"
-                                        required
-                                    />
-                                    <span class="input-group-text" style="margin-right: 8px;">kWh</span>
-                                </div>
-                            </label>
-                            <label class="btn btn-custom d-flex align-items-center justify-content-between">
+                                    <div class="input-group" style="max-width: 200px">
+                                        <input
+                                                type="number"
+                                                class="form-control"
+                                                id="average_daily_energy"
+                                                placeholder=""
+                                                value=""
+                                                min="0"
+                                                max="10000000"
+                                                step="0.1"
+                                                required
+                                        />
+                                        <span class="input-group-text" style="margin-right: 8px;">kWh</span>
+                                    </div>
+                                </label>
+                                <label class="btn btn-custom d-flex align-items-center justify-content-between">
                                 <span style="width: 450px">
                                     <input type="radio" name="options2" id="option8" autocomplete="off">
                                     Set Maximum Peak Demand (kW)
                                 </span>
-                                <div class="input-group" style="max-width: 200px">
-                                    <input
-                                        type="number"
-                                        class="form-control"
-                                        id="maximum_peak_load"
-                                        placeholder=""
-                                        value=""
-                                        min="0"
-                                        max="10000"
-                                        step="0.1"
-                                        required
-                                        disabled
-                                    />
-                                    <span class="input-group-text" style="margin-right: 8px;">kW</span>
-                                </div>
-                            </label>
-                          </div>
-
+                                    <div class="input-group" style="max-width: 200px">
+                                        <input
+                                                type="number"
+                                                class="form-control"
+                                                id="maximum_peak_load"
+                                                placeholder=""
+                                                value=""
+                                                min="0"
+                                                max="10000"
+                                                step="0.1"
+                                                required
+                                                disabled
+                                        />
+                                        <span class="input-group-text" style="margin-right: 8px;">kW</span>
+                                    </div>
+                                </label>
                             </div>
 
-                              </div>
-                          </div>
                         </div>
-                      </div>
 
-                </div></div>
-
+                    </div>
+                </div>
             </div>
-
-        </section>
-     {% include '_warningBox.html' %}
-    </main>
-  {% include '_footer.html' %}
-  </body>
-    {% include '_scripts.html' %}
-  <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-  <script src="https://cdn.plot.ly/plotly-2.0.0.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.0/jspdf.umd.min.js"></script>
-  <script src="{{ url_for('static', path='js/demand_estimation.js') }}"></script>
+        </div>
+    </section>
+    {% include '_warningBox.html' %}
+</main>
+{% include '_footer.html' %}
+</body>
+{% include '_scripts.html' %}
+<script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="https://cdn.plot.ly/plotly-2.0.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.0/jspdf.umd.min.js"></script>
+<script src="{{ url_for('static', path='js/pages/demand_estimation.js') }}"></script>
 </html>

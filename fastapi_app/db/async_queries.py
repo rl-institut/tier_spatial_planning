@@ -155,11 +155,11 @@ async def _execute_with_retry(query, which='first'):
 async def check_data_availability(user_id, project_id):
     project_setup = await get_model_instance(sa_tables.ProjectSetup, user_id, project_id)
     if project_setup is None:
-        return False, '/project_setup/?project_id=' + str(project_id)
+        return False, '/project_setup.css/?project_id=' + str(project_id)
     nodes = await get_model_instance(sa_tables.Nodes, user_id, project_id)
     nodes_df = pd.read_json(nodes.data) if nodes is not None else None
     if nodes_df is None or nodes_df.empty or nodes_df[nodes_df['node_type'] == 'consumer'].index.__len__() == 0:
-        return False, '/consumer_selection/?project_id=' + str(project_id)
+        return False, '/consumer_selection.css/?project_id=' + str(project_id)
     demand_opt_dict = await get_model_instance(sa_tables.Demand, user_id, project_id)
     if demand_opt_dict is None or pd.isna(demand_opt_dict.household_option):
         return False, '/demand_estimation/?project_id=' + str(project_id)

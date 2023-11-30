@@ -789,7 +789,6 @@ function  load_previous_data(page_name){
                     document.getElementById("projectDescription").value = results['project_description'];
                     document.getElementById("interestRate").value = results['interest_rate'];
                     document.getElementById("projectLifetime").value = results['project_lifetime'];
-                    document.getElementById("startDate").value = results['start_date'];
                     document.getElementById("nDays").value = results['n_days'];
                 }
             }
@@ -827,6 +826,7 @@ function  load_previous_data(page_name){
                     document.getElementById('shs_max_grid_cost').disabled = false;
                 }
                 }
+                change_shs_box_visibility();
             }
         };
     } else if (page_name.includes("demand_estimation")) {
@@ -933,7 +933,7 @@ function  load_previous_data(page_name){
                     document.getElementById("batteryCapex").value = results['battery__parameters__capex'];
                     document.getElementById("batteryNominalCapacity").value = results['battery__parameters__nominal_capacity'];
                     refreshBlocksOnDiagramOnLoad();
-                    check_box_visibility();
+                    check_box_visibility('shortage');
                     }
                 }
             }

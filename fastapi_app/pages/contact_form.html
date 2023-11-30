@@ -1,71 +1,69 @@
 <!DOCTYPE html>
 <html lang="en-us">
-  <head>
+<head>
     {% set title= 'Account' %}
     {% include '_head.html' %}
-  </head>
-  <body onload="show_email_and_project_in_navbar();">
-      {% include '_navbar.html' %}
-    <main>
-     <section class="dashboard" style="width: 500px; display: block;  margin-left: auto;  margin-right: auto;">
-        <div >
-          <div class="row">
-            <div class="col">
-              <div class="chart" style="border: 15px solid #FAFAFA; height: auto;">
-                <div class="chart__header">
-                  <a class="title">Contact Form</a>
+</head>
+<body onload="show_email_and_project_in_navbar();">
+{% include '_navbar.html' %}
+<main>
+    <section class="dashboard" style="width: 500px; display: block;  margin-left: auto;  margin-right: auto;">
+        <div>
+            <div class="row">
+                <div class="col">
+                    <div class="chart" style="border: 15px solid #FAFAFA; height: auto;">
+                        <div class="chart__header">
+                            <a class="title">Contact Form</a>
+                        </div>
+                        <hr>
+                        <div class="input-item" style="text-align: left">
+                            <p style="display:inline">
+                                Your Mail Address
+                            </p>
+                            <input
+                                    type="text"
+                                    class="form-control"
+                                    id="from_address"
+                                    placeholder="Enter your new mail address"
+                                    value="{{ email }}"
+                                    required
+                            />
+                            <p style="display:inline">
+                                Subject
+                            </p>
+                            <input
+                                    type="text"
+                                    class="form-control"
+                                    id="subject"
+                                    placeholder="Subject of your Message"
+                                    value=""
+                                    required
+                            />
+                            <div class="input-item optional">
+                                <label for="projectDescription" class="form-label"> Message</label>
+                                <textarea
+                                        class="form-control"
+                                        maxlength="1000"
+                                        id="body"
+                                        placeholder="Write your message here..."
+                                        style="height: 350px;"
+                                ></textarea>
+                            </div>
+                        </div>
+                        <p></p>
+                        <p id="responseMsg" style="text-align: center;"></p>
+                        <p></p>
+                        <div class="clearfix" style="text-align: center;">
+                            <button onclick="sendMail()" type="button" class="deletebtn">Send Mail</button>
+                            <button onclick="window.location.href='/'" type="button" class="cancelbtn">Cancel</button>
+                        </div>
+                    </div>
                 </div>
-                  <hr>
-                <div class="input-item" style="text-align: left">
-                <p style="display:inline">
-                   Your Mail Address
-                </p>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="from_address"
-                  placeholder="Enter your new mail address"
-                  value="{{ email }}"
-                  required
-                />
-                <p style="display:inline">
-                   Subject
-                </p>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="subject"
-                  placeholder="Subject of your Message"
-                  value=""
-                  required
-                />
-                <div class="input-item optional">
-                <label for="projectDescription" class="form-label"> Message</label>
-                <textarea
-                  class="form-control"
-                  maxlength="1000"
-                  id="body"
-                  placeholder="Write your message here..."
-                  style="height: 350px;"
-                ></textarea>
-              </div>
-              </div>
-                  <p></p>
-                  <p id="responseMsg" style="text-align: center;"></p>
-                  <p></p>
-                <div class="clearfix" style="text-align: center;">
-                  <button onclick="sendMail()" type="button" class="deletebtn">Send Mail</button>
-                  <button onclick="window.location.href='/'" type="button" class="cancelbtn">Cancel</button>
-                </div>
-                  </div>
-                </div>
-              </div>
             </div>
-          </div>
         </div>
-      </section>
-    </main>
-  {% include '_footer.html' %}
-  </body>
+    </section>
+</main>
+{% include '_footer.html' %}
+</body>
 {% include '_scripts.html' %}
 </html>
