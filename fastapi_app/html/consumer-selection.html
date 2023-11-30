@@ -9,7 +9,7 @@
     <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw-src.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.0.6/dist/geosearch.css"/>
     <script src="https://unpkg.com/leaflet-geosearch@3.0.6/dist/geosearch.umd.js"></script>
-    <link href="{{ url_for('static', path='stylesheets/css/pages/consumer_selection.css') }}" rel="stylesheet"/>
+    <link href="{{ url_for('css', path='pages/consumer_selection.css') }}" rel="stylesheet"/>
 </head>
 <body onload="redirect_if_cookie_is_missing(true, true);
         db_nodes_to_js({{ project_id }}, true);

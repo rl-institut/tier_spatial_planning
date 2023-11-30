@@ -3,7 +3,7 @@
 <head>
     {% set title='Demand Estimation' %}
     {% include '_head.html' %}
-    <link href="{{ url_for('static', path='stylesheets/css/pages/consumer_selection.css') }}" rel="stylesheet"/>
+    <link href="{{ url_for('css', path='pages/consumer_selection.css') }}" rel="stylesheet"/>
 </head>
 <body onload="redirect_if_cookie_is_missing(true, true);
         load_previous_data('demand_estimation?project_id={{ project_id }}');

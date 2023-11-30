@@ -3,7 +3,7 @@
 <head>
     {% set title='Project Setup' %}
     {% include '_head.html' %}
-    <link href="{{ url_for('static', path='stylesheets/css/pages/project_setup.css') }}" rel="stylesheet"/>
+    <link href="{{ url_for('css', path='pages/project_setup.css') }}" rel="stylesheet"/>
 </head>
 <body onload="redirect_if_cookie_is_missing(true, true);
         load_previous_data('project_setup.css?project_id={{ project_id }}');
