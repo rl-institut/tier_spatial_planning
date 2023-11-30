@@ -1,6 +1,7 @@
 import calendar
 import os
 import time
+import warnings
 
 import pandas as pd
 from sqlalchemy import delete, text
@@ -123,7 +124,12 @@ def update_weather_db(country='Nigeria', year=None):
     if year is not None and year >= (pd.Timestamp.now() + pd.Timedelta(24 * 7, unit='H')).year:
         raise Exception("This function excepts available weather data for a entire year, "
                         "but for {} that data is not yet available".format(year))
+    elif year != 2022:
+        warnings.warn("Currently, only simulation the year 2022 is possible. Refer to the comments for "
+                      "detailed explanations.")
     year = (pd.Timestamp.now() + pd.Timedelta(24 * 14, unit='H')).year - 1 if year is None else int(year)
+    year = 2022 # so fast demand data is only available for 2022 and start_date is always 2022-01-01 and max. duration
+    # is one year (see func 'save_project_setup' in static/js/backend_communications.js )
     for month in range(1, 13, 3):  # Increment by 3
         start_date = pd.Timestamp(year=year, month=month, day=1) - pd.Timedelta(25, unit='H')
         end_month = month + 2  # Third month in the interval

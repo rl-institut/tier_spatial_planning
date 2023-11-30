@@ -22,7 +22,7 @@ from passlib.context import CryptContext
 import fastapi_app.helper.pydantic_schema
 from fastapi_app import config
 from fastapi_app.data.demand.demand_time_series import demand_time_series_df
-from fastapi_app.db import async_inserts, async_queries, sync_queries, sa_tables
+from fastapi_app.db import async_inserts, async_queries, sync_queries, sync_inserts, sa_tables
 from fastapi_app.helper import handle_user_accounts, identify_consumers_on_map
 from fastapi_app.helper.error_logger import logger as error_logger
 from fastapi_app.helper.handle_user_accounts import Hasher, create_guid, is_valid_credentials, send_activation_link, \
@@ -44,8 +44,7 @@ captcha_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 @app.on_event("startup")
 async def startup_event():
     if not config.DOCKERIZED and not sync_queries.check_if_weather_data_exists():
-        # sync_inserts.update_weather_db()
-        pass
+        sync_inserts.update_weather_db()
     await create_default_user_account()
 
 

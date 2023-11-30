@@ -117,7 +117,7 @@ def check_if_weather_data_exists():
         row_count = res
     else:
         row_count = 0
-    return row_count >= 30000000
+    return row_count >= 28151136
 
 
 def _execute_with_retry(query, which='first'):
