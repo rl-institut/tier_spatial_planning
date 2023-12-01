@@ -45,26 +45,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 function demand_ts(project_id) {
-    var xhr = new XMLHttpRequest();
-    url = 'get_demand_time_series/' + project_id;
-    xhr.open("GET", url, true);
-    xhr.responseType = "json";
-    xhr.send()
+    const url = 'get_demand_time_series/' + project_id;
 
-    xhr.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            var data = this.response;
-            var x = data['x'];
-            var y = data['y'];
-            var Very_High = data['Very High Consumption'];
-            var High = data['High Consumption'];
-            var Middle = data['Middle Consumption'];
-            var Low = data['Low Consumption'];
-            var Very_Low = data['Very Low Consumption'];
-            var National = data['National'];
-            var South_South = data['South South'];
-            var North_West = data['North West'];
-            var North_Central = data['North Central'];
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Extracting data
+            const { x, y, 'Very High Consumption': Very_High, 'High Consumption': High,
+                    'Middle Consumption': Middle, 'Low Consumption': Low,
+                    'Very Low Consumption': Very_Low, National,
+                    'South South': South_South, 'North West': North_West,
+                    'North Central': North_Central } = data;
 
             var plotElement = document.getElementById("demand_plot");
 
@@ -169,7 +165,7 @@ function demand_ts(project_id) {
                 },
             };
 
-            var layout = {
+                        var layout = {
                 title: "<b>Typical Modelled Household Daily Electrical Demand Profiles</b><br>'Average days' estimating <i>average contributions of each household</i> (to be scaled by community size)<br>365 days are modelled and included in profiles for simulation with full variability",
                 font: {size: 14},
                 autosize: false,
@@ -201,7 +197,8 @@ function demand_ts(project_id) {
             var data = [trace9, trace8, trace7, trace6, trace5, trace4, trace3, trace2, trace1];
 
             Plotly.newPlot(plotElement, data, layout);
-        }
-    };
+        })
+        .catch(error => {
+            console.error('There was a problem with the fetch operation:', error);
+        });
 }
-
