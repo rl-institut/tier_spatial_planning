@@ -4,10 +4,10 @@ import time
 import warnings
 
 import pandas as pd
-from sqlalchemy import delete, text, select
+from sqlalchemy import delete, text
 from sqlalchemy.exc import OperationalError
 
-from fastapi_app.config import DB_RETRY_COUNT, RETRY_DELAY, PW, EXAMPLE_USER_PW
+from fastapi_app.python.config import DB_RETRY_COUNT, RETRY_DELAY, PW, EXAMPLE_USER_PW
 from fastapi_app.python.db import sa_tables, sync_queries
 from fastapi_app.python.db.async_inserts import df_2_sql
 from fastapi_app.python.db.connections import get_sync_session_maker, sync_engine

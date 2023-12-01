@@ -9,7 +9,7 @@ from sqlalchemy import select, and_
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.sql import text
 
-from fastapi_app import config
+from fastapi_app.python import config
 from fastapi_app.python.db import sa_tables
 from fastapi_app.python.db.connections import get_sync_session_maker, sync_engine
 

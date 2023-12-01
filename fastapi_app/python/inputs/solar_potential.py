@@ -11,7 +11,7 @@ from pvlib.modelchain import ModelChain
 from pvlib.pvsystem import PVSystem
 from pvlib.temperature import TEMPERATURE_MODEL_PARAMETERS
 
-from fastapi_app import config
+from fastapi_app.python import config
 from fastapi_app.python.db import sync_queries
 
 

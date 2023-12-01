@@ -6,7 +6,7 @@ from sqlalchemy import delete, text
 from sqlalchemy import update
 from sqlalchemy.exc import OperationalError
 
-from fastapi_app.config import DB_RETRY_COUNT, RETRY_DELAY
+from fastapi_app.python.config import DB_RETRY_COUNT, RETRY_DELAY
 from fastapi_app.python.db import sa_tables
 from fastapi_app.python.db.async_queries import get_model_instance, get_user_by_username, get_projects_of_user
 from fastapi_app.python.db.connections import get_async_session_maker, async_engine

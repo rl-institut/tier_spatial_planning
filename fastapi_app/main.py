@@ -20,7 +20,7 @@ from jose import jwt
 from passlib.context import CryptContext
 
 import fastapi_app.python.helper.pydantic_schema
-from fastapi_app import config
+from fastapi_app.python import config
 from fastapi_app.python.inputs.demand_estimation import demand_time_series_df
 from fastapi_app.python.db import async_inserts, sync_queries, async_queries, sync_inserts, sa_tables, \
     handle_user_accounts
@@ -46,7 +46,6 @@ captcha_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 @app.on_event("startup")
 async def startup_event():
-    # if it is not
     if not config.DOCKERIZED and not sync_queries.check_if_weather_data_exists():
         sync_inserts.update_weather_db()
     sync_inserts.create_default_user_account()

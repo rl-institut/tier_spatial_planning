@@ -7,8 +7,8 @@ from jose import jwt, JWTError
 from sqlalchemy import select
 from sqlalchemy.exc import OperationalError, NoResultFound
 
-from fastapi_app import config
-from fastapi_app.config import DB_RETRY_COUNT, RETRY_DELAY
+from fastapi_app.python import config
+from fastapi_app.python.config import DB_RETRY_COUNT, RETRY_DELAY
 from fastapi_app.python.db import sa_tables
 from fastapi_app.python.db.connections import get_async_session_maker, async_engine
 

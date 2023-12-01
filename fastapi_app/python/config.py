@@ -4,7 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 APP_DIR = "fastapi_app"
-DIRECTORY_WP3 = os.path.join(APP_DIR, "data", "demand").replace("\\", "/")
+DIRECTORY_WP3 = os.path.join(APP_DIR, "../files", "model_input", "demand").replace("\\", "/")
 FULL_PATH_PROFILES = os.path.join(DIRECTORY_WP3, "1-hour_mean_365_days_all_users.parquet").replace("\\", "/")
 FULL_PATH_DISTRIBUTIONS = os.path.join(DIRECTORY_WP3, "zonal_consumption_distributions.parquet").replace("\\", "/")
 
@@ -65,9 +65,9 @@ if is_set('KEY_FOR_ACCESS_TOKEN') is False:
 if is_set('EXAMPLE_USER_PW') is False:
     print("To set up the default_example user, you need to define the environment variable EXAMPLE_USER_PW")
 
-DB_RETRY_COUNT = int(os.environ.get('DB_RETRY_COUNT'))
-RETRY_DELAY = float(os.environ.get('DB_RETRY_DELAY'))
-TOKEN_ALG = os.environ.get('TOKEN_ALG')
+DB_RETRY_COUNT = int(os.environ.get('DB_RETRY_COUNT', 10))
+RETRY_DELAY = float(os.environ.get('DB_RETRY_DELAY', 5))
+TOKEN_ALG = os.environ.get('TOKEN_ALG', 'HS256')
 KEY_FOR_ACCESS_TOKEN = os.environ.get('KEY_FOR_ACCESS_TOKEN')
 ACCESS_TOKEN_EXPIRE_MINUTES = int(float(os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES')))
 ACCESS_TOKEN_EXPIRE_MINUTES_ANONYMOUS = int(float(os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES_ANONYMOUS')))

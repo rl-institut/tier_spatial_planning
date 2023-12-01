@@ -53,7 +53,7 @@ services:
     container_name: 'celery_default'
     build: .
     restart: always
-    command: celery -A fastapi_app.task_queue.celery_worker.worker worker --loglevel=INFO --pool prefork  --concurrency=16 --queues=default_queue
+    command: celery -A fastapi_app.python.task_queue.celery_worker.worker worker --loglevel=INFO --pool prefork  --concurrency=16 --queues=default_queue
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
@@ -70,7 +70,7 @@ services:
     container_name: 'celery_milp'
     build: .
     restart: always
-    command: celery -A fastapi_app.task_queue.celery_worker.worker worker --loglevel=INFO --pool prefork  --concurrency=8 --queues=milp_queue
+    command: celery -A fastapi_app.python.task_queue.celery_worker.worker worker --loglevel=INFO --pool prefork  --concurrency=8 --queues=milp_queue
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
@@ -83,11 +83,28 @@ services:
       - mysql
     secrets:
       - pw
+  celery_beat:
+    container_name: 'celery_beat'
+    build: .
+    restart: always
+    command: celery -A fastapi_app.python.task_queue.celery_worker.worker beat --loglevel=INFO
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - FLOWER_PORT=5555
+      - PW=/run/secrets/pw
+      - DB_HOST=mysql
+    depends_on:
+      - redis
+      - mysql
+      - app
+    secrets:
+      - pw
   flower:
     container_name: 'flower'
     build: .
     restart: always
-    command: celery -A fastapi_app.task_queue.celery_worker.worker flower --port=5555
+    command: celery -A fastapi_app.python.task_queue.celery_worker.worker flower --port=5555
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
@@ -117,6 +134,20 @@ services:
       - ADMINER_DEFAULT_PASSWORD_FILE=/run/secrets/pw
     secrets:
       - pw
+  initializer:
+    build: .
+    command: python fastapi_app.python.db.init_db.py
+    depends_on:
+      - mysql
+    restart: no
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PW=/run/secrets/pw
+      - EXAMPLE_USER_PW=/run/secrets/example_user_pw
+      - DB_HOST=mysql
+      - DOCKERIZED=1
+    env_file:
+      - app.env
 secrets:
   pw:
     file: ./secrets/secret.txt

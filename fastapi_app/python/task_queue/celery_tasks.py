@@ -53,10 +53,3 @@ def task_is_finished(task_id):
     else:
         return False
 
-
-@worker.task(name='celery_worker.task_startup', force=True, track_started=True)
-def task_startup():
-    if not sync_queries.check_if_weather_data_exists():
-        sync_inserts.update_weather_db()
-    sync_inserts.create_default_user_account()
-

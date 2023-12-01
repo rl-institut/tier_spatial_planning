@@ -5,7 +5,7 @@ import oemof.solph as solph
 import pandas as pd
 import pyomo.environ as po
 
-from fastapi_app import config
+from fastapi_app.python import config
 from fastapi_app.python.db import sync_queries, sync_inserts, sa_tables
 from fastapi_app.python.helper.error_logger import logger as error_logger
 from fastapi_app.python.helper.mail import send_mail

@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from fastapi_app import config
+from fastapi_app.python import config
 
 
 def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distribution_lookup=None):

@@ -7,7 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, scoped_session
 
-from fastapi_app.config import DB_USER_NAME, PW, DB_HOST, DB_PORT, DB_NAME
+from fastapi_app.python.config import DB_USER_NAME, PW, DB_HOST, DB_PORT, DB_NAME
 from fastapi_app.python.db.sa_tables import Base
 
 BASE_URL = 'mysql+package://{}:{}@{}:{}/{}'.format(DB_USER_NAME, PW, DB_HOST, DB_PORT, DB_NAME)

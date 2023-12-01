@@ -3,7 +3,7 @@ import warnings
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from fastapi_app import config
+from fastapi_app.python import config
 
 
 def send_mail(to_address, msg, subject='Activate your PeopleSun-Account'):
