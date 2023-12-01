@@ -34,6 +34,13 @@ from fastapi_app.python.opt_models.supply_optimizer import optimize_energy_syste
 from fastapi_app.python.task_queue.celery_tasks import task_grid_opt, task_supply_opt, task_remove_anonymous_users, \
     get_status_of_task, task_is_finished, worker
 
+"""
+This module is the central hub of the FastAPI application, where all the routes and endpoints are defined. It handles 
+not only the API's logic and data processing but also serves pages to the user. The module takes care of user 
+interactions, ranging from authentication and form submissions to serving static files, web pages, and templates. It 
+links front-end requests to the appropriate back-end responses.
+"""
+
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 
 app = FastAPI()

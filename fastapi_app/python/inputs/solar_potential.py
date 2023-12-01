@@ -14,6 +14,15 @@ from pvlib.temperature import TEMPERATURE_MODEL_PARAMETERS
 from fastapi_app.python import config
 from fastapi_app.python.db import sync_queries
 
+"""
+
+This module focuses on acquiring and processing weather data for solar energy analysis. It includes functions for 
+creating a Climate Data Store API configuration file, downloading weather data from the ERA5 dataset for specific 
+countries and date ranges, and preparing this data for solar potential analysis using the pvlib library. Key 
+functionalities involve retrieving grid points from the dataset and calculating the direct current (DC) power output 
+of a photovoltaic (PV) system based on the weather data. The module's integration with pvlib and era5 libraries, 
+combined with detailed solar panel and inverter specifications, enables it to calculate solar potential time series
+"""
 
 def create_cdsapirc_file():
     home_dir = os.path.expanduser('~')

@@ -5,6 +5,16 @@ from fastapi_app.python.opt_models.grid_optimizer import optimize_grid
 from fastapi_app.python.opt_models.supply_optimizer import optimize_energy_system
 from fastapi_app.python.task_queue.celery_worker import worker
 
+"""
+This module in a FastAPI application uses Celery to handle asynchronous tasks:
+
+1. `task_grid_opt`: Optimizes grid layouts for users and projects, with retry capabilities.
+2. `task_supply_opt`: Optimizes energy supply systems for specific users and projects.
+3. `task_remove_anonymous_users`: Deletes anonymous user accounts asynchronously.
+
+Additionally, it includes functions to check the status of these tasks, identifying if they have completed, failed, 
+or been revoked. This setup enables efficient, asynchronous processing of complex tasks and user management.
+"""
 
 @worker.task(name='celery_worker.task_grid_opt',
              force=True,

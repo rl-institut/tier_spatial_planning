@@ -3,6 +3,16 @@ import pandas as pd
 
 from fastapi_app.python import config
 
+"""
+
+This module is dedicated to generating demand time series for different types of consumers based on node data and 
+various demand parameters. It involves calculating the number of households and enterprises, obtaining geographical 
+coordinates, and selecting demand profiles. The module reads profile data, combines household and enterprise profiles, 
+and calibrates the total profile based on user-specified calibration targets, either in kilowatts or kilowatt-hours. 
+This calibrated profile is then used in the application to represent the demand time series for a given set of nodes 
+and consumer types.
+Note: This module was not developed by the TU Berlin but rather by the Rainer Limone Institute.
+"""
 
 def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distribution_lookup=None):
     # print(nodes)

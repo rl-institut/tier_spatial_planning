@@ -6,6 +6,30 @@ from fastapi_app.python.db import sync_queries, sa_tables
 from fastapi_app.python.inputs import demand_estimation
 
 
+"""
+The `BaseOptimizer` class in this module serves as the parent class for both grid and energy system optimizers in the 
+FastAPI application. It provides core functionalities and attributes common to both optimizer types. Key features 
+include:
+
+Initialization: It initializes attributes based on user and project identifiers, retrieving project setup 
+details from the database.
+
+Time Frame Handling: The class sets up the operational time frame for optimization, including start dates and 
+hourly datetime indices.
+
+Financial Parameters: It calculates financial parameters like weighted average cost of capital (`wacc`) and 
+capital recovery factor (`crf`), crucial for investment analysis.
+
+Demand Calculation: The class computes the electricity demand profile, a key input for grid and energy system 
+capacity planning.
+
+CAPEX Calculation: A method to calculate equivalent capital expenditure for components with lifetimes shorter
+than the project duration, factoring in replacements and financial aspects.
+
+This class forms the foundation for the more specialized `GridOptimizer` and `EnergySystemOptimizer` classes, ensuring 
+code reusability and a structured approach to optimization within the application.
+"""
+
 class BaseOptimizer:
     """
     This is a general parent class for both grid and energy system optimizers

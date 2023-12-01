@@ -12,6 +12,50 @@ from fastapi_app.python.helper.mail import send_mail
 from fastapi_app.python.inputs import solar_potential
 from fastapi_app.python.opt_models.base_optimizer import BaseOptimizer
 
+"""
+The provided module is a comprehensive energy system optimization tool based on the `oemof` framework, a library for 
+modeling and optimizing energy systems. It's designed to handle various components of an energy system and operates in 
+two primary modes: dispatch and design.
+
+**Overview of the Module:**
+
+- **Energy System Components Modeled:**
+  - **Photovoltaic (PV) Systems:** Models solar power generation.
+  - **Diesel Generator Sets (Gensets):** Represents diesel-based power generation.
+  - **Batteries:** For energy storage, handling charging and discharging processes.
+  - **Inverters and Rectifiers:** Convert electrical energy from DC to AC and vice versa.
+  - **Electricity and Fuel Buses:** Act as intermediaries for energy flow within the system.
+  - **Shortage and Surplus Handling:** Manages deficits and excesses in energy supply.
+
+- **Operational Modes:**
+  - **Dispatch Mode:** In this mode, the capacities of various components (like PV, batteries, and gensets) are 
+    predetermined. The optimization focuses on the best way to utilize these capacities to meet the demand efficiently.
+  - **Design Mode:** Here, the capacities of the components are not fixed and are subject to optimization. The system 
+    determines the ideal sizes of PV installations, battery storage, and other components to meet energy demands 
+    cost-effectively.
+
+**Key Functionalities and Processes:**
+
+- **Initialization and Data Handling:**
+  - It initializes by fetching project-specific data, including user IDs and project IDs, and retrieves the design 
+    parameters for the energy system components.
+  - Solar potential data is acquired based on location coordinates, and peak demand values are calculated.
+
+- **Optimization Process:**
+  - Utilizes `oemof.solph` for optimization, considering various energy flows and storage dynamics.
+  - The optimizer sets up energy flows between different components, considering constraints and efficiencies.
+  - It calculates costs for different components and handles investments for the design mode.
+
+- **Results Processing and Database Interaction:**
+  - After optimization, the results are processed to extract key metrics such as Levelized Cost of Energy (LCOE), 
+    renewable energy share (RES), surplus electricity, and energy shortfall.
+  - The results are then stored in the database, including detailed component capacities, emissions data, and 
+    financial metrics.
+
+- **Notification and Status Update:**
+  - Updates the project status in the database and, if configured, sends email notifications upon completion of the 
+    optimization process.
+"""
 
 def optimize_energy_system(user_id, project_id):
     try:
@@ -26,24 +70,12 @@ def optimize_energy_system(user_id, project_id):
 
 
 class EnergySystemOptimizer(BaseOptimizer):
-    """
-    This class includes:
-        - methods for optimizing the "energy system" object
-        - attributes containing all default values for the optimization parameters.
-
-    Attributes
-    ----------
-    ???
-    """
 
     def __init__(
             self,
             user_id,
             project_id,
     ):
-        """
-        Initialize the grid optimizer object
-        """
         print('start es opt')
         super().__init__(user_id, project_id)
         energy_system_design = sync_queries.get_energy_system_design(user_id, project_id)

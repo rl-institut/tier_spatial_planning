@@ -157,7 +157,8 @@ def create_default_user_account():
                                   guid='',
                                   is_confirmed=True,
                                   is_active=False,
-                                  is_superuser=False)
+                                  is_superuser=False,
+                                  show_tutorial=False)
         merge_model(user)
     if sync_queries.get_user_by_username('admin') is None:
         user = sa_tables.User(email='admin',
@@ -165,5 +166,6 @@ def create_default_user_account():
                                   guid='',
                                   is_confirmed=True,
                                   is_active=False,
-                                  is_superuser=True)
+                                  is_superuser=True,
+                                  show_tutorial=False)
         merge_model(user)

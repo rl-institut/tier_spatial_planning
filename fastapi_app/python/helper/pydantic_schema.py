@@ -6,6 +6,10 @@ import pandas as pd
 from flatten_dict.reducers import make_reducer
 from pydantic import BaseModel
 
+"""
+This module comprises a collection of Pydantic models used in a FastAPI application, defining the structure of various 
+data types for API requests and responses.
+"""
 
 class Credentials(BaseModel):
     email: str

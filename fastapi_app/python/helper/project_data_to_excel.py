@@ -4,6 +4,13 @@ warnings.filterwarnings('ignore', category=FutureWarning, module='pandas')
 import pandas as pd
 import io
 
+"""
+This module contains functions for generating an Excel file based on the results of the user-project. It includes 
+functionality to format data from various DataFrame inputs like energy_system_design, energy_flow_df, and 
+results_df into structured sheets within an Excel file. The module handles the formatting of data such as renaming 
+columns, setting units, and adjusting column widths for readability. The Excel file is then created using the 
+pandas.ExcelWriter class.
+"""
 
 def project_data_df_to_xlsx(input_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df):
     input_df = pd.concat([input_df.T, energy_system_design.T])

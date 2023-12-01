@@ -14,6 +14,83 @@ from fastapi_app.python.opt_models.base_optimizer import BaseOptimizer
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
+"""
+This module is an intricate part of a FastAPI application designed for grid optimization in energy projects, with a 
+focus on efficiently connecting consumers to a power house through a distribution grid. The grid comprises poles, 
+connection cables, and distribution cables. Here's an expanded overview highlighting the key aspects and 
+functionalities:
+
+1. **Initial Data Retrieval:**
+   - The module begins by querying a database to retrieve node data, which includes all consumers needing power supply. 
+     It also gathers project parameters like the Weighted Average Cost of Capital (WACC), crucial for financial 
+     calculations in the optimization process.
+
+2. **Grid Optimization Objective:**
+   - The primary goal is to connect these consumers to the power house in the most efficient manner. This involves 
+     determining the optimal placement of poles and routing of distribution and connection cables.
+
+3. **Core Optimization Process:**
+   - Utilizing the `GridOptimizer` class, it employs k-means clustering for determining the optimal locations for poles.
+   - The optimizer connects consumers to the nearest poles and interlinks poles using a minimum spanning tree approach, 
+     ensuring an efficient energy distribution network.
+   - The grid optimization takes into account the maximum permissible length for connection cables to avoid overly long 
+     connections that might be inefficient or impractical.
+
+
+4. **Cost Calculations and Constraints Handling in Grid Optimization (Refined):**
+
+   - **Initial Setup and User Specifications:**
+     - The process begins with all potential grid consumers included. Users of the system have the option to manually 
+       specify certain consumers to be either definitely connected, excluded, or equipped with solar home systems (SHS). 
+       This user input is crucial in guiding the initial setup and subsequent optimization steps.
+
+   - **Initial Cost Distribution Among Consumers:**
+     - The initial phase involves distributing the cost of grid components (poles, cables) among all consumers. This 
+       allocation is based on each consumer’s specific connection details, ensuring a fair and proportionate 
+       distribution of the grid's total cost.
+
+   - **Exclusion of Consumers Based on Cost Threshold:**
+     - The algorithm then evaluates each consumer, starting from the ends of the grid's branches, to check if their 
+       individual connection cost exceeds a user-defined maximum threshold. 
+     - Consumers whose connection costs are too high are considered for exclusion. This is a crucial step in 
+       maintaining the financial viability of the grid.
+
+   - **Iterative Optimization Process:**
+     - After each exclusion, the grid’s cost allocation is recalculated. This iterative process is key to understanding 
+       the financial implications of each exclusion and adjusting the grid design accordingly.
+     - If a consumer's cost is within the acceptable range, all consumers upstream in the same branch are automatically 
+       retained in the grid. This decision point helps streamline the optimization process by finalizing sections of 
+       the grid without further analysis.
+
+   - **Determining the Direction of Grid Links:**
+     - A critical component of this process is establishing the directionality of each grid link. Since the Kruskal 
+       algorithm, used for the minimum spanning tree (MST) calculation, does not provide link direction, the module 
+       includes a specific function for this purpose.
+     - Determining the direction of flow for each link is essential for accurately assigning costs and for the logical 
+       distribution of power within the grid.
+
+   - **Dynamic Grid Adjustment:**
+     - Based on the ongoing optimization, the grid configuration is dynamically adjusted. Consumers may be excluded 
+       based on cost-effectiveness, and the layout of poles and cables is modified to reflect the most efficient 
+       design under the given constraints.
+     - This dynamic adjustment ensures that the final grid layout is not only technically sound but also adheres to the 
+       financial and user-defined parameters, striking a balance between efficiency, cost-effectiveness, 
+       and user preferences.
+
+5. **Final Output and Database Interaction:**
+   - Post-optimization, the `nodes` object, now containing both consumers and poles, is written back to the database. 
+     This provides a comprehensive view of the grid layout and participant nodes.
+   - The `links` object is also stored in the database. It details the start and end points of all cables, categorizes 
+     the type of cables (distribution or connection), and identifies the start and end nodes (consumers, poles, 
+     power-house).
+   - The result is a database-driven representation of the optimized grid, providing a foundation for further analysis, 
+     implementation, or modification.
+
+6. **Error Handling and Logging:**
+   - Throughout the process, the module ensures robust error handling and logging, crucial for diagnosing issues and 
+     optimizing performance.
+
+"""
 
 def optimize_grid(user_id, project_id):
     try:
