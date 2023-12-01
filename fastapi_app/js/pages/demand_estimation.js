@@ -1,3 +1,12 @@
+/**
+ * This script handles UI interactions and data visualization in a web application.
+ * - Toggles visibility of an accordion section based on a switch.
+ * - Adjusts input fields in response to radio button selections.
+ * - Listens for radio button changes and stores the selected value.
+ * - Fetches and plots time series data for demand profiles using Plotly.
+ */
+
+
 document.getElementById('toggleswitch').addEventListener('change', function (event) {
     const accordionItem2 = new bootstrap.Collapse(document.getElementById('collapseTwo'), {
         toggle: false

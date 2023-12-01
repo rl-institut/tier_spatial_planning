@@ -1,3 +1,20 @@
+/**
+ * This script manages map interactions in a web application, focusing on consumer types and specific services or
+ * enterprises.
+ * - Dynamically populates dropdown menus based on consumer types ('Household', 'Enterprise', 'Public Service').
+ * - Includes separate lists for 'Enterprise' and 'Public Service', each with specific categories, used to update
+ *   dropdowns based on consumer choice.
+ * - Manages a list of large electrical loads and updates the UI to display these options based on the selected
+ *   enterprise or service.
+ * - Implements functions to handle map marker interactions, such as adding new consumers, updating existing ones, and
+ *   custom icon management.
+ * - Uses MutationObserver to monitor UI changes and display modals for user alerts.
+ * - Includes utility functions for updating UI elements and handling user inputs related to the map and consumer
+ *   details.
+ * - Designed to support dynamic interaction and visualization of spatial data for planning or resource allocation in
+ *   a geographical mapping context.
+ */
+
 let consumer_list = {
     'H': 'Household',
     'E': 'Enterprise',

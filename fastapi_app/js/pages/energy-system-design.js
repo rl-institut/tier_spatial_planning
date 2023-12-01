@@ -1,6 +1,16 @@
-var targetNode = document.getElementById('responseMsg');
-var config = {childList: true, subtree: true, characterData: true};
-var callback = function (mutationsList, observer) {
+/**
+ * This script manages UI elements and SVG diagram interactions in a web application.
+ * - Uses MutationObserver to display a modal when specific DOM changes occur.
+ * - Defines and manipulates SVG elements for a dynamic energy system diagram.
+ * - Enables and disables various options based on user input and system configuration.
+ * - Dynamically styles SVG components (blocks, lines, arrows) based on user selections.
+ * - Refreshes the diagram to reflect current system configuration, including energy sources and flow.
+ */
+
+
+const targetNode = document.getElementById('responseMsg');
+const config = {childList: true, subtree: true, characterData: true};
+const callback = function (mutationsList, observer) {
     for (let mutation of mutationsList) {
         if ((mutation.type === 'childList' || mutation.type === 'characterData') && targetNode.textContent.trim() !== '') {
             var modal = document.getElementById('msgBox');
@@ -8,11 +18,12 @@ var callback = function (mutationsList, observer) {
         }
     }
 };
-var observer = new MutationObserver(callback);
+
+const observer = new MutationObserver(callback);
 observer.observe(targetNode, config);
 
 
-var xLeft = 40;
+const xLeft = 40;
 var yTop = 130;
 var roundCornerBlock = 5;
 var roundCornerBus = 2;

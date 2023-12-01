@@ -1,4 +1,37 @@
-function plot() {
+/**
+ * This JavaScript file contains a collection of asynchronous functions designed to communicate
+ * with a FastAPI backend server. These functions are integral to the operation of a web application,
+ * enabling a wide range of interactive features and data-driven functionalities. Key aspects include:
+ *
+ * - Fetching and Rendering Data: Functions to retrieve various types of data from the server,
+ *   such as plot data for charts, node and link data for maps, and results of energy system optimization.
+ *   This data is then used to update the UI and render visualizations accordingly.
+ *
+ * - Form Submission and Data Handling: Several functions handle the submission of forms and user data
+ *   to the server. This includes user registration, login, password changes, and deletion of accounts.
+ *   Additionally, project-specific data like energy system design, grid design, and demand estimation are
+ *   also submitted for processing and storage.
+ *
+ * - Dynamic UI Updates: Functions that dynamically update the user interface based on the data received
+ *   from the server or user interactions. This includes updating map markers, displaying project details,
+ *   and showing/hiding elements based on user actions or server responses.
+ *
+ * - User Authentication and Session Management: Functions to manage user sessions, including login,
+ *   logout, token renewal, and handling anonymous sessions. This ensures secure access and personalization
+ *   of the user experience.
+ *
+ * - Project Management: Functions to create, copy, and delete projects, as well as handling specific
+ *   project-related tasks like starting calculations, checking for pending tasks, and managing notifications.
+ *
+ * - Utility Functions: Additional utility functions like captcha handling for security, cookie consent
+ *   management, and email functionalities to enhance user interaction and application security.
+ *
+ * Overall, these functions form the backbone of client-server communication in the application, ensuring
+ * smooth data flow, user interaction, and application functionality.
+ */
+
+
+function plot_results() {
     const urlParams = new URLSearchParams(window.location.search);
     project_id = urlParams.get('project_id');
     fetch('/get_plot_data/' + project_id + '/demand_coverage')
@@ -344,7 +377,7 @@ async function load_results(project_id) {
                     document.getElementById('responseMsg').innerHTML = results['responseMsg'];
                 }
             } else {
-                plot();
+                plot_results();
             }
 
         } else {

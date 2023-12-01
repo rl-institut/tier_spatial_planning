@@ -1,4 +1,36 @@
-// Create a polygon draw handler object
+/**
+ * The script integrates interactive drawing tools into a Leaflet.js map withina FastAPI web application. Primarily
+ * utilized on the "consumer-selection" page, it empowers users to draw markers, rectangles, and polygons on the
+ * map. These drawings are crucial for designating consumer locations and marking
+ * specific areas of interest.
+ *
+ * Key Features:
+ * - Polygon and Rectangle Drawing: Enables users to draw polygons and rectangles on the map with predefined
+ *   shape and color settings, enhancing the map's interactivity and user engagement.
+ *
+ * - Custom Marker Controls: Facilitates the addition of distinct icons, such as power houses or consumers,
+ *   onto the map, allowing for a more detailed and customized mapping experience.
+ *
+ * - Event Listeners: Actively listens for and responds to the creation of new shapes or markers. It ensures
+ *   that the map elements are updated in real time, reflecting user actions instantaneously.
+ *
+ * - Dynamic Marker Management: Provides functionalities to dynamically add or remove markers based on user
+ *   interactions, offering a flexible and responsive user interface.
+ *
+ * - Trash Bin Control: Incorporates a custom control to clear all drawn items from the map, simplifying the
+ *   process of resetting or starting a new selection.
+ *
+ * - GeoSearch Integration: Utilizes the GeoSearch library to enable location searching capabilities,
+ *   enhancing the usability and functionality of the map.
+ *
+ * - Consumer Toggle Feature: Includes a toggle mechanism to switch between adding and removing consumers
+ *   from the map, offering versatility in map manipulation.
+ *
+ * - Consumer Count Display: Counts and displays the number of consumers currently present on the map, providing
+ *   valuable insights at a glance.
+ */
+
+
 var polygonDrawer = new L.Draw.Polygon(map, {
     shapeOptions: {
         color: '#1F567D80'

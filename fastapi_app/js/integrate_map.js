@@ -1,4 +1,27 @@
-// Create the map and set the center and zoom level
+/**
+ * This script is designed to create and manage an interactive map using Leaflet.js, tailored specifically for two
+ * distinct pages within a FastAPI application: "consumer-selection" and "results".
+ *
+ * Features:
+ * - On the "results" page, the script dynamically displays an array of markers, including consumers, enterprises,
+ *   public services, powerhouses, poles, and solar home systems. Additionally, it visualizes links between these
+ *   entities. All markers and links are automatically updated based on the data retrieved from the database.
+ *
+ * - The "consumer-selection" page, while also featuring these markers and links, goes a step further by incorporating
+ *   drawing tools for enhanced user interaction. These drawing tools, however, are activated only when the
+ *   "add_drawing_tools_to_map.js" script is also implemented.
+ *
+ * - The map is designed with multiple layers, including the standard OpenStreetMap and a Satellite view, allowing
+ *   users to toggle between different map styles for better visualization.
+ *
+ * - Customizable map features include zoom control and a bespoke legend, specifically designed for a region with
+ *   defined boundaries around Nigeria. This enhances the user experience by providing relevant geographical context
+ *   and detail.
+ *
+ * Overall, this script is a key component in enhancing the interactivity and functionality of the map feature on
+ * the FastAPI application, playing a crucial role in both the "consumer-selection" and "results" pages.
+ */
+
 
 var is_load_center = true;
 
