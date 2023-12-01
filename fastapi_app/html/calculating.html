@@ -67,5 +67,6 @@
             send_email_notification({{ project_id }}, is_active)
         });
     </script>
+    <script src="{{ url_for('js', path='backend_communication.js') }}"></script>
 {% endif %}
 </html>

@@ -239,7 +239,7 @@ var zoomAllControl = L.Control.extend({
     onAdd: function (map) {
         var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
         let baseUrl = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port : '');
-        let address = "url(" + baseUrl + "fastapi_app/files/public/media_files/images/imgZoomToAll.png)"
+        let address = "url(" + baseUrl + "/fastapi_app/files/public/media_files/images/imgZoomToAll.png)"
         container.style.backgroundColor = 'white';
         container.style.backgroundImage = address;
         container.style.backgroundSize = "28px 28px";
