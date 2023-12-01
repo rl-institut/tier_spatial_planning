@@ -1,7 +1,7 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light navbar--scenario">
     <div class="container-fluid">
         <span class="navbar-brand">
-            <a href="/"><img src="{{ url_for('static', path='assets/logos/peoplesun_logo.webp') }}"
+            <a href="/"><img src="{{ url_for('public', path='media_files/assets/logos/PeopleSunLogo.png') }}"
                              alt="peoplesun Logo"></a>
         </span>
         <button
@@ -30,9 +30,9 @@
                             aria-expanded="false"
                     >
                         {% if language == 'de_DE' %}
-                            <img src="{{ url_for('static', path='assets/flags/de.svg') }}" alt="de"/>
+                            <img src="{{ url_for('public', path='media_files/assets/flags/de.svg') }}" alt="de"/>
                         {% else %}
-                            <img src="{{ url_for('static', path='assets/flags/gb.svg') }}" alt="gb"/>
+                            <img src="{{ url_for('public', path='media_files/assets/flags/gb.svg') }}" alt="gb"/>
                         {% endif %}
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown" style="width: 30px">
@@ -40,10 +40,10 @@
 
                             {% if language == 'de_DE' %}
                                 <a class="dropdown-item" href="/{{ page }}?lang=en">
-                                <img src="{{ url_for('static', path='assets/flags/gb.svg') }}" alt="en"/>
+                                <img src="{{ url_for('public', path='media_files/assets/flags/gb.svg') }}" alt="en"/>
                             {% else %}
                                 <a class="dropdown-item" href="/{{ page }}?lang=de">
-                                <img src="{{ url_for('static', path='assets/flags/de.svg') }}" alt="de"/>
+                                <img src="{{ url_for('public', path='media_files/assets/flags/de.svg') }}" alt="de"/>
                             {% endif %}</a>
                         </li>
                         <li>

@@ -83,23 +83,6 @@ services:
       - mysql
     secrets:
       - pw
-  celery_beat:
-    container_name: 'celery_beat'
-    build: .
-    restart: always
-    command: celery -A fastapi_app.python.task_queue.celery_worker.worker beat --loglevel=INFO
-    environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - FLOWER_PORT=5555
-      - PW=/run/secrets/pw
-      - DB_HOST=mysql
-    depends_on:
-      - redis
-      - mysql
-      - app
-    secrets:
-      - pw
   flower:
     container_name: 'flower'
     build: .
@@ -134,12 +117,13 @@ services:
       - ADMINER_DEFAULT_PASSWORD_FILE=/run/secrets/pw
     secrets:
       - pw
-  initializer:
+  db_initializer:
+    container_name: 'db_initializer'
     build: .
-    command: python fastapi_app.python.db.init_db.py
+    command: python -m fastapi_app.python.db.init_db
     depends_on:
       - mysql
-    restart: no
+    restart: "no"
     environment:
       - PYTHONUNBUFFERED=1
       - PW=/run/secrets/pw
