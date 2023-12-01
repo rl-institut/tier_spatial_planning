@@ -11,6 +11,10 @@ from sqlalchemy.dialects.mysql import TINYINT, SMALLINT, FLOAT, INTEGER
 from sqlalchemy.dialects.mysql.json import JSON
 from sqlalchemy.ext.declarative import as_declarative, declared_attr
 
+"""
+This module defines a set of SQLAlchemy ORM models for the database. The tables are automatically created at the 
+startup of the application if they do not already exist, a process initiated by the module ./connections.
+"""
 
 @as_declarative()
 class Base:

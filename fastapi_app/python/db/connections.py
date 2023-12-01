@@ -10,6 +10,13 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from fastapi_app.python.config import DB_USER_NAME, PW, DB_HOST, DB_PORT, DB_NAME
 from fastapi_app.python.db.sa_tables import Base
 
+"""
+This module configures synchronous and asynchronous database connections for a FastAPI app, setting up SQLAlchemy 
+engines and session makers. It ensures database and table creation, with a high number of retries (up to 400) to 
+accommodate for potential delays in the MySQL Docker service startup. Functions to obtain new database sessions are 
+also provided.
+"""
+
 BASE_URL = 'mysql+package://{}:{}@{}:{}/{}'.format(DB_USER_NAME, PW, DB_HOST, DB_PORT, DB_NAME)
 SYNC_DB_URL = BASE_URL.replace('package', 'mysqlconnector')
 ASYNC_DB_URL = BASE_URL.replace('package', 'aiomysql')

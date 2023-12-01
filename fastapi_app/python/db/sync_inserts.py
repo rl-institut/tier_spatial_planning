@@ -14,6 +14,13 @@ from fastapi_app.python.db.connections import get_sync_session_maker, sync_engin
 from fastapi_app.python.inputs.solar_potential import download_weather_data, prepare_weather_data
 from fastapi_app.python.db.handle_user_accounts import Hasher
 
+"""
+Synchronous database operations are utilized when database functions are executed by energy system models 
+(GridOptimizer, EnergySystemOptimizer) within a Docker network, managed by the Celery task queue. These synchronous 
+functions ensure reliability in scenarios where asynchronicity is not critical. Conversely, when database operations 
+are triggered by FastAPI routes, asynchronous functions are employed. This approach prevents blocking the execution 
+of other Python code, enhancing efficiency and responsiveness in handling web requests.
+"""
 
 def merge_model(model):
     new_engine = False

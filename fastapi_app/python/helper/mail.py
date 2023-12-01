@@ -5,10 +5,16 @@ from email.mime.text import MIMEText
 
 from fastapi_app.python import config
 
+"""
+This module is utilized primarily during user registration in the application to send activation links. It is also used 
+for sending password reset emails or notifications for changes in user email. Additionally, the module is employed to 
+dispatch emails upon the completion of project calculations, provided the user has enabled email notifications. 
+Moreover, it serves a critical function in error logging by sending relevant email alerts.
+"""
 
 def send_mail(to_address, msg, subject='Activate your PeopleSun-Account'):
-    smtp_server = 'exchange.tu-berlin.de'
-    smtp_port = 587
+    smtp_server = config.MAIL_HOST
+    smtp_port = config.MAIL_PORT
     smtp_username = config.MAIL_ADDRESS
     smtp_password = config.MAIL_PW
     message = MIMEMultipart()

@@ -3,8 +3,16 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+"""
+This module manages the configuration settings for the application, handling two scenarios: running within a Docker 
+environment or outside of it. In both cases, it utilizes the app.env file to load environment variables. The module 
+defines paths for essential directories and files, checks for the existence of secret keys and other environment 
+variables, and sets up necessary parameters for database connections, mail services, and token management based on 
+these environment settings. The configuration dynamically adapts based on whether the application is Dockerized or not.
+"""
+
 APP_DIR = "fastapi_app"
-DIRECTORY_WP3 = os.path.join(APP_DIR, "../files", "model_input", "demand").replace("\\", "/")
+DIRECTORY_WP3 = os.path.join(APP_DIR, "files", "model_input", "demand").replace("\\", "/")
 FULL_PATH_PROFILES = os.path.join(DIRECTORY_WP3, "1-hour_mean_365_days_all_users.parquet").replace("\\", "/")
 FULL_PATH_DISTRIBUTIONS = os.path.join(DIRECTORY_WP3, "zonal_consumption_distributions.parquet").replace("\\", "/")
 
@@ -19,8 +27,8 @@ var_list = ['PW',
             'EXAMPLE_USER_PW']
 
 if os.environ.get('DOCKERIZED') is None or bool(os.environ.get('DOCKERIZED')) is False:
-    # If the environment variable 'DOCKERIZED' is not set, it is assumed that the app is running outside a docker container.
-    # In this case, we need to read the environment files and docker secrets files manually.
+    # If the environment variable 'DOCKERIZED' is not set, it is assumed that the app is running outside a docker
+    # container. In this case, we need to read the environment files and docker secrets files manually.
     load_dotenv(dotenv_path='app.env')
 
 root_path = os.getcwd()
@@ -83,5 +91,11 @@ MAIL_PW = os.environ.get('MAIL_PW')
 MAIL_ADDRESS = os.environ.get('MAIL_ADDRESS')
 MAIL_ADDRESS_LOGGER = os.environ.get('MAIL_ADDRESS_LOGGER')
 HEADER_ADDRESS = os.environ.get('HEADER_ADDRESS')
+LOGGER_RECEIVING_MAIL = os.environ.get('LOGGER_RECEIVING_MAIL')
+MAIL_HOST = os.environ.get('MAIL_HOST')
+MAIL_PORT = os.environ.get('MAIL_PORT')
 CDS_API_KEY = os.environ.get('CDS_API_KEY')
 DOCKERIZED = bool(os.environ.get('DOCKERIZED'))
+
+
+

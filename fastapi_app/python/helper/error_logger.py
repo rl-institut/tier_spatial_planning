@@ -6,6 +6,11 @@ import traceback
 from fastapi_app.python import config
 from fastapi_app.python.helper.mail import send_mail
 
+"""
+This module implements a custom logger that records application errors to a log file and also emails these error 
+details, including user and request information, for enhanced monitoring and debugging.
+"""
+
 directory = os.getcwd() + '/logs'
 
 if not os.path.exists(directory):

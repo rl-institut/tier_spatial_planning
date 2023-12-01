@@ -12,6 +12,13 @@ from fastapi_app.python.config import DB_RETRY_COUNT, RETRY_DELAY
 from fastapi_app.python.db import sa_tables
 from fastapi_app.python.db.connections import get_async_session_maker, async_engine
 
+"""
+Asynchronous functions performing database queries. When database operations are triggered by FastAPI routes, 
+they are executed as asynchronous functions to avoid blocking the execution of other Python code. In contrast, when 
+database functions are executed by energy system models (GridOptimizer, EnergySystemOptimizer) processed within a 
+Docker network by the Celery task queue, synchronous database operations are used (see modules sync_inserts, 
+sync_queries)
+"""
 
 async def get_user_by_username(username):
     query = select(sa_tables.User).where(sa_tables.User.email == username)

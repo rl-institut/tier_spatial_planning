@@ -16,6 +16,15 @@ from fastapi_app.python import config
 from fastapi_app.python.db import async_inserts, async_queries
 from fastapi_app.python.helper.mail import send_mail
 
+"""
+This module handles user authentication and related operations for a FastAPI application. It includes functionality for 
+password hashing and verification, user authentication, email validation, and account activation. The module also 
+features a CAPTCHA generator for additional security during user interactions. Asynchronous database queries and 
+insertions are used to manage user data efficiently. The use of JWT (JSON Web Tokens) for creating access tokens is 
+implemented, facilitating secure user sessions. Functions to validate email addresses, check password strength, and 
+send activation links via email are also provided.
+"""
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
@@ -133,6 +142,3 @@ async def generate_captcha_image() -> Tuple[str, str]:
     base64_image = base64.b64encode(captcha_data.getvalue()).decode('utf-8')
     return captcha_text, base64_image
 
-
-if __name__ == '__main__':
-    pass

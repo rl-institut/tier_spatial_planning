@@ -11,6 +11,13 @@ from fastapi_app.python.db import sa_tables
 from fastapi_app.python.db.async_queries import get_model_instance, get_user_by_username, get_projects_of_user
 from fastapi_app.python.db.connections import get_async_session_maker, async_engine
 
+"""
+Asynchronous functions performing database modifications. When database operations are triggered by FastAPI routes, 
+they are executed as asynchronous functions to avoid blocking the execution of other Python code. In contrast, when 
+database functions are executed by energy system models (GridOptimizer, EnergySystemOptimizer) processed within a 
+Docker network by the Celery task queue, synchronous database operations are used (see modules sync_inserts, 
+sync_queries)
+"""
 
 async def merge_model(model):
     new_engine = False

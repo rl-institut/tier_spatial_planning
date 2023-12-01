@@ -46,9 +46,10 @@ captcha_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 @app.on_event("startup")
 async def startup_event():
-    if not config.DOCKERIZED and not sync_queries.check_if_weather_data_exists():
-        sync_inserts.update_weather_db()
-    sync_inserts.create_default_user_account()
+    if not config.DOCKERIZED: #  If running in docker container, db_init.py is executed instead
+        if not sync_queries.check_if_weather_data_exists():
+            sync_inserts.update_weather_db()
+        sync_inserts.create_default_user_account()
 
 
 @app.get("/workshop_tasks")
