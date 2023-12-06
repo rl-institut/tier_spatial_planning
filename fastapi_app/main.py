@@ -158,6 +158,8 @@ async def home(request: Request):
 @app.get("/project_setup", response_class=HTMLResponse)
 async def project_setup(request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return RedirectResponse('/')
     project_id = request.query_params.get('project_id')
     if project_id is None:
         project_id = await async_queries.next_project_id_of_user(user.id)
@@ -256,8 +258,7 @@ async def example_model(request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
     if user is not None:
         await async_inserts.insert_example_project(user.id)
-    return JSONResponse(status_code=200, content={'success': True})
-
+        return JSONResponse(status_code=200, content={'success': True})
 
 @app.get("/copy_project")
 async def copy_project(request: Request):
@@ -280,16 +281,6 @@ async def consumer_selection(request: Request):
     return templates.TemplateResponse("consumer-selection.html", {"request": request, 'project_id': project_id})
 
 
-@app.get("/consumer_types")
-async def consumer_types(request: Request):
-    project_id = request.query_params.get('project_id')
-    try:
-        int(project_id)
-    except (TypeError, ValueError):
-        RedirectResponse('/')
-    return templates.TemplateResponse("consumer-types.html", {"request": request, 'project_id': project_id})
-
-
 @app.get("/grid_design", response_class=HTMLResponse)
 async def grid_design(request: Request):
     project_id = request.query_params.get('project_id')
@@ -299,7 +290,7 @@ async def grid_design(request: Request):
 @app.post("/remove_project/{project_id}")
 async def remove_project(project_id, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
-    if hasattr(user, 'id'):
+    if user is not None and hasattr(user, 'id'):
         await async_inserts.remove_project(user.id, project_id)
 
 
@@ -329,6 +320,8 @@ async def simulation_results(request: Request):
 async def calculating(request: Request):
     project_id = request.query_params.get('project_id')
     user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return RedirectResponse('/')
     try:
         int(project_id)
     except (TypeError, ValueError):
@@ -359,22 +352,26 @@ async def calculating(request: Request):
 @app.post("/set_email_notification/{project_id}/{is_active}")
 async def set_email_notification(project_id: int, is_active: bool, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
-    project_setup = await async_queries.get_model_instance(sa_tables.ProjectSetup, user.id, project_id)
-    project_setup.email_notification = is_active
-    await async_inserts.merge_model(project_setup)
+    if user is not None:
+        project_setup = await async_queries.get_model_instance(sa_tables.ProjectSetup, user.id, project_id)
+        project_setup.email_notification = is_active
+        await async_inserts.merge_model(project_setup)
 
 
 @app.get("/db_links_to_js/{project_id}")
 async def db_links_to_js(project_id, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
-    links = await async_queries.get_model_instance(sa_tables.Links, user.id, project_id)
-    links_json = json.loads(links.data) if links is not None else json.loads('{}')
-    return JSONResponse(content=links_json, status_code=200)
+    if user is not None:
+        links = await async_queries.get_model_instance(sa_tables.Links, user.id, project_id)
+        links_json = json.loads(links.data) if links is not None else json.loads('{}')
+        return JSONResponse(content=links_json, status_code=200)
 
 
 @app.get("/db_nodes_to_js/{project_id}/{markers_only}")
 async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
     if project_id == 'undefined':
         project_id = get_project_id_from_request(request)
     nodes = await async_queries.get_model_instance(sa_tables.Nodes, user.id, project_id)
@@ -406,14 +403,14 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
         if len(power_house.index) > 0 and power_house['how_added'].iat[0] == 'manual':
             is_load_center = False
         return JSONResponse(status_code=200, content={'is_load_center': is_load_center, "map_elements": nodes_list})
-    else:
-        return None
 
 
 @app.post("/consumer_to_db/{project_id}")
 async def consumer_to_db(project_id: str, map_elements: fastapi_app.python.helper.pydantic_schema.MapDataRequest,
                          request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
     df = pd.DataFrame.from_records(map_elements.map_elements)
     if df.empty is True:
         await async_inserts.remove(sa_tables.Nodes, user.id, project_id)
@@ -462,6 +459,8 @@ async def consumer_to_db(project_id: str, map_elements: fastapi_app.python.helpe
 @app.get("/load_results/{project_id}")
 async def load_results(project_id, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
     project_id = int(project_id)
     df = await async_queries.get_df(sa_tables.Results, user.id, project_id)
     infeasible = bool(df.loc[0, 'infeasible']) if df.columns.__contains__('infeasible') else False
@@ -556,7 +555,9 @@ async def load_results(project_id, request: Request):
 @app.get("/show_video_tutorial")
 async def show_video_tutorial(request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
-    if pd.isna(user.show_tutorial):
+    if user is None:
+        return False
+    if user is not None and pd.isna(user.show_tutorial):
         show_tutorial = True
     else:
         show_tutorial = bool(user.show_tutorial)
@@ -566,13 +567,16 @@ async def show_video_tutorial(request: Request):
 @app.get("/deactivate_video_tutorial")
 async def deactivate_video_tutorial(request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
-    user.show_tutorial = False
-    await async_inserts.merge_model(user)
+    if user is not None:
+        user.show_tutorial = False
+        await async_inserts.merge_model(user)
 
 
 @app.get("/load_previous_data/{page_name}")
 async def load_previous_data(page_name, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
     project_id = request.query_params.get('project_id')
     if page_name == "project_setup.css":
         if project_id == 'new':
@@ -712,6 +716,8 @@ async def consent_cookie(response: Response):
 async def change_email(request: Request, credentials: fastapi_app.python.helper.pydantic_schema.Credentials):
     if isinstance(credentials.email.strip(), str) and len(credentials.email.strip()) > 3:
         user = await handle_user_accounts.get_user_from_cookie(request)
+        if user is None:
+            return
         is_valid, res = await authenticate_user(user.email, credentials.password)
         validation = False
         if is_valid:
@@ -733,6 +739,8 @@ async def change_email(request: Request, credentials: fastapi_app.python.helper.
 @app.post("/change_pw/")
 async def change_pw(request: Request, passwords: Dict[str, str]):
     user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
     is_valid, res = await authenticate_user(user.email, passwords['old_password'])
     validation = False
     if is_valid:
@@ -755,6 +763,8 @@ async def send_reset_password_email(data: Dict[str, str]):
     hashed_captcha = data.get('hashed_captcha')
     user = await async_queries.get_user_by_username(email)
     if user is None:
+        return
+    if user is None:
         validation, res = False, 'Email address is not registered'
     else:
         if captcha_context.verify(captcha_input, hashed_captcha):
@@ -774,6 +784,8 @@ async def send_reset_password_email(data: Dict[str, str]):
 @app.post("/delete_account/")
 async def change_pw(response: Response, request: Request, form_data: fastapi_app.python.helper.pydantic_schema.Password):
     user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
     is_valid, res = await authenticate_user(user.email, form_data.password)
     validation = False
     if is_valid:
@@ -793,6 +805,8 @@ async def logout(response: Response):
 @app.post("/query_account_data/")
 async def query_account_data(project_id: fastapi_app.python.helper.pydantic_schema.ProjectID, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
     project_name = ''
     if user is not None:
         name = user.email
@@ -825,6 +839,8 @@ async def has_cookie(request: Request, has_cookies: fastapi_app.python.helper.py
 @app.post("/save_grid_design/")
 async def save_grid_design(request: Request, data: fastapi_app.python.helper.pydantic_schema.SaveGridDesign):
     user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
     project_id = get_project_id_from_request(request)
     data.grid_design['id'] = user.id
     data.grid_design['project_id'] = project_id
@@ -836,6 +852,8 @@ async def save_grid_design(request: Request, data: fastapi_app.python.helper.pyd
 @app.post("/save_demand_estimation/")
 async def save_demand_estimation(request: Request, data: fastapi_app.python.helper.pydantic_schema.SaveDemandEstimation):
     user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
     project_id = get_project_id_from_request(request)
     custom_calibration = ast.literal_eval(data.demand_estimation['custom_calibration'])
     use_custom_shares_bool = ast.literal_eval(data.demand_estimation['use_custom_shares'])
@@ -897,7 +915,8 @@ async def send_mail_route(mail: fastapi_app.python.helper.pydantic_schema.Mail):
 @app.post("/save_project_setup/{project_id}")
 async def save_project_setup(project_id, request: Request, data: fastapi_app.python.helper.pydantic_schema.SaveProjectSetup):
     user = await handle_user_accounts.get_user_from_cookie(request)
-    # project_id = get_project_id_from_request(request)
+    if user is None:
+        return
     timestamp = pd.Timestamp.now()
     data.page_setup['created_at'] = timestamp
     data.page_setup['updated_at'] = timestamp
@@ -912,6 +931,8 @@ async def save_project_setup(project_id, request: Request, data: fastapi_app.pyt
 async def save_energy_system_design(request: Request,
                                     data: fastapi_app.python.helper.pydantic_schema.OptimizeEnergySystemRequest):
     user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
     project_id = get_project_id_from_request(request)
     df = data.to_df()
     await async_inserts.insert_energysystemdesign_df(df, user.id, project_id)
@@ -932,6 +953,8 @@ def get_project_id_from_request(request: Request):
 @app.get("/get_plot_data/{project_id}/{plot_type}")
 async def get_plot_data(project_id, plot_type, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
     if plot_type == 'energy_flow':
         energy_flow = await async_queries.get_model_instance(sa_tables.EnergyFlow, user.id, project_id)
         energy_flow = pd.read_json(energy_flow.data)
@@ -979,6 +1002,8 @@ async def get_demand_time_series(project_id):
 @app.post("/add_buildings_inside_boundary")
 async def add_buildings_inside_boundary(js_data: fastapi_app.python.helper.pydantic_schema.MapData, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
     boundary_coordinates = js_data.boundary_coordinates[0][0]
     df = pd.DataFrame.from_dict(boundary_coordinates).rename(columns={'lat': 'latitude', 'lng': 'longitude'})
     if df['latitude'].max() - df['latitude'].min() > float(os.environ.get("MAX_LAT_LON_DIST", 0.15)):
@@ -1052,6 +1077,8 @@ async def optimization(user_id, project_id):
 @app.get("/optimize_without_celery/{project_id}")
 async def forward_if_consumer_selection_exists(project_id: int, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
     if bool(user.is_superuser) is True:
         optimize_grid(user.id, project_id)
         optimize_energy_system(user.id, project_id)
@@ -1061,6 +1088,8 @@ async def forward_if_consumer_selection_exists(project_id: int, request: Request
 @app.post("/forward_if_no_task_is_pending")
 async def forward_if_no_task_is_pending(request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
     if user.task_id is not None and len(user.task_id) > 20 and not task_is_finished(user.task_id):
         res = {'forward': False, 'task_id': user.task_id}
     else:
@@ -1071,6 +1100,8 @@ async def forward_if_no_task_is_pending(request: Request):
 @app.post("/forward_if_consumer_selection_exists/{project_id}")
 async def forward_if_consumer_selection_exists(project_id, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
     nodes = await async_queries.get_model_instance(sa_tables.Nodes, user.id, project_id)
     if nodes is None:
         res = {'forward': False}
@@ -1088,6 +1119,8 @@ async def start_calculation(project_id, request: Request):
     if project_id is None:
         project_id = request.query_params.get('project_id')
     user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
     forward, redirect = await async_queries.check_data_availability(user.id, project_id)
     if forward is False:
         return JSONResponse({'task_id': '', 'redirect': redirect})
@@ -1167,6 +1200,8 @@ async def waiting_for_results(request: Request, data: fastapi_app.python.helper.
 @app.post('/has_pending_task/{project_id}')
 async def has_pending_task(project_id, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
     if user.task_id is not None \
             and len(user.task_id) > 20 \
             and not task_is_finished(user.task_id) \
@@ -1181,23 +1216,27 @@ async def revoke_task(request: Request, data: fastapi_app.python.helper.pydantic
     celery_task = worker.AsyncResult(data.task_id)
     celery_task.revoke(terminate=True, signal='SIGKILL')
     user = await handle_user_accounts.get_user_from_cookie(request)
-    await async_inserts.remove_results(user.id, data.project_id)
+    if user is not None:
+        await async_inserts.remove_results(user.id, data.project_id)
 
 
 @app.post('/revoke_users_task/')
 async def revoke_users_task(request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
-    celery_task = worker.AsyncResult(user.task_id)
-    celery_task.revoke(terminate=True, signal='SIGKILL')
-    user = await handle_user_accounts.get_user_from_cookie(request)
-    user.task_id = ''
-    user.project_id = None
-    await async_inserts.update_model_by_user_id(user)
+    if user is not None:
+        celery_task = worker.AsyncResult(user.task_id)
+        celery_task.revoke(terminate=True, signal='SIGKILL')
+        user = await handle_user_accounts.get_user_from_cookie(request)
+        user.task_id = ''
+        user.project_id = None
+        await async_inserts.update_model_by_user_id(user)
 
 
 @app.get("/download_data/{project_id}/{file_type}/")
 async def export_data(project_id: int, file_type: str, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
     input_parameters_df = await async_queries.get_input_df(user.id, project_id)
     results_df = await async_queries.get_df(sa_tables.Results, user.id, project_id)
     energy_flow = await async_queries.get_model_instance(sa_tables.EnergyFlow, user.id, project_id)
