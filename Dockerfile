@@ -1,6 +1,6 @@
 FROM continuumio/miniconda3
 WORKDIR /src
-RUN apt-get update -q  \
+RUN apt-get update -y --allow-releaseinfo-change \
     && apt-get install --no-install-recommends -qy g++ gcc inetutils-ping coinor-cbc \
     && rm -rf /var/lib/apt/lists/*
 RUN conda update -n base -c defaults conda
