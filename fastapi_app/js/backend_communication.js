@@ -1040,7 +1040,7 @@ async function remove_project(project_id) {
 let shouldStop = false;
 
 
-async function wait_for_results(project_id, task_id, time, model, opt_iter) {
+async function wait_for_results(project_id, task_id, time, model) {
     // Get the current URL
     var url = window.location.href;
 
@@ -1059,16 +1059,11 @@ async function wait_for_results(project_id, task_id, time, model, opt_iter) {
                 const res = await response.json();
 
                 if (res.finished === true) {
-                    opt_iter = opt_iter + 1;
-                    if (opt_iter <= 0) {
-                        start_calculation(project_id, opt_iter)
-                    } else {
-                        window.location.href = window.location.origin + '/simulation_results?project_id=' + project_id;
-                    }
+                    window.location.href = window.location.origin + '/simulation_results?project_id=' + project_id;
                 } else if (!shouldStop) {
                     document.querySelector("#statusMsg").innerHTML = res.status;
                     renewToken();
-                    wait_for_results(project_id, task_id, res.time, res.model, opt_iter);
+                    wait_for_results(project_id, task_id, res.time, res.model);
                 }
             } else {
                 if (response.status === 303 || response.status === 422) {
@@ -1129,31 +1124,45 @@ async function revoke_users_task() {
 }
 
 
-function start_calculation(project_id, opt_iter = 0) {
+function start_calculation(project_id) {
     fetch("start_calculation/" + project_id, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         }
     })
-        .then(response => response.json())
-        .then(res => {
-            if (res.redirect && res.redirect.length > 0) {
-                const msg = 'Input data is missing for the opt_models. It appears that you have not gone' +
-                    '  through all the pages to enter the input data. You will be redirected to the ' +
-                    '  corresponding page.';
-                console.log(msg)
-                document.getElementById('responseMsg').innerHTML = msg;
-                const baseURL = window.location.origin;
-                const redirectLink = baseURL + res.redirect;
-                console.log(redirectLink);
-                document.getElementById('redirectLink').href = redirectLink;
-                document.getElementById('msgBox').style.display = 'block';
+    .then(response => response.json())
+    .then(res => {
+        if (res.redirect && res.redirect.length > 0) {
+            const msg = 'Input data is missing for the opt_models. It appears that you have not gone' +
+                ' through all the pages to enter the input data. You will be redirected to the ' +
+                ' corresponding page.';
+            console.log(msg);
+            document.getElementById('responseMsg').innerHTML = msg;
+            const baseURL = window.location.origin;
+            const redirectLink = baseURL + res.redirect;
+            console.log(redirectLink);
+            document.getElementById('redirectLink').href = redirectLink;
+            document.getElementById('msgBox').style.display = 'block';
+        } else {
+            if (typeof res.task_id === 'undefined') {
+                console.log('The task_id is not defined.');
+            } else if (res.task_id === '') {
+                console.log('The task_id is an empty string.');
             } else {
-                wait_for_results(project_id, res.task_id, 0, 'grid', opt_iter);
+                console.log('The task_id is:', res.task_id);
             }
-        })
-        .catch(error => console.error('There was an error!', error));
+            wait_for_results(project_id, res.task_id, 0, 'grid');
+        }
+    })
+    .catch(error => {
+        console.error('There was an error!', error);
+        if (typeof res !== 'undefined' && typeof res.task_id !== 'undefined') {
+            console.log('The task_id at the time of error is:', res.task_id);
+        } else {
+            console.log('The task_id is not available or not defined at the time of error.');
+        }
+    });
 }
 
 
