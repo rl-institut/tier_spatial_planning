@@ -1139,11 +1139,15 @@ function start_calculation(project_id, opt_iter = 0) {
         .then(response => response.json())
         .then(res => {
             if (res.redirect && res.redirect.length > 0) {
-                document.getElementById('responseMsg').innerHTML =
-                    'Input data is missing for the opt_models. It appears that you have not gone through all the pages to ' +
-                    'enter the input data. You will be redirected to the corresponding page.';
+                const msg = 'Input data is missing for the opt_models. It appears that you have not gone' +
+                    '  through all the pages to enter the input data. You will be redirected to the ' +
+                    '  corresponding page.';
+                console.log(msg)
+                document.getElementById('responseMsg').innerHTML = msg;
                 const baseURL = window.location.origin;
-                document.getElementById('redirectLink').href = baseURL + res.redirect;
+                const redirectLink = baseURL + res.redirect;
+                console.log(redirectLink);
+                document.getElementById('redirectLink').href = redirectLink;
                 document.getElementById('msgBox').style.display = 'block';
             } else {
                 wait_for_results(project_id, res.task_id, 0, 'grid', opt_iter);

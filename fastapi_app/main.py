@@ -578,7 +578,7 @@ async def load_previous_data(page_name, request: Request):
     if user is None:
         return
     project_id = request.query_params.get('project_id')
-    if page_name == "project_setup.css":
+    if page_name == "project_setup":
         if project_id == 'new':
             project_id = await async_queries.next_project_id_of_user(user.id)
             return sa_tables.ProjectSetup(project_id=project_id)
@@ -1252,3 +1252,4 @@ async def export_data(project_id: int, file_type: str, request: Request):
                                  media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_results.xlsx"
     return response
+
