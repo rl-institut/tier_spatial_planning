@@ -1,0 +1,48 @@
+{% set func_name = '' %}
+{% if title == 'Project Setup' %}
+    {% set func_name = 'save_project_setup(' + project_id|string + ',' %}
+{% elif title == 'Consumer Selection' %}
+    {% set func_name = 'consumer_to_db(' + project_id|string + ',' %}
+{% elif title == 'Demand Estimation' %}
+    {% set func_name = 'save_demand_estimation(' %}
+{% elif title == 'Grid Design' %}
+    {% set func_name = 'save_grid_design(' %}
+{% elif title == 'Energy System Design' %}
+    {% set func_name = 'save_energy_system_design(' %}
+{% elif title == 'Simulation Results' %}
+    {% set func_name = 'redirect(' %}
+{% endif %}
+
+
+<section class="wizard">
+    <div>
+        <div class="wizard__steps">
+            <ul id="wiz">
+                <li {% if title == 'Project Setup' %}class="active"{% endif %}
+                    onclick="{{ func_name }}'project_setup?project_id={{ project_id }}');">
+                    <a href="javascript:void(0);">Project Setup</a>
+                </li>
+                <li {% if title == 'Consumer Selection' %}class="active"{% endif %}
+                    onclick="{{ func_name }}'consumer_selection?project_id={{ project_id }}');">
+                    <a href="javascript:void(0);">Consumer Selection</a>
+                </li>
+                <li {% if title == 'Demand Estimation' %}class="active"{% endif %}
+                    onclick="{{ func_name }}'demand_estimation?project_id={{ project_id }}');">
+                    <a href="javascript:void(0);">Demand Estimation</a>
+                </li>
+                <li {% if title == 'Grid Design' %}class="active"{% endif %}
+                    onclick="{{ func_name }}'grid_design?project_id={{ project_id }}');">
+                    <a href="javascript:void(0);">Grid Design</a>
+                </li>
+                <li {% if title == 'Energy System Design' %}class="active"{% endif %}
+                    onclick="{{ func_name }}'energy_system_design?project_id={{ project_id }}');">
+                    <a href="javascript:void(0);">Energy System Design</a>
+                </li>
+                <li {% if title == 'Simulation Results' %}class="active"{% endif %}
+                    onclick="{{ func_name }}'simulation_results?project_id={{ project_id }}');">
+                    <a href="javascript:void(0);">Simulation Results</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</section>

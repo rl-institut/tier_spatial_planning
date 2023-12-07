@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    {% set title='Grid Design' %}
+    {% include '_head.html' %}
+</head>
+<body onload="redirect_if_cookie_is_missing(true, true);
+        load_previous_data('grid_design?project_id={{ project_id }}');
+        show_email_and_project_in_navbar({{ project_id }});">
+{% include '_navbar.html' %}
+{% include '_wizard.html' %}
+<main>
+    <section class="dashboard">
+        <div>
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="box box--tiny">
+                                <div class="box__header">
+                                    <span class="grid-title">Distribution Cable</span>
+                                </div>
+                                <div class="row">
+                                    <div class="input-group">
+                        <span class="input-group-text">Lifetime
+                  <span
+                          class="icon icon-question"
+                          data-bs-toggle="tooltip"
+                          title="Lifespan of the component, after expiration a replacement investment must be made."
+                  ></span>
+                        </span>
+                                        <input
+                                                type="number"
+                                                step="1"
+                                                onchange="this.value = Math.max(0, Math.min(100, parseInt(this.value)));"
+                                                class="form-control"
+                                                id="distributionCableLifetime"
+                                                value="25"
+                                                required
+                                        />
+                                        <span class="input-group-text">Year</span>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="input-group">
+                        <span class="input-group-text">CapEx
+                        <span
+                                class="icon icon-question"
+                                data-bs-toggle="tooltip"
+                                title="Capital Expenditure (CapEx) is the money that has to be spent to purchase the component."
+                        ></span>
+                        </span>
+                                        <input
+                                                type="number"
+                                                onchange="this.value = Math.max(0, Math.min(100, parseFloat(this.value))).toFixed(1);"
+                                                class="form-control"
+                                                id="distributionCableCapex"
+                                                value="10"
+                                                required
+                                        />
+                                        <span class="input-group-text">USD/m</span>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="input-group">
+                        <span class="input-group-text">Max. Length
+                        <span
+                                class="icon icon-question"
+                                data-bs-toggle="tooltip"
+                                title="Maximum allowed length of the distribution cable."
+                        ></span>
+                        </span>
+                                        <input
+                                                type="number"
+                                                step="1"
+                                                onchange="this.value = Math.max(0, Math.min(150, parseInt(this.value)));"
+                                                class="form-control"
+                                                id="distributionCableMaxLength"
+                                                value="50"
+                                                required
+                                        />
+                                        <span class="input-group-text">m</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="box box--tiny">
+                                <div class="box__header">
+                                    <span class="grid-title">Connection Cable</span>
+                                </div>
+                                <div class="row">
+                                    <div class="input-group">
+                        <span class="input-group-text">Lifetime
+                                          <span
+                                                  class="icon icon-question"
+                                                  data-bs-toggle="tooltip"
+                                                  title="Lifespan of the component, after expiration a replacement investment must be made."
+                                          ></span></span>
+                                        <input
+                                                type="number"
+                                                class="form-control"
+                                                onchange="this.value = Math.max(0, Math.min(100, parseInt(this.value)));"
+                                                id="connectionCableLifetime"
+                                                value="25"
+                                                required
+                                        />
+                                        <span class="input-group-text">Year</span>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="input-group">
+                        <span class="input-group-text">CapEx
+                                              <span
+                                                      class="icon icon-question"
+                                                      data-bs-toggle="tooltip"
+                                                      title="Capital Expenditure (CapEx) is the money that has to be spent to purchase the component."
+                                              ></span>
+                        </span>
+                                        <input
+                                                type="number"
+                                                onchange="this.value = Math.max(0, Math.min(100, parseFloat(this.value))).toFixed(1);"
+                                                class="form-control"
+                                                id="connectionCableCapex"
+                                                value="4"
+                                                required
+                                        />
+                                        <span class="input-group-text">USD/m</span>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="input-group">
+                        <span class="input-group-text">Max. Length
+                        <span
+                                class="icon icon-question"
+                                data-bs-toggle="tooltip"
+                                title="Maximum allowed length of the connection cable."
+                        ></span></span>
+                                        <input
+                                                type="number"
+                                                onchange="this.value = Math.max(0, Math.min(200, parseInt(this.value)));"
+                                                class="form-control"
+                                                id="connectionCableMaxLength"
+                                                value="20"
+                                                required
+                                        />
+                                        <span class="input-group-text">m</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="box box--tiny">
+                                <div class="box__header">
+                                    <span class="grid-title">Pole</span>
+                                </div>
+                                <div class="row">
+                                    <div class="input-group">
+                        <span class="input-group-text">Lifetime
+                                          <span
+                                                  class="icon icon-question"
+                                                  data-bs-toggle="tooltip"
+                                                  title="Lifespan of the component, after expiration a replacement investment must be made."
+                                          ></span>
+                        </span>
+                                        <input
+                                                type="number"
+                                                class="form-control"
+                                                onchange="this.value = Math.max(0, Math.min(100, parseInt(this.value)));"
+                                                id="poleLifetime"
+                                                value="25"
+                                                required
+                                        />
+                                        <span class="input-group-text">Year</span>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="input-group">
+                        <span class="input-group-text">CapEx
+                        <span
+                                class="icon icon-question"
+                                data-bs-toggle="tooltip"
+                                title="Capital Expenditure (CapEx) is the money that has to be spent to purchase the component."
+                        ></span></span>
+                                        <input
+                                                type="number"
+                                                onchange="this.value = Math.max(0, Math.min(3000, parseFloat(this.value))).toFixed(1);"
+                                                class="form-control"
+                                                id="poleCapex"
+                                                value="800"
+                                                required
+                                        />
+                                        <span class="input-group-text">USD/pole</span>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="input-group">
+                        <span class="input-group-text"
+                        >Max. Number of Connections<span
+                                class="icon icon-question"
+                                data-bs-toggle="tooltip"
+                                title="Maximum allowed number of consumers that can be connected to one pole."
+                        ></span></span
+                        >
+                                        <input
+                                                type="number"
+                                                onchange="this.value = Math.max(0, Math.min(20, parseInt(this.value)));"
+                                                class="form-control"
+                                                id="poleMaxNumberOfConnections"
+                                                value="5"
+                                                required
+                                        />
+                                        <span class="input-group-text">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="box box--tiny">
+                                <div class="box__header">
+                                    <span class="grid-title">Connection Cost</span>
+                                </div>
+                                <div class="row">
+                                    <div class="input-group">
+                        <span class="input-group-text">Connection Cost
+                            <span
+                                    class="icon icon-question"
+                                    data-bs-toggle="tooltip"
+                                    title="Costs that arise when connecting a consumer in addition to the material costs of the cable."
+                            ></span>
+                        </span>
+                                        <input
+                                                type="number"
+                                                onchange="this.value = Math.max(0, Math.min(1500, parseFloat(this.value))).toFixed(1);"
+                                                class="form-control"
+                                                id="mgConnectionCost"
+                                                value="140"
+                                                required
+                                        />
+                                        <span class="input-group-text">USD/con</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div id="selectShsBox" class="box box--tiny">
+                        <div class="box__header">
+                            <form class="was-validated">
+                                <div class="form-check">
+                                    <input
+                                            type="checkbox"
+                                            class="form-check-input"
+                                            id="selectShs"
+                                            required
+                                            onclick="change_shs_box_visibility();"
+                                    />
+                                    <label class="form-check-label" for="selectShs">
+                                        Solar Home System
+                                    </label>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
+                <span id="lblShsLifetime" class="input-group-text disabled">
+                    Max. Specific Grid Cost
+                    <span
+                            class="icon icon-question"
+                            data-bs-toggle="tooltip"
+                            title="For each consumer, specific costs of grid connection are calculated and related to the consumer's consumption. If the threshold value is exceeded, a grid connection is forgone and instead a solar home system is recommended."
+                    ></span>
+                </span>
+                                <input
+                                        type="number"
+                                        onchange="this.value = Math.max(0, Math.min(2, parseFloat(this.value))).toFixed(2);"
+                                        class="form-control"
+                                        id="shs_max_grid_cost"
+                                        step="0.01"
+                                        value=""
+                                        required
+                                        disabled
+                                />
+                                <span id="shsLifetimeUnit" class="input-group-text disabled">
+                    USD/kWh
+                </span>
+                            </div>
+                            <img
+                                    src="{{ url_for('public', path='media_files/assets/icons/qm.svg') }}"
+                                    alt="Icon"
+                                    style="width: 100px; cursor: pointer; padding-top: 0.5rem; padding-bottom: 0.5rem"
+                                    onclick="document.getElementById('videoTutorial').style.display='block'"
+                            />
+                            <p style="margin-bottom: 5px; color: #8B0000;">
+                                <i>
+                                    Watch video tutorial for further explanation of this parameter
+                                </i>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <p style="font-size: 12px;">
+                    Sources: <br>
+                    <a href="https://openknowledge.worldbank.org/server/api/core/bitstreams/32287154-1ccb-46ce-83af-08facf7a3b49/content">Mini
+                        Grids for Half a Billion People: Market Outlook and Handbook for Decision Makers</a>, <i>ESMAP -
+                    World Bank</i>, 2022 <br>
+                    <a href="https://www.nrel.gov/docs/fy18osti/69044.pdf">Tariff Considerations for Micro-Grids in
+                        Sub-Saharan Africa</a>, <i>National Renewable Energy Laboratory</i>, 2018 <br>
+                    <a href="https://rmi.org/wp-content/uploads/2018/12/rmi-seeds-minigrid-report.pdf"> Minigrids in the
+                        Money: Six Ways to Reduce Minigrid Costs by 60% for Rural Electrification</a>, <i>Rocky Mountain
+                    Institute</i>, 2018
+                </p>
+            </div>
+        </div>
+    </section>
+    <div id="videoTutorial" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999; text-align: left">
+        <form class="modal-content" style="width: 700px; height: 520px;">
+            <div class="container">
+                <h1 style="margin-bottom: 0;">Video Tutorial</h1>
+                <div style="padding: 15px;">
+                    <video id="tutorialVideo" width="568" height="360" controls>
+                        <source src="{{ url_for('public', path='media_files//videos/tut_shs.mp4') }}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+                <button onclick="stopVideo(); document.getElementById('videoTutorial').style.display='none'"
+                        type="button" class="deletebtn">OK
+                </button>
+            </div>
+        </form>
+    </div>
+</main>
+{% include '_footer.html' %}
+</body>
+{% include '_scripts.html' %}
+<script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=Promise"></script>
+<script src="{{ url_for('js', path='pages/grid_design.js') }}"></script>
+<script src="{{ url_for('js', path='backend_communication.js') }}"></script>
+</html>

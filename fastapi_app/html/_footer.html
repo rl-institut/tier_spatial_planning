@@ -1,0 +1,69 @@
+<footer class="step-footer">
+    <div>
+        <div class="step-footer__left">
+            <a href="{{ url_for('contact') }}">&nbsp;&nbsp;&nbsp;Contact</a>
+        </div>
+        <div class="step-footer__center">
+            {% if title == 'Project Setup' %}
+                <a class="btn btn--medium btn--hollow btn--previous"
+                   href="/">Previous</a>
+                <a class="btn btn--medium" style="color: #fff"
+                   href="javascript:void(0);"
+                   onclick="save_project_setup({{ project_id }}, 'consumer_selection?project_id={{ project_id }}');">
+                    Next
+                </a>
+            {% elif title == 'Consumer Selection' %}
+                <a class="btn btn--medium btn--hollow btn--previous"
+                   href="javascript:void(0);"
+                   onclick="consumer_to_db({{ project_id }}, 'project_setup?project_id={{ project_id }}')">
+                    Previous
+                </a>
+                <a class="btn btn--medium" style="color: #fff"
+                   href="javascript:void(0);"
+                   onclick="consumer_to_db({{ project_id }});">
+                    Next
+                </a>
+            {% elif title == 'Demand Estimation' %}
+                <a class="btn btn--medium btn--hollow btn--previous"
+                   href="javascript:void(0);"
+                   onclick="save_demand_estimation('consumer_selection?project_id={{ project_id }}')">
+                    Previous
+                </a>
+                <a class="btn btn--medium" style="color: #fff"
+                   href="javascript:void(0);"
+                   onclick="save_demand_estimation('grid_design?project_id={{ project_id }}')">
+                    Next
+                </a>
+            {% elif title == 'Grid Design' %}
+                <a class="btn btn--medium btn--hollow btn--previous"
+                   href="javascript:void(0);"
+                   onclick="save_grid_design('demand_estimation?project_id={{ project_id }}');">
+                    Previous</a>
+                <a class="btn btn--medium" style="color: #fff"
+                   href="javascript:void(0);"
+                   onclick="save_grid_design('energy_system_design?project_id={{ project_id }}');">
+                    Next
+                </a>
+            {% elif title == 'Energy System Design' %}
+                <a class="btn btn--medium btn--hollow btn--previous"
+                   href="javascript:void(0);"
+                   onclick="save_energy_system_design('grid_design?project_id={{ project_id }}');">
+                    Previous</a>
+                <a class="btn btn--medium" style="color: #fff"
+                   href="javascript:void(0);"
+                   onclick="save_energy_system_design(''); forward_if_no_task_is_pending({{ project_id }});">
+                    Optimize</a>
+            {% elif title == 'Simulation Results' %}
+                <a class="btn btn--medium" style="color: #fff"
+                   href="/">Projects Overview</a>
+            {% elif title in  ['Imprint', 'Impressum', 'Data Privacy Protection', 'Datenschutz'] %}
+                <a class="btn btn--medium" style="color: #fff" href="/">Main</a>
+            {% endif %}
+        </div>
+        <div class="step-footer__right">
+            <a href="/privacy?lang=en">Data Privacy Protection/Datenschutz&nbsp;&nbsp;&nbsp;</a>
+            <a href="/imprint?lang=en">Imprint/Impressum&nbsp;&nbsp;&nbsp;</a>
+        </div>
+    </div>
+    </div>
+</footer>

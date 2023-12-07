@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    {% set title= 'Projects' %}
+    {% include '_head.html' %}
+</head>
+<body onload="redirect_if_cookie_is_missing(true, true);
+                show_modal_example_model();
+                show_email_and_project_in_navbar();
+                set_and_show_error_msg();">
+{% include '_navbar.html' %}
+<main>
+    <section class="dashboard">
+        <div>
+            <div class="row">
+                <div class="col">
+                    <div class="chart" style="height: auto">
+                        <div class="chart__header">
+                            <a class="title">Projects</a>
+                            <span style="float:right;"><a>&nbsp;
+                      <a href="{{ url_for('project_setup') }}"
+                         class="btn btn--long text-right">New Project</a>
+                  </a></span>
+                        </div>
+                        <span class="title"></span>
+                        <table id="projectTable">
+                            <tr style="border-bottom:1px solid black">
+                                <th>ID</th>
+                                <th>Project Name</th>
+                                <th>Creation Date</th>
+                                <th>Last Update</th>
+                                <th>Model Status</th>
+                                <th></th>  <!-- Added an empty header for the new column -->
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                            </tr>
+                            {% if projects|length > 0 %}
+                                {% for project in projects %}
+                                    <TR>
+                                        <TD>{{ project.project_id }}</TD>
+                                        <TD>{{ project.project_name }}</TD>
+                                        <TD>{{ project.created_at }}</TD>
+                                        <TD>{{ project.updated_at }}</TD>
+                                        <TD>{{ project.status }}</TD>
+                                        <TD><span style="float:right;"><a>&nbsp;
+                           <a href="javascript:void(0);"
+                              onclick="copyProject('{{ url_for('copy_project') }}?project_id={{ project.project_id }}')"
+                              class="grey_button">Duplicate Project</a>
+                           </a>
+
+                           </span></TD>
+                                        <TD><span style="float:right;"><a>&nbsp;
+                           <a onclick="document.getElementById('projectID{{ project.project_id }}').style.display='block'"
+                              class="grey_button" style="color:white"
+                           >Delete Project</a>
+                           </a></span></TD>
+                                        <TD><span style="float:right;"><a>&nbsp;
+                           <a href="{{ url_for('project_setup') }}?project_id={{ project.project_id }}"
+                              class="grey_button">Edit Project</a>
+                           </a></span></TD>
+                                        <TD><span style="float:right;"><a>&nbsp;
+                           <a href="{{ url_for('simulation_results') }}?project_id={{ project.project_id }}"
+                              class="grey_button">Show Results</a>
+                           </a></span></TD>
+                                    </TR>
+                                {% endfor %}
+                            {% else %}
+                                <TR>
+                                    <TD>You do not yet have any saved projects</TD>
+                                    <TD></TD>
+                                    <TD></TD>
+                                    <TD></TD>
+                                    <TD></TD>  <!-- Added an empty cell for the new column -->
+                                </TR>
+                            {% endif %}
+                        </table>
+                        <span class="subtitle"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+        </div>
+        </div>
+    </section>
+    {% if projects|length > 0 %}
+        {% for project in projects %}
+            <div id=projectID{{ project.project_id }} class="modal">
+                <form class="modal-content" action="/action_page.php">
+                    <div class="container">
+                        <h1>Delete Project</h1>
+                        <p>Are you sure you want to delete the project ' {{ project.project_name[:15] }}
+                            {% if project.project_name|length > 15 %}(...){% endif %}' with the ID
+                            '{{ project.project_id }}'?</p>
+                        <div class="clearfix">
+                            <button onclick="remove_project({{ project.project_id }})" type="button" class="deletebtn">
+                                Delete
+                            </button>
+                            <button onclick="document.getElementById('projectID{{ project.project_id }}').style.display='none'"
+                                    type="button" class="cancelbtn">Cancel
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        {% endfor %}
+    {% endif %}
+    {% include '_warningBox.html' %}
+    <div id="projectExample" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999; text-align: left">
+        <form class="modal-content" style="max-width: 24rem">
+            <div class="container">
+                <h1>Create Example Model</h1>
+                <p>You have not created any projects yet. Would you like a sample project to be set up for you?</p>
+                <button onclick="create_example_project()" type="button" class="deletebtn">Yes</button>
+                <button onclick="document.getElementById('projectExample').style.display='none'" type="button"
+                        class="deletebtn">No
+                </button>
+            </div>
+        </form>
+    </div>
+</main>
+{% include '_footer.html' %}
+</body>
+{% include '_scripts.html' %}
+<script src="{{ url_for('js', path='/pages/user_projects.js') }}"></script>
+<script src="{{ url_for('js', path='backend_communication.js') }}"></script>
+</html>

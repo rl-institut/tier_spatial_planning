@@ -1,21 +1,143 @@
-version: "3"
+version: '3.3'
 services:
-  web:
-    build:
-      # `context` should be a path to a directory containing a Dockerfile
-      context: ./fastapi_app # ./flask_app #
-      dockerfile: Dockerfile
+  app:
+    container_name: 'app'
+    build: .
+    command: gunicorn -w 8 -k uvicorn.workers.UvicornWorker fastapi_app.main:app --bind 0.0.0.0:40000 --timeout 1200  --forwarded-allow-ips='*' --access-logfile - --error-logfile -
+    # command: uvicorn fastapi_app.main:app --host 0.0.0.0 --reload --port 40000 --forwarded-allow-ips='*' --proxy-headers
     restart: always
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PW=/run/secrets/pw
+      - MAIL_PW=/run/secrets/mail_pw
+      - KEY_FOR_ACCESS_TOKEN=/run/secrets/key_for_token
+      - EXAMPLE_USER_PW=/run/secrets/example_user_pw
+      - DB_HOST=mysql
+      - DOCKERIZED=1
+    env_file:
+      - app.env
     ports:
-     - "5001:5001"
+      - '40000:40000'
+    links:
+      - mysql
+    secrets:
+      - pw
     depends_on:
       - redis
-  worker:
+      - mysql
+  mysql:
+    container_name: mysql
     build:
-      # context should be the name of the folder which define the tasks
-      context: task_queue
-      dockerfile: Dockerfile
-    depends_on:
-      - redis
+      context: .
+      dockerfile: Dockerfile_mysql
+      args:
+        - UID_FOR_DB=${UID_FOR_DB}
+        - GID_FOR_DB=${GID_FOR_DB}
+    command: --max-connections=1000
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/pw
+    ports:
+      - '40001:3306'
+    secrets:
+      - pw
+    volumes:
+      - ./db_data/user_db:/var/lib/mysql
   redis:
     image: redis
+    container_name: 'redis'
+    restart: always
+    ports:
+    - '40005:6379'
+  worker_default:
+    container_name: 'celery_default'
+    build: .
+    restart: always
+    command: celery -A fastapi_app.python.task_queue.celery_worker.worker worker --loglevel=INFO --pool prefork  --concurrency=16 --queues=default_queue
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - FLOWER_PORT=5555
+      - PW=/run/secrets/pw
+      - DB_HOST=mysql
+    depends_on:
+      - app
+      - redis
+      - mysql
+    secrets:
+      - pw
+  worker_milp:
+    container_name: 'celery_milp'
+    build: .
+    restart: always
+    command: celery -A fastapi_app.python.task_queue.celery_worker.worker worker --loglevel=INFO --pool prefork  --concurrency=8 --queues=milp_queue
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - FLOWER_PORT=5555
+      - PW=/run/secrets/pw
+      - DB_HOST=mysql
+    depends_on:
+      - app
+      - redis
+      - mysql
+    secrets:
+      - pw
+  flower:
+    container_name: 'flower'
+    build: .
+    restart: always
+    command: celery -A fastapi_app.python.task_queue.celery_worker.worker flower --port=5555
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - FLOWER_PORT=5555
+      - PW=/run/secrets/pw
+      - DB_HOST=mysql
+    ports:
+      - '40002:5555'
+    depends_on:
+      - redis
+      - worker_default
+      - worker_milp
+      - app
+    secrets:
+      - pw
+  adminer:
+    container_name: 'adminer'
+    image: adminer
+    restart: always
+    ports:
+      - '40003:8080'
+    depends_on:
+      - mysql
+    environment:
+      - ADMINER_DEFAULT_SERVER=mysql
+      - ADMINER_DEFAULT_USERNAME=root
+      - ADMINER_DEFAULT_PASSWORD_FILE=/run/secrets/pw
+    secrets:
+      - pw
+  db_initializer:
+    container_name: 'db_initializer'
+    build: .
+    command: python -m fastapi_app.python.db.init_db
+    depends_on:
+      - mysql
+    restart: "no"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PW=/run/secrets/pw
+      - EXAMPLE_USER_PW=/run/secrets/example_user_pw
+      - DB_HOST=mysql
+      - DOCKERIZED=1
+    env_file:
+      - app.env
+secrets:
+  pw:
+    file: ./secrets/secret.txt
+  mail_pw:
+    file: ./secrets/mail_secret.txt
+  key_for_token:
+    file: ./secrets/key_for_token.txt
+  example_user_pw:
+    file: ./secrets/example_user_secret.txt

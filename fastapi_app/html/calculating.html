@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    {% set title= 'Calculating' %}
+    {% include '_head.html' %}
+</head>
+<body onload="redirect_if_cookie_is_missing(true, true);
+        show_email_and_project_in_navbar({{ project_id }});
+        start_calculation('{{ project_id }}');">
+{% include '_navbar.html' %}
+<main>
+    <section class="dashboard" style="width: 500px; display: block;  margin-left: auto;  margin-right: auto;">
+        <div>
+            <div class="row">
+                <div class="col">
+                    <div class="chart" style="border: 15px solid #FAFAFA; height: auto;">
+                        <div class="chart__header">
+                            <a class="title">Model Calculation</a>
+                        </div>
+                        <hr>
+                        <div class="loader" align="center"></div>
+                        <a>Status: </a>
+                        <a id="statusMsg">task status is retrieved...</a>
+                        <hr>
+                        {% if email_opt == true %}
+                            <label class="switch">
+                                <input type="checkbox" id="toggleswitch">
+                                <span class="slider round"></span>
+                            </label>
+                            <a>&nbsp;&nbsp;Send email when calculation is finished.</a>
+                            <p></p>
+                        {% endif %}
+                        <a>{{ msg }}</a>
+                        <p></p>
+                        <a href='energy_system_design/?project_id={{ project_id }}'
+                           class="btn btn--long text-right"
+                           onclick="revoke_users_task();"
+                        >Abort Calculation</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <div id="msgBox" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999; text-align: left">
+        <form class="modal-content" style="max-width: 24rem">
+            <div class="container">
+                <h1>Warning</h1>
+                <p id="responseMsg"></p>
+                <a id="redirectLink" href="#" class="btn btn--long text-right">Go to Page with Missing Data</a>
+            </div>
+        </form>
+    </div>
+</main>
+{% include '_footer.html' %}
+</body>
+{% include '_scripts.html' %}
+{% if email_opt == true %}
+    <script>
+        let input = document.getElementById('toggleswitch');
+        let is_active = false;
+        input.addEventListener('change', function () {
+            if (this.checked) {
+                is_active = true;
+            } else {
+                is_active = false;
+            }
+            send_email_notification({{ project_id }}, is_active)
+        });
+    </script>
+    <script src="{{ url_for('js', path='backend_communication.js') }}"></script>
+{% endif %}
+</html>

@@ -5,5 +5,15 @@
 *.db
 run
 venv/
+.secrets/
+*secret*
 *.DS_Store
-data
+/fastapi_app/data/*
+!/fastapi_app/files/model_input/demand/
+scratch.py
+fastapi_app/python/db/dev_config.py
+/.db_data/
+fastapi_app/data/weather/ERA5_weather_data1.nc
+fastapi_app/data/weather/ERA5_weather_data2.nc
+fastapi_app/data/weather/ERA5_weather_data3.nc
+logs/error_logs.txt

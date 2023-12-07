@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    {% set title='Consumer Selection' %}
+    {% include '_head.html' %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw-src.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.0.6/dist/geosearch.css"/>
+    <script src="https://unpkg.com/leaflet-geosearch@3.0.6/dist/geosearch.umd.js"></script>
+    <link href="{{ url_for('css', path='pages/consumer_selection.css') }}" rel="stylesheet"/>
+</head>
+<body onload="redirect_if_cookie_is_missing(true, true);
+        db_nodes_to_js({{ project_id }}, true);
+        show_email_and_project_in_navbar({{ project_id }});
+        show_video_tutorial();">
+{% include '_navbar.html' %}
+{% include '_wizard.html' %}
+<main>
+    <div id="fixed-symbol" style="position: fixed; bottom: 60px; left: 20px;">
+        <img src="{{ url_for('public', path='media_files/assets/icons/qm.svg') }}" alt="Icon"
+             style="width: 100px; cursor: pointer;"
+             onclick="document.getElementById('videoTutorial').style.display='block'">
+    </div>
+    <section id="section" class="dashboard">
+        <div class="row">
+            <div class="chart" style="height: auto">
+                <div class="accordion" id="accordionExample" style="margin-top: 12px">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingTwo">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                Set Consumer Properties
+                            </button>
+                        </h2>
+                        <div id="collapseTwo" class="accordion-collapse" aria-labelledby="headingTwo"
+                             data-bs-parent="#accordionExample">
+                            <div class="accordion-body" style="border-bottom: none;">
+                                <p>
+                              <span>
+                              <a>Show Advanced Options (large enterprise loads)</a>
+                              <label class="switch">
+                              <input type="checkbox" id="toggleswitch2">
+                              <span class="slider round"></span>
+                              </label>
+                              </span>
+                                </p>
+                                <p style="color: var(--ccb);">
+                                    <strong>Number of selected Consumers: </strong><a
+                                        id="n_consumers"
+                                        style="color: var(--ccb);
+                                  font-weight: bold;">0</a></p>
+                                <table style="border-top: none;  color: var(--ccb);">
+                                    <tr>
+                                        <th>Consumer Type</th>
+                                        <th>Consumer Category</th>
+                                        <th>Latitude</th>
+                                        <th>Longitude</th>
+                                        <th>Grid-/SHS-Options<span
+                                                class="icon icon-question"
+                                                data-bs-toggle="tooltip"
+                                                title="The off-grid planning process identifies consumers for whom connection costs surpass a
+                    specified threshold during grid optimization. Economically, it may not be feasible to connect these
+                    consumers to the grid. Instead, equipping them with a solar home system is a more viable solution.
+                    Further details about this option are available on the Grid-Design page. Additionally, this page
+                    offers an option to adjust the threshold, ensuring all consumers can connect to the grid. On this
+                    very page, you also have the discretion to manually determine the connection status of specific
+                    consumers, such as schools and health centers. You can decide whether these entities should be
+                    mandatorily connected to the grid, exclusively provided with a solar home system (SHS), or if the
+                    decision should be left to the optimizer based on the set threshold."
+                                        ></span></th>
+                                        <th>Delete Consumer</th>
+                                        <th></th>
+                                        <th></th>
+                                    </tr>
+                                    <TR>
+                                        <TD>
+                                            <div class="input-item" style="margin-right: 30px;">
+                                                <select id="consumer" class="form-select" style="max-width: 150px">
+                                                    <option>Household</option>
+                                                </select>
+                                            </div>
+                                        </TD>
+                                        <TD>
+                                            <div class="input-item" style="display: flex; align-items: center;">
+                                                <select id="enterprise" class="form-select" style="max-width: 150px;">
+                                                    <option>Enterprise</option>
+                                                </select>
+                                            </div>
+                                        </TD>
+                                        <TD>
+                                            <div class="input-group" style="max-width: 200px">
+                                                <input
+                                                        type="number"
+                                                        disabled="true"
+                                                        class="form-control"
+                                                        id="latitude"
+                                                        placeholder=""
+                                                        value=""
+                                                        min="2"
+                                                        max="16"
+                                                        step="0.00001"
+                                                        required
+                                                />
+                                                <span class="input-group-text">Degree</span>
+                                            </div>
+                                        </TD>
+                                        <TD>
+                                            <div class="input-group" style="max-width: 200px">
+                                                <input
+                                                        type="number"
+                                                        disabled="true"
+                                                        class="form-control"
+                                                        id="longitude"
+                                                        placeholder=""
+                                                        value=""
+                                                        min="2"
+                                                        max="16"
+                                                        step="0.00001"
+                                                        required
+                                                />
+                                                <span class="input-group-text">Degree</span>
+                                            </div>
+                                        </TD>
+                                        <TD>
+                                            <div class="input-item" style="margin-right: 30px;">
+                                                <select id="shs_options" class="form-select" style="max-width: 150px">
+                                                    <option value="optimize">Optimize</option>
+                                                    <option value="grid">Grid</option>
+                                                    <option value="shs">SHS</option>
+                                                </select>
+                                            </div>
+                                        </TD>
+                                        <TD>
+                                            <a id="submit"
+                                               class="btn btn--medium"
+                                               style="height: 32px; display: flex; align-items: center; justify-content: center;"
+                                               onclick="delete_consumer();"
+                                               href="javascript:void(0);">Delete</a>
+                                        </TD>
+                                        <TD><span style="float:right;"><a>&nbsp;
+                                   </a></span></TD>
+                                        <TD><span style="float:right;"><a>&nbsp;
+                                   </a></span></TD>
+                                    </TR>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item" style="border-top: none">
+                        <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree">
+                            <div class="accordion-body">
+                                <p>Note: Productive use enterprises selected above will not by default have added any
+                                    "large loads" (such as milling machines or electric welders etc.) and will only have
+                                    typical low power appliances included.<br>The functionality below allows the user to
+                                    add, remove, and view specific types and quantities of large loads for each
+                                    individual enterprise consumer.</p>
+                                <div class="list_container">
+                                    <div>
+                                        <p><b style="color: var(--ccb)">Large loads to add</b></p>
+                                        <div class="input-item"
+                                             style="margin-right: 30px;  margin-bottom: 20px; width: 200px;">
+                                            <select id="loads" class="form-select" style="max-width: 200px">
+                                                <option>Motor</option>
+                                            </select>
+                                        </div>
+                                        <div class="input-group" style="width: 200px;  margin-bottom: 20px;">
+                                            <input
+                                                    type="number"
+                                                    class="form-control"
+                                                    id="number_loads"
+                                                    placeholder="Number"
+                                                    value="1"
+                                                    min="1"
+                                                    max="30"
+                                                    step="1"
+                                                    required/>
+                                        </div>
+                                        <a id="add"
+                                           class="btn btn--medium"
+                                           style="height: 32px; display: flex; align-items: center; justify-content: center;  margin-bottom: 20px; width: 200px;"
+                                           onclick="addElementToLargeLoadList();"
+                                           href="javascript:void(0);">Add Load</a>
+                                    </div>
+                                    <div>
+
+                                        <p><b style="color: var(--ccb)">Selected Loads</b></p>
+                                        <div class="list" id="load_list" style="width: 400px"></div>
+                                    </div>
+                                    <div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="search-container">
+                        <input type="text" id="search-input" placeholder="Search location within Nigeria"
+                               class="input-group-text" style="text-align: left"/>
+                    </div>
+                    <p></p>
+                    <div id="map" style="min-height: 700px; min-width: 1000px; margin-bottom: 10px"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+    {% include '_warningBox.html' %}
+    <div id="videoTutorial" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999; text-align: left">
+        <form class="modal-content" style="width: 700px; height: 520px;">
+            <div class="container">
+                <h1 style="margin-bottom: 0;">Video Tutorial</h1>
+                <div style="padding: 15px;">
+                    <video id="tutorialVideo" width="568" height="360" controls>
+                        <source src="{{ url_for('public', path='media_files/videos/tut_consumer_selection.mp4') }}"
+                                type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+                <button onclick="stopVideo(); document.getElementById('videoTutorial').style.display='none'"
+                        type="button" class="deletebtn">OK
+                </button>
+                <button onclick="stopVideo(); document.getElementById('videoTutorial').style.display='none';
+                deactivate_video_tutorial();" type="button" class="cancelbtn">Don't Show Again
+                </button>
+            </div>
+        </form>
+    </div>
+
+</main>
+{% include '_footer.html' %}
+</body>
+{% include '_scripts.html' %}
+<script src="{{ url_for('js', path='integrate_map.js') }}"></script>
+<script src="{{ url_for('js', path='add_drawing_tools_to_map.js') }}"></script>
+<script src="{{ url_for('js', path='pages/consumer_selection.js') }}"></script>
+<script src="{{ url_for('js', path='backend_communication.js') }}"></script>
+</html>
+

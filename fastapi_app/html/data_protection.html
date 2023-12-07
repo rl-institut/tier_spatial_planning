@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang={{ language }}>
+<head>
+    {% set title='Imprint' %}
+    {% include '_head.html' %}
+</head>
+<body>
+{% include '_navbar.html' %}
+<main>
+    <section class="dashboard">
+        <div style="text-align: left">
+            {% include '_imprint_de.html' %}
+        </div>
+        >
+    </section>
+</main>
+{% include '_footer.html' %}
+</body>
+{% include '_scripts.html' %}
+<script src="{{ url_for('js', path='backend_communication.js') }}"></script>
+</html>

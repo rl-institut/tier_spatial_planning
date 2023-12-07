@@ -1,3 +1,0 @@
-[flake8]
-exclude = meta/migrations/, docs/
-max-line-length=100
