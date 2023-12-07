@@ -533,7 +533,7 @@ async function change_pw() {
 
             if (responseData.validation === true) {
                 await new Promise(r => setTimeout(r, 3000));
-                logout();
+                await logout();
             }
 
         } catch (error) {
@@ -570,7 +570,7 @@ async function delete_account() {
 
         if (responseData.validation === true) {
             await new Promise(r => setTimeout(r, 3000));
-            logout();
+            await logout();
         }
 
     } catch (error) {
@@ -1005,7 +1005,7 @@ async function redirect_if_cookie_is_missing(access_token, consent_cookie) {
         const responseData = await response.json();
 
         if (!responseData) {
-            logout();
+            await logout();
             window.location.href = window.location.origin;
         }
 
@@ -1062,8 +1062,8 @@ async function wait_for_results(project_id, task_id, time, model) {
                     window.location.href = window.location.origin + '/simulation_results?project_id=' + project_id;
                 } else if (!shouldStop) {
                     document.querySelector("#statusMsg").innerHTML = res.status;
-                    renewToken();
-                    wait_for_results(project_id, task_id, res.time, res.model);
+                    await renewToken();
+                    await wait_for_results(project_id, task_id, res.time, res.model);
                 }
             } else {
                 if (response.status === 303 || response.status === 422) {
