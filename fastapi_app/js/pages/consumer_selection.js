@@ -132,12 +132,12 @@ document.getElementById('shs_options').value = '';
 
 
 let markerConsumerSelected = new L.Icon({
-    iconUrl: "fastapi_app/static/assets/icons/i_consumer_selected.svg",
+    iconUrl: "fastapi_app/files/public/media_files/assets/icons/i_consumer_selected.svg",
     iconSize: [12, 12],
 });
 
 let markerPowerHouseSelected = new L.Icon({
-    iconUrl: "fastapi_app/static/assets/icons/i_power_house_selected.svg",
+    iconUrl: "fastapi_app/files/public/media_files/assets/icons/i_power_house_selected.svg",
     iconSize: [12, 12],
 });
 
