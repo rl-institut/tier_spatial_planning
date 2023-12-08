@@ -329,24 +329,20 @@ async def calculating(request: Request):
     if 'anonymous' in user.email:
         msg = 'You will be forwarded after the model calculation is completed.'
         email_opt = False
-    elif user.task_id is not None and len(user.task_id) > 20 and not task_is_finished(user.task_id):
+    else:
+        email_opt = False
+        msg = 'You will be forwarded after the model calculation is completed. You can also close the window and view' \
+              ' the results in your user account after the calculation is finished.'
+    if user.task_id is not None and len(user.task_id) > 20 and not task_is_finished(user.task_id):
         msg = 'CAUTION: You have a calculation in progress that has not yet been completed. Therefore you cannot' \
               ' start another calculation. You can cancel the already running calculation by clicking on the' \
               ' following button:'
-        return templates.TemplateResponse("calculating.html", {"request": request,
+    return templates.TemplateResponse("calculating.html", {"request": request,
                                                                'project_id': project_id,
                                                                'msg': msg,
                                                                'task_id': user.task_id,
                                                                'time': 3,
-                                                               'email_opt': True})
-    else:
-        msg = 'You will be forwarded after the model calculation is completed. You can also close the window and view' \
-              ' the results in your user account after the calculation is finished.'
-        email_opt = True
-    return templates.TemplateResponse("calculating.html", {"request": request,
-                                                           'project_id': project_id,
-                                                           'msg': msg,
-                                                           'email_opt': email_opt})
+                                                               'email_opt': email_opt})
 
 
 @app.post("/set_email_notification/{project_id}/{is_active}")
