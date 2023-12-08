@@ -42,7 +42,9 @@ class BaseOptimizer:
         self.user_id = user_id
         self.project_id = project_id
         n_days = min(self.project_setup["n_days"], int(os.environ.get('MAX_DAYS', 365)))
-        self.start_datetime = pd.to_datetime(self.project_setup["start_date"]).to_pydatetime()
+        # self.start_datetime = pd.to_datetime(self.project_setup["start_date"]).to_pydatetime()
+        # start_datetime hardcoded as only 2022 pv and demand data is available
+        self.start_datetime = pd.to_datetime('2022').to_pydatetime()
         self.dt_index = pd.date_range(self.start_datetime,
                                       self.start_datetime + pd.to_timedelta(n_days, unit="D"),
                                       freq='H',
