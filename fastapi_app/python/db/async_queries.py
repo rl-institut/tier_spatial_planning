@@ -186,7 +186,7 @@ async def check_data_availability(user_id, project_id):
 
 
 async def pause_until_results_are_available(user_id, project_id, status):
-    n_iter = 4 if status == 'unknown' else 2
+    n_iter = 8 if status == 'unknown' else 6
     for i in range(n_iter):
         results = await get_model_instance(sa_tables.Results, user_id, project_id)
         if hasattr(results, 'lcoe') and results.lcoe is not None:
