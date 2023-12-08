@@ -224,8 +224,6 @@ function markerOnClick(e) {
                         document.getElementById('shs_options').value = 'optimize';
                     } else if (marker.shs_options == 1) {
                         document.getElementById('shs_options').value = 'grid';
-                    } else if (marker.shs_options == 2) {
-                        document.getElementById('shs_options').value = 'shs';
                     }
                 }
                 document.getElementById('longitude').disabled = false;
@@ -249,9 +247,6 @@ function update_map_elements() {
             break;
         case 'grid':
             shs_value = 1;
-            break;
-        case 'shs':
-            shs_value = 2;
             break;
         default:
             shs_value = 0;
