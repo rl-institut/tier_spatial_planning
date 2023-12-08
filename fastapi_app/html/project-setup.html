@@ -6,7 +6,7 @@
     <link href="{{ url_for('css', path='pages/project_setup.css') }}" rel="stylesheet"/>
 </head>
 <body onload="redirect_if_cookie_is_missing(true, true);
-        load_previous_data('project_setup.css?project_id={{ project_id }}');
+        load_previous_data('project_setup?project_id={{ project_id }}');
         show_email_and_project_in_navbar({{ project_id }});">
 {% include '_navbar.html' %}
 {% include '_wizard.html' %}
