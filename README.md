@@ -33,6 +33,7 @@ Redis, an in-memory database, acts as a message broker, managing communication b
 
 <ins>**Flower Container**</ins>  
 Flower provides a web-based interface for monitoring and managing the Celery task queue, housed in a separate Docker container.
+
 ---
 # Instructions for Setting Up the Project
 This tool is designed to operate within a Docker environment, with detailed instructions provided below. Should you wish to modify or further develop the tool, it is possible to run it outside of a Docker environment as well. Comprehensive guidelines for this approach are also available below. In such cases, however, you must have a MySQL database running (refer to the provided description). In both scenarios, the following initial steps are required:
