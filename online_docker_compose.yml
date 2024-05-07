@@ -1,0 +1,160 @@
+version: '3.3'
+services:
+  app:
+    container_name: 'pps_app'
+    build: .
+    command: gunicorn -w 8 -k uvicorn.workers.UvicornWorker fastapi_app.main:app --bind 0.0.0.0:40000 --timeout 1200  --forwarded-allow-ips='*' --access-logfile - --error-logfile -
+    # command: uvicorn fastapi_app.main:app --host 0.0.0.0 --reload --port 40000 --forwarded-allow-ips='*' --proxy-headers
+    restart: always
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PW=/run/secrets/pw
+      - MAIL_PW=/run/secrets/mail_pw
+      - KEY_FOR_ACCESS_TOKEN=/run/secrets/key_for_token
+      - EXAMPLE_USER_PW=/run/secrets/example_user_pw
+      - DB_HOST=mysql
+      - DOCKERIZED=1
+    env_file:
+      - app.env
+    ports:
+      - '40000:40000'
+    links:
+      - mysql
+    networks:
+      - pps_network
+    secrets:
+      - pw
+    depends_on:
+      - redis
+      - mysql
+  mysql:
+    container_name: pps_mysql
+    build:
+      context: .
+      dockerfile: Dockerfile_mysql
+      args:
+        - UID_FOR_DB=${UID_FOR_DB}
+        - GID_FOR_DB=${GID_FOR_DB}
+    command: --max-connections=1000
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/pw
+    ports:
+      - '40001:3306'
+    networks:
+      - pps_network
+    secrets:
+      - pw
+    volumes:
+      - ./db_data/user_db:/var/lib/mysql
+  redis:
+    image: redis
+    container_name: 'pps_redis'
+    restart: always
+    ports:
+    - '40005:6379'
+    networks:
+      - pps_network
+  worker_default:
+    container_name: 'pps_celery_default'
+    build: .
+    restart: always
+    command: celery -A fastapi_app.python.task_queue.celery_worker.worker worker --loglevel=INFO --pool prefork  --concurrency=16 --queues=default_queue
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - FLOWER_PORT=5555
+      - PW=/run/secrets/pw
+      - DB_HOST=mysql
+    depends_on:
+      - app
+      - redis
+      - mysql
+    networks:
+      - pps_network
+    secrets:
+      - pw
+  worker_milp:
+    container_name: 'pps_celery_milp'
+    build: .
+    restart: always
+    command: celery -A fastapi_app.python.task_queue.celery_worker.worker worker --loglevel=INFO --pool prefork  --concurrency=8 --queues=milp_queue
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - FLOWER_PORT=5555
+      - PW=/run/secrets/pw
+      - DB_HOST=mysql
+    depends_on:
+      - app
+      - redis
+      - mysql
+    networks:
+      - pps_network
+    secrets:
+      - pw
+  flower:
+    container_name: 'pps_flower'
+    build: .
+    restart: always
+    command: celery -A fastapi_app.python.task_queue.celery_worker.worker flower --port=5555
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - FLOWER_PORT=5555
+      - PW=/run/secrets/pw
+      - DB_HOST=mysql
+    ports:
+      - '40002:5555'
+    depends_on:
+      - redis
+      - worker_default
+      - worker_milp
+      - app
+    networks:
+      - pps_network
+    secrets:
+      - pw
+  adminer:
+    container_name: 'pps_adminer'
+    image: adminer
+    restart: always
+    ports:
+      - '40003:8080'
+    depends_on:
+      - mysql
+    environment:
+      - ADMINER_DEFAULT_SERVER=mysql
+      - ADMINER_DEFAULT_USERNAME=root
+      - ADMINER_DEFAULT_PASSWORD_FILE=/run/secrets/pw
+    networks:
+      - pps_network
+    secrets:
+      - pw
+#  db_initializer:
+#    container_name: 'pps_db_initializer'
+#    build: .
+#    command: python -m fastapi_app.python.db.init_db
+#    depends_on:
+#      - mysql
+#    restart: "no"
+#    environment:
+#      - PYTHONUNBUFFERED=1
+#      - PW=/run/secrets/pw
+#      - EXAMPLE_USER_PW=/run/secrets/example_user_pw
+#      - DB_HOST=mysql
+#      - DOCKERIZED=1
+#    env_file:
+#      - app.env
+secrets:
+  pw:
+    file: ./secrets/secret.txt
+  mail_pw:
+    file: ./secrets/mail_secret.txt
+  key_for_token:
+    file: ./secrets/key_for_token.txt
+  example_user_pw:
+    file: ./secrets/example_user_secret.txt
+
+networks:
+  pps_network:

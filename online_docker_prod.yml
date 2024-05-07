@@ -1,0 +1,75 @@
+version: '3.3'
+services:
+#  app:
+#    container_name: 'app'
+#    build: .
+#    command: gunicorn -w 8 -k uvicorn.workers.UvicornWorker fastapi_app.main:app --bind 0.0.0.0:40000 --timeout 1200  --forwarded-allow-ips='*' --access-logfile - --error-logfile -
+#    # command: uvicorn fastapi_app.main:app --host 0.0.0.0 --reload --port 40000 --forwarded-allow-ips='*' --proxy-headers
+#    restart: always
+#    environment:
+#      - PYTHONUNBUFFERED=1
+#      - PW=/run/secrets/pw
+#      - MAIL_PW=/run/secrets/mail_pw
+#      - KEY_FOR_ACCESS_TOKEN=/run/secrets/key_for_token
+#      - EXAMPLE_USER_PW=/run/secrets/example_user_pw
+#      - DB_HOST=mysql
+#      - DOCKERIZED=1
+#    env_file:
+#      - fastapi_app.env
+#      - mail.env
+#    ports:
+#      - '40000:40000'
+#    links:
+#      - mysql
+#    secrets:
+#      - pw
+#    depends_on:
+#      - redis
+#      - mysql
+  mysql:
+    container_name: 'pps_mysql'
+    build:
+      context: .
+      dockerfile: Dockerfile-mysql
+      args:
+        - UID_FOR_DB=${UID_FOR_DB}
+        - GID_FOR_DB=${GID_FOR_DB}
+    command: --max-connections=1000
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/pw
+    ports:
+      - '40001:3306'
+    secrets:
+      - pw
+    volumes:
+      - ./db_data/user_db:/var/lib/mysql
+  redis:
+    image: redis
+    container_name: 'pps_redis'
+    restart: always
+    ports:
+    - '40005:6379'
+  adminer:
+    container_name: 'pps_adminer'
+    image: adminer
+    restart: always
+    ports:
+      - '40003:8080'
+    depends_on:
+      - mysql
+    environment:
+      - ADMINER_DEFAULT_SERVER=mysql
+      - ADMINER_DEFAULT_USERNAME=root
+      - ADMINER_DEFAULT_PASSWORD_FILE=/run/secrets/pw
+    secrets:
+      - pw
+secrets:
+  pw:
+    file: ./secrets/secret.txt
+  mail_pw:
+    file: ./secrets/mail_secret.txt
+  key_for_token:
+    file: ./secrets/key_for_token.txt
+  example_user_pw:
+    file: ./secrets/example_user_secret.txt
