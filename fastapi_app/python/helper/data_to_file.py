@@ -1,6 +1,7 @@
 import warnings
 
 warnings.filterwarnings('ignore', category=FutureWarning, module='pandas')
+import numpy as np
 import pandas as pd
 import io
 
@@ -11,6 +12,67 @@ results_df into structured sheets within an Excel file. The module handles the f
 columns, setting units, and adjusting column widths for readability. The Excel file is then created using the 
 pandas.ExcelWriter class.
 """
+
+
+def consumer_data_to_file(df, file_type):
+    if df.empty:
+        df = pd.DataFrame(columns=['latitude', 'longitude', 'consumer_type', 'custom_specification', 'shs_options', 'consumer_detail'])
+    else:
+        df = df.drop(columns=['is_connected', 'how_added', 'node_type'])
+    if file_type == 'xlsx':
+        output = io.BytesIO()
+        df.to_excel(output, index=False, engine='xlsxwriter')
+        output.seek(0)
+        return io.BytesIO(output.getvalue())
+    elif file_type == 'csv':
+        output = io.StringIO()
+        df.to_csv(output, index=False)
+        output.seek(0)
+        return io.StringIO(output.getvalue())
+
+
+def check_imported_consumer_data(df):
+    df['is_connected'] = True
+    df['how_added'] = 'automatic'
+    df['node_type'] = 'consumer'
+    df = df[['latitude', 'longitude', 'how_added', 'node_type', 'consumer_type', 'custom_specification', 'shs_options', 'consumer_detail',
+             'is_connected']]
+    df = df.replace('', np.nan)
+    if 'consumer_type' not in df.columns:
+        df['consumer_type'] = 'household'
+    else:
+        df['consumer_type'] = df['consumer_type'].fillna('household')
+    if 'custom_specification' not in df.columns:
+        df['custom_specification'] = ''
+    else:
+        df['custom_specification'] = df['custom_specification'].fillna('')
+    if 'shs_option' not in df.columns:
+        df['shs_option'] = 0
+    else:
+        df['shs_option'] = df['shs_option'].fillna(0)
+    df = df[df['consumer_type'].isin(['household', 'enterprise', 'public_service'])]
+    df['shs_option'] = df['shs_option'].where(df['shs_option'].isin([0, 1]), '')
+    valid_consumer_details = ['Food_Groceries', 'Food_Restaurant', 'Food_Bar', 'Food_Drinks',
+                              'Food_Fruits or vegetables', 'Trades_Tailoring', 'Trades_Beauty or Hair',
+                              'Trades_Metalworks', 'Trades_Car or Motorbike Repair', 'Trades_Carpentry',
+                              'Trades_Laundry', 'Trades_Cycle Repair', 'Trades_Shoemaking', 'Retail_Medical',
+                              'Retail_Clothes and accessories', 'Retail_Electronics', 'Retail_Other',
+                              'Retail_Agricultural', 'Digital_Mobile or Electronics Repair', 'Digital_Digital Other',
+                              'Digital_Cybercafé', 'Digital_Cinema or Betting', 'Digital_Photostudio',
+                              'Agricultural_Mill or Thresher or Grater', 'Agricultural_Other']
+    valid_custom_specifications = ['Milling Machine (7.5kW)', 'Crop Dryer (8kW)', 'Thresher (8kW)',
+                                   'Grinder (5.2kW)', 'Sawmill (2.25kW)', 'Circular Wood Saw (1.5kW)',
+                                   'Jigsaw (0.4kW)', 'Drill (0.4kW)', 'Welder (5.25kW)', 'Angle Grinder (2kW)']
+    df['consumer_detail'] = df['consumer_detail'].where(df['consumer_detail'].isin(valid_consumer_details), '')
+    df['custom_specification'] = df['custom_specification'].where(df['custom_specification'].isin(valid_custom_specifications), '')
+    df['latitude'] = df['latitude'].astype(float)
+    df['longitude'] = df['longitude'].astype(float)
+    df['shs_options'] = df['shs_options'].fillna(0)
+    df['custom_specification'] = df['custom_specification'].fillna('')
+    df['shs_options'] = df['shs_options'].astype(int)
+    df['is_connected'] = df['is_connected'].astype(bool)
+    return df
+
 
 def project_data_df_to_xlsx(input_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df):
     input_df = pd.concat([input_df.T, energy_system_design.T])

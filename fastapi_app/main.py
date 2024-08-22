@@ -3,6 +3,7 @@ import asyncio
 import base64
 import json
 import os
+import io
 import random
 import uuid
 from collections import defaultdict
@@ -12,7 +13,7 @@ from typing import Dict
 import pandas as pd
 import pyutilib.subprocess.GlobalData
 from captcha.image import ImageCaptcha
-from fastapi import FastAPI, Request, Response, HTTPException
+from fastapi import FastAPI, Request, Response, HTTPException, File, UploadFile
 from fastapi.responses import RedirectResponse, FileResponse, JSONResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -28,7 +29,7 @@ from fastapi_app.python.helper import identify_consumers_on_map
 from fastapi_app.python.helper.error_logger import logger as error_logger
 from fastapi_app.python.db.handle_user_accounts import Hasher, create_guid, is_valid_credentials, \
     send_activation_link, activate_mail, authenticate_user, create_access_token, send_mail
-from fastapi_app.python.helper.project_data_to_excel import project_data_df_to_xlsx
+from fastapi_app.python.helper import data_to_file
 from fastapi_app.python.opt_models.grid_optimizer import optimize_grid
 from fastapi_app.python.opt_models.supply_optimizer import optimize_energy_system
 from fastapi_app.python.task_queue.celery_tasks import task_grid_opt, task_supply_opt, task_remove_anonymous_users, \
@@ -373,15 +374,8 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
     nodes = await async_queries.get_model_instance(sa_tables.Nodes, user.id, project_id)
     df = pd.read_json(nodes.data) if nodes is not None else pd.DataFrame()
     if not df.empty:
-        df = df[['latitude',
-                 'longitude',
-                 'how_added',
-                 'node_type',
-                 'consumer_type',
-                 'consumer_detail',
-                 'custom_specification',
-                 'is_connected',
-                 'shs_options']]
+        df = df[['latitude', 'longitude', 'how_added', 'node_type', 'consumer_type', 'consumer_detail',
+                 'custom_specification', 'is_connected', 'shs_options']]
         power_house = df[df['node_type'] == 'power-house']
         if markers_only is True:
             if len(power_house) > 0 and power_house['how_added'].iat[0] == 'manual':
@@ -401,13 +395,69 @@ async def db_nodes_to_js(project_id: str, markers_only: bool, request: Request):
         return JSONResponse(status_code=200, content={'is_load_center': is_load_center, "map_elements": nodes_list})
 
 
-@app.post("/consumer_to_db/{project_id}")
-async def consumer_to_db(project_id: str, map_elements: fastapi_app.python.helper.pydantic_schema.MapDataRequest,
-                         request: Request):
+@app.post("/file_nodes_to_js")
+async def file_nodes_to_js(file: UploadFile = File(...)):
+    filename = file.filename
+    file_extension = filename.split('.')[-1].lower()
+    if file_extension not in ['csv', 'xlsx']:
+        raise HTTPException(status_code=400, detail="Unsupported file type. Please upload a CSV or Excel file.")
+    try:
+        if file_extension == 'csv':
+            file_content = await file.read()
+            decoded_content = file_content.decode('utf-8')
+            df = pd.read_csv(io.StringIO(decoded_content))
+        elif file_extension == 'xlsx':
+            df = pd.read_excel(io.BytesIO(await file.read()), engine='openpyxl')
+        if not df.empty:
+            df = data_to_file.check_imported_consumer_data(df)
+            return JSONResponse(status_code=200, content={'is_load_center': False, "map_elements": df.to_dict('records')})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process the file: {e}")
+
+
+
+@app.post("/file_nodes_to_js")
+async def file_nodes_to_js(file: UploadFile, request: Request):
+    # Read the file content
+    file_content = await file.read()
+
+
     user = await handle_user_accounts.get_user_from_cookie(request)
     if user is None:
         return
-    df = pd.DataFrame.from_records(map_elements.map_elements)
+    if project_id == 'undefined':
+        project_id = get_project_id_from_request(request)
+    nodes = await async_queries.get_model_instance(sa_tables.Nodes, user.id, project_id)
+    df = pd.read_json(nodes.data) if nodes is not None else pd.DataFrame()
+    if not df.empty:
+        df = df[['latitude', 'longitude', 'how_added', 'node_type', 'consumer_type', 'consumer_detail',
+                 'custom_specification', 'is_connected', 'shs_options']]
+        power_house = df[df['node_type'] == 'power-house']
+        if markers_only is True:
+            if len(power_house) > 0 and power_house['how_added'].iat[0] == 'manual':
+                df = df[df['node_type'].isin(['power-house', 'consumer'])]
+            else:
+                df = df[df['node_type'] == 'consumer']
+        df['latitude'] = df['latitude'].astype(float)
+        df['longitude'] = df['longitude'].astype(float)
+        df['shs_options'] = df['shs_options'].fillna(0)
+        df['custom_specification'] = df['custom_specification'].fillna('')
+        df['shs_options'] = df['shs_options'].astype(int)
+        df['is_connected'] = df['is_connected'].astype(bool)
+        nodes_list = df.to_dict('records')
+        is_load_center = True
+        if len(power_house.index) > 0 and power_house['how_added'].iat[0] == 'manual':
+            is_load_center = False
+        return JSONResponse(status_code=200, content={'is_load_center': is_load_center, "map_elements": nodes_list})
+
+
+
+@app.post("/consumer_to_db/{project_id}")
+async def consumer_to_db(project_id: str, data: fastapi_app.python.helper.pydantic_schema.MapDataRequest, request: Request):
+    user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
+    df = pd.DataFrame.from_records(data.map_elements)
     if df.empty is True:
         await async_inserts.remove(sa_tables.Nodes, user.id, project_id)
         return
@@ -422,14 +472,7 @@ async def consumer_to_db(project_id: str, map_elements: fastapi_app.python.helpe
     if df.empty is True:
         await async_inserts.remove(sa_tables.Nodes, user.id, project_id)
         return
-    df = df[['latitude',
-             'longitude',
-             'how_added',
-             'node_type',
-             'consumer_type',
-             'custom_specification',
-             'shs_options',
-             'consumer_detail']]
+    df = df[['latitude', 'longitude', 'how_added', 'node_type', 'consumer_type', 'custom_specification', 'shs_options', 'consumer_detail']]
     df['consumer_type'] = df['consumer_type'].fillna('household')
     df['custom_specification'] = df['custom_specification'].fillna('')
     df['shs_options'] = df['shs_options'].fillna(0)
@@ -444,12 +487,24 @@ async def consumer_to_db(project_id: str, map_elements: fastapi_app.python.helpe
             df['parent'] = df['parent'].replace('unknown', None)
     df.latitude = df.latitude.map(lambda x: "%.6f" % x)
     df.longitude = df.longitude.map(lambda x: "%.6f" % x)
-    nodes = sa_tables.Nodes()
-    nodes.id = user.id
-    nodes.project_id = project_id
-    nodes.data = df.reset_index(drop=True).to_json()
-    await async_inserts.merge_model(nodes)
-    return JSONResponse(status_code=200, content={"message": "Success"})
+    if data.file_type == 'db':
+        nodes = sa_tables.Nodes()
+        nodes.id = user.id
+        nodes.project_id = project_id
+        nodes.data = df.reset_index(drop=True).to_json()
+        await async_inserts.merge_model(nodes)
+        return JSONResponse(status_code=200, content={"message": "Success"})
+    else:
+        io_file = data_to_file.consumer_data_to_file(df, data.file_type)
+        if data.file_type == 'xlsx':
+            response = StreamingResponse(io_file,
+                                         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_results.xlsx"
+        elif data.file_type == 'csv':
+            response = StreamingResponse(io_file,
+                                         media_type="text/csv")
+            response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_results.csv"
+        return response
 
 
 @app.get("/load_results/{project_id}")
@@ -1242,7 +1297,7 @@ async def export_data(project_id: int, file_type: str, request: Request):
     nodes_df = pd.read_json(nodes.data) if nodes is not None else pd.DataFrame()
     links_df = pd.read_json(links.data) if links is not None else pd.DataFrame()
     energy_system_design = await async_queries.get_df(sa_tables.EnergySystemDesign, user.id, project_id)
-    excel_file = project_data_df_to_xlsx(input_parameters_df, energy_system_design, energy_flow_df, results_df,
+    excel_file = data_to_file.project_data_df_to_xlsx(input_parameters_df, energy_system_design, energy_flow_df, results_df,
                                          nodes_df, links_df)
     response = StreamingResponse(excel_file,
                                  media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")

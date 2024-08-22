@@ -131,14 +131,18 @@
                               <span>
 <p style="display: flex; justify-content: space-between; align-items: center; color: var(--ccb);">
     <span style="display: flex; align-items: center;">
+        <input type="file" id="fileInput" style="display: none;" />
         <a id="importButton" class="btn btn--medium"
            style="height: 32px; display: flex; align-items: center; justify-content: center; margin-right: 10px;"
            href="javascript:void(0);">Import Consumers</a>
 
 
         <a id="exportButton" class="btn btn--medium"
-           style="height: 32px; display: flex; align-items: center; justify-content: center; margin-right: 10px;"
-           href="javascript:void(0);">Export Consumers</a>
+           style="height: 32px; display: flex; align-items: center; justify-content: center; margin-right: 10px; color: #fff;"
+           href="javascript:void(0);"
+           onclick="consumer_to_db({{ project_id }}, null, document.getElementById('fileTypeDropdown').value);">
+           Export Consumers
+        </a>
 
         <select id="fileTypeDropdown" class="form-select" style="max-width: 150px; margin-right: 10px; height: 32px; line-height: 20px; padding: 0 24px 0 8px;">
             <option value="csv">File type: CSV</option>

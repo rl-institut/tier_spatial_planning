@@ -103,21 +103,41 @@ async function db_nodes_to_js(project_id, markers_only) {
 }
 
 
-async function consumer_to_db(project_id, href) {
+async function consumer_to_db(project_id, href, file_type = "db") {
     update_map_elements();
     const url = "/consumer_to_db/" + project_id;
-    await fetch(url, {
+    const response = await fetch(url, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({map_elements: map_elements})
-    }).then(() => {
-        if (!href) {
-            forward_if_consumer_selection_exists(project_id);
-        } else {
-            window.location.href = href;
-        }
+        body: JSON.stringify({map_elements: map_elements, file_type: file_type})
     });
+
+    if (response.ok) {
+        if (file_type === "db") {
+            if (!href) {
+                forward_if_consumer_selection_exists(project_id);
+            } else if (href) {
+                window.location.href = href;
+            }
+        } else {
+            // Handle the file download for "csv" or "xlsx"
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = file_type === "xlsx" ? "offgridplanner_results.xlsx" : "offgridplanner_results.csv";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(downloadUrl);
+        }
+    } else {
+        console.error('Request failed with status:', response.status);
+        const errorDetails = await response.json();
+        console.error('Error details:', errorDetails);
+    }
 }
+
 
 function add_buildings_inside_boundary({boundariesCoordinates} = {}) {
     $("*").css("cursor", "wait");
@@ -149,6 +169,7 @@ function add_buildings_inside_boundary({boundariesCoordinates} = {}) {
             console.error("Error fetching data:", error);
         });
 }
+
 
 async function remove_buildings_inside_boundary({boundariesCoordinates} = {}) {
     $("*").css("cursor", "wait");

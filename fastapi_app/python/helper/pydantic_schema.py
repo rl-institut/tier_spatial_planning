@@ -108,7 +108,10 @@ class Email(BaseModel):
 
 class MapDataRequest(BaseModel):
     map_elements: list
+    file_type: str
 
+class FileTypeForConsumers(BaseModel):
+    file_type: str
 
 class MapData(BaseModel):
     boundary_coordinates: list
