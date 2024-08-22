@@ -18,17 +18,14 @@
     padding: 5px;
 }
 
-
 .list_container {
     display: flex;
 }
-
 
 .list {
     border: 1px solid black;
     min-height: 100px;
 }
-
 
 #load_list > div {
     display: flex;
@@ -36,7 +33,13 @@
     align-items: center;
 }
 
+/* Adjustments for form elements */
+.input-item select, .input-group input, .input-group-text, .btn--medium {
+    height: 32px; /* Ensures consistent height across elements */
+    line-height: 20px; /* Vertical alignment for text inside inputs */
+    padding: 0 24px 0 8px; /* Padding to avoid text overlapping the dropdown arrow */
+}
 
-.input-item select, .input-group input, .input-group-text, .btn btn--medium {
-    height: 32px; /* Adjust this value to your preference */
+.input-group input, .input-group-text {
+    padding: 0 8px; /* Adds padding inside input fields and text spans */
 }

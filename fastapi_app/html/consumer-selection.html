@@ -30,66 +30,50 @@
                     <div class="accordion-item">
                         <h2 class="accordion-header" id="headingTwo">
                             <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                                    data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                                Set Consumer Properties
+                                    data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo"
+                                    style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="flex-grow: 1;">Set Consumer Properties</span>
+                                <span style="flex-shrink: 0;  margin-right: 20px;">
+        <strong>Number of selected Consumers: </strong>
+        <a id="n_consumers" style="color: var(--ccb); font-weight: bold;">17</a>
+    </span>
                             </button>
                         </h2>
                         <div id="collapseTwo" class="accordion-collapse" aria-labelledby="headingTwo"
                              data-bs-parent="#accordionExample">
                             <div class="accordion-body" style="border-bottom: none;">
-                                <p>
-                              <span>
-                              <a>Show Advanced Options (large enterprise loads)</a>
-                              <label class="switch">
-                              <input type="checkbox" id="toggleswitch2">
-                              <span class="slider round"></span>
-                              </label>
-                              </span>
-                                </p>
-                                <p style="color: var(--ccb);">
-                                    <strong>Number of selected Consumers: </strong><a
-                                        id="n_consumers"
-                                        style="color: var(--ccb);
-                                  font-weight: bold;">0</a></p>
-                                <table style="border-top: none;  color: var(--ccb);">
+                                <table style="border-top: none; color: var(--ccb); border-spacing: 0;">
                                     <tr>
-                                        <th>Consumer Type</th>
-                                        <th>Consumer Category</th>
-                                        <th>Latitude</th>
-                                        <th>Longitude</th>
-                                        <th>Grid-/SHS-Options<span
-                                                class="icon icon-question"
-                                                data-bs-toggle="tooltip"
-                                                title="The off-grid planning process identifies consumers for whom connection costs surpass a
-                    specified threshold during grid optimization. Economically, it may not be feasible to connect these
-                    consumers to the grid. Instead, equipping them with a solar home system is a more viable solution.
-                    Further details about this option are available on the Grid-Design page. Additionally, this page
-                    offers an option to adjust the threshold, ensuring all consumers can connect to the grid. On this
-                    very page, you also have the discretion to manually determine the connection status of specific
-                    consumers, such as schools and health centers. You can decide whether these entities should be
-                    mandatorily connected to the grid, or if the
-                    decision should be left to the optimizer based on the set threshold."
-                                        ></span></th>
-                                        <th>Delete Consumer</th>
-                                        <th></th>
-                                        <th></th>
+                                        <th style="vertical-align: top; padding: 5px;">Consumer Type</th>
+                                        <th style="vertical-align: top; padding: 5px;">Consumer Category</th>
+                                        <th style="vertical-align: top; padding: 5px;">Latitude</th>
+                                        <th style="vertical-align: top; padding: 5px;">Longitude</th>
+                                        <th style="vertical-align: top; padding: 5px;">
+                                            Grid-/SHS-Options
+                                            <span class="icon icon-question" data-bs-toggle="tooltip"
+                                                  title="The off-grid planning process identifies consumers for whom connection costs surpass a specified threshold during grid optimization. Economically, it may not be feasible to connect these consumers to the grid. Instead, equipping them with a solar home system is a more viable solution. Further details about this option are available on the Grid-Design page. Additionally, this page offers an option to adjust the threshold, ensuring all consumers can connect to the grid. On this very page, you also have the discretion to manually determine the connection status of specific consumers, such as schools and health centers. You can decide whether these entities should be mandatorily connected to the grid, or if the decision should be left to the optimizer based on the set threshold.">
+            </span>
+                                        </th>
+                                        <th style="vertical-align: top; padding: 5px;">Delete Consumer</th>
+                                        <th style="vertical-align: top; padding: 5px;"></th>
+                                        <th style="vertical-align: top; padding: 5px;"></th>
                                     </tr>
-                                    <TR>
-                                        <TD>
-                                            <div class="input-item" style="margin-right: 30px;">
+                                    <tr>
+                                        <td style="padding: 5px;">
+                                            <div class="input-item">
                                                 <select id="consumer" class="form-select" style="max-width: 150px">
                                                     <option>Household</option>
                                                 </select>
                                             </div>
-                                        </TD>
-                                        <TD>
+                                        </td>
+                                        <td style="padding: 5px;">
                                             <div class="input-item" style="display: flex; align-items: center;">
                                                 <select id="enterprise" class="form-select" style="max-width: 150px;">
                                                     <option>Enterprise</option>
                                                 </select>
                                             </div>
-                                        </TD>
-                                        <TD>
+                                        </td>
+                                        <td style="padding: 5px;">
                                             <div class="input-group" style="max-width: 200px">
                                                 <input
                                                         type="number"
@@ -105,8 +89,8 @@
                                                 />
                                                 <span class="input-group-text">Degree</span>
                                             </div>
-                                        </TD>
-                                        <TD>
+                                        </td>
+                                        <td style="padding: 5px;">
                                             <div class="input-group" style="max-width: 200px">
                                                 <input
                                                         type="number"
@@ -122,34 +106,65 @@
                                                 />
                                                 <span class="input-group-text">Degree</span>
                                             </div>
-                                        </TD>
-                                        <TD>
-                                            <div class="input-item" style="margin-right: 30px;">
+                                        </td>
+                                        <td style="padding: 5px;">
+                                            <div class="input-item">
                                                 <select id="shs_options" class="form-select" style="max-width: 150px">
                                                     <option value="optimize">Optimize</option>
                                                     <option value="grid">Grid</option>
                                                 </select>
                                             </div>
-                                        </TD>
-                                        <TD>
-                                            <a id="submit"
-                                               class="btn btn--medium"
+                                        </td>
+                                        <td style="padding: 5px;">
+                                            <a id="submit" class="btn btn--medium"
                                                style="height: 32px; display: flex; align-items: center; justify-content: center;"
-                                               onclick="delete_consumer();"
-                                               href="javascript:void(0);">Delete</a>
-                                        </TD>
-                                        <TD><span style="float:right;"><a>&nbsp;
-                                   </a></span></TD>
-                                        <TD><span style="float:right;"><a>&nbsp;
-                                   </a></span></TD>
-                                    </TR>
+                                               onclick="delete_consumer();" href="javascript:void(0);">Delete</a>
+                                        </td>
+                                        <td style="padding: 5px;"><span style="float:right;"><a>&nbsp;</a></span></td>
+                                        <td style="padding: 5px;"><span style="float:right;"><a>&nbsp;</a></span></td>
+                                    </tr>
                                 </table>
-                            </div>
+
+
+                                <hr>
+                                <p>
+                              <span>
+<p style="display: flex; justify-content: space-between; align-items: center; color: var(--ccb);">
+    <span style="display: flex; align-items: center;">
+        <a id="importButton" class="btn btn--medium"
+           style="height: 32px; display: flex; align-items: center; justify-content: center; margin-right: 10px;"
+           href="javascript:void(0);">Import Consumers</a>
+
+
+        <a id="exportButton" class="btn btn--medium"
+           style="height: 32px; display: flex; align-items: center; justify-content: center; margin-right: 10px;"
+           href="javascript:void(0);">Export Consumers</a>
+
+        <select id="fileTypeDropdown" class="form-select" style="max-width: 150px; margin-right: 10px; height: 32px; line-height: 20px; padding: 0 24px 0 8px;">
+            <option value="csv">File type: CSV</option>
+            <option value="xlsx">File type: XLSX</option>
+        </select>
+
+        <span class="icon icon-question" data-bs-toggle="tooltip" title="Hello"
+              style="margin-right: 10px;">
+        </span>
+
+    </span>
+    <span style="display: flex; align-items: center;">
+        <a style="margin-right: 10px;">Show Advanced Options</a>
+        <label class="switch">
+            <input type="checkbox" id="toggleswitch2">
+            <span class="slider round"></span>
+        </label>
+    </span>
+</p>
+
                         </div>
                     </div>
                     <div class="accordion-item" style="border-top: none">
                         <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree">
                             <div class="accordion-body">
+                                <a>Select Individual Large Enterprise Loads</a>
                                 <p>Note: Productive use enterprises selected above will not by default have added any
                                     "large loads" (such as milling machines or electric welders etc.) and will only have
                                     typical low power appliances included.<br>The functionality below allows the user to
