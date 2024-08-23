@@ -1,5 +1,5 @@
 document.getElementById('downloadCSV').addEventListener('click', function () {
-    window.location.href = '/download_data/{{ project_id }}/csv';
+    window.location.href = '/download_data/' + project_id + '/csv';
 });
 var targetNode = document.getElementById('responseMsg');
 var config = {childList: true, subtree: true, characterData: true};

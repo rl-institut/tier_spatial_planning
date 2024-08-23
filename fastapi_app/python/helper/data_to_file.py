@@ -195,7 +195,6 @@ def project_data_df_to_xlsx(input_df, energy_system_design, energy_flow_df, resu
         writer.sheets[sheet5] = set_column_width(writer.sheets[sheet5],
                                                  links_df,
                                                  workbook.add_format({'align': 'right'}))
-        writer.save()
     xlsx_data = excel_file.getvalue()
     return io.BytesIO(xlsx_data)
 

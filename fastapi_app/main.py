@@ -471,11 +471,11 @@ async def consumer_to_db(project_id: str, data: fastapi_app.python.helper.pydant
         if data.file_type == 'xlsx':
             response = StreamingResponse(io_file,
                                          media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-            response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_results.xlsx"
+            response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_consumers.xlsx"
         elif data.file_type == 'csv':
             response = StreamingResponse(io_file,
                                          media_type="text/csv")
-            response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_results.csv"
+            response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_consumers.csv"
         return response
 
 
@@ -1256,7 +1256,7 @@ async def revoke_users_task(request: Request):
 
 
 @app.get("/download_data/{project_id}/{file_type}/")
-async def export_data(project_id: int, file_type: str, request: Request):
+async def export_data(project_id, file_type: str, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
     if user is None:
         return
