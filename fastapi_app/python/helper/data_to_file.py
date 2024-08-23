@@ -64,14 +64,27 @@ def check_imported_consumer_data(df):
                               'Retail_Clothes and accessories', 'Retail_Electronics', 'Retail_Other',
                               'Retail_Agricultural', 'Digital_Mobile or Electronics Repair', 'Digital_Digital Other',
                               'Digital_Cybercafé', 'Digital_Cinema or Betting', 'Digital_Photostudio',
-                              'Agricultural_Mill or Thresher or Grater', 'Agricultural_Other', '']
+                              'Agricultural_Mill or Thresher or Grater', 'Agricultural_Other', '', 'default',
+                              'Health_Health Centre', 'Health_Clinic', 'Health_CHPS', 'Education_School', 'Education_School_noICT']
+
     valid_custom_specifications = ['Milling Machine (7.5kW)', 'Crop Dryer (8kW)', 'Thresher (8kW)',
                                    'Grinder (5.2kW)', 'Sawmill (2.25kW)', 'Circular Wood Saw (1.5kW)',
                                    'Jigsaw (0.4kW)', 'Drill (0.4kW)', 'Welder (5.25kW)', 'Angle Grinder (2kW)', '']
     falsy_values_consumer_detail = set(df['consumer_detail'].unique()) - set(valid_consumer_details)
     if len(falsy_values_consumer_detail) > 0:
         return None, f"Allowed values of column 'consumer_detail' are {valid_consumer_details}. Falsy values passed: {list(falsy_values_consumer_detail)}."
-    falsy_values_custom_specification = set(df['custom_specification'].unique()) - set(valid_custom_specifications)
+
+    custom_loads = df[df['custom_specification'] != '']['custom_specification'].unique()
+    processed_loads = []
+    non_matching_values = []
+    for load in custom_loads:
+        if load[0].isdigit() and ' x ' in load:
+            processed_loads.append(load.split(' x ', 1)[1])
+        else:
+            non_matching_values.append(load)
+    if len(non_matching_values) > 0:
+        return None, f"Values of 'custom_specification' must start with an integer followed by \" x \"  {valid_custom_specifications}. Falsy values passed: {list(non_matching_values)}."
+    falsy_values_custom_specification = set(processed_loads) - set(valid_custom_specifications)
     if len(falsy_values_custom_specification) > 0:
         return None, f"Allowed values of column 'custom_specification' are {valid_custom_specifications}. Falsy values passed: {list(falsy_values_custom_specification)}."
     columns_types = {'latitude': float, 'longitude': float, 'shs_options': int, 'consumer_type': str, 'custom_specification': str,
