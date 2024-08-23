@@ -131,7 +131,7 @@
                               <span>
 <p style="display: flex; justify-content: space-between; align-items: center; color: var(--ccb);">
     <span style="display: flex; align-items: center;">
-        <input type="file" id="fileInput" style="display: none;" />
+        <input type="file" id="fileInput" style="display: none;"/>
         <a id="importButton" class="btn btn--medium"
            style="height: 32px; display: flex; align-items: center; justify-content: center; margin-right: 10px;"
            href="javascript:void(0);">Import Consumers</a>
@@ -143,12 +143,14 @@
            Export Consumers
         </a>
 
-        <select id="fileTypeDropdown" class="form-select" style="max-width: 150px; margin-right: 10px; height: 32px; line-height: 20px; padding: 0 24px 0 8px;">
+        <select id="fileTypeDropdown" class="form-select"
+                style="max-width: 150px; margin-right: 10px; height: 32px; line-height: 20px; padding: 0 24px 0 8px;">
             <option value="csv">File type: CSV</option>
             <option value="xlsx">File type: XLSX</option>
         </select>
 
-        <span class="icon icon-question" data-bs-toggle="tooltip" title="Hello"
+        <span class="icon icon-question" data-bs-toggle="tooltip"
+              title="The first row of the CSV or Excel file should contain the column headers, with subsequent rows containing the respective values. The file must include a 'latitude' column and a 'longitude' column, both of which are mandatory and should use a dot as a decimal separator, with the unit in decimal degrees. Additionally, the file can optionally include a 'consumer_type' column, which should specify whether the consumer is a 'household', 'enterprise', or 'public_service'. If no value is provided, it will default to 'household'. Another optional column is 'consumer_detail', which should be selected from the options available in the 'Consumer Category' drop-down menu. The 'shs_options' column is also optional and should either be set to 0 (for optimization) or 1 (for grid connection), with 0 being the default. Finally, the file may contain a 'large_loads' column, which should be populated with a value chosen from the 'Large Loads to add' drop-down menu if applicable."
               style="margin-right: 10px;">
         </span>
 
@@ -162,65 +164,62 @@
     </span>
 </p>
 
-                        </div>
-                    </div>
-                    <div class="accordion-item" style="border-top: none">
-                        <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree">
-                            <div class="accordion-body">
-                                <a>Select Individual Large Enterprise Loads</a>
-                                <p>Note: Productive use enterprises selected above will not by default have added any
-                                    "large loads" (such as milling machines or electric welders etc.) and will only have
-                                    typical low power appliances included.<br>The functionality below allows the user to
-                                    add, remove, and view specific types and quantities of large loads for each
-                                    individual enterprise consumer.</p>
-                                <div class="list_container">
-                                    <div>
-                                        <p><b style="color: var(--ccb)">Large loads to add</b></p>
-                                        <div class="input-item"
-                                             style="margin-right: 30px;  margin-bottom: 20px; width: 200px;">
-                                            <select id="loads" class="form-select" style="max-width: 200px">
-                                                <option>Motor</option>
-                                            </select>
-                                        </div>
-                                        <div class="input-group" style="width: 200px;  margin-bottom: 20px;">
-                                            <input
-                                                    type="number"
-                                                    class="form-control"
-                                                    id="number_loads"
-                                                    placeholder="Number"
-                                                    value="1"
-                                                    min="1"
-                                                    max="30"
-                                                    step="1"
-                                                    required/>
-                                        </div>
-                                        <a id="add"
-                                           class="btn btn--medium"
-                                           style="height: 32px; display: flex; align-items: center; justify-content: center;  margin-bottom: 20px; width: 200px;"
-                                           onclick="addElementToLargeLoadList();"
-                                           href="javascript:void(0);">Add Load</a>
-                                    </div>
-                                    <div>
 
-                                        <p><b style="color: var(--ccb)">Selected Loads</b></p>
-                                        <div class="list" id="load_list" style="width: 400px"></div>
-                                    </div>
-                                    <div>
+
+                        <div class="accordion-item" style="border-top: none">
+                            <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree">
+                                <div class="accordion-body">
+                                    <a>Select Individual Large Enterprise Loads</a>
+                                    <p>Note: Productive use enterprises selected above will not by default have added any
+                                        "large loads" (such as milling machines or electric welders etc.) and will only have
+                                        typical low power appliances included.<br>The functionality below allows the user to
+                                        add, remove, and view specific types and quantities of large loads for each
+                                        individual enterprise consumer.</p>
+                                    <div class="list_container">
+                                        <div>
+                                            <p><b style="color: var(--ccb)">Large loads to add</b></p>
+                                            <div class="input-item"
+                                                 style="margin-right: 30px;  margin-bottom: 20px; width: 200px;">
+                                                <select id="loads" class="form-select" style="max-width: 200px">
+                                                    <option>Motor</option>
+                                                </select>
+                                            </div>
+                                            <div class="input-group" style="width: 200px;  margin-bottom: 20px;">
+                                                <input
+                                                        type="number"
+                                                        class="form-control"
+                                                        id="number_loads"
+                                                        placeholder="Number"
+                                                        value="1"
+                                                        min="1"
+                                                        max="30"
+                                                        step="1"
+                                                        required/>
+                                            </div>
+                                            <a id="add"
+                                               class="btn btn--medium"
+                                               style="height: 32px; display: flex; align-items: center; justify-content: center;  margin-bottom: 20px; width: 200px;"
+                                               onclick="addElementToLargeLoadList();"
+                                               href="javascript:void(0);">Add Load</a>
+                                        </div>
+                                        <div>
+
+                                            <p><b style="color: var(--ccb)">Selected Loads</b></p>
+                                            <div class="list" id="load_list" style="width: 400px"></div>
+                                        </div>
+                                        <div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div id="search-container">
-                        <input type="text" id="search-input" placeholder="Search location within Nigeria"
-                               class="input-group-text" style="text-align: left"/>
-                    </div>
-                    <p></p>
-                    <div id="map" style="min-height: 700px; min-width: 1000px; margin-bottom: 10px"></div>
-                </div>
-            </div>
-        </div>
+                        <div id="search-container">
+                            <input type="text" id="search-input" placeholder="Search location within Nigeria"
+                                   class="input-group-text" style="text-align: left"/>
+                        </div>
+                        <p></p>
+                        <div id="map" style="min-height: 700px; min-width: 1000px; margin-bottom: 10px"></div>
     </section>
     {% include '_warningBox.html' %}
     <div id="videoTutorial" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999; text-align: left">
