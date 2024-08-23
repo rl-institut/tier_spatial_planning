@@ -5,6 +5,7 @@ import json
 import os
 import io
 import random
+import traceback
 import uuid
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
@@ -409,46 +410,17 @@ async def file_nodes_to_js(file: UploadFile = File(...)):
         elif file_extension == 'xlsx':
             df = pd.read_excel(io.BytesIO(await file.read()), engine='openpyxl')
         if not df.empty:
-            df = data_to_file.check_imported_consumer_data(df)
+            try:
+                df, msg = data_to_file.check_imported_consumer_data(df)
+                if df is None and msg is not None:
+                    return JSONResponse(content={'responseMsg': msg}, status_code=200)
+            except Exception as e:
+                err_msg = str(e)
+                msg = f"Failed to import file. Internal error message: {err_msg}"
+                return JSONResponse(content={'responseMsg': msg}, status_code=200)
             return JSONResponse(status_code=200, content={'is_load_center': False, "map_elements": df.to_dict('records')})
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process the file: {e}")
-
-
-
-@app.post("/file_nodes_to_js")
-async def file_nodes_to_js(file: UploadFile, request: Request):
-    # Read the file content
-    file_content = await file.read()
-
-
-    user = await handle_user_accounts.get_user_from_cookie(request)
-    if user is None:
-        return
-    if project_id == 'undefined':
-        project_id = get_project_id_from_request(request)
-    nodes = await async_queries.get_model_instance(sa_tables.Nodes, user.id, project_id)
-    df = pd.read_json(nodes.data) if nodes is not None else pd.DataFrame()
-    if not df.empty:
-        df = df[['latitude', 'longitude', 'how_added', 'node_type', 'consumer_type', 'consumer_detail',
-                 'custom_specification', 'is_connected', 'shs_options']]
-        power_house = df[df['node_type'] == 'power-house']
-        if markers_only is True:
-            if len(power_house) > 0 and power_house['how_added'].iat[0] == 'manual':
-                df = df[df['node_type'].isin(['power-house', 'consumer'])]
-            else:
-                df = df[df['node_type'] == 'consumer']
-        df['latitude'] = df['latitude'].astype(float)
-        df['longitude'] = df['longitude'].astype(float)
-        df['shs_options'] = df['shs_options'].fillna(0)
-        df['custom_specification'] = df['custom_specification'].fillna('')
-        df['shs_options'] = df['shs_options'].astype(int)
-        df['is_connected'] = df['is_connected'].astype(bool)
-        nodes_list = df.to_dict('records')
-        is_load_center = True
-        if len(power_house.index) > 0 and power_house['how_added'].iat[0] == 'manual':
-            is_load_center = False
-        return JSONResponse(status_code=200, content={'is_load_center': is_load_center, "map_elements": nodes_list})
 
 
 

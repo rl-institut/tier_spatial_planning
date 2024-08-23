@@ -102,6 +102,36 @@ async function db_nodes_to_js(project_id, markers_only) {
         });
 }
 
+async function file_nodes_to_js(formData) {
+    try {
+        const response = await fetch('/file_nodes_to_js', {
+            method: 'POST',
+            body: formData
+        });
+        if (response.ok) {
+            document.getElementById('responseMsg').innerHTML = '';
+            document.getElementById('msgBox').style.display = 'none';
+            const result = await response.json();
+            if (result !== null && 'map_elements' in result) {
+                map_elements = result.map_elements;
+                is_load_center = result.is_load_center;
+                load_legend();
+                if (map_elements !== null) {
+                    put_markers_on_map(map_elements, true);
+                }
+            } else if (result !== null && 'responseMsg' in result) {
+                document.getElementById('responseMsg').innerHTML = result.responseMsg;
+                document.getElementById('msgBox').style.display = 'block';  // Show the modal
+            }
+        } else {
+            console.error('File upload failed with status:', response.status);
+        }
+    } catch (error) {
+        console.error('Error occurred during file upload:', error);
+    }
+}
+
+
 
 async function consumer_to_db(project_id, href, file_type = "db") {
     update_map_elements();

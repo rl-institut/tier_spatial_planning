@@ -515,36 +515,11 @@ document.getElementById('importButton').addEventListener('click', function() {
 document.getElementById('fileInput').addEventListener('change', async function(event) {
     const file = event.target.files[0];
     if (file) {
-        console.log('File selected:', file.name);
         const formData = new FormData();
         formData.append('file', file);
+        file_nodes_to_js(formData);
 
-        try {
-            const response = await fetch('/file_nodes_to_js', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                console.log('File uploaded successfully:', result);
-
-                // Process the response data
-                if (result !== null) {
-                    map_elements = result.map_elements;
-                    is_load_center = result.is_load_center;
-                    load_legend();
-                    if (map_elements !== null) {
-                        put_markers_on_map(map_elements, true); // Assuming markers_only is true
-                    }
-                } else {
-                    map_elements = [];
-                }
-            } else {
-                console.error('File upload failed with status:', response.status);
-            }
-        } catch (error) {
-            console.error('Error occurred during file upload:', error);
-        }
+        // Clear the file input value to allow selecting the same file again
+        document.getElementById('fileInput').value = '';
     }
 });
