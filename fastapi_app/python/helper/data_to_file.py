@@ -163,8 +163,9 @@ def project_data_df_to_xlsx(input_df, energy_system_design, energy_flow_df, resu
     results_df.loc[['Base load', 'Peak demand'], 'Unit'] = 'kW'
     results_df = results_df.T
     results_df = results_df.T.reset_index()
-
-    nodes_df = nodes_df.drop(columns=['distribution_cost', 'parent'])
+    for col in ['distribution_cost', 'parent']:
+        if col in nodes_df.columns:
+            nodes_df = nodes_df.drop(columns=[col])
     nodes_df = format_column_names(nodes_df)
     links_df = links_df[['link_type', 'length', 'lat_from', 'lon_from', 'lat_to', 'lon_to']]
     links_df = format_column_names(links_df)
