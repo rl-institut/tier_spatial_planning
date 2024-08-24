@@ -121,7 +121,7 @@ async function file_nodes_to_js(formData) {
                 }
             } else if (result !== null && 'responseMsg' in result) {
                 document.getElementById('responseMsg').innerHTML = result.responseMsg;
-                document.getElementById('msgBox').style.display = 'block';  // Show the modal
+                document.getElementById('msgBox').style.display = 'block';
             }
         } else {
             console.error('File upload failed with status:', response.status);
@@ -131,7 +131,26 @@ async function file_nodes_to_js(formData) {
     }
 }
 
-
+async function file_demand_to_db(formData) {
+    try {
+        const response = await fetch('/import_demand' + '/' + project_id, {
+            method: 'POST',
+            body: formData
+        });
+        if (response.ok) {
+            document.getElementById('responseMsg').innerHTML = '';
+            document.getElementById('msgBox').style.display = 'none';
+            document.getElementById('uploadStatus').textContent = 'Uploaded';
+        } else {
+            const result = await response.json();
+            document.getElementById('responseMsg').innerHTML = result.responseMsg;
+            document.getElementById('msgBox').style.display = 'block';
+            document.getElementById('uploadStatus').textContent = 'Upload Failed';
+        }
+    } catch (error) {
+        console.error('Error occurred during file upload:', error);
+    }
+}
 
 async function consumer_to_db(project_id, href, file_type = "db") {
     update_map_elements();
@@ -821,30 +840,42 @@ async function save_grid_design(href) {
     }
 }
 
-
 function save_demand_estimation(href) {
     let custom_calibration = document.getElementById("toggleswitch").checked;
     let use_custom_shares = document.getElementById("use_custom_shares").checked;
-    fetch("save_demand_estimation/", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            demand_estimation: {
-                'household_option': selectedValue,
-                'maximum_peak_load': maximum_peak_load.value,
-                'average_daily_energy': average_daily_energy.value,
-                'custom_calibration': custom_calibration,
-                'use_custom_shares': use_custom_shares,
-                'custom_share_1': custom_share_1.value,
-                'custom_share_2': custom_share_2.value,
-                'custom_share_3': custom_share_3.value,
-                'custom_share_4': custom_share_4.value,
-                'custom_share_5': custom_share_5.value,
-            }
-        })
-    }).then(r => window.location.href = href)
+    const toggleSwitch = document.getElementById('toggleswitch2');
+    const uploadStatus = document.getElementById('uploadStatus').textContent.trim();
+    const useCustomDemand = toggleSwitch.checked && uploadStatus === "Uploaded";
+
+    // Conditional check for forwarding or displaying a modal
+    if (!toggleSwitch.checked || useCustomDemand) {
+        fetch("save_demand_estimation/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                demand_estimation: {
+                    'household_option': selectedValue,
+                    'maximum_peak_load': maximum_peak_load.value,
+                    'average_daily_energy': average_daily_energy.value,
+                    'custom_calibration': custom_calibration,
+                    'use_custom_shares': use_custom_shares,
+                    'custom_share_1': custom_share_1.value,
+                    'custom_share_2': custom_share_2.value,
+                    'custom_share_3': custom_share_3.value,
+                    'custom_share_4': custom_share_4.value,
+                    'custom_share_5': custom_share_5.value,
+                    'use_custom_demand': useCustomDemand,
+                }
+            })
+        }).then(r => window.location.href = href);
+    } else {
+        // Show modal with the translated and improved message
+        const message = "Custom demand time series was selected, but no time series was successfully uploaded. Please upload a time series or disable this option to automatically calculate the demand time series.";
+        document.getElementById('responseMsg').innerHTML = message;
+        document.getElementById('msgBox').style.display = 'block';
+    }
 }
 
 
@@ -908,44 +939,46 @@ function load_previous_data(page_name) {
     } else if (page_name.includes("demand_estimation")) {
         xhr.onreadystatechange = function () {
             if (this.readyState == 4 && this.status == 200) {
-                // push nodes to the map
                 results = this.response;
                 if (results !== null && Object.keys(results).length > 1) {
-                    document.getElementById("maximum_peak_load").value = results['maximum_peak_load'];
-                    document.getElementById("average_daily_energy").value = results['average_daily_energy'];
-
-                    document.getElementById("toggleswitch").checked = results['custom_calibration'];
-                    document.getElementById("use_custom_shares").checked = results['use_custom_shares'];
-
-                    let accordionItem2 = new bootstrap.Collapse(document.getElementById('collapseTwo'),
-                        {toggle: false});
-                    if (results['custom_calibration'] == true) {
-                        accordionItem2.show();
-                        const radioButton2 = document.querySelector(`input[name="options2"][id="option${results['calibration_options'] + 6}"]`);
-                        if (radioButton2) {
-                            radioButton2.checked = true;
-                            if (results['calibration_options'] === 2) {
-                                document.getElementById("maximum_peak_load").disabled = false;
-                                document.getElementById("average_daily_energy").disabled = true;
+                    if (results['use_custom_demand'] === true) {
+                        document.getElementById("toggleswitch2").checked = true;
+                        // Trigger the 'change' event to execute the associated event listener
+                        document.getElementById("toggleswitch2").dispatchEvent(new Event('change'));
+                        document.getElementById('uploadStatus').textContent = 'Uploaded';
+                    }
+                    else {
+                        document.getElementById("maximum_peak_load").value = results['maximum_peak_load'];
+                        document.getElementById("average_daily_energy").value = results['average_daily_energy'];
+                        document.getElementById("toggleswitch").checked = results['custom_calibration'];
+                        document.getElementById("use_custom_shares").checked = results['use_custom_shares'];
+                        let accordionItem2 = new bootstrap.Collapse(document.getElementById('collapseTwo'),
+                            {toggle: false});
+                        if (results['custom_calibration'] == true) {
+                            accordionItem2.show();
+                            const radioButton2 = document.querySelector(`input[name="options2"][id="option${results['calibration_options'] + 6}"]`);
+                            if (radioButton2) {
+                                radioButton2.checked = true;
+                                if (results['calibration_options'] === 2) {
+                                    document.getElementById("maximum_peak_load").disabled = false;
+                                    document.getElementById("average_daily_energy").disabled = true;
+                                }
                             }
+                        } else {
+                            accordionItem2.hide();
                         }
-                    } else {
-                        accordionItem2.hide();
-                    }
-
-                    if (results['use_custom_shares'] == true) {
-                        document.getElementById("custom_share_1").value = results['custom_share_1'];
-                        document.getElementById("custom_share_2").value = results['custom_share_2'];
-                        document.getElementById("custom_share_3").value = results['custom_share_3'];
-                        document.getElementById("custom_share_4").value = results['custom_share_4'];
-                        document.getElementById("custom_share_5").value = results['custom_share_5'];
-                    } else {
-
-                    }
-
-                    const radioButton = document.querySelector(`input[name="options"][id="option${results['household_option'] + 1}"]`);
-                    if (radioButton) {
-                        radioButton.checked = true;
+                        if (results['use_custom_shares'] == true) {
+                            document.getElementById("custom_share_1").value = results['custom_share_1'];
+                            document.getElementById("custom_share_2").value = results['custom_share_2'];
+                            document.getElementById("custom_share_3").value = results['custom_share_3'];
+                            document.getElementById("custom_share_4").value = results['custom_share_4'];
+                            document.getElementById("custom_share_5").value = results['custom_share_5'];
+                        } else {
+                        }
+                        const radioButton = document.querySelector(`input[name="options"][id="option${results['household_option'] + 1}"]`);
+                        if (radioButton) {
+                            radioButton.checked = true;
+                        }
                     }
                 }
             }

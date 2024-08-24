@@ -517,7 +517,7 @@ document.getElementById('fileInput').addEventListener('change', async function(e
     if (file) {
         const formData = new FormData();
         formData.append('file', file);
-        file_nodes_to_js(formData);
+        await file_nodes_to_js(formData);
 
         // Clear the file input value to allow selecting the same file again
         document.getElementById('fileInput').value = '';

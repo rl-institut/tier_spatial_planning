@@ -20,6 +20,10 @@ def consumer_data_to_file(df, file_type):
         df = pd.DataFrame(columns=['latitude', 'longitude', 'consumer_type', 'custom_specification', 'shs_options', 'consumer_detail'])
     else:
         df = df.drop(columns=['is_connected', 'how_added', 'node_type'])
+    return df_to_file(df, file_type)
+
+
+def df_to_file(df, file_type):
     if file_type == 'xlsx':
         output = io.BytesIO()
         df.to_excel(output, index=False, engine='xlsxwriter')
@@ -107,6 +111,31 @@ def check_imported_consumer_data(df):
     df = df[['latitude', 'longitude', 'how_added', 'node_type', 'consumer_type', 'custom_specification', 'shs_options', 'consumer_detail',
              'is_connected']]
     return df, ''
+
+
+def check_imported_demand_data(df, input_parameters_df):
+    if df.empty:
+        return None, 'No data could be read.'
+    df.columns = [col.strip().lower() for col in df.columns]
+    if 'demand' not in df.columns:
+        return None, 'Column with title \'demand\' is missing.'
+    df = df['demand'].dropna()
+    n_days = min(input_parameters_df['n_days'].iat[0], int(os.environ.get('MAX_DAYS', 365)))
+    ts = pd.Series(pd.date_range(pd.to_datetime('2022').to_pydatetime(),
+                                  pd.to_datetime('2022').to_pydatetime() + pd.to_timedelta(n_days, unit="D"),
+                                  freq='H',
+                                  closed='left'))
+    if len(df.index) < len(ts.index):
+        start_date_str = input_parameters_df['start_date'].iat[0].strftime("%d. %B %H:%M")
+        return None, (
+            f"You specified a start date of {start_date_str} and a simulation period of {n_days} days with an "
+            f"hourly frequency, which requires {len(ts.index)} data points. However, only {len(df.index)} data points were provided.")
+    try:
+        df = df.astype(float)
+    except ValueError as e:
+        return None, f"Error converting demand to float: {str(e)}"
+    df.index = ts.values[:len(df.index)]
+    return df.to_frame('demand'), ''
 
 
 def project_data_df_to_xlsx(input_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df):

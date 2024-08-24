@@ -18,6 +18,24 @@ document.getElementById('toggleswitch').addEventListener('change', function (eve
     }
 });
 
+document.getElementById('toggleswitch2').addEventListener('change', function (event) {
+    const accordionItem1 = new bootstrap.Collapse(document.getElementById('collapseOne'), {toggle: false});
+    const accordionItem2 = document.getElementById('collapseTwo').closest('.accordion-item');
+    const accordionItem3 = new bootstrap.Collapse(document.getElementById('collapseThree'), {toggle: false});
+    const accordionItem3_all = document.getElementById('collapseThree').closest('.accordion-item');
+    if (event.target.checked) {
+        accordionItem1.hide();
+        accordionItem2.style.display = 'none';
+        accordionItem3.show();
+        accordionItem3_all.style.display = 'block';
+    } else {
+        accordionItem1.show();
+        accordionItem2.style.display = 'block';
+        accordionItem3.hide();
+        accordionItem3_all.style.display = 'none';
+    }
+});
+
 $(function () {
     $("input[name='options2']").change(function () {
         if ($("#option7").is(':checked')) {
@@ -202,3 +220,24 @@ function demand_ts(project_id) {
             console.error('There was a problem with the fetch operation:', error);
         });
 }
+
+// Trigger the file input dialog when the "Import Consumers" button is clicked
+document.getElementById('importButton').addEventListener('click', function() {
+    document.getElementById('fileInput').click();
+});
+
+// Handle the file selection and upload the file to the server
+document.getElementById('fileInput').addEventListener('change', async function(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        await file_demand_to_db(formData);
+        document.getElementById('fileInput').value = '';
+    }
+});
+
+document.getElementById('downloadDemand').addEventListener('click', function () {
+    save_demand_estimation('javascript:void(0);')
+    window.location.href = '/export_demand/' + project_id + '/' + document.getElementById('fileTypeDropdown').value+ '/';
+});

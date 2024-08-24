@@ -207,6 +207,7 @@ class Demand(Base):
     custom_share_3 = Column(Numeric(10, 3), default=None)
     custom_share_4 = Column(Numeric(10, 3), default=None)
     custom_share_5 = Column(Numeric(10, 3), default=None)
+    use_custom_demand = Column(Boolean(), default=False)
 
 
 class Results(Base):
@@ -336,3 +337,14 @@ class WeatherData(Base):
     ghi = Column(Numeric(6, 2))
     dni = Column(Numeric(6, 2))
     dhi = Column(Numeric(6, 2))
+
+
+class CustomDemand(Base):
+
+    @staticmethod
+    def __name__():
+        return 'CustomDemand'
+
+    id = Column(SMALLINT, primary_key=True, index=True)
+    project_id = Column(SMALLINT, primary_key=True, index=True)
+    data = Column(JSON)

@@ -628,6 +628,10 @@ async def load_previous_data(page_name, request: Request):
         except (ValueError, TypeError):
             return None
         demand_estimation = await async_queries.get_model_instance(sa_tables.Demand, user.id, project_id)
+        if (demand_estimation is not None
+                and hasattr(demand_estimation, 'use_custom_demand')
+                and demand_estimation.use_custom_demand is True):
+            return demand_estimation
         if demand_estimation is None or not hasattr(demand_estimation, 'maximum_peak_load'):
             return None
         demand_estimation.maximum_peak_load = str(demand_estimation.maximum_peak_load) \
@@ -881,35 +885,39 @@ async def save_demand_estimation(request: Request, data: fastapi_app.python.help
     custom_calibration = ast.literal_eval(data.demand_estimation['custom_calibration'])
     use_custom_shares_bool = ast.literal_eval(data.demand_estimation['use_custom_shares'])
     use_custom_shares = 0
+    maximum_peak_load = None
+    average_daily_energy = None
     custom_share_1, custom_share_2, custom_share_3, custom_share_4, custom_share_5 = 0, 0, 0, 0, 0
 
-    if custom_calibration is None or '':
-        maximum_peak_load = None
-        average_daily_energy = None
-    else:
-        try:
-            maximum_peak_load = round(float(data.demand_estimation['maximum_peak_load']), 1)
-        except ValueError:
+    use_custom_demand = bool(data.demand_estimation['use_custom_demand'])
+
+    if use_custom_demand is False:
+        if custom_calibration is None or '':
             maximum_peak_load = None
-        try:
-            average_daily_energy = round(float(data.demand_estimation['average_daily_energy']), 1)
-        except ValueError:
             average_daily_energy = None
+        else:
+            try:
+                maximum_peak_load = round(float(data.demand_estimation['maximum_peak_load']), 1)
+            except ValueError:
+                maximum_peak_load = None
+            try:
+                average_daily_energy = round(float(data.demand_estimation['average_daily_energy']), 1)
+            except ValueError:
+                average_daily_energy = None
 
-    if use_custom_shares_bool is None or '':
-        use_custom_shares = 0
-    else:
-        try:
-            if use_custom_shares_bool:
-                use_custom_shares = 1
-                custom_share_1 = round(float(data.demand_estimation['custom_share_1']), 1)
-                custom_share_2 = round(float(data.demand_estimation['custom_share_2']), 1)
-                custom_share_3 = round(float(data.demand_estimation['custom_share_3']), 1)
-                custom_share_4 = round(float(data.demand_estimation['custom_share_4']), 1)
-                custom_share_5 = round(float(data.demand_estimation['custom_share_5']), 1)
-
-        except ValueError:
+        if use_custom_shares_bool is None or '':
             use_custom_shares = 0
+        else:
+            try:
+                if use_custom_shares_bool:
+                    use_custom_shares = 1
+                    custom_share_1 = round(float(data.demand_estimation['custom_share_1']), 1)
+                    custom_share_2 = round(float(data.demand_estimation['custom_share_2']), 1)
+                    custom_share_3 = round(float(data.demand_estimation['custom_share_3']), 1)
+                    custom_share_4 = round(float(data.demand_estimation['custom_share_4']), 1)
+                    custom_share_5 = round(float(data.demand_estimation['custom_share_5']), 1)
+            except ValueError:
+                use_custom_shares = 0
 
     dictionary = {'id': user.id,
                   'project_id': project_id,
@@ -921,7 +929,9 @@ async def save_demand_estimation(request: Request, data: fastapi_app.python.help
                   'custom_share_2': custom_share_2,
                   'custom_share_3': custom_share_3,
                   'custom_share_4': custom_share_4,
-                  'custom_share_5': custom_share_5, }
+                  'custom_share_5': custom_share_5,
+                  'use_custom_demand': use_custom_demand}
+
     demand_estimation = sa_tables.Demand(**dictionary)
     await async_inserts.merge_model(demand_estimation)
     return JSONResponse(status_code=200, content={"message": "Success"})
@@ -1276,3 +1286,72 @@ async def export_data(project_id, file_type: str, request: Request):
     response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_results.xlsx"
     return response
 
+
+@app.get("/export_demand/{project_id}/{file_type}/")
+async def export_demand(project_id, file_type: str, request: Request):
+    user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
+    input_parameters_df = await async_queries.get_input_df(user.id, project_id)
+    n_days = min(input_parameters_df['n_days'].iat[0], int(os.environ.get('MAX_DAYS', 365)))
+    ts = pd.Series(pd.date_range(pd.to_datetime('2022').to_pydatetime(),
+                                  pd.to_datetime('2022').to_pydatetime() + pd.to_timedelta(n_days, unit="D"),
+                                  freq='H',
+                                  closed='left'))
+    ts.name = 'timestamp'
+    nodes = await async_queries.get_model_instance(sa_tables.Nodes, user.id, project_id)
+    nodes = pd.read_json(nodes.data)
+    demand_opt_dict = await async_queries.get_model_instance(sa_tables.Demand, user.id, project_id)
+    demand_opt_dict = demand_opt_dict.to_dict()
+    demand_full_year = fastapi_app.python.inputs.demand_estimation.get_demand_time_series(nodes, demand_opt_dict).to_frame('Demand')
+    df = demand_full_year.loc[ts.values]['Demand'].copy()
+    df.index = df.index.strftime('%m.%d %H:%M')
+    df = df.reset_index()
+    df.columns = ['timestamp', 'demand']
+    df['demand'] = df['demand'].round(4)
+    io_file = data_to_file.df_to_file(df, file_type)
+    if file_type == 'xlsx':
+        response = StreamingResponse(io_file,
+                                     media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_demand.xlsx"
+    elif file_type == 'csv':
+        response = StreamingResponse(io_file,
+                                     media_type="text/csv")
+        response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_demand.csv"
+    return response
+
+
+@app.post("/import_demand/{project_id}")
+async def import_demand(project_id, request: Request, file: UploadFile = File(...)):
+    user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
+    filename = file.filename
+    file_extension = filename.split('.')[-1].lower()
+    if file_extension not in ['csv', 'xlsx']:
+        raise HTTPException(status_code=400, detail="Unsupported file type. Please upload a CSV or Excel file.")
+    try:
+        if file_extension == 'csv':
+            file_content = await file.read()
+            decoded_content = file_content.decode('utf-8')
+            df = pd.read_csv(io.StringIO(decoded_content))
+        elif file_extension == 'xlsx':
+            df = pd.read_excel(io.BytesIO(await file.read()), engine='openpyxl')
+        if not df.empty:
+            input_parameters_df = await async_queries.get_input_df(user.id, project_id)
+            try:
+                df, msg = data_to_file.check_imported_demand_data(df, input_parameters_df)
+                if df is None and msg is not None:
+                    return JSONResponse(content={'responseMsg': msg}, status_code=500)
+            except Exception as e:
+                err_msg = str(e)
+                msg = f"Failed to import file. Internal error message: {err_msg}"
+                return JSONResponse(content={'responseMsg': msg}, status_code=500)
+            custom_demand = sa_tables.CustomDemand()
+            custom_demand.id = user.id
+            custom_demand.project_id = project_id
+            custom_demand.data = df.to_json()
+            await async_inserts.merge_model(custom_demand)
+            return JSONResponse(status_code=200, content={'responseMsg': ''})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process the file: {e}")

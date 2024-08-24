@@ -3,11 +3,11 @@
 <head>
     {% set title='Consumer Selection' %}
     {% include '_head.html' %}
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
+    <link href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" rel="stylesheet"/>
+    <link href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" rel="stylesheet"/>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw-src.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.0.6/dist/geosearch.css"/>
+    <link href="https://unpkg.com/leaflet-geosearch@3.0.6/dist/geosearch.css" rel="stylesheet"/>
     <script src="https://unpkg.com/leaflet-geosearch@3.0.6/dist/geosearch.umd.js"></script>
     <link href="{{ url_for('css', path='pages/consumer_selection.css') }}" rel="stylesheet"/>
 </head>
@@ -19,19 +19,19 @@
 {% include '_wizard.html' %}
 <main>
     <div id="fixed-symbol" style="position: fixed; bottom: 60px; left: 20px;">
-        <img src="{{ url_for('public', path='media_files/assets/icons/qm.svg') }}" alt="Icon"
-             style="width: 100px; cursor: pointer;"
-             onclick="document.getElementById('videoTutorial').style.display='block'">
+        <img alt="Icon" onclick="document.getElementById('videoTutorial').style.display='block'"
+             src="{{ url_for('public', path='media_files/assets/icons/qm.svg') }}"
+             style="width: 100px; cursor: pointer;">
     </div>
-    <section id="section" class="dashboard">
+    <section class="dashboard" id="section">
         <div class="row">
             <div class="chart" style="height: auto">
                 <div class="accordion" id="accordionExample" style="margin-top: 12px">
                     <div class="accordion-item">
                         <h2 class="accordion-header" id="headingTwo">
-                            <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                                    data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo"
-                                    style="display: flex; justify-content: space-between; align-items: center;">
+                            <button aria-controls="collapseTwo" aria-expanded="false" class="accordion-button"
+                                    data-bs-target="#collapseTwo" data-bs-toggle="collapse" style="display: flex; justify-content: space-between; align-items: center;"
+                                    type="button">
                                 <span style="flex-grow: 1;">Set Consumer Properties</span>
                                 <span style="flex-shrink: 0;  margin-right: 20px;">
         <strong>Number of selected Consumers: </strong>
@@ -39,8 +39,8 @@
     </span>
                             </button>
                         </h2>
-                        <div id="collapseTwo" class="accordion-collapse" aria-labelledby="headingTwo"
-                             data-bs-parent="#accordionExample">
+                        <div aria-labelledby="headingTwo" class="accordion-collapse" data-bs-parent="#accordionExample"
+                             id="collapseTwo">
                             <div class="accordion-body" style="border-bottom: none;">
                                 <table style="border-top: none; color: var(--ccb); border-spacing: 0;">
                                     <tr>
@@ -61,14 +61,14 @@
                                     <tr>
                                         <td style="padding: 5px;">
                                             <div class="input-item">
-                                                <select id="consumer" class="form-select" style="max-width: 150px">
+                                                <select class="form-select" id="consumer" style="max-width: 150px">
                                                     <option>Household</option>
                                                 </select>
                                             </div>
                                         </td>
                                         <td style="padding: 5px;">
                                             <div class="input-item" style="display: flex; align-items: center;">
-                                                <select id="enterprise" class="form-select" style="max-width: 150px;">
+                                                <select class="form-select" id="enterprise" style="max-width: 150px;">
                                                     <option>Enterprise</option>
                                                 </select>
                                             </div>
@@ -76,16 +76,16 @@
                                         <td style="padding: 5px;">
                                             <div class="input-group" style="max-width: 200px">
                                                 <input
-                                                        type="number"
-                                                        disabled="true"
                                                         class="form-control"
+                                                        disabled="true"
                                                         id="latitude"
-                                                        placeholder=""
-                                                        value=""
-                                                        min="2"
                                                         max="16"
-                                                        step="0.00001"
+                                                        min="2"
+                                                        placeholder=""
                                                         required
+                                                        step="0.00001"
+                                                        type="number"
+                                                        value=""
                                                 />
                                                 <span class="input-group-text">Degree</span>
                                             </div>
@@ -93,32 +93,32 @@
                                         <td style="padding: 5px;">
                                             <div class="input-group" style="max-width: 200px">
                                                 <input
-                                                        type="number"
-                                                        disabled="true"
                                                         class="form-control"
+                                                        disabled="true"
                                                         id="longitude"
-                                                        placeholder=""
-                                                        value=""
-                                                        min="2"
                                                         max="16"
-                                                        step="0.00001"
+                                                        min="2"
+                                                        placeholder=""
                                                         required
+                                                        step="0.00001"
+                                                        type="number"
+                                                        value=""
                                                 />
                                                 <span class="input-group-text">Degree</span>
                                             </div>
                                         </td>
                                         <td style="padding: 5px;">
                                             <div class="input-item">
-                                                <select id="shs_options" class="form-select" style="max-width: 150px">
+                                                <select class="form-select" id="shs_options" style="max-width: 150px">
                                                     <option value="optimize">Optimize</option>
                                                     <option value="grid">Grid</option>
                                                 </select>
                                             </div>
                                         </td>
                                         <td style="padding: 5px;">
-                                            <a id="submit" class="btn btn--medium"
-                                               style="height: 32px; display: flex; align-items: center; justify-content: center;"
-                                               onclick="delete_consumer();" href="javascript:void(0);">Delete</a>
+                                            <a class="btn btn--medium" href="javascript:void(0);"
+                                               id="submit"
+                                               onclick="delete_consumer();" style="height: 32px; display: flex; align-items: center; justify-content: center;">Delete</a>
                                         </td>
                                         <td style="padding: 5px;"><span style="float:right;"><a>&nbsp;</a></span></td>
                                         <td style="padding: 5px;"><span style="float:right;"><a>&nbsp;</a></span></td>
@@ -131,34 +131,34 @@
                               <span>
 <p style="display: flex; justify-content: space-between; align-items: center; color: var(--ccb);">
     <span style="display: flex; align-items: center;">
-        <input type="file" id="fileInput" style="display: none;"/>
-        <a id="importButton" class="btn btn--medium"
-           style="height: 32px; display: flex; align-items: center; justify-content: center; margin-right: 10px;"
-           href="javascript:void(0);">Import Consumers</a>
+        <input id="fileInput" style="display: none;" type="file"/>
+        <a class="btn btn--medium" href="javascript:void(0);"
+           id="importButton"
+           style="height: 32px; display: flex; align-items: center; justify-content: center; margin-right: 10px;">Import Consumers</a>
 
-        <a id="exportButton" class="btn btn--medium"
-           style="height: 32px; display: flex; align-items: center; justify-content: center; margin-right: 10px; color: #fff;"
-           href="javascript:void(0);"
-           onclick="consumer_to_db({{ project_id }}, null, document.getElementById('fileTypeDropdown').value);">
+        <a class="btn btn--medium" href="javascript:void(0);"
+           id="exportButton"
+           onclick="consumer_to_db({{ project_id }}, null, document.getElementById('fileTypeDropdown').value);"
+           style="height: 32px; display: flex; align-items: center; justify-content: center; margin-right: 10px; color: #fff;">
            Export Consumers
         </a>
 
-        <select id="fileTypeDropdown" class="form-select"
+        <select class="form-select" id="fileTypeDropdown"
                 style="max-width: 150px; margin-right: 10px; height: 32px; line-height: 20px; padding: 0 24px 0 8px;">
             <option value="csv">File type: CSV</option>
             <option value="xlsx">File type: XLSX</option>
         </select>
 
         <span class="icon icon-question" data-bs-toggle="tooltip"
-              title="The first row of the CSV or Excel file should contain the column headers, with subsequent rows containing the respective values. The file must include a 'latitude' column and a 'longitude' column, both of which are mandatory and should use a dot as a decimal separator, with the unit in decimal degrees. Additionally, the file can optionally include a 'consumer_type' column, which should specify whether the consumer is a 'household', 'enterprise', or 'public_service'. If no value is provided, it will default to 'household'. Another optional column is 'consumer_detail', which should be selected from the options available in the 'Consumer Category' drop-down menu. The 'shs_options' column is also optional and should either be set to 0 (for optimization) or 1 (for grid connection), with 0 being the default. Finally, the file must contain a 'custom_specification' column, which should be populated with a value selected from the 'Large Loads to add' drop-down menu, if applicable. Each value in this column must start with a leading integer followed by a space, the letter 'x', and another space (e.g. '1 x Milling Machine (7.5kW)'). This specific format is mandatory."
-              style="margin-right: 10px;">
+              style="margin-right: 10px;"
+              title="The first row of the CSV or Excel file should contain the column headers, with subsequent rows containing the respective values. The file must include a 'latitude' column and a 'longitude' column, both of which are mandatory and should use a dot as a decimal separator, with the unit in decimal degrees. Additionally, the file can optionally include a 'consumer_type' column, which should specify whether the consumer is a 'household', 'enterprise', or 'public_service'. If no value is provided, it will default to 'household'. Another optional column is 'consumer_detail', which should be selected from the options available in the 'Consumer Category' drop-down menu. The 'shs_options' column is also optional and should either be set to 0 (for optimization) or 1 (for grid connection), with 0 being the default. Finally, the file must contain a 'custom_specification' column, which should be populated with a value selected from the 'Large Loads to add' drop-down menu, if applicable. Each value in this column must start with a leading integer followed by a space, the letter 'x', and another space (e.g. '1 x Milling Machine (7.5kW)'). This specific format is mandatory.">
         </span>
 
     </span>
     <span style="display: flex; align-items: center;">
         <a style="margin-right: 10px;">Show Advanced Options</a>
         <label class="switch">
-            <input type="checkbox" id="toggleswitch2">
+            <input id="toggleswitch2" type="checkbox">
             <span class="slider round"></span>
         </label>
     </span>
@@ -167,7 +167,7 @@
 
 
                         <div class="accordion-item" style="border-top: none">
-                            <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree">
+                            <div aria-labelledby="headingThree" class="accordion-collapse collapse" id="collapseThree">
                                 <div class="accordion-body">
                                     <a>Select Individual Large Enterprise Loads</a>
                                     <p>Note: Productive use enterprises selected above will not by default have added any
@@ -180,27 +180,27 @@
                                             <p><b style="color: var(--ccb)">Large loads to add</b></p>
                                             <div class="input-item"
                                                  style="margin-right: 30px;  margin-bottom: 20px; width: 200px;">
-                                                <select id="loads" class="form-select" style="max-width: 200px">
+                                                <select class="form-select" id="loads" style="max-width: 200px">
                                                     <option>Motor</option>
                                                 </select>
                                             </div>
                                             <div class="input-group" style="width: 200px;  margin-bottom: 20px;">
                                                 <input
-                                                        type="number"
                                                         class="form-control"
                                                         id="number_loads"
-                                                        placeholder="Number"
-                                                        value="1"
-                                                        min="1"
                                                         max="30"
+                                                        min="1"
+                                                        placeholder="Number"
+                                                        required
                                                         step="1"
-                                                        required/>
+                                                        type="number"
+                                                        value="1"/>
                                             </div>
-                                            <a id="add"
-                                               class="btn btn--medium"
-                                               style="height: 32px; display: flex; align-items: center; justify-content: center;  margin-bottom: 20px; width: 200px;"
+                                            <a class="btn btn--medium"
+                                               href="javascript:void(0);"
+                                               id="add"
                                                onclick="addElementToLargeLoadList();"
-                                               href="javascript:void(0);">Add Load</a>
+                                               style="height: 32px; display: flex; align-items: center; justify-content: center;  margin-bottom: 20px; width: 200px;">Add Load</a>
                                         </div>
                                         <div>
 
@@ -215,29 +215,29 @@
                         </div>
 
                         <div id="search-container">
-                            <input type="text" id="search-input" placeholder="Search location within Nigeria"
-                                   class="input-group-text" style="text-align: left"/>
+                            <input class="input-group-text" id="search-input" placeholder="Search location within Nigeria"
+                                   style="text-align: left" type="text"/>
                         </div>
                         <p></p>
                         <div id="map" style="min-height: 700px; min-width: 1000px; margin-bottom: 10px"></div>
     </section>
     {% include '_warningBox.html' %}
-    <div id="videoTutorial" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999; text-align: left">
+    <div class="modal" id="videoTutorial" style="background-color: rgba(0,0,0,0.5); z-index: 999; text-align: left">
         <form class="modal-content" style="width: 700px; height: 520px;">
             <div class="container">
                 <h1 style="margin-bottom: 0;">Video Tutorial</h1>
                 <div style="padding: 15px;">
-                    <video id="tutorialVideo" width="568" height="360" controls>
+                    <video controls height="360" id="tutorialVideo" width="568">
                         <source src="{{ url_for('public', path='media_files/videos/tut_consumer_selection.mp4') }}"
                                 type="video/mp4">
                         Your browser does not support the video tag.
                     </video>
                 </div>
-                <button onclick="stopVideo(); document.getElementById('videoTutorial').style.display='none'"
-                        type="button" class="deletebtn">OK
+                <button class="deletebtn"
+                        onclick="stopVideo(); document.getElementById('videoTutorial').style.display='none'" type="button">OK
                 </button>
-                <button onclick="stopVideo(); document.getElementById('videoTutorial').style.display='none';
-                deactivate_video_tutorial();" type="button" class="cancelbtn">Don't Show Again
+                <button class="cancelbtn" onclick="stopVideo(); document.getElementById('videoTutorial').style.display='none';
+                deactivate_video_tutorial();" type="button">Don't Show Again
                 </button>
             </div>
         </form>

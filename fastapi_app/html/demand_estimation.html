@@ -18,8 +18,17 @@
                 <div class="accordion" id="accordionExample" style="margin-top: 12px">
                     <div class="accordion-item" style="padding: 10px">
                         <h2 class="accordion-header" id="headingOne">
+
+
                             <button class="accordion-button no-arrow" type="button">
-                                Select Household Demand Options
+                                <span style="flex-grow: 1;">Set Consumer Properties</span>
+                                <span style="flex-shrink: 0;  margin-right: 20px;">
+                                    <strong>Use Custom Demand Time Series: </strong>
+                                </span>
+                                <label class="switch" style="margin-right: 20px;">
+                                    <input id="toggleswitch2" type="checkbox">
+                                    <span class="slider round"></span>
+                                </label>
                             </button>
                         </h2>
                         <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne"
@@ -71,15 +80,30 @@
                                     </div>
                                 </div>
                             </div>
-
+                            <p style="display: flex; justify-content: space-between; align-items: center; color: var(--ccb);">
+                        <span style="display: flex; align-items: center; margin-left: 10px">
+                            <a id="downloadDemand" class="btn btn--medium"
+                               style="height: 32px; display: flex; align-items: center; justify-content: center; margin-right: 10px; color: #fff;"
+                               href="javascript:void(0);">
+                               Export Demand
+                            </a>
+                            <select id="fileTypeDropdown" class="form-select"
+                                    style="max-width: 150px; margin-right: 10px; height: 32px; line-height: 20px; padding: 0 24px 0 8px;">
+                                <option value="csv">File type: CSV</option>
+                                <option value="xlsx">File type: XLSX</option>
+                            </select>
+                        </span>
+                                <span style="display: flex; align-items: center; ; margin-right: 10px">
+                            <a style="margin-right: 10px;">Show Advanced Options</a>
+                            <label class="switch">
+                                <input type="checkbox" id="toggleswitch">
+                                <span class="slider round"></span>
+                            </label>
+                        </span>
+                            </p>
                         </div>
-                        <span style="padding: 2rem">
-                              <a>Show Advanced Demand Options</a>
-                              <label class="switch">
-                              <input type="checkbox" id="toggleswitch">
-                              <span class="slider round"></span>
-                              </label>
-                              </span>
+
+
                     </div>
                 </div>
                 <div class="accordion-item" style="border-top: none; padding: 10px">
@@ -244,6 +268,27 @@
 
                     </div>
                 </div>
+                <div class="accordion-item" style="border-top: none; padding: 10px">
+                    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree">
+                        <div class="accordion-body">
+                            <p style="display: flex; align-items: center; color: var(--ccb);">
+                                <span style="display: flex; align-items: center;">
+                                    <input type="file" id="fileInput" style="display: none;"/>
+                                    <a id="importButton" class="btn btn--medium"
+                                       style="height: 32px; display: flex; align-items: center; justify-content: center; margin-right: 10px;"
+                                       href="javascript:void(0);">Import Demand</a>
+                                    <span class="icon icon-question" data-bs-toggle="tooltip"
+                                          title="The first row of the CSV or Excel file should contain the column headers, with subsequent rows containing the respective values. The file must include a 'latitude' column and a 'longitude' column, both of which are mandatory and should use a dot as a decimal separator, with the unit in decimal degrees. Additionally, the file can optionally include a 'consumer_type' column, which should specify whether the consumer is a 'household', 'enterprise', or 'public_service'. If no value is provided, it will default to 'household'. Another optional column is 'consumer_detail', which should be selected from the options available in the 'Consumer Category' drop-down menu. The 'shs_options' column is also optional and should either be set to 0 (for optimization) or 1 (for grid connection), with 0 being the default. Finally, the file must contain a 'custom_specification' column, which should be populated with a value selected from the 'Large Loads to add' drop-down menu, if applicable. Each value in this column must start with a leading integer followed by a space, the letter 'x', and another space (e.g. '1 x Milling Machine (7.5kW)'). This specific format is mandatory."
+                                          style="margin-right: 10px;">
+                                    </span>
+                                </span>
+                                <a style="margin-left: 20px; margin-right: 20px;">Status: </a>
+                                <a id="uploadStatus" style="margin-right: 10px;">No File Uploaded</a>
+                            </p>
+
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -252,6 +297,7 @@
 {% include '_footer.html' %}
 </body>
 {% include '_scripts.html' %}
+<script>let project_id = "{{ project_id }}";</script>
 <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <script src="https://cdn.plot.ly/plotly-2.0.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.0/jspdf.umd.min.js"></script>
