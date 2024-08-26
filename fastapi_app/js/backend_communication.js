@@ -774,6 +774,22 @@ async function logout() {
 
 async function save_project_setup(project_id, href) {
     event.preventDefault(); // prevent the link from navigating immediately
+
+    const toggleSwitch0 = document.getElementById('toggleswitch0');
+    const toggleSwitch1 = document.getElementById('toggleswitch1');
+    const toggleSwitch2 = document.getElementById('toggleswitch2');
+
+    // Check if all toggle switches are unchecked
+    if (!toggleSwitch0.checked && !toggleSwitch1.checked && !toggleSwitch2.checked) {
+        // Update the text content of responseMsg
+        document.getElementById('responseMsg').textContent =
+            "You must select at least one planning step to proceed.";
+
+        // Optionally show a modal or other feedback to the user
+        document.getElementById('msgBox').style.display = 'block';
+        return; // Exit the function to prevent fetching and navigation
+    }
+
     const url = "save_project_setup/" + project_id;
     const data = {
         page_setup: {
@@ -784,8 +800,12 @@ async function save_project_setup(project_id, href) {
             'start_date': "2022-01-01",
             'temporal_resolution': 1,
             'n_days': nDays.value,
+            'do_demand_estimation': toggleSwitch0.checked,
+            'do_grid_optimization': toggleSwitch1.checked,
+            'do_es_design_optimization': toggleSwitch2.checked,
         }
     };
+
     try {
         const response = await fetch(url, {
             method: 'POST',
@@ -802,6 +822,7 @@ async function save_project_setup(project_id, href) {
         console.log("An error occurred while saving the project setup:", err);
     }
 }
+
 
 async function save_grid_design(href) {
     try {
@@ -897,6 +918,13 @@ function load_previous_data(page_name) {
                     document.getElementById("interestRate").value = results['interest_rate'];
                     document.getElementById("projectLifetime").value = results['project_lifetime'];
                     document.getElementById("nDays").value = results['n_days'];
+                    document.getElementById('toggleswitch0').checked = results['do_demand_estimation'];
+                    document.getElementById('toggleswitch1').checked = results['do_grid_optimization'];
+                    document.getElementById('toggleswitch2').checked = results['do_es_design_optimization'];
+                    updateEnergySystemDesignVisibility();
+                    updateConsumerSelectionVisibility();
+                    updateGridDesignVisibility();
+                    updateNextButtonHref(project_id);
                 }
             }
         };

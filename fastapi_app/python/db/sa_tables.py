@@ -87,6 +87,9 @@ class ProjectSetup(Base):
     n_days = Column(SMALLINT(unsigned=True), nullable=False, server_default="365")
     status = Column(VARCHAR(25), default="not yet started")
     email_notification = Column(Boolean(), default=False)
+    do_demand_estimation = Column(Boolean(), default=True)
+    do_grid_optimization = Column(Boolean(), default=True)
+    do_es_design_optimization = Column(Boolean(), default=True)
 
 
 class GridDesign(Base):

@@ -11,13 +11,13 @@
 {% include '_navbar.html' %}
 {% include '_wizard.html' %}
 <main>
-    <section class="dashboard">
-    <div class="chart" style="height: auto; padding-bottom: 10px">
+    <section class="dashboard" style="height: auto">
+    <div class="chart" style="height: auto ; padding-bottom: 10px; max-height: 350px">
         <div class="chart__header">
             <a class="title"></a>
         </div>
-        <div class="row">
-            <div class="col-md-6">
+        <div class="row" style="height: auto">
+            <div class="col-md-6" style="height: auto">
                 <form>
                     <div class="input-item">
                         <label for="projectName" class="form-label">
@@ -27,7 +27,7 @@
                     </div>
                     <div class="input-item">
                         <label for="nDays" class="form-label">Simulation Period
-                            <span class="icon icon-question" data-bs-toggle="tooltip" title="Number of days in the modeling period for the unit commitment of the generation plants. Nonetheless, for economic calculations, the project lifetime is used."></span>
+                            <span class="icon icon-question" data-bs-toggle="tooltip" title="Number of days in the modeling period for the unit commitment of the energy converters. Nonetheless, for economic calculations, the project lifetime is used."></span>
                         </label>
                         <div class="input-group">
                             <input type="number" class="form-control" id="nDays" placeholder="Number of days" value="{{ max_days }}" min="28" max="{{ max_days }}" step="1" required />
@@ -41,7 +41,7 @@
                 </form>
             </div>
 
-            <div class="col-md-6">
+            <div class="col-md-6" style="height: auto">
                 <form>
                     <div class="input-item">
                         <label for="interestRate" class="form-label">
@@ -65,7 +65,7 @@
                     </div>
                 </form>
                         <label for="projectName" class="form-label">Planning Steps
-                        <span class="icon icon-question" data-bs-toggle="tooltip" title="OffgridPlanner was developed to guide users through the entire planning process of an off-grid system, from demand estimation and spatial grid optimization to design optimization and unit commitment of energy converters. However, individual planning steps can be skipped if needed; simply deselect the relevant options accordingly."></span>
+                        <span class="icon icon-question" data-bs-toggle="tooltip" title="Offgridplanner was developed to guide users through the entire planning process of an off-grid system, from demand estimation and spatial grid optimization to design optimization and unit commitment of energy converters. However, individual planning steps can be skipped if needed; simply deselect the relevant options accordingly."></span>
                         </label>
         <div class="form-control" style="background-color: var(--bcc)">
         <div style="display: flex; align-items: center; margin-bottom: 10px; margin-top: 10px">
@@ -96,11 +96,12 @@
         </div>
     </div>
 </section>
-
+{% include '_warningBox.html' %}
 </main>
 {% include '_footer.html' %}
 </body>
 {% include '_scripts.html' %}
+<script>let project_id = "{{ project_id }}";</script>
 <script src="{{ url_for('js', path='pages/project_setup.js') }}"></script>
 <script src="{{ url_for('js', path='backend_communication.js') }}"></script>
 </html>

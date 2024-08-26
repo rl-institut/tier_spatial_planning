@@ -5,7 +5,6 @@ import json
 import os
 import io
 import random
-import traceback
 import uuid
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
@@ -955,6 +954,9 @@ async def save_project_setup(project_id, request: Request, data: fastapi_app.pyt
     data.page_setup['updated_at'] = timestamp
     data.page_setup['id'] = user.id
     data.page_setup['project_id'] = project_id
+    data.page_setup['do_demand_estimation'] = data.page_setup['do_demand_estimation'] == 'True'
+    data.page_setup['do_grid_optimization'] = data.page_setup['do_grid_optimization'] == 'True'
+    data.page_setup['do_es_design_optimization'] = data.page_setup['do_es_design_optimization'] == 'True'
     project_setup = sa_tables.ProjectSetup(**data.page_setup)
     await async_inserts.merge_model(project_setup)
     return JSONResponse(status_code=200, content={"message": "Success"})
