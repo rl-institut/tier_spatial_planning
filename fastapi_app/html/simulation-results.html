@@ -19,8 +19,9 @@
     </style>
 </head>
 <body onload="redirect_if_cookie_is_missing(true, true);
-        load_results({{ project_id }});
-        show_email_and_project_in_navbar({{ project_id }});">
+              update_wizards_and_buttons_based_on_planning_step_selection({{ project_id }}, 'simulation_results');
+              load_results({{ project_id }});
+              show_email_and_project_in_navbar({{ project_id }});">
 {% include '_navbar.html' %}
 {% include '_wizard.html' %}
 <main>

@@ -14,7 +14,8 @@
 <body onload="redirect_if_cookie_is_missing(true, true);
         db_nodes_to_js({{ project_id }}, true);
         show_email_and_project_in_navbar({{ project_id }});
-        show_video_tutorial();">
+        show_video_tutorial();
+        update_wizards_and_buttons_based_on_planning_step_selection({{ project_id }}, 'consumer_selection');">
 {% include '_navbar.html' %}
 {% include '_wizard.html' %}
 <main>

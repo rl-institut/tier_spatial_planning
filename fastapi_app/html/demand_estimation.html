@@ -8,7 +8,8 @@
 <body onload="redirect_if_cookie_is_missing(true, true);
         load_previous_data('demand_estimation?project_id={{ project_id }}');
         show_email_and_project_in_navbar({{ project_id }});
-        demand_ts({{ project_id }});">
+        demand_ts({{ project_id }});
+        update_wizards_and_buttons_based_on_planning_step_selection({{ project_id }}, 'demand_estimation');">
 {% include '_navbar.html' %}
 {% include '_wizard.html' %}
 <main>

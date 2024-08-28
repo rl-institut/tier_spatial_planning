@@ -22,78 +22,71 @@ observer.observe(responseMsgElement, {
 });
 
 
-// Function to update the visibility of the Grid Design step
-function updateGridDesignVisibility() {
-    const gridDesignStep = document.querySelector('li[onclick*="grid_design"]');
-    const toggleSwitch1 = document.getElementById('toggleswitch1');
+const consumerSelectionHref = `consumer_selection?project_id=${project_id}`;
+const demandEstimationHref = `demand_estimation?project_id=${project_id}`;
+const func = `save_project_setup`;
 
-    if (toggleSwitch1.checked) {
-        gridDesignStep.style.display = ''; // Show Grid Design step if activated
-    } else {
-        gridDesignStep.style.display = 'none'; // Hide Grid Design step if deactivated
+// Function to handle toggleswitch0 (Demand Estimation)
+document.getElementById('toggleswitch0').addEventListener('change', function() {
+    if (!this.checked) {
+        // Update the text content of the responseMsg element
+        document.getElementById('responseMsg').textContent =
+            "If you keep the demand estimation option enabled, you can choose later between estimating demand or using a custom demand time series. If the demand estimation function is not used, a corresponding time series must be uploaded later in the 'Demand Estimation' section.";
+        // Show the modal
+        document.getElementById('msgBox').style.display = 'block';
     }
-}
+});
 
-// Function to update the visibility of the Energy System Design step
-function updateEnergySystemDesignVisibility() {
-    const energySystemDesignStep = document.querySelector('li[onclick*="energy_system_design"]');
-    const toggleSwitch2 = document.getElementById('toggleswitch2');
+// Function to handle toggleswitch1 (Spatial Grid Optimization)
+document.getElementById('toggleswitch1').addEventListener('change', function() {
+    if (!this.checked) {
+        // Update the text content of the responseMsg element
+        document.getElementById('responseMsg').textContent =
+            "A demand is required for the design optimization of energy converters. Demand estimation requires information about consumers, which is defined in the 'Consumer Selection' section using the integrated mapping system. Therefore, even if grid planning is not carried out, consumers must still be specified unless a custom demand time series is uploaded in the 'Demand Estimation' section. In that case, also deactivate 'Demand Estimation' to skip the consumer definition step.";
 
-    if (toggleSwitch2.checked) {
-        energySystemDesignStep.style.display = ''; // Show Energy System Design step if activated
-    } else {
-        energySystemDesignStep.style.display = 'none'; // Hide Energy System Design step if deactivated
+        // Show the modal
+        document.getElementById('msgBox').style.display = 'block';
     }
-}
+});
 
-// Function to update the visibility of the Consumer Selection step
-function updateConsumerSelectionVisibility() {
-    const consumerSelectionStep = document.querySelector('li[onclick*="consumer_selection"]');
-    const toggleSwitch0 = document.getElementById('toggleswitch0');
-    const toggleSwitch1 = document.getElementById('toggleswitch1');
-
-    if (!toggleSwitch0.checked && !toggleSwitch1.checked) {
-        consumerSelectionStep.style.display = 'none'; // Hide if both are deactivated
-    } else {
-        consumerSelectionStep.style.display = ''; // Show if either is activated
-    }
-}
 
 // Function to set the correct href for the Next button based on the visibility of wizard steps
-function updateNextButtonHref(project_id) {
+function updateNextButtonHref(project_id, func, defaultHref, alternativeHref) {
     const consumerSelectionStep = document.querySelector('li[onclick*="consumer_selection"]');
     const nextButton = document.getElementById("nextButton");
-
-    let nextHref = 'consumer_selection?project_id=' + project_id;
-
     if (consumerSelectionStep.style.display === 'none') {
-        // If Consumer Selection is hidden, change the next step to Demand Estimation
-        nextHref = 'demand_estimation?project_id=' + project_id;
+        // If Consumer Selection is hidden, use the alternative href
+        nextButton.setAttribute('onclick', `${func}(${project_id}, '${alternativeHref}');`);
+    } else {
+        // If Consumer Selection is visible, use the default href
+        nextButton.setAttribute('onclick', `${func}(${project_id}, '${defaultHref}');`);
     }
-
-    // Update the onclick attribute of the Next button
-    nextButton.setAttribute('onclick', `save_project_setup(${project_id}, '${nextHref}');`);
 }
 
-// Call this function whenever the visibility of the wizard steps might change
+
+// Event listeners passing the states of toggleswitches to the function
 document.getElementById('toggleswitch0').addEventListener('change', function() {
-    updateConsumerSelectionVisibility(); // Update Consumer Selection visibility
-    updateNextButtonHref(0); // Update the Next button's href based on the project ID
+    const toggleSwitch0State = this.checked;
+    const toggleSwitch1State = document.getElementById('toggleswitch1').checked;
+    const toggleSwitch2State = document.getElementById('toggleswitch2').checked;
+    updateWizardStepVisibility(toggleSwitch0State, toggleSwitch1State, toggleSwitch2State);
+    updateNextButtonHref(project_id, func, consumerSelectionHref, demandEstimationHref);
 });
 
 document.getElementById('toggleswitch1').addEventListener('change', function() {
-    updateGridDesignVisibility();           // Update Grid Design visibility based on toggleswitch1
-    updateEnergySystemDesignVisibility();   // Update Energy System Design visibility based on toggleswitch1
-    updateConsumerSelectionVisibility();    // Update Consumer Selection visibility
-    updateNextButtonHref(0); // Update the Next button's href based on the project ID
+    const toggleSwitch0State = document.getElementById('toggleswitch0').checked;
+    const toggleSwitch1State = this.checked;
+    const toggleSwitch2State = document.getElementById('toggleswitch2').checked;
+
+    updateWizardStepVisibility(toggleSwitch0State, toggleSwitch1State, toggleSwitch2State);
+    updateNextButtonHref(project_id, func, consumerSelectionHref, demandEstimationHref);
 });
 
 document.getElementById('toggleswitch2').addEventListener('change', function() {
-    updateEnergySystemDesignVisibility();   // Update Energy System Design visibility based on toggleswitch2
-    updateNextButtonHref(0); // Update the Next button's href based on the project ID
-});
+    const toggleSwitch0State = document.getElementById('toggleswitch0').checked;
+    const toggleSwitch1State = document.getElementById('toggleswitch1').checked;
+    const toggleSwitch2State = this.checked;
 
-// Initial call to set the correct href on page load
-window.addEventListener('load', function() {
-    updateNextButtonHref(project_id); // Update the Next button's href based on the project ID
+    updateWizardStepVisibility(toggleSwitch0State, toggleSwitch1State, toggleSwitch2State);
+    updateNextButtonHref(project_id, func, consumerSelectionHref, demandEstimationHref);
 });

@@ -910,7 +910,6 @@ function load_previous_data(page_name) {
         xhr.onreadystatechange = function () {
 
             if (this.readyState == 4 && this.status == 200) {
-                // push nodes to the map
                 results = this.response;
                 if (results !== null && Object.keys(results).length > 1) {
                     document.getElementById("projectName").value = results['project_name'];
@@ -921,10 +920,14 @@ function load_previous_data(page_name) {
                     document.getElementById('toggleswitch0').checked = results['do_demand_estimation'];
                     document.getElementById('toggleswitch1').checked = results['do_grid_optimization'];
                     document.getElementById('toggleswitch2').checked = results['do_es_design_optimization'];
-                    updateEnergySystemDesignVisibility();
-                    updateConsumerSelectionVisibility();
-                    updateGridDesignVisibility();
-                    updateNextButtonHref(project_id);
+                    const consumerSelectionHref = `consumer_selection?project_id=${project_id}`;
+                    const demandEstimationHref = `demand_estimation?project_id=${project_id}`;
+                    const func = `save_project_setup`;
+                    updateWizardStepVisibility(
+                        results['do_demand_estimation'],
+                        results['do_grid_optimization'],
+                        results['do_es_design_optimization']);
+                    updateNextButtonHref(project_id, func, consumerSelectionHref, demandEstimationHref);
                 }
             }
         };
@@ -1541,5 +1544,92 @@ async function sendMail() {
         }
     } catch (error) {
         handleError();
+    }
+}
+
+
+function update_wizards_and_buttons_based_on_planning_step_selection(project_id, page_name) {
+    const nextButton = document.getElementById("nextButton");
+    const prevButton = document.getElementById("prevButton");
+    var xhr = new XMLHttpRequest();
+    url = "load_previous_data/project_setup?project_id=" + project_id
+    xhr.open("GET", url, true);
+    xhr.responseType = "json";
+    xhr.send();
+    xhr.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+            results = this.response;
+            if (results !== null && Object.keys(results).length > 1) {
+                if (page_name.includes("demand_estimation")) {
+                    if (results['do_grid_optimization'] === true && results['do_es_design_optimization'] === true) {
+                        return
+                    }
+                    else if (results['do_grid_optimization'] === false && results['do_es_design_optimization'] === true) {
+                        nextButton.setAttribute('onclick', `save_demand_estimation(\`energy_system_design?project_id=${project_id}\`);`);
+                        if (results['do_demand_estimation'] === false) {
+                            prevButton.setAttribute('onclick', `save_demand_estimation(\`project_setup?project_id=${project_id}\`);`);
+                        }
+                    }
+                    else if (results['do_grid_optimization'] === false && results['do_es_design_optimization'] === false) {
+                        nextButton.setAttribute('onclick', `save_demand_estimation('/export_demand/` + project_id + '/' + document.getElementById('fileTypeDropdown').value+ `/')`);
+                        nextButton.textContent = 'Export Demand';
+                    }
+                } else if (page_name.includes("grid_design")) {
+                    if (results['do_es_design_optimization'] === false){
+                        nextButton.setAttribute('onclick', `save_grid_design(); forward_if_no_task_is_pending(${project_id});`);
+                        nextButton.textContent = 'Optimize';
+                    }
+                } else if (page_name.includes("energy_system_design")) {
+                    if (results['do_grid_optimization'] === false){
+                        prevButton.setAttribute('onclick', `save_energy_system_design(\`demand_estimation?project_id=${project_id}\`);`);
+                    }
+                }
+                updateWizardStepVisibility(
+                    results['do_demand_estimation'],
+                    results['do_grid_optimization'],
+                    results['do_es_design_optimization']
+                );
+            }
+            }
+        }
+}
+
+
+// General function to update the visibility of wizard steps
+function updateWizardStepVisibility(do_demand_estimation, do_grid_optimization, do_energy_system_design) {
+    const gridDesignStep = document.querySelector('li[onclick*="grid_design"]');
+    const energySystemDesignStep = document.querySelector('li[onclick*="energy_system_design"]');
+    const consumerSelectionStep = document.querySelector('li[onclick*="consumer_selection"]');
+    const simulationResultsStep = document.querySelector('li[onclick*="simulation_results"]');
+    const demandEstimationStep = document.querySelector('li[onclick*="demand_estimation"]');
+    // If all are deselected, hide everything
+    if (!do_grid_optimization && !do_energy_system_design && !do_demand_estimation) {
+        gridDesignStep.style.display = 'none';
+        energySystemDesignStep.style.display = 'none';
+        consumerSelectionStep.style.display = 'none';
+        simulationResultsStep.style.display = 'none';
+        demandEstimationStep.style.display = 'none';
+        return; // Exit the function early since no steps should be shown
+    }
+    // Update Grid Design step visibility
+    gridDesignStep.style.display = do_grid_optimization ? '' : 'none';
+    // Update Energy System Design step visibility
+    energySystemDesignStep.style.display = do_energy_system_design ? '' : 'none';
+    // Update Consumer Selection step visibility
+    consumerSelectionStep.style.display = (do_demand_estimation || do_grid_optimization) ? '' : 'none';
+    // Update Simulation Results step visibility
+    simulationResultsStep.style.display = (do_demand_estimation && !do_grid_optimization && !do_energy_system_design) ? 'none' : '';
+    // Update Demand Estimation step visibility
+    demandEstimationStep.style.display = (do_demand_estimation || do_grid_optimization || do_energy_system_design) ? '' : 'none';
+}
+
+function updateButtonHref(button_id, defaultHref, alternativeHref) {
+    const nextButton = document.getElementById(button_id);
+    if (consumerSelectionStep.style.display === 'none') {
+        // If Consumer Selection is hidden, use the alternative href
+        nextButton.setAttribute('onclick', `${func}(${project_id}, '${alternativeHref}');`);
+    } else {
+        // If Consumer Selection is visible, use the default href
+        nextButton.setAttribute('onclick', `${func}(${project_id}, '${defaultHref}');`);
     }
 }
