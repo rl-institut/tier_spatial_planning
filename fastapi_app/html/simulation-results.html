@@ -38,7 +38,7 @@
                                 <button
                                         class="btn dropdown-toggle btn--transparent"
                                         type="button"
-                                        id="dropdownMenuButton1"
+                                        id="dropdownMenuButton0"
                                         data-bs-toggle="dropdown"
                                         aria-expanded="false"
                                 >
@@ -46,7 +46,7 @@
                                 </button>
                                 <ul
                                         class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton1"
+                                        aria-labelledby="dropdownMenuButton0"
                                 >
                                     <li>
                                         <a class="dropdown-item" href="#">Export as .xls</a>
@@ -144,7 +144,7 @@
 
 
             </div>
-            <div class="row">
+            <div class="row" id="resultsChart">
                 <div class="col" style="display: flex; justify-content: center;">
                     <div class="chart" style="height: auto;">
                         <div class="chart__header">
@@ -328,7 +328,6 @@
                                     <div class="item__name">Annual Fuel Cost</div>
                                     <div id="fuelCost" class="item__value"></div>
                                     <div
-                                            id="averageLengthConnectionCable"
                                             class="item__value"
                                     ></div>
                                 </div>
@@ -370,7 +369,7 @@
                                 </div>
                                 <div class="item item--best">
                                     <div class="item__name">Levelized Cost of Electricity (w/o SHS)</div>
-                                    <div id="LCOE" class="item__value"></div>
+                                    <div id="LCOE2" class="item__value"></div>
                                 </div>
                             </div>
 
@@ -378,8 +377,7 @@
                     </div>
                 </div>
             </div>
-
-            <div class="row">
+            <div class="row" id="demandcoverageChart">
                 <div class="col">
                     <div class="chart">
                         <div class="chart__header">
@@ -418,7 +416,7 @@
                     </div>
                 </div>
             </div>
-            <div class="row">
+            <div class="row" id="energyflowsChart">
                 <div class="col">
                     <div class="chart">
                         <div class="chart__header">
@@ -431,7 +429,7 @@
                                 <button
                                         class="btn dropdown-toggle btn--transparent"
                                         type="button"
-                                        id="dropdownMenuButton1"
+                                        id="dropdownMenuButton2"
                                         data-bs-toggle="dropdown"
                                         aria-expanded="false"
                                 >
@@ -439,7 +437,7 @@
                                 </button>
                                 <ul
                                         class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton1"
+                                        aria-labelledby="dropdownMenuButton2"
                                 >
                                     <li>
                                         <a class="dropdown-item" href="#">Export as .xls</a>
@@ -456,7 +454,7 @@
                     </div>
                 </div>
             </div>
-            <div class="row">
+            <div class="row" id="capacityChart">
                 <div class="col col-md-6">
                     <div class="chart">
                         <div class="chart__header">
@@ -467,7 +465,7 @@
                                 <button
                                         class="btn dropdown-toggle btn--transparent"
                                         type="button"
-                                        id="dropdownMenuButton1"
+                                        id="dropdownMenuButton3"
                                         data-bs-toggle="dropdown"
                                         aria-expanded="false"
                                 >
@@ -475,7 +473,7 @@
                                 </button>
                                 <ul
                                         class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton1"
+                                        aria-labelledby="dropdownMenuButton3"
                                 >
                                     <li>
                                         <a class="dropdown-item" href="#">Export as .xls</a>
@@ -501,7 +499,7 @@
                                 <button
                                         class="btn dropdown-toggle btn--transparent"
                                         type="button"
-                                        id="dropdownMenuButton1"
+                                        id="dropdownMenuButton4"
                                         data-bs-toggle="dropdown"
                                         aria-expanded="false"
                                 >
@@ -509,7 +507,7 @@
                                 </button>
                                 <ul
                                         class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton1"
+                                        aria-labelledby="dropdownMenuButton4"
                                 >
                                     <li>
                                         <a class="dropdown-item" href="#">Export as .xls</a>
@@ -526,7 +524,7 @@
                     </div>
                 </div>
             </div>
-            <div class="row">
+            <div class="row" id="durationcurveChart">
                 <div class="col col-md-6">
                     <div class="chart">
                         <div class="chart__header">
@@ -539,7 +537,7 @@
                                 <button
                                         class="btn dropdown-toggle btn--transparent"
                                         type="button"
-                                        id="dropdownMenuButton1"
+                                        id="dropdownMenuButton5"
                                         data-bs-toggle="dropdown"
                                         aria-expanded="false"
                                 >
@@ -547,7 +545,7 @@
                                 </button>
                                 <ul
                                         class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton1"
+                                        aria-labelledby="dropdownMenuButton5"
                                 >
                                     <li>
                                         <a class="dropdown-item" href="#">Export as .xls</a>
@@ -573,7 +571,7 @@
                                 <button
                                         class="btn dropdown-toggle btn--transparent"
                                         type="button"
-                                        id="dropdownMenuButton1"
+                                        id="dropdownMenuButton6"
                                         data-bs-toggle="dropdown"
                                         aria-expanded="false"
                                 >
@@ -581,7 +579,7 @@
                                 </button>
                                 <ul
                                         class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton1"
+                                        aria-labelledby="dropdownMenuButton6"
                                 >
                                     <li>
                                         <a class="dropdown-item" href="#">Export as .xls</a>
@@ -598,7 +596,7 @@
                     </div>
                 </div>
             </div>
-            <div class="row">
+            <div class="row" id="sankeyChart">
                 <div class="col">
                     <div class="chart">
                         <div class="chart__header">
@@ -612,7 +610,7 @@
                                 <button
                                         class="btn dropdown-toggle btn--transparent"
                                         type="button"
-                                        id="dropdownMenuButton1"
+                                        id="dropdownMenuButton7"
                                         data-bs-toggle="dropdown"
                                         aria-expanded="false"
                                 >
@@ -620,7 +618,7 @@
                                 </button>
                                 <ul
                                         class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton1"
+                                        aria-labelledby="dropdownMenuButton7"
                                 >
                                     <li>
                                         <a class="dropdown-item" href="#">Export as .xls</a>

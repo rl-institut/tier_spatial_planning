@@ -481,6 +481,7 @@ async def consumer_to_db(project_id: str, data: fastapi_app.python.helper.pydant
 @app.get("/load_results/{project_id}")
 async def load_results(project_id, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
+    project_setup = await async_queries.get_model_instance(sa_tables.ProjectSetup, user.id, project_id)
     if user is None:
         return
     project_id = int(project_id)
@@ -491,14 +492,19 @@ async def load_results(project_id, request: Request):
         df = await async_queries.get_df(sa_tables.Results, user.id, project_id)
         if df.empty or df['lcoe'].isna() is True:
             return JSONResponse(content={})
-    if bool(df['lcoe'].isna()[0]) is True:
+    if bool(df['lcoe'].isna()[0]) is True and project_setup.do_es_design_optimization is True:
         return JSONResponse(content={})
-    df["average_length_distribution_cable"] = df["length_distribution_cable"] / df["n_distribution_links"]
-    df["average_length_connection_cable"] = df["length_connection_cable"] / df["n_connection_links"]
+    elif bool(df['n_poles'].isna()[0]) is True and project_setup.do_grid_optimization is True:
+        return JSONResponse(content={})
+    if project_setup.do_grid_optimization is True:
+        df["average_length_distribution_cable"] = df["length_distribution_cable"] / df["n_distribution_links"]
+        df["average_length_connection_cable"] = df["length_connection_cable"] / df["n_connection_links"]
+        df["gridLcoe"] = df['cost_grid'].astype(float) / df["epc_total"].astype(float) * 100
+    else:
+        df["average_length_distribution_cable"] = None
+        df["average_length_connection_cable"] = None
+        df["gridLcoe"] = 0
     df["time"] = (df["time_grid_design"] + df["time_energy_system_design"]) * 3
-    df["gridLcoe"] = df['cost_grid'].astype(float) / df["epc_total"].astype(float) * 100
-    df["esLcoe"] = (df["epc_total"].astype(float) - df['cost_grid'].astype(float)) \
-                   / df["epc_total"].astype(float) * 100
     unit_dict = {'n_poles': '',
                  'n_consumers': '',
                  'n_shs_consumers': '',
@@ -544,13 +550,19 @@ async def load_results(project_id, request: Request):
                  'epc_battery': 'USD/a',
                  'epc_total': 'USD/a'
                  }
-    if int(df['n_consumers'].iat[0]) != int(df['n_shs_consumers'].iat[0]) and not infeasible:
-        df['upfront_invest_converters'] = sum(
-            df[col].iat[0] for col in df.columns if 'upfront' in col and 'grid' not in col)
-        df['upfront_invest_total'] = df['upfront_invest_converters'] + df['upfront_invest_grid']
+    if project_setup.do_es_design_optimization is True:
+        df["esLcoe"] = (df["epc_total"].astype(float) - df['cost_grid'].astype(float)) / df["epc_total"].astype(float) * 100
+        if int(df['n_consumers'].iat[0]) != int(df['n_shs_consumers'].iat[0]) and not infeasible:
+            df['upfront_invest_converters'] = sum(
+                df[col].iat[0] for col in df.columns if 'upfront' in col and 'grid' not in col)
+            df['upfront_invest_total'] = df['upfront_invest_converters'] + df['upfront_invest_grid']
+        else:
+            df['upfront_invest_converters'] = None
+            df['upfront_invest_total'] = None
     else:
         df['upfront_invest_converters'] = None
         df['upfront_invest_total'] = None
+        df["esLcoe"] = 0
     df = df[list(unit_dict.keys())].round(1).astype(str)
     for col in df.columns:
         if unit_dict[col] in ['%', 's', 'kW', 'kWh']:
@@ -561,6 +573,7 @@ async def load_results(project_id, request: Request):
             if df[col].isna().sum() == 0 and df.loc[0, col] != 'None':
                 df[col] = "{:,}".format(df[col].astype(float).astype(int).iat[0])
         df[col] = df[col] + ' ' + unit_dict[col]
+
     results = df.to_dict(orient='records')[0]
     if infeasible is True:
         results['responseMsg'] = 'There are no results of the energy system optimization. There were no feasible ' \
@@ -571,6 +584,8 @@ async def load_results(project_id, request: Request):
                                  'carried out.'
     else:
         results['responseMsg'] = ''
+    df["do_grid_optimization"] = project_setup.do_grid_optimization
+    df["do_es_design_optimization"] = project_setup.do_es_design_optimization
     return JSONResponse(content=results, status_code=200)
 
 
@@ -1101,22 +1116,16 @@ async def optimization(user_id, project_id):
     project_setup.status = "queued"
     await async_inserts.merge_model(project_setup)
     if bool(os.environ.get('DOCKERIZED')):
-        task = task_grid_opt.delay(user_id, project_id)
+        if project_setup.do_grid_optimization is True:
+            task = task_grid_opt.delay(user_id, project_id)
+        else:
+            task = task_supply_opt.delay(user_id, project_id)
         return task.id
     else:  # if app is not running in docker, celery isn't available
-        optimize_grid(user_id, project_id)
-        optimize_energy_system(user_id, project_id)
-        return 'no_celery_id'
-
-
-@app.get("/optimize_without_celery/{project_id}")
-async def forward_if_consumer_selection_exists(project_id: int, request: Request):
-    user = await handle_user_accounts.get_user_from_cookie(request)
-    if user is None:
-        return
-    if bool(user.is_superuser) is True:
-        optimize_grid(user.id, project_id)
-        optimize_energy_system(user.id, project_id)
+        if project_setup.do_grid_optimization is True:
+            optimize_grid(user_id, project_id)
+        if project_setup.do_es_design_optimization is True:
+            optimize_energy_system(user_id, project_id)
         return 'no_celery_id'
 
 
@@ -1200,7 +1209,8 @@ async def waiting_for_results(request: Request, data: fastapi_app.python.helper.
                         break
                     else:
                         print('Could not get user from task id')
-            if data.model == 'grid' and bool(os.environ.get('DOCKERIZED')):
+            project_setup = await async_queries.get_model_instance(sa_tables.ProjectSetup, user.id, data.project_id)
+            if data.model == 'grid' and bool(os.environ.get('DOCKERIZED')) and project_setup.do_es_design_optimization is True:
                 task = task_supply_opt.delay(user.id, data.project_id)
                 user.task_id = task.id
                 await async_inserts.update_model_by_user_id(user)

@@ -175,21 +175,25 @@ async def check_data_availability(user_id, project_id):
     demand_opt_dict = await get_model_instance(sa_tables.Demand, user_id, project_id)
     if demand_opt_dict is None or pd.isna(demand_opt_dict.household_option):
         return False, '/demand_estimation/?project_id=' + str(project_id)
-    grid_design = await get_model_instance(sa_tables.GridDesign, user_id, project_id)
-    if grid_design is None or pd.isna(grid_design.pole_lifetime):
-        return False, '/grid_design/?project_id=' + str(project_id)
-    energy_system_design = await get_model_instance(sa_tables.EnergySystemDesign, user_id, project_id)
-    if energy_system_design is None or pd.isna(energy_system_design.battery__parameters__c_rate_in):
-        return False, '/energy_system_design/?project_id=' + str(project_id)
-    else:
-        return True, None
+    if project_setup.do_grid_optimization is True:
+        grid_design = await get_model_instance(sa_tables.GridDesign, user_id, project_id)
+        if grid_design is None or pd.isna(grid_design.pole_lifetime):
+            return False, '/grid_design/?project_id=' + str(project_id)
+    if project_setup.do_es_design_optimization is True:
+        energy_system_design = await get_model_instance(sa_tables.EnergySystemDesign, user_id, project_id)
+        if energy_system_design is None or pd.isna(energy_system_design.battery__parameters__c_rate_in):
+            return False, '/energy_system_design/?project_id=' + str(project_id)
+    return True, None
 
 
 async def pause_until_results_are_available(user_id, project_id, status):
+    project_setup = await get_model_instance(sa_tables.ProjectSetup, user_id, project_id)
     n_iter = 8 if status == 'unknown' else 6
     for i in range(n_iter):
         results = await get_model_instance(sa_tables.Results, user_id, project_id)
         if hasattr(results, 'lcoe') and results.lcoe is not None:
+            break
+        elif project_setup.do_es_design_optimization is False and hasattr(results, 'n_poles') and results.n_poles is not None:
             break
         elif hasattr(results, 'infeasible') and bool(results.infeasible) is True:
             break

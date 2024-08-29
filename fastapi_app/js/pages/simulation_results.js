@@ -591,3 +591,22 @@ function plot_co2_emissions(data) {
     Plotly.newPlot(co2Emissions, data, layout);
 }
 
+async function redirect(href) {
+    window.location.href = href;
+}
+
+async function hide_es_results() {
+    hideElements('resultsChart');
+    hideElements('demandcoverageChart');
+    hideElements('energyflowsChart');
+    hideElements('capacityChart');
+    hideElements('durationcurveChart');
+    hideElements('sankeyChart');
+        }
+
+function hideElements(elementId) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.style.display = 'none';
+    }
+}
