@@ -595,6 +595,32 @@ async function redirect(href) {
     window.location.href = href;
 }
 
+async function hide_grid_results() {
+    // Hide the GRID section
+    const gridSubtitle = document.getElementById('gridTitle'); // Find the subtitle element
+    const gridRow = document.getElementById('gridResultsRow');
+    if (gridSubtitle) {
+        gridSubtitle.style.display = 'none'; // Hide the subtitle
+    }
+    if (gridRow && gridRow.classList.contains('row')) {
+        gridRow.style.display = 'none'; // Hide the row associated with the GRID subtitle
+    }
+    // Now perform the row swap
+    const row1 = document.getElementById('actionButtonsRow'); // Assuming this is the row with action buttons
+    const row2 = document.getElementById('resultsChart'); // The row with results chart
+    // Get the parent element of the rows
+    const parentElement = row1.parentElement;
+    // Ensure both rows exist before attempting to swap
+    if (row1 && row2 && parentElement) {
+        // Swap the rows using insertBefore
+        parentElement.insertBefore(row2, row1);
+    }
+    hideElements("firstRow");
+}
+
+
+
+
 async function hide_es_results() {
     hideElements('resultsChart');
     hideElements('demandcoverageChart');
@@ -609,4 +635,106 @@ function hideElements(elementId) {
     if (element) {
         element.style.display = 'none';
     }
+}
+
+async function replaceSummaryChart() {
+    // Get the existing chart element
+    const summaryChart = document.getElementById('summaryResultsChart');
+
+    // Define a list of ID pairs without and with a '2'
+    const idPairs = [
+        { original: 'nConsumers', newId: 'nConsumers2' },
+        { original: 'nShsConsumers', newId: 'nShsConsumers2' },
+        { original: 'nPoles', newId: 'nPoles2' },
+        { original: 'lengthDistributionCable', newId: 'lengthDistributionCable2' },
+        { original: 'averageLengthDistributionCable', newId: 'averageLengthDistributionCable2' },
+        { original: 'lengthConnectionCable', newId: 'lengthConnectionCable2' },
+        { original: 'averageLengthConnectionCable', newId: 'averageLengthConnectionCable2' },
+        { original: 'GridUpfrontInvestmentCost', newId: 'GridUpfrontInvestmentCost2' },
+        { original: 'time', newId: 'time2' }
+    ];
+
+    // Prepare an object to hold old values
+    const values = {};
+
+    // Retrieve current values and store them
+    idPairs.forEach(pair => {
+        const originalElement = document.getElementById(pair.original);
+        if (originalElement) {
+            values[pair.newId] = originalElement.innerHTML; // Store old value with new ID key
+        } else {
+            values[pair.newId] = ''; // Default empty if not found
+        }
+    });
+
+    // Define the new content with modified IDs and set values from the old content
+    const newContent = `
+        <div class="chart" id="summaryResultsChartGridOnly">
+            <div class="chart__header">
+                <span class="title">Summary of Results</span>
+            </div>
+            <div class="chart__content">
+                <span class="subtitle"></span>
+                <div class="row">
+                    <div class="item item--best">
+                        <div class="item__name">Number of grid-connected Consumers</div>
+                        <div id="nConsumers2" class="item__value">${values.nConsumers2}</div>
+                    </div>
+                    <div class="item item--best">
+                        <div class="item__name">Number of SHS Consumers</div>
+                        <div id="nShsConsumers2" class="item__value">${values.nShsConsumers2}</div>
+                    </div>
+                    <div class="item item--best">
+                        <div class="item__name">Number of Poles</div>
+                        <div id="nPoles2" class="item__value">${values.nPoles2}</div>
+                    </div>
+                    <div class="item item--best">
+                        <div class="item__name">Distribution Cable Length</div>
+                        <div id="lengthDistributionCable2" class="item__value">${values.lengthDistributionCable2}</div>
+                    </div>
+                </div>
+                <span class="subtitle"></span>
+                <div class="row">
+                    <div class="item item--best">
+                        <div class="item__name">Average Length Distribution</div>
+                        <div id="averageLengthDistributionCable2" class="item__value">${values.averageLengthDistributionCable2}</div>
+                    </div>
+                    <div class="item item--best">
+                        <div class="item__name">Connection Cable Length</div>
+                        <div id="lengthConnectionCable2" class="item__value">${values.lengthConnectionCable2}</div>
+                    </div>
+                    <div class="item item--best">
+                        <div class="item__name">Average Length Connection</div>
+                        <div id="averageLengthConnectionCable2" class="item__value">${values.averageLengthConnectionCable2}</div>
+                    </div>
+                    <div class="item item--best">
+                        <div class="item__name">Grid upfront Investment Cost</div>
+                        <div id="GridUpfrontInvestmentCost2" class="item__value">${values.GridUpfrontInvestmentCost2}</div>
+                    </div>
+                </div>
+                <span class="subtitle"></span>
+                <div class="row">
+                    <div class="item item--best">
+                        <div class="item__name"></div>
+                        <div class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                        <div class="item__name"></div>
+                        <div class="item__value"></div>
+                    </div>
+                    <div class="item item--best">
+                        <div class="item__name"></div>
+                        <div class="item__value"></div>
+                    </div>
+                    <div class="item item--worst">
+                        <div class="item__name">Calculation Time</div>
+                        <div id="time2" class="item__value">${values.time2}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Replace the existing chart with the new content
+    summaryChart.outerHTML = newContent;
 }

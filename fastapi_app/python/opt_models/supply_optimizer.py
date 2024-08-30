@@ -107,7 +107,7 @@ class EnergySystemOptimizer(BaseOptimizer):
         self.num_households = len(self.nodes[(self.nodes['consumer_type'] == 'household') &
                                              (self.nodes['is_connected'] == True)].index)
         links = sync_queries.get_model_instance(sa_tables.Links, user_id, project_id)
-        self.links = pd.read_json(links.data)
+        self.links = pd.read_json(links.data) if links is not None and links.data is not None else None
         self.energy_system_design = energy_system_design
 
     def optimize_energy_system(self):
@@ -830,12 +830,33 @@ class EnergySystemOptimizer(BaseOptimizer):
 
     def _results_to_db(self):
         results = sync_queries.get_model_instance(sa_tables.Results, self.user_id, self.project_id)
+        if pd.isna(results.cost_grid) is True:
+                results.n_consumers = 0
+                results.n_shs_consumers = 0
+                results.n_poles = 0
+                results.length_distribution_cable = 0
+                results.length_connection_cable = 0
+                results.cost_grid = 0
+                results.cost_shs = 0
+                results.time_grid_design = 0
+                results.n_distribution_links = 0
+                results.n_connection_links = 0
+                results.upfront_invest_grid = 0
+        else:
+            n_poles = self.nodes[self.nodes['node_type'] == 'pole'].__len__()
+            length_dist_cable = self.links[self.links['link_type'] == 'distribution']['length'].sum()
+            length_conn_cable = self.links[self.links['link_type'] == 'connection']['length'].sum()
+            results.upfront_invest_grid \
+                = n_poles * self.project_setup["pole_capex"] + \
+                  length_dist_cable * self.project_setup["distribution_cable_capex"] + \
+                  length_conn_cable * self.project_setup["connection_cable_capex"] + \
+                  self.num_households * self.project_setup["mg_connection_cost"]
         results.cost_renewable_assets = self.total_renewable / self.n_days * 365
         results.cost_non_renewable_assets = self.total_non_renewable / self.n_days * 365
         results.cost_fuel = self.total_fuel / self.n_days * 365
+        results.cost_grid = results.cost_grid / self.n_days * 365 if results.cost_grid is not None else 0
         results.epc_total = (self.total_revenue + results.cost_grid) / self.n_days * 365
         results.lcoe = (100 * (self.total_revenue + results.cost_grid) / self.total_demand)
-        results.cost_grid = results.cost_grid / self.n_days * 365
         results.res = self.res
         results.shortage_total = self.shortage
         results.surplus_rate = self.surplus_rate
@@ -871,14 +892,7 @@ class EnergySystemOptimizer(BaseOptimizer):
                                                      0].mean() / self.num_households * 1000
         results.base_load = self.demand_full_year.iloc[:, 0].quantile(0.1)
         results.max_shortage = (self.sequences_shortage / self.demand).max() * 100
-        n_poles = self.nodes[self.nodes['node_type'] == 'pole'].__len__()
-        length_dist_cable = self.links[self.links['link_type'] == 'distribution']['length'].sum()
-        length_conn_cable = self.links[self.links['link_type'] == 'connection']['length'].sum()
-        results.upfront_invest_grid \
-            = n_poles * self.project_setup["pole_capex"] + \
-              length_dist_cable * self.project_setup["distribution_cable_capex"] + \
-              length_conn_cable * self.project_setup["connection_cable_capex"] + \
-              self.num_households * self.project_setup["mg_connection_cost"]
+
         results.upfront_invest_diesel_gen = results.diesel_genset_capacity \
                                             * self.energy_system_design['diesel_genset']['parameters']['capex']
         results.upfront_invest_pv = results.pv_capacity \

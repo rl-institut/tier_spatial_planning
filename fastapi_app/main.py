@@ -573,7 +573,8 @@ async def load_results(project_id, request: Request):
             if df[col].isna().sum() == 0 and df.loc[0, col] != 'None':
                 df[col] = "{:,}".format(df[col].astype(float).astype(int).iat[0])
         df[col] = df[col] + ' ' + unit_dict[col]
-
+    df["do_grid_optimization"] = project_setup.do_grid_optimization
+    df["do_es_design_optimization"] = project_setup.do_es_design_optimization
     results = df.to_dict(orient='records')[0]
     if infeasible is True:
         results['responseMsg'] = 'There are no results of the energy system optimization. There were no feasible ' \
@@ -584,8 +585,6 @@ async def load_results(project_id, request: Request):
                                  'carried out.'
     else:
         results['responseMsg'] = ''
-    df["do_grid_optimization"] = project_setup.do_grid_optimization
-    df["do_es_design_optimization"] = project_setup.do_es_design_optimization
     return JSONResponse(content=results, status_code=200)
 
 
@@ -903,7 +902,7 @@ async def save_demand_estimation(request: Request, data: fastapi_app.python.help
     average_daily_energy = None
     custom_share_1, custom_share_2, custom_share_3, custom_share_4, custom_share_5 = 0, 0, 0, 0, 0
 
-    use_custom_demand = bool(data.demand_estimation['use_custom_demand'])
+    use_custom_demand = ast.literal_eval(data.demand_estimation['use_custom_demand'])
 
     if use_custom_demand is False:
         if custom_calibration is None or '':

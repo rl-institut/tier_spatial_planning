@@ -50,7 +50,10 @@ def _get_df(query, is_timeseries=True):
         results = [result.to_dict() for result in results]
     else:
         results = _execute_with_retry(query, which='one')
-        results = [results.to_dict()]
+        if results is not None:
+            results = [results.to_dict()]
+        else:
+            results = [{column.key: None for column in query.column_descriptions[0]['entity'].__table__.columns}]
     df = pd.DataFrame.from_records(results)
 
     if not df.empty:
@@ -68,6 +71,12 @@ def get_model_instance(model, user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
     query = select(model).where(model.id == user_id, model.project_id == project_id)
     model_instance = _execute_with_retry(query, which='first')
+    if model_instance is None:
+        model_instance = model()
+        if hasattr(model_instance, 'id'):
+            model_instance.id = user_id
+        if hasattr(model_instance, 'project_id'):
+            model_instance.project_id = project_id
     return model_instance
 
 

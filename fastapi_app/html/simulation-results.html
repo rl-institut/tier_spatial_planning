@@ -27,7 +27,7 @@
 <main>
     <section id="dashboard" class="dashboard">
         <div>
-            <div class="row">
+            <div class="row" id="firstRow">
                 <div class="col col-md-6">
                     <div class="chart">
                         <div class="chart__header">
@@ -63,7 +63,7 @@
                     </div>
                 </div>
                 <div class="col col-md-6" style="display: flex; justify-content: center;">
-                    <div class="chart">
+                    <div class="chart" id="summaryResultsChart">
                         <div class="chart__header">
                             <span class="title">Summary of Results</span>
                         </div>
@@ -129,7 +129,7 @@
                     </div>
                 </div>
             </div>
-            <div class="row" style="padding: 12px">
+            <div class="row" id="actionButtonsRow" style="padding: 12px">
                 <div style="display: flex; width: 100%; padding: 0; margin: 0;">
                     <a id="downloadCSV"
                        class="btn btn--medium"
@@ -151,8 +151,8 @@
                             <span class="title">Results</span>
                         </div>
                         <div class="chart__content" style="height: auto;">
-                            <span class="subtitle">GRID</span>
-                            <div class="row">
+                            <span class="subtitle" id="gridTitle">GRID</span>
+                            <div class="row" id="gridResultsRow">
                                 <div class="item item--best">
                                     <div class="item__name">Number of grid-connected Consumers</div>
                                     <div id="nConsumers" class="item__value"></div>

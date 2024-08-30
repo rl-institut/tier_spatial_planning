@@ -367,7 +367,7 @@ async function load_results(project_id) {
 
         const results = await response.json();
 
-        if (results['n_consumers'] > 0) {
+        if (results['n_consumers'] > 0 || results['lcoe'] > 0) {
             document.getElementById('noResults').style.display = 'none';
             document.getElementById("nConsumers").innerText = Number(results['n_consumers']) - Number(results['n_shs_consumers']);
             document.getElementById("nGridConsumers").innerText = Number(results['n_consumers']) - Number(results['n_shs_consumers']);
@@ -424,12 +424,16 @@ async function load_results(project_id) {
             document.getElementById('LCOE2').innerHTML = results['lcoe'].toString() + " Cent<sub class='sub'>USD</sub>/kWh";
             await db_nodes_to_js(project_id, false);
             await db_links_to_js(project_id);
-
+            if (results['do_grid_optimization'] === false) {
+                await hide_grid_results();
+            }
             if (results['lcoe'] === null || results['lcoe'] === undefined || results['lcoe'].includes('None')) {
                 if (results['responseMsg'].length === 0 && results['do_es_design_optimization'] === true) {
                     document.getElementById('responseMsg').innerHTML = 'Something went wrong. There are no results of the energy system optimization.';
+                    await replaceSummaryChart()
                     await hide_es_results()
                 } else {
+                    await replaceSummaryChart()
                     await hide_es_results()
                     document.getElementById('responseMsg').innerHTML = results['responseMsg'];
                 }
@@ -438,6 +442,7 @@ async function load_results(project_id) {
                     await plot_results();
                 }
                 else {
+                    await replaceSummaryChart()
                     await hide_es_results()
                 }
             }
