@@ -1,4 +1,4 @@
-.input-item select, .input-group input, .input-group-text, .btn btn--medium {
+.input-item select, .input-group input, .input-group-text {
     height: 32px; /* Adjust this value to your preference */
 }
 
