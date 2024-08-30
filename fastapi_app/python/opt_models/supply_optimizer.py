@@ -842,15 +842,7 @@ class EnergySystemOptimizer(BaseOptimizer):
                 results.n_distribution_links = 0
                 results.n_connection_links = 0
                 results.upfront_invest_grid = 0
-        else:
-            n_poles = self.nodes[self.nodes['node_type'] == 'pole'].__len__()
-            length_dist_cable = self.links[self.links['link_type'] == 'distribution']['length'].sum()
-            length_conn_cable = self.links[self.links['link_type'] == 'connection']['length'].sum()
-            results.upfront_invest_grid \
-                = n_poles * self.project_setup["pole_capex"] + \
-                  length_dist_cable * self.project_setup["distribution_cable_capex"] + \
-                  length_conn_cable * self.project_setup["connection_cable_capex"] + \
-                  self.num_households * self.project_setup["mg_connection_cost"]
+                results.time_grid_design = 0
         results.cost_renewable_assets = self.total_renewable / self.n_days * 365
         results.cost_non_renewable_assets = self.total_non_renewable / self.n_days * 365
         results.cost_fuel = self.total_fuel / self.n_days * 365

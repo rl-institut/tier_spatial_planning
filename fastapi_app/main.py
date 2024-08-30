@@ -504,7 +504,8 @@ async def load_results(project_id, request: Request):
         df["average_length_distribution_cable"] = None
         df["average_length_connection_cable"] = None
         df["gridLcoe"] = 0
-    df["time"] = (df["time_grid_design"] + df["time_energy_system_design"]) * 3
+    df[["time_grid_design", "time_energy_system_design"]] = df[["time_grid_design", "time_energy_system_design"]].fillna(0)
+    df["time"] = (df["time_grid_design"] + df["time_energy_system_design"])
     unit_dict = {'n_poles': '',
                  'n_consumers': '',
                  'n_shs_consumers': '',
