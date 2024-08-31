@@ -81,9 +81,12 @@ async def get_model_instance(model, user_id, project_id, which='first'):
 
 async def get_input_df(user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
-    project_setup = await get_df(sa_tables.ProjectSetup, user_id, project_id, is_timeseries=False)
-    grid_design = await get_df(sa_tables.GridDesign, user_id, project_id, is_timeseries=False)
-    df = pd.concat([project_setup, grid_design], axis=1)
+    project_setup = await get_model_instance(sa_tables.ProjectSetup, user_id, project_id)
+    project_setup = project_setup.to_dict()
+    grid_design = await get_model_instance(sa_tables.GridDesign, user_id, project_id)
+    grid_design = grid_design.to_dict()
+    project_setup.update(grid_design)
+    df = pd.DataFrame.from_records(project_setup).drop(columns=['id', 'project_id'])
     return df
 
 

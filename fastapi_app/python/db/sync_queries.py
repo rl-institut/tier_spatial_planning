@@ -29,47 +29,12 @@ def get_project_setup_of_user(user_id, project_id):
     return project_setup
 
 
-def get_input_df(user_id, project_id):
-    user_id, project_id = int(user_id), int(project_id)
-    project_setup = get_df(sa_tables.ProjectSetup, user_id, project_id, is_timeseries=False)
-    grid_design = get_df(sa_tables.GridDesign, user_id, project_id, is_timeseries=False)
-    df = pd.concat([project_setup, grid_design], axis=1)
-    return df
-
-
-def get_df(model, user_id, project_id, is_timeseries=True):
-    user_id, project_id = int(user_id), int(project_id)
-    query = select(model).where(model.id == user_id, model.project_id == project_id)
-    df = _get_df(query, is_timeseries=is_timeseries)
-    return df
-
-
-def _get_df(query, is_timeseries=True):
-    if is_timeseries:
-        results = _execute_with_retry(query, which='all')
-        results = [result.to_dict() for result in results]
+def get_model_instance(model, user_id=None, project_id=None):
+    if user_id is not None:
+        user_id, project_id = int(user_id), int(project_id)
+        query = select(model).where(model.id == user_id, model.project_id == project_id)
     else:
-        results = _execute_with_retry(query, which='one')
-        if results is not None:
-            results = [results.to_dict()]
-        else:
-            results = [{column.key: None for column in query.column_descriptions[0]['entity'].__table__.columns}]
-    df = pd.DataFrame.from_records(results)
-
-    if not df.empty:
-        if 'id' in df.columns:
-            df = df.drop(columns=['id', 'project_id']).dropna(how='all', axis=0)
-        decimal_columns = [col for col in df.columns if df[col].apply(lambda x: isinstance(x, decimal.Decimal)).any()]
-        for col in decimal_columns:
-            df[col] = df[col].astype(float)
-    if 'dt' in df.columns:
-        df = df.set_index('dt')
-    return df
-
-
-def get_model_instance(model, user_id, project_id):
-    user_id, project_id = int(user_id), int(project_id)
-    query = select(model).where(model.id == user_id, model.project_id == project_id)
+        query = select(model)
     model_instance = _execute_with_retry(query, which='first')
     if model_instance is None:
         model_instance = model()
@@ -101,7 +66,7 @@ def get_weather_data(lat, lon, start, end):
     model = sa_tables.WeatherData
     closest_lat, closest_lon = get_closest_grid_point(lat, lon)
     query = select(model).where(model.lat == closest_lat, model.lon == closest_lon, model.dt >= start, model.dt <= end)
-    df = _get_df(query, is_timeseries=True)
+    df = pd.DataFrame.from_records([result.to_dict() for result in _execute_with_retry(query, which='all')]).set_index('dt').astype(float)
     if ts_changed:
         df.index = index
     return df

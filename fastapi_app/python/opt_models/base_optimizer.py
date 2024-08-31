@@ -37,8 +37,8 @@ class BaseOptimizer:
 
     def __init__(
             self, user_id, project_id, ):
-        self.project_setup = {k: v[0] if isinstance(v, tuple) and len(v) == 1 else v for k, v in
-                              sync_queries.get_input_df(user_id, project_id).iloc[0].to_dict().items()}
+        self.project_setup = sync_queries.get_model_instance(sa_tables.ProjectSetup, user_id, project_id).to_dict()
+        self.project_setup.update(sync_queries.get_model_instance(sa_tables.GridDesign, user_id, project_id).to_dict())
         self.user_id = user_id
         self.project_id = project_id
         n_days = min(self.project_setup["n_days"], int(os.environ.get('MAX_DAYS', 365)))
