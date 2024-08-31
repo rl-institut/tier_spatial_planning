@@ -64,6 +64,38 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function demand_ts(project_id) {
     const url = 'get_demand_time_series/' + project_id;
+    let plotElement = document.getElementById("demand_plot");
+
+    var layout = {
+                title: "<b>Typical Modelled Household Daily Electrical Demand Profiles</b><br>'Average days' estimating <i>average contributions of each household</i> (to be scaled by community size)<br>365 days are modelled and included in profiles for simulation with full variability",
+                font: {size: 14},
+                autosize: true,
+                width: 1100,
+                height: 500,
+
+                xaxis: {
+                    title: 'Hour of the day',
+                    hoverformat: '.1f',
+                    titlefont: {
+                        size: 16,
+                    },
+                    tickfont: {
+                        size: 14,
+                    },
+                },
+                yaxis: {
+                    title: 'Demand (W)',
+                    hoverformat: '.1f',
+                    titlefont: {
+                        size: 16,
+                    },
+                    tickfont: {
+                        size: 14,
+                    }
+                },
+            };
+
+    Plotly.newPlot(plotElement, [], layout);
 
     fetch(url)
         .then(response => {
@@ -73,6 +105,8 @@ function demand_ts(project_id) {
             return response.json();
         })
         .then(data => {
+
+
             // Extracting data
             const { x, y, 'Very High Consumption': Very_High, 'High Consumption': High,
                     'Middle Consumption': Middle, 'Low Consumption': Low,
@@ -80,7 +114,7 @@ function demand_ts(project_id) {
                     'South South': South_South, 'North West': North_West,
                     'North Central': North_Central } = data;
 
-            var plotElement = document.getElementById("demand_plot");
+
 
             var trace1 = {
                 x: x,
@@ -183,38 +217,12 @@ function demand_ts(project_id) {
                 },
             };
 
-                        var layout = {
-                title: "<b>Typical Modelled Household Daily Electrical Demand Profiles</b><br>'Average days' estimating <i>average contributions of each household</i> (to be scaled by community size)<br>365 days are modelled and included in profiles for simulation with full variability",
-                font: {size: 14},
-                autosize: false,
-                width: 1100,
-                height: 500,
 
-                xaxis: {
-                    title: 'Hour of the day',
-                    hoverformat: '.1f',
-                    titlefont: {
-                        size: 16,
-                    },
-                    tickfont: {
-                        size: 14,
-                    },
-                },
-                yaxis: {
-                    title: 'Demand (W)',
-                    hoverformat: '.1f',
-                    titlefont: {
-                        size: 16,
-                    },
-                    tickfont: {
-                        size: 14,
-                    }
-                },
-            };
 
             var data = [trace9, trace8, trace7, trace6, trace5, trace4, trace3, trace2, trace1];
 
-            Plotly.newPlot(plotElement, data, layout);
+            Plotly.react(plotElement, data, layout);
+
         })
         .catch(error => {
             console.error('There was a problem with the fetch operation:', error);
@@ -241,3 +249,12 @@ document.getElementById('downloadDemand').addEventListener('click', function () 
     save_demand_estimation('javascript:void(0);')
     window.location.href = '/export_demand/' + project_id + '/' + document.getElementById('fileTypeDropdown').value+ '/';
 });
+
+function loadDashboard() {
+    const dashboardSection = document.querySelector('.dashboard');
+
+    // Check if the 'loading' class is not already present
+    if (!dashboardSection.classList.contains('loading')) {
+        dashboardSection.classList.add('loading');
+    }
+}

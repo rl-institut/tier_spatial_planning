@@ -29,45 +29,13 @@ const nigeriaBounds = [
     [4.2, 2.7], // Southwest corner
     [13.9, 14.7] // Northeast corner
 ];
+let map;
 
+var legend = L.control({position: "bottomright"});
 
-const map = L.map('map', {
-    center: [9.8838, 5.9231],
-    zoom: 6,
-    maxBounds: nigeriaBounds,
-    maxBoundsViscosity: 1.0,
-});
-
-let is_active = false;
-
-// Define the OSM layer
-let osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-});
-
-// Define the Esri satellite layer
-let satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    attribution: 'Tiles &copy; Esri'
-});
-
-// Add the OSM layer to the map as the default
-osmLayer.addTo(map);
-
-// Define the base layers for the control
-let baseMaps = {
-    "OpenStreetMap": osmLayer,
-    "Satellite": satelliteLayer
-};
-
-// Add the layer control to the map
-L.control.layers(baseMaps).addTo(map);
-
-
-const drawnItems = new L.FeatureGroup();
-map.addLayer(drawnItems);
 let polygonCoordinates = [];
-let map_elements = [];
 
+let map_elements = [];
 
 var markerConsumer = new L.Icon({
     iconUrl: "fastapi_app/files/public/media_files/assets/icons/i_consumer.svg",
@@ -105,6 +73,110 @@ var markerShs = new L.Icon({
 });
 
 
+var icons = {
+    'consumer': markerConsumer,
+    'power-house': markerPowerHouse,
+    'pole': markerPole,
+    'shs': markerShs,
+};
+var image = [
+    "fastapi_app/files/public/media_files/icons/i_power_house.svg",
+    "fastapi_app/files/public/media_files/icons/i_consumer.svg",
+    "fastapi_app/files/public/media_files/icons/i_enterprise.svg",
+    "fastapi_app/files/public/media_files/icons/i_public_service.svg",
+    "fastapi_app/files/public/media_files/icons/i_pole.svg",
+    "fastapi_app/files/public/media_files/assets/icons/i_shs.svg",
+    "fastapi_app/files/public/media_files/assets/icons/i_distribution.svg",
+    "fastapi_app/files/public/media_files/assets/icons/i_connection.svg",
+];
+
+function initializeMap(center = null, zoom = null, bounds = null) {
+    if (!map) {
+        // Only initialize the map if it hasn't been initialized yet
+        map = L.map('map', {
+            maxBounds: nigeriaBounds,
+            maxBoundsViscosity: 1.0,
+        });
+
+        // Adjust map view based on the arguments provided
+        if (center && zoom) {
+            // Set the view using center and zoom if provided
+            map.setView(center, zoom);
+        } else if (bounds) {
+            // Fit map to the given bounds if bounds are provided
+            map.fitBounds(bounds);
+        } else {
+            // Fallback to a default view if no specific bounds or center/zoom are provided
+            map.setView([9.8838, 5.9231], 6); // Default center and zoom
+        }
+        let is_active = false;
+
+    // Define the OSM layer
+    let osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    });
+
+    // Define the Esri satellite layer
+    let satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri'
+    });
+
+    // Add the OSM layer to the map as the default
+    osmLayer.addTo(map);
+
+    // Define the base layers for the control
+    let baseMaps = {
+        "OpenStreetMap": osmLayer,
+        "Satellite": satelliteLayer
+    };
+
+    // Add the layer control to the map
+    L.control.layers(baseMaps).addTo(map);
+
+
+    const drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+
+    var zoomAllControl = L.Control.extend({
+        options: {
+            position: 'topleft'
+        },
+
+        onAdd: function (map) {
+            var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+            let baseUrl = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port : '');
+            let address = "url(" + baseUrl + "/fastapi_app/files/public/media_files/images/imgZoomToAll.png)"
+            container.style.backgroundColor = 'white';
+            container.style.backgroundImage = address;
+            container.style.backgroundSize = "28px 28px";
+            container.style.width = '32px';
+            container.style.height = '32px';
+
+            container.onclick = function () {
+                zoomAll(map);
+            };
+
+            return container;
+        },
+    });
+
+    map.addControl(new zoomAllControl());
+    load_legend();
+    if (map) {
+            loadDrawingToolsJS();
+        }
+        }
+}
+
+
+function zoomAll(map) {
+    let latLonList = map_elements.map(obj => L.latLng(obj.latitude, obj.longitude));
+    let bounds = L.latLngBounds(latLonList);
+    if (latLonList.length != 0) {
+        map.fitBounds(bounds);
+    }
+}
+
 function drawMarker(latitude, longitude, type) {
     if (type === "consumer") {
         icon_type = markerConsumer;
@@ -118,24 +190,6 @@ function drawMarker(latitude, longitude, type) {
     L.marker([latitude, longitude], {icon: icon_type}).on('click', markerOnClick).addTo(map)
 }
 
-
-var icons = {
-    'consumer': markerConsumer,
-    'power-house': markerPowerHouse,
-    'pole': markerPole,
-    'shs': markerShs,
-};
-
-
-function zoomAll(map) {
-    let latLonList = map_elements.map(obj => L.latLng(obj.latitude, obj.longitude));
-    let bounds = L.latLngBounds(latLonList);
-    if (latLonList.length != 0) {
-        map.fitBounds(bounds);
-    }
-}
-
-
 function put_markers_on_map(array, markers_only) {
     const n = array.length;
     let counter;
@@ -143,6 +197,10 @@ function put_markers_on_map(array, markers_only) {
 
     // Initialize the consumer counter
     let num_consumers = 0;
+    let latLonList = array.map(obj => L.latLng(obj.latitude, obj.longitude));
+    let bounds = L.latLngBounds(latLonList);
+
+    initializeMap(null, null, bounds);
 
     for (counter = 0; counter < n; counter++) {
         if (array[counter]["node_type"] === "consumer") {
@@ -254,44 +312,6 @@ function drawLinkOnMap(
         ).addTo(map));
 }
 
-var zoomAllControl = L.Control.extend({
-    options: {
-        position: 'topleft'
-    },
-
-    onAdd: function (map) {
-        var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
-        let baseUrl = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port : '');
-        let address = "url(" + baseUrl + "/fastapi_app/files/public/media_files/images/imgZoomToAll.png)"
-        container.style.backgroundColor = 'white';
-        container.style.backgroundImage = address;
-        container.style.backgroundSize = "28px 28px";
-        container.style.width = '32px';
-        container.style.height = '32px';
-
-        container.onclick = function () {
-            zoomAll(map);
-        };
-
-        return container;
-    },
-});
-
-map.addControl(new zoomAllControl());
-
-
-var image = [
-    "fastapi_app/files/public/media_files/icons/i_power_house.svg",
-    "fastapi_app/files/public/media_files/icons/i_consumer.svg",
-    "fastapi_app/files/public/media_files/icons/i_enterprise.svg",
-    "fastapi_app/files/public/media_files/icons/i_public_service.svg",
-    "fastapi_app/files/public/media_files/icons/i_pole.svg",
-    "fastapi_app/files/public/media_files/assets/icons/i_shs.svg",
-    "fastapi_app/files/public/media_files/assets/icons/i_distribution.svg",
-    "fastapi_app/files/public/media_files/assets/icons/i_connection.svg",
-];
-
-var legend = L.control({position: "bottomright"});
 
 function load_legend() {
     // Obtain the page name, for example using window.location.pathname
@@ -327,4 +347,5 @@ function load_legend() {
     legend.addTo(map);
 }
 
-load_legend();
+// Function to load external script dynamically
+

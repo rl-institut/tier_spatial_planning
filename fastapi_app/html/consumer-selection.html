@@ -248,10 +248,16 @@
 {% include '_footer.html' %}
 </body>
 {% include '_scripts.html' %}
-<script>let project_id = "{{ project_id }}";
-let steps = {{ steps | tojson | default('null') }};</script>
+<script>
+    let project_id = "{{ project_id }}";
+    let steps = {{ steps | tojson | default('null') }};
+    function loadDrawingToolsJS() {
+        var script = document.createElement('script');
+        script.src = "{{ url_for('js', path='add_drawing_tools_to_map.js') }}";
+        document.body.appendChild(script);
+    }
+</script>
 <script src="{{ url_for('js', path='integrate_map.js') }}"></script>
-<script src="{{ url_for('js', path='add_drawing_tools_to_map.js') }}"></script>
 <script src="{{ url_for('js', path='pages/consumer_selection.js') }}"></script>
 <script src="{{ url_for('js', path='backend_communication.js') }}"></script>
 </html>

@@ -18,3 +18,12 @@
 .btn-custom input[type='radio'] {
     margin-right: 5px;
 }
+
+.chart__plot {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%; /* Take full height of the parent container */
+    width: 100%;  /* Take full width of the parent container */
+    min-height: 500px; /* Set a minimum height to reserve space and prevent layout shifts */
+}
