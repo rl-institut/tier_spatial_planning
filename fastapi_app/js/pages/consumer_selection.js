@@ -15,6 +15,7 @@
  *   a geographical mapping context.
  */
 
+
 let consumer_list = {
     'H': 'Household',
     'E': 'Enterprise',

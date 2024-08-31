@@ -684,6 +684,7 @@
 {% include '_footer.html' %}
 </body>
 {% include '_scripts.html' %}
+<script>let project_id = "{{ project_id }}";</script>
 <script src="{{ url_for('js', path='integrate_map.js') }}"></script>
 <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <script src="{{ url_for('js', path='third_party/plotly.js') }}"></script>
