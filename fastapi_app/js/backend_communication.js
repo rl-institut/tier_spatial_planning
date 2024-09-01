@@ -31,7 +31,7 @@
  */
 
 
-async function plot_results(sequential = true) {
+async function plot_results(sequential = false) {
     const urlParams = new URLSearchParams(window.location.search);
     const project_id = urlParams.get('project_id');
 

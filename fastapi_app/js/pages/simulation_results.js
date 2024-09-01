@@ -246,20 +246,10 @@ function plot_sankey(data) {
 // ENERGY FLOWS PLOT
 function plot_energy_flows(energy_flows) {
 
-    const time = [], diesel_genset_production = [], pv_production = [], battery = [],
-        battery_content = [], demand = [], surplus = [];
 
-    const length = Object.keys(energy_flows['diesel_genset_production']).length;
 
-    for (let i = 0; i < length; i++) {
-        time.push(i);
-        diesel_genset_production.push(energy_flows['diesel_genset_production'][i]);
-        pv_production.push(energy_flows['pv_production'][i]);
-        battery.push(energy_flows['battery'][i]);
-        battery_content.push(energy_flows['battery_content'][i]);
-        demand.push(energy_flows['demand'][i]);
-        surplus.push(energy_flows['surplus'][i]);
-    }
+    const { diesel_genset_production, pv_production, battery, battery_content, demand, surplus } = energy_flows;
+    const time = Array.from({ length: pv_production.length }, (_, i) => i);
 
     const energyFlows = document.getElementById("energyFlows");
     const trace1 = {
@@ -362,17 +352,9 @@ function plot_energy_flows(energy_flows) {
 // DEMAND COVERAGE PLOT
 function plot_demand_coverage(demand_coverage) {
 
-    const time = [], renewable = [], non_renewable = [], demand = [], surplus = [];
+    const { renewable, non_renewable, demand, surplus } = demand_coverage;
+    const time = Array.from({ length: renewable.length }, (_, i) => i);
 
-    const length = Object.keys(demand_coverage['demand']).length;
-
-    for (let i = 0; i < length; i++) {
-        time.push(i);
-        demand.push(demand_coverage['demand'][i]);
-        renewable.push(demand_coverage['renewable'][i]);
-        non_renewable.push(demand_coverage['non_renewable'][i]);
-        surplus.push(demand_coverage['surplus'][i]);
-    }
 
     const demandCoverage = document.getElementById("demandCoverage");
     const trace1 = {
@@ -443,67 +425,48 @@ function plot_demand_coverage(demand_coverage) {
 // DURATION CURVES
 function plot_duration_curves(duration_curves) {
 
-    // Precompute the length of the diesel_genset_percentage array
-    const length = Object.keys(duration_curves['pv_percentage']).length;
+    const { diesel_genset_duration, pv_percentage, pv_duration, rectifier_duration, inverter_duration, battery_charge_duration,
+        battery_discharge_duration } = duration_curves;
 
-    // Initialize arrays
-    const diesel_genset_duration = [];
-    const percentage = [];
-    const pv_duration = [];
-    const rectifier_duration = [];
-    const inverter_duration = [];
-    const battery_charge_duration = [];
-    const battery_discharge_duration = [];
-
-    // Use a single loop to push values into arrays
-    for (let i = 0; i < length; i++) {
-        diesel_genset_duration.push(duration_curves['diesel_genset_duration'][i]);
-        percentage.push(duration_curves['pv_percentage'][i]);
-        pv_duration.push(duration_curves['pv_duration'][i]);
-        rectifier_duration.push(duration_curves['rectifier_duration'][i]);
-        inverter_duration.push(duration_curves['inverter_duration'][i]);
-        battery_charge_duration.push(duration_curves['battery_charge_duration'][i]);
-        battery_discharge_duration.push(duration_curves['battery_discharge_duration'][i]);
-    }
 
     const durationCurves = document.getElementById("durationCurves");
     const trace1 = {
-        x: percentage,
+        x: pv_percentage,
         y: diesel_genset_duration,
         mode: 'lines',
         name: 'Diesel Genset'
 
     };
     const trace2 = {
-        x: percentage,
+        x: pv_percentage,
         y: pv_duration,
         mode: 'lines',
         name: 'PV'
 
     };
     const trace3 = {
-        x: percentage,
+        x: pv_percentage,
         y: rectifier_duration,
         mode: 'lines',
         name: 'Rectifier'
 
     };
     const trace4 = {
-        x: percentage,
+        x: pv_percentage,
         y: inverter_duration,
         mode: 'lines',
         name: 'Inverter'
 
     };
     const trace5 = {
-        x: percentage,
+        x: pv_percentage,
         y: battery_charge_duration,
         mode: 'lines',
         name: 'Battery - Charging'
 
     };
     const trace6 = {
-        x: percentage,
+        x: pv_percentage,
         y: battery_discharge_duration,
         mode: 'lines',
         name: 'Battery - Discharging'
@@ -539,15 +502,14 @@ function plot_duration_curves(duration_curves) {
 
 // DEMAND COVERAGE PLOT
 function plot_co2_emissions(co2_emissions) {
-    const time = [], non_renewable = [], hybrid = [];
 
-    const length = Object.keys(co2_emissions['non_renewable_electricity_production']).length;
 
-    for (let i = 0; i < length; i++) {
-        time.push(i);
-        non_renewable.push(co2_emissions['non_renewable_electricity_production'][i]);
-        hybrid.push(co2_emissions['hybrid_electricity_production'][i]);
-    }
+    const { non_renewable_electricity_production, hybrid_electricity_production} = co2_emissions;
+    const time = Array.from({ length: non_renewable_electricity_production.length }, (_, i) => i);
+    const non_renewable = non_renewable_electricity_production;
+    const hybrid = hybrid_electricity_production;
+
+
     const xAxisTitle = time.length > 366 ? 'Time in hours' : 'Time in days';
     const co2Emissions = document.getElementById("co2Emissions");
     const trace1 = {

@@ -1042,20 +1042,22 @@ async def get_plot_data(project_id, plot_type, request: Request):
         energy_flow['battery'] = energy_flow['battery_discharge'] - energy_flow['battery_charge']
         energy_flow.drop(columns=['battery_charge', 'battery_discharge'], inplace=True)
         energy_flow.reset_index(drop=True, inplace=True)
-        energy_flow = json.loads(energy_flow.to_json())
+        energy_flow = energy_flow.dropna(how='all', axis=0).fillna(0).to_dict('list')
         return JSONResponse(status_code=200, content={"energy_flow": energy_flow})
     elif plot_type == 'duration_curve':
-        duration_curve = json.loads(
-            (await async_queries.get_model_instance(sa_tables.DurationCurve, user.id, project_id)).data)
-        for dic in duration_curve.values():
-            dic['0'] = 100 if dic['0'] is None else dic['0']
+        duration_curve = await async_queries.get_model_instance(sa_tables.DurationCurve, user.id, project_id)
+        duration_curve = pd.read_json(duration_curve.data)
+        duration_curve = duration_curve.dropna(how='all', axis=0).fillna(0).to_dict('list')
         return JSONResponse(status_code=200, content={"duration_curve": duration_curve})
     elif plot_type == 'emissions':
-        emissions = json.loads((await async_queries.get_model_instance(sa_tables.Emissions, user.id, project_id)).data)
+        emissions = await async_queries.get_model_instance(sa_tables.Emissions, user.id, project_id)
+        emissions = pd.read_json(emissions.data)
+        emissions = emissions.dropna(how='all', axis=0).fillna(0).to_dict('list')
         return JSONResponse(status_code=200, content={"emissions": emissions})
     elif plot_type == 'demand_coverage':
-        demand_coverage = json.loads(
-            (await async_queries.get_model_instance(sa_tables.DemandCoverage, user.id, project_id)).data)
+        demand_coverage = await async_queries.get_model_instance(sa_tables.DemandCoverage, user.id, project_id)
+        demand_coverage = pd.read_json(demand_coverage.data)
+        demand_coverage = demand_coverage.dropna(how='all', axis=0).fillna(0).to_dict('list')
         return JSONResponse(status_code=200, content={"demand_coverage": demand_coverage})
     else:
         df = await async_queries.get_df(sa_tables.Results, user.id, project_id)
