@@ -31,32 +31,65 @@
  */
 
 
-async function plot_results() {
+async function plot_results(sequential = true) {
     const urlParams = new URLSearchParams(window.location.search);
     const project_id = urlParams.get('project_id');
 
-    const response1 = await fetch('/get_plot_data/' + project_id + '/demand_coverage');
-    const data1 = await response1.json();
-    plot_demand_coverage(data1.demand_coverage);
+    if (sequential) {
+        // Sequential execution: wait for each fetch and plot to complete before starting the next
+                const response3 = await fetch('/get_plot_data/' + project_id + '/other');
+        const data3 = await response3.json();
+        plot_lcoe_pie(data3.lcoe_breakdown);
+        plot_bar_chart(data3.optimal_capacities);
+        plot_sankey(data3.sankey_data);
 
-    const response2 = await fetch('/get_plot_data/' + project_id + '/energy_flow');
-    const data2 = await response2.json();
-    plot_energy_flows(data2.energy_flow);
+        const response1 = await fetch('/get_plot_data/' + project_id + '/demand_coverage');
+        const data1 = await response1.json();
+        plot_demand_coverage(data1.demand_coverage);
 
-    const response3 = await fetch('/get_plot_data/' + project_id + '/other');
-    const data3 = await response3.json();
-    plot_lcoe_pie(data3.lcoe_breakdown);
-    plot_bar_chart(data3.optimal_capacities);
-    plot_sankey(data3.sankey_data);
+        const response2 = await fetch('/get_plot_data/' + project_id + '/energy_flow');
+        const data2 = await response2.json();
+        plot_energy_flows(data2.energy_flow);
 
-    const response4 = await fetch('/get_plot_data/' + project_id + '/duration_curve');
-    const data4 = await response4.json();
-    plot_duration_curves(data4.duration_curve);
+        const response4 = await fetch('/get_plot_data/' + project_id + '/duration_curve');
+        const data4 = await response4.json();
+        plot_duration_curves(data4.duration_curve);
 
-    const response5 = await fetch('/get_plot_data/' + project_id + '/emissions');
-    const data5 = await response5.json();
-    plot_co2_emissions(data5.emissions);
+        const response5 = await fetch('/get_plot_data/' + project_id + '/emissions');
+        const data5 = await response5.json();
+        plot_co2_emissions(data5.emissions);
+
+    } else {
+        // Parallel execution: fetch data in parallel and plot as soon as each dataset is available
+        const fetchAndPlot1 = fetch('/get_plot_data/' + project_id + '/demand_coverage')
+            .then(response => response.json())
+            .then(data => plot_demand_coverage(data.demand_coverage));
+
+        const fetchAndPlot2 = fetch('/get_plot_data/' + project_id + '/energy_flow')
+            .then(response => response.json())
+            .then(data => plot_energy_flows(data.energy_flow));
+
+        const fetchAndPlot3 = fetch('/get_plot_data/' + project_id + '/other')
+            .then(response => response.json())
+            .then(data => {
+                plot_lcoe_pie(data.lcoe_breakdown);
+                plot_bar_chart(data.optimal_capacities);
+                plot_sankey(data.sankey_data);
+            });
+
+        const fetchAndPlot4 = fetch('/get_plot_data/' + project_id + '/duration_curve')
+            .then(response => response.json())
+            .then(data => plot_duration_curves(data.duration_curve));
+
+        const fetchAndPlot5 = fetch('/get_plot_data/' + project_id + '/emissions')
+            .then(response => response.json())
+            .then(data => plot_co2_emissions(data.emissions));
+
+        // Wait for all fetch and plot operations to complete (parallel execution)
+        await Promise.all([fetchAndPlot1, fetchAndPlot2, fetchAndPlot3, fetchAndPlot4, fetchAndPlot5]);
+    }
 }
+
 
 async function db_links_to_js(project_id) {
     const url = "db_links_to_js/" + project_id;
@@ -82,12 +115,14 @@ async function db_nodes_to_js(project_id, markers_only) {
             if (data !== null) {
                 map_elements = data.map_elements;
                 is_load_center = data.is_load_center;
-                load_legend();
+
                 if (map_elements !== null) {
                     put_markers_on_map(map_elements, markers_only);
                 }
+
             } else {
                 map_elements = [];
+                put_markers_on_map(map_elements, markers_only);
             }
         });
 }
@@ -142,7 +177,7 @@ async function file_demand_to_db(formData) {
     }
 }
 
-async function consumer_to_db(project_id, href, file_type = "db") {
+async function consumer_to_db(href, file_type = "db") {
     update_map_elements();
     const url = "/consumer_to_db/" + project_id;
     const response = await fetch(url, {
@@ -156,7 +191,16 @@ async function consumer_to_db(project_id, href, file_type = "db") {
             if (!href) {
                 forward_if_consumer_selection_exists(project_id);
             } else if (href) {
-                window.location.href = href;
+                let updatedHref;
+                // Check if 'steps' and 'href' are defined
+                if (typeof steps !== 'undefined' && typeof href !== 'undefined') {
+                    const stepsJson = encodeURIComponent(JSON.stringify(steps));
+                    const separator = href.includes('?') ? '&' : '?';
+                    updatedHref = `${href}${separator}steps=${stepsJson}`;
+                } else {
+                    updatedHref = href;
+                }
+                window.location.href = updatedHref;
             }
         } else {
             // Handle the file download for "csv" or "xlsx"
@@ -243,7 +287,7 @@ async function remove_buildings_inside_boundary({boundariesCoordinates} = {}) {
 
 
 async function save_energy_system_design(href) {
-    const url = "save_energy_system_design/";
+    const url = "save_energy_system_design/" + project_id;
     const data = {
         pv: {
             'settings': {
@@ -423,7 +467,6 @@ async function load_results(project_id) {
             document.getElementById('epc_total').innerText = results['epc_total'];
             document.getElementById('LCOE2').innerHTML = results['lcoe'].toString() + " Cent<sub class='sub'>USD</sub>/kWh";
             await db_nodes_to_js(project_id, false);
-            await db_links_to_js(project_id);
             if (results['do_grid_optimization'] === false) {
                 await hide_grid_results();
             }
@@ -438,10 +481,9 @@ async function load_results(project_id) {
                     document.getElementById('responseMsg').innerHTML = results['responseMsg'];
                 }
             } else {
-                if (results['do_es_design_optimization'] === true){
+                if (results['do_es_design_optimization'] === true) {
                     await plot_results();
-                }
-                else {
+                } else {
                     await replaceSummaryChart()
                     await hide_es_results()
                 }
@@ -769,7 +811,7 @@ async function logout() {
 }
 
 
-async function save_project_setup(project_id, href) {
+async function save_project_setup(href) {
     event.preventDefault(); // prevent the link from navigating immediately
 
     const toggleSwitch0 = document.getElementById('toggleswitch0');
@@ -814,7 +856,17 @@ async function save_project_setup(project_id, href) {
         if (!response.ok) {
             throw new Error("HTTP error " + response.status);
         }
-        window.location.href = href; // navigate after fetch request is complete
+        steps = [toggleSwitch0.checked, toggleSwitch1.checked, toggleSwitch2.checked];
+
+        // Check if 'href' is defined and is a string
+        if (typeof href === 'string') {
+            const stepsJson = encodeURIComponent(JSON.stringify(steps));
+            const separator = href.includes('?') ? '&' : '?';
+            const updatedHref = `${href}${separator}steps=${stepsJson}`;
+            window.location.href = updatedHref;
+        } else {
+            window.location.href = href;
+        }
     } catch (err) {
         console.log("An error occurred while saving the project setup:", err);
     }
@@ -830,7 +882,7 @@ async function save_grid_design(href) {
             shs_max_grid_cost_value = document.getElementById('shs_max_grid_cost').value;
         }
 
-        await fetch("save_grid_design/", {
+        await fetch("save_grid_design/" + project_id, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -851,12 +903,21 @@ async function save_grid_design(href) {
                 }
             })
         });
-
-        window.location.href = href; // navigate after fetch request is complete
+        let updatedHref;
+        // Check if 'steps' and 'href' are defined
+        if (typeof steps !== 'undefined' && typeof href !== 'undefined') {
+            const stepsJson = encodeURIComponent(JSON.stringify(steps));
+            const separator = href.includes('?') ? '&' : '?';
+            updatedHref = `${href}${separator}steps=${stepsJson}`;
+        } else {
+            updatedHref = href;
+        }
+        window.location.href = updatedHref; // navigate after fetch request is complete
     } catch (err) {
         console.log('Fetch API error -', err);
     }
 }
+
 
 function save_demand_estimation(href) {
     let custom_calibration = document.getElementById("toggleswitch").checked;
@@ -864,10 +925,11 @@ function save_demand_estimation(href) {
     const toggleSwitch = document.getElementById('toggleswitch2');
     const uploadStatus = document.getElementById('uploadStatus').textContent.trim();
     const useCustomDemand = toggleSwitch.checked && uploadStatus === "Uploaded";
+    let updatedHref;
 
     // Conditional check for forwarding or displaying a modal
     if (!toggleSwitch.checked || useCustomDemand) {
-        fetch("save_demand_estimation/", {
+        fetch("save_demand_estimation/" + project_id, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -887,7 +949,19 @@ function save_demand_estimation(href) {
                     'use_custom_demand': useCustomDemand,
                 }
             })
-        }).then(r => window.location.href = href);
+        }).then(response => {
+            // Check if 'steps' and 'href' are defined
+            if (typeof steps !== 'undefined' && typeof href !== 'undefined') {
+                const stepsJson = encodeURIComponent(JSON.stringify(steps));
+                const separator = href.includes('?') ? '&' : '?';
+                updatedHref = `${href}${separator}steps=${stepsJson}`;
+            } else {
+                updatedHref = href;
+            }
+            window.location.href = updatedHref;
+        }).catch(error => {
+            console.error('Error:', error);
+        });
     } else {
         // Show modal with the translated and improved message
         const message = "Custom demand time series was selected, but no time series was successfully uploaded. Please upload a time series or disable this option to automatically calculate the demand time series.";
@@ -974,8 +1048,7 @@ function load_previous_data(page_name) {
                         // Trigger the 'change' event to execute the associated event listener
                         document.getElementById("toggleswitch2").dispatchEvent(new Event('change'));
                         document.getElementById('uploadStatus').textContent = 'Uploaded';
-                    }
-                    else {
+                    } else {
                         document.getElementById("maximum_peak_load").value = results['maximum_peak_load'];
                         document.getElementById("average_daily_energy").value = results['average_daily_energy'];
                         document.getElementById("toggleswitch").checked = results['custom_calibration'];
@@ -1099,7 +1172,6 @@ async function show_email_and_project_in_navbar(project_id = null) {
         console.error("Error fetching account data:", error);
     }
 }
-
 
 
 async function redirect_if_cookie_is_missing(access_token, consent_cookie) {
@@ -1247,42 +1319,43 @@ function start_calculation(project_id) {
             "Content-Type": "application/json",
         }
     })
-    .then(response => response.json())
-    .then(res => {
-        if (res.redirect && res.redirect.length > 0) {
-            const msg = 'Input data is missing for the opt_models. It appears that you have not gone' +
-                ' through all the pages to enter the input data. You will be redirected to the ' +
-                ' corresponding page.';
-            console.log(msg);
-            document.getElementById('responseMsg').innerHTML = msg;
-            const baseURL = window.location.origin;
-            const redirectLink = baseURL + res.redirect;
-            console.log(redirectLink);
-            document.getElementById('redirectLink').href = redirectLink;
-            document.getElementById('msgBox').style.display = 'block';
-        } else {
-            if (typeof res.task_id === 'undefined') {
-                console.log('The task_id is not defined.');
-            } else if (res.task_id === '') {
-                console.log('The task_id is an empty string.');
+        .then(response => response.json())
+        .then(res => {
+            if (res.redirect && res.redirect.length > 0) {
+                const msg = 'Input data is missing for the opt_models. It appears that you have not gone' +
+                    ' through all the pages to enter the input data. You will be redirected to the ' +
+                    ' corresponding page.';
+                console.log(msg);
+                document.getElementById('responseMsg').innerHTML = msg;
+                const baseURL = window.location.origin;
+                const redirectLink = baseURL + res.redirect;
+                console.log(redirectLink);
+                document.getElementById('redirectLink').href = redirectLink;
+                document.getElementById('msgBox').style.display = 'block';
             } else {
-                console.log('The task_id is:', res.task_id);
+                if (typeof res.task_id === 'undefined') {
+                    console.log('The task_id is not defined.');
+                } else if (res.task_id === '') {
+                    console.log('The task_id is an empty string.');
+                } else {
+                    console.log('The task_id is:', res.task_id);
+                }
+                wait_for_results(project_id, res.task_id, 0, 'grid');
             }
-            wait_for_results(project_id, res.task_id, 0, 'grid');
-        }
-    })
-    .catch(error => {
-        console.error('There was an error!', error);
-        if (typeof res !== 'undefined' && typeof res.task_id !== 'undefined') {
-            console.log('The task_id at the time of error is:', res.task_id);
-        } else {
-            console.log('The task_id is not available or not defined at the time of error.');
-        }
-    });
+        })
+        .catch(error => {
+            console.error('There was an error!', error);
+            if (typeof res !== 'undefined' && typeof res.task_id !== 'undefined') {
+                console.log('The task_id at the time of error is:', res.task_id);
+            } else {
+                console.log('The task_id is not available or not defined at the time of error.');
+            }
+        });
 }
 
 
 async function forward_if_consumer_selection_exists(project_id) {
+    let href
     try {
         const response = await fetch("forward_if_consumer_selection_exists/" + project_id, {
             method: "POST",
@@ -1294,7 +1367,17 @@ async function forward_if_consumer_selection_exists(project_id) {
         if (response.ok) {
             const res = await response.json();
             if (res.forward === true) {
-                window.location.href = window.location.origin + '/demand_estimation?project_id=' + project_id;
+                href = window.location.origin + '/demand_estimation?project_id=' + project_id;
+                let updatedHref;
+                // Check if 'steps' and 'href' are defined
+                if (typeof steps !== 'undefined' && typeof href !== 'undefined') {
+                    const stepsJson = encodeURIComponent(JSON.stringify(steps));
+                    const separator = href.includes('?') ? '&' : '?';
+                    updatedHref = `${href}${separator}steps=${stepsJson}`;
+                } else {
+                    updatedHref = href;
+                }
+                window.location.href = updatedHref
             } else {
                 document.getElementById('responseMsg').innerHTML = 'No consumers are selected. You must select the geolocation of the consumers before you go to the next page.';
             }
@@ -1552,75 +1635,93 @@ async function sendMail() {
 async function update_wizards_and_buttons_based_on_planning_step_selection(project_id, page_name) {
     const nextButton = document.getElementById("nextButton");
     const prevButton = document.getElementById("prevButton");
-    const url = `load_previous_data/project_setup?project_id=${project_id}`;
+    const wizardSection = document.getElementById('wizard');
+    let results
 
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const results = await response.json();
+    // Check if planning_steps is defined and is a dictionary
+    if (typeof steps === 'object' && steps !== null) {
+        results = {
+            do_demand_estimation: steps[0],
+            do_grid_optimization: steps[1],
+            do_es_design_optimization: steps[2]
+        };
+    } else {
+        const url = `load_previous_data/project_setup?project_id=${project_id}`;
 
-        if (results !== null && Object.keys(results).length > 1) {
-            if (page_name.includes("demand_estimation")) {
-                if (results['do_grid_optimization'] === true && results['do_es_design_optimization'] === true) {
-                    return;
-                } else if (results['do_grid_optimization'] === false && results['do_es_design_optimization'] === true) {
-                    nextButton.setAttribute('onclick', `save_demand_estimation(\`energy_system_design?project_id=${project_id}\`);`);
-                    if (results['do_demand_estimation'] === false) {
-                        prevButton.setAttribute('onclick', `save_demand_estimation(\`project_setup?project_id=${project_id}\`);`);
-                    }
-                } else if (results['do_grid_optimization'] === false && results['do_es_design_optimization'] === false) {
-                    nextButton.setAttribute('onclick', `save_demand_estimation('/export_demand/` + project_id + '/' + document.getElementById('fileTypeDropdown').value + `/')`);
-                    nextButton.textContent = 'Export Demand';
-                }
-            } else if (page_name.includes("grid_design")) {
-                if (results['do_es_design_optimization'] === false) {
-                    nextButton.setAttribute('onclick', `save_grid_design(); forward_if_no_task_is_pending(${project_id});`);
-                    nextButton.textContent = 'Optimize';
-                }
-            } else if (page_name.includes("energy_system_design")) {
-                if (results['do_grid_optimization'] === false) {
-                    prevButton.setAttribute('onclick', `save_energy_system_design(\`demand_estimation?project_id=${project_id}\`);`);
-                }
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-            updateWizardStepVisibility(
-                results['do_demand_estimation'],
-                results['do_grid_optimization'],
-                results['do_es_design_optimization']
-            );
+            results = await response.json();
+            steps = [results['do_demand_estimation'], results['do_grid_optimization'], results['do_es_design_optimization']]
+        } catch (error) {
+            console.error("Error fetching data:", error);
+            return; // Exit the function if fetching data fails
         }
-    } catch (error) {
-        console.error("Error fetching data:", error);
     }
+    if (results !== null && Object.keys(results).length > 1) {
+        if (page_name.includes("demand_estimation")) {
+            if (results['do_grid_optimization'] === true && results['do_es_design_optimization'] === true) {
+                // No changes needed if both optimizations are true
+            } else if (results['do_grid_optimization'] === false && results['do_es_design_optimization'] === true) {
+                nextButton.setAttribute('onclick', `save_demand_estimation(\`energy_system_design?project_id=${project_id}\`);`);
+                if (results['do_demand_estimation'] === false) {
+                    prevButton.setAttribute('onclick', `save_demand_estimation(\`project_setup?project_id=${project_id}\`);`);
+                }
+            } else if (results['do_grid_optimization'] === false && results['do_es_design_optimization'] === false) {
+                nextButton.setAttribute('onclick', `save_demand_estimation('/export_demand/` + project_id + '/' + document.getElementById('fileTypeDropdown').value + `/')`);
+                nextButton.textContent = 'Export Demand';
+            }
+        } else if (page_name.includes("grid_design")) {
+            if (results['do_es_design_optimization'] === false) {
+                nextButton.setAttribute('onclick', `save_grid_design(); forward_if_no_task_is_pending(${project_id});`);
+                nextButton.textContent = 'Optimize';
+            }
+        } else if (page_name.includes("energy_system_design")) {
+            if (results['do_grid_optimization'] === false) {
+                prevButton.setAttribute('onclick', `save_energy_system_design(\`demand_estimation?project_id=${project_id}\`);`);
+            }
+        }
+    }
+    updateWizardStepVisibility(results['do_demand_estimation'], results['do_grid_optimization'], results['do_es_design_optimization']);
+    wizardSection.classList.add('show');
 }
 
 
-
-// General function to update the visibility of wizard steps
+// Function to update the visibility and numbering of wizard steps
 function updateWizardStepVisibility(do_demand_estimation, do_grid_optimization, do_energy_system_design) {
-    const gridDesignStep = document.querySelector('li[onclick*="grid_design"]');
-    const energySystemDesignStep = document.querySelector('li[onclick*="energy_system_design"]');
-    const consumerSelectionStep = document.querySelector('li[onclick*="consumer_selection"]');
-    const simulationResultsStep = document.querySelector('li[onclick*="simulation_results"]');
-    const demandEstimationStep = document.querySelector('li[onclick*="demand_estimation"]');
-    // If all are deselected, hide everything
-    if (!do_grid_optimization && !do_energy_system_design && !do_demand_estimation) {
-        gridDesignStep.style.display = 'none';
-        energySystemDesignStep.style.display = 'none';
-        consumerSelectionStep.style.display = 'none';
-        simulationResultsStep.style.display = 'none';
-        demandEstimationStep.style.display = 'none';
-        return; // Exit the function early since no steps should be shown
-    }
-    // Update Grid Design step visibility
-    gridDesignStep.style.display = do_grid_optimization ? '' : 'none';
-    // Update Energy System Design step visibility
-    energySystemDesignStep.style.display = do_energy_system_design ? '' : 'none';
-    // Update Consumer Selection step visibility
-    consumerSelectionStep.style.display = (do_demand_estimation || do_grid_optimization) ? '' : 'none';
-    // Update Simulation Results step visibility
-    simulationResultsStep.style.display = (do_demand_estimation && !do_grid_optimization && !do_energy_system_design) ? 'none' : '';
-    // Update Demand Estimation step visibility
-    demandEstimationStep.style.display = (do_demand_estimation || do_grid_optimization || do_energy_system_design) ? '' : 'none';
+    const steps = [
+        {element: document.getElementById('wizElement1'), condition: true}, // Always visible
+        {element: document.getElementById('wizElement2'), condition: do_demand_estimation || do_grid_optimization},
+        {
+            element: document.getElementById('wizElement3'),
+            condition: do_demand_estimation || do_grid_optimization || do_energy_system_design
+        },
+        {element: document.getElementById('wizElement4'), condition: do_grid_optimization},
+        {element: document.getElementById('wizElement5'), condition: do_energy_system_design},
+        {element: document.getElementById('wizElement6'), condition: do_grid_optimization || do_energy_system_design}
+    ];
+
+    let visibleStepCount = 1;
+
+    steps.forEach((step, index) => {
+        if (step.condition) {
+            step.element.style.display = '';
+            step.element.setAttribute('data-step-number', visibleStepCount);
+            visibleStepCount++;
+        } else {
+            step.element.style.display = 'none';
+            step.element.removeAttribute('data-step-number');
+        }
+    });
+
+    // Update CSS to use data-step-number for numbering
+    const style = document.createElement('style');
+    style.textContent = `
+        .wizard__steps li[data-step-number]::before {
+            content: attr(data-step-number) !important;
+        }
+    `;
+    document.head.appendChild(style);
 }

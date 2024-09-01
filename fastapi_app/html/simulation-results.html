@@ -377,6 +377,118 @@
                     </div>
                 </div>
             </div>
+            <div class="row" id="capacityChart">
+                <div class="col col-md-6">
+                    <div class="chart">
+                        <div class="chart__header">
+                            <div>
+                                <span class="title">Optimal Capacity of Components</span>
+                            </div>
+                            <div class="dropdown">
+                                <button
+                                        class="btn dropdown-toggle btn--transparent"
+                                        type="button"
+                                        id="dropdownMenuButton3"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                >
+                                    <span class="icon icon-more"></span>
+                                </button>
+                                <ul
+                                        class="dropdown-menu"
+                                        aria-labelledby="dropdownMenuButton3"
+                                >
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as .xls</a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as PDF</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="chart__plot">
+                            <div id="optimalSizes"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col col-md-6">
+                    <div class="chart">
+                        <div class="chart__header">
+                            <div>
+                                <span class="title">Breakdown of the LCOE</span>
+                            </div>
+                            <div class="dropdown">
+                                <button
+                                        class="btn dropdown-toggle btn--transparent"
+                                        type="button"
+                                        id="dropdownMenuButton4"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                >
+                                    <span class="icon icon-more"></span>
+                                </button>
+                                <ul
+                                        class="dropdown-menu"
+                                        aria-labelledby="dropdownMenuButton4"
+                                >
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as .xls</a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as PDF</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="chart__plot">
+                            <div id="lcoeBreakdown"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row" id="sankeyChart">
+                <div class="col">
+                    <div class="chart">
+                        <div class="chart__header">
+                            <div>
+                    <span class="title"
+                    >Sankey Diagram Representing the Energy Flow in the
+                      System</span
+                    >
+                            </div>
+                            <div class="dropdown">
+                                <button
+                                        class="btn dropdown-toggle btn--transparent"
+                                        type="button"
+                                        id="dropdownMenuButton7"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                >
+                                    <span class="icon icon-more"></span>
+                                </button>
+                                <ul
+                                        class="dropdown-menu"
+                                        aria-labelledby="dropdownMenuButton7"
+                                >
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as .xls</a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">Export as PDF</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="chart__plot">
+                            <div id="sankeyDiagram"></div>
+                        </div>
+                        <p style="font-size: 12px">
+                            *electricity surplus is not shown
+                        </p>
+                    </div>
+                </div>
+            </div>
             <div class="row" id="demandcoverageChart">
                 <div class="col">
                     <div class="chart">
@@ -454,76 +566,6 @@
                     </div>
                 </div>
             </div>
-            <div class="row" id="capacityChart">
-                <div class="col col-md-6">
-                    <div class="chart">
-                        <div class="chart__header">
-                            <div>
-                                <span class="title">Optimal Capacity of Components</span>
-                            </div>
-                            <div class="dropdown">
-                                <button
-                                        class="btn dropdown-toggle btn--transparent"
-                                        type="button"
-                                        id="dropdownMenuButton3"
-                                        data-bs-toggle="dropdown"
-                                        aria-expanded="false"
-                                >
-                                    <span class="icon icon-more"></span>
-                                </button>
-                                <ul
-                                        class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton3"
-                                >
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as .xls</a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as PDF</a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="chart__plot">
-                            <div id="optimalSizes"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col col-md-6">
-                    <div class="chart">
-                        <div class="chart__header">
-                            <div>
-                                <span class="title">Breakdown of the LCOE</span>
-                            </div>
-                            <div class="dropdown">
-                                <button
-                                        class="btn dropdown-toggle btn--transparent"
-                                        type="button"
-                                        id="dropdownMenuButton4"
-                                        data-bs-toggle="dropdown"
-                                        aria-expanded="false"
-                                >
-                                    <span class="icon icon-more"></span>
-                                </button>
-                                <ul
-                                        class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton4"
-                                >
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as .xls</a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as PDF</a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="chart__plot">
-                            <div id="lcoeBreakdown"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
             <div class="row" id="durationcurveChart">
                 <div class="col col-md-6">
                     <div class="chart">
@@ -593,48 +635,6 @@
                         <div class="chart__plot">
                             <div id="co2Emissions"></div>
                         </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row" id="sankeyChart">
-                <div class="col">
-                    <div class="chart">
-                        <div class="chart__header">
-                            <div>
-                    <span class="title"
-                    >Sankey Diagram Representing the Energy Flow in the
-                      System</span
-                    >
-                            </div>
-                            <div class="dropdown">
-                                <button
-                                        class="btn dropdown-toggle btn--transparent"
-                                        type="button"
-                                        id="dropdownMenuButton7"
-                                        data-bs-toggle="dropdown"
-                                        aria-expanded="false"
-                                >
-                                    <span class="icon icon-more"></span>
-                                </button>
-                                <ul
-                                        class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton7"
-                                >
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as .xls</a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as PDF</a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="chart__plot">
-                            <div id="sankeyDiagram"></div>
-                        </div>
-                        <p style="font-size: 12px">
-                            *electricity surplus is not shown
-                        </p>
                     </div>
                 </div>
             </div>

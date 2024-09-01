@@ -1284,6 +1284,12 @@ a.dropdown-item:active {
     padding: 10px;
 }
 
+.step-footer__left a {
+    padding: 10px;
+    display: flex;
+    align-items: center;
+}
+
 .form-control:disabled,
 .form-control:disabled::file-selector-button {
     color: #ccc;
@@ -1742,6 +1748,19 @@ nav.navbar .dropdown-menu li {
 }
 
 .wizard {
+    visibility: hidden; /* Keeps the space in the layout */
+    opacity: 0;         /* Makes it invisible */
+    transition: opacity 0.3s ease-in-out, visibility 0s linear 0.3s;
+    /* This transition ensures visibility changes after opacity, avoiding flickering */
+}
+
+.wizard.show {
+    visibility: visible; /* Makes it visible */
+    opacity: 1;          /* Fully visible */
+    transition-delay: 0s; /* No delay on visibility change */
+}
+
+.wizard {
     position: relative;
     background-color: var(--bcc);
     height: 5.5rem;
@@ -1884,28 +1903,32 @@ nav.navbar .dropdown-menu li {
     border-radius: 100px;
 }
 
-.wizard__steps li:nth-child(1)::before {
+.wizard__steps li.step-1::before {
     content: "1";
 }
 
-.wizard__steps li:nth-child(2)::before {
+.wizard__steps li.step-2::before {
     content: "2";
 }
 
-.wizard__steps li:nth-child(3)::before {
+.wizard__steps li.step-3::before {
     content: "3";
 }
 
-.wizard__steps li:nth-child(4)::before {
+.wizard__steps li.step-4::before {
     content: "4";
 }
 
-.wizard__steps li:nth-child(5)::before {
+.wizard__steps li.step-5::before {
     content: "5";
 }
 
-.wizard__steps li:nth-child(6)::before {
+.wizard__steps li.step-6::before {
     content: "6";
+}
+
+.wizard__steps li::before {
+    content: attr(data-step-number);
 }
 
 .wizard__steps li.active {

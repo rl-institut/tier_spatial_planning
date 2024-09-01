@@ -156,7 +156,7 @@ async def home(request: Request):
 
 
 @app.get("/project_setup", response_class=HTMLResponse)
-async def project_setup(project_id, request: Request):
+async def project_setup(request: Request, project_id=None):
     user = await handle_user_accounts.get_user_from_cookie(request)
     if user is None:
         return RedirectResponse('/')
@@ -1077,7 +1077,7 @@ async def get_plot_data(project_id, plot_type, request: Request):
 
 @app.get("/get_demand_time_series/{project_id}")
 async def get_demand_time_series(project_id):
-    return demand_time_series_df().to_dict('list')  # converts dataframe to dict format with lists as values
+    return demand_time_series_df().to_dict('list')
 
 
 @app.post("/add_buildings_inside_boundary")

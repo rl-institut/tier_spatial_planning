@@ -56,10 +56,10 @@ function updateNextButtonHref(project_id, func, defaultHref, alternativeHref) {
     const nextButton = document.getElementById("nextButton");
     if (consumerSelectionStep.style.display === 'none') {
         // If Consumer Selection is hidden, use the alternative href
-        nextButton.setAttribute('onclick', `${func}(${project_id}, '${alternativeHref}');`);
+        nextButton.setAttribute('onclick', `${func}('${alternativeHref}');`);
     } else {
         // If Consumer Selection is visible, use the default href
-        nextButton.setAttribute('onclick', `${func}(${project_id}, '${defaultHref}');`);
+        nextButton.setAttribute('onclick', `${func}('${defaultHref}');`);
     }
 }
 
@@ -90,3 +90,7 @@ document.getElementById('toggleswitch2').addEventListener('change', function() {
     updateWizardStepVisibility(toggleSwitch0State, toggleSwitch1State, toggleSwitch2State);
     updateNextButtonHref(project_id, func, consumerSelectionHref, demandEstimationHref);
 });
+
+
+const wizardSection = document.getElementById('wizard');
+wizardSection.classList.add('show');

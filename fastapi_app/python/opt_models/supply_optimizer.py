@@ -753,16 +753,13 @@ class EnergySystemOptimizer(BaseOptimizer):
                 np.cumsum(self.demand) * co2_emission_factor / 1000)  # tCO2 per year
         df["hybrid_electricity_production"] = np.cumsum(
             self.sequences_genset) * co2_emission_factor / 1000  # tCO2 per year
-        df["co2_savings"] = \
-            df.loc[:, "non_renewable_electricity_production"] - df.loc[:,
-                                                                "hybrid_electricity_production"]  # tCO2 per year
-        df['h'] = np.arange(1, len(self.demand) + 1)
-        df = df.round(3)
+        df.index = pd.date_range("2022-01-01", periods=df.shape[0], freq="H")
+        df = df.resample("D").max().reset_index(drop=True)
         emissions = sa_tables.Emissions()
         emissions.id = self.user_id
         emissions.project_id = self.project_id
         emissions.data = df.reset_index(drop=True).to_json()
-        self.co2_savings = df["co2_savings"].max()
+        self.co2_savings = (df["non_renewable_electricity_production"] - df["hybrid_electricity_production"]).max()
         self.co2_emission_factor = co2_emission_factor
         sync_inserts.merge_model(emissions)
 
@@ -783,50 +780,42 @@ class EnergySystemOptimizer(BaseOptimizer):
 
     def _demand_curve_to_db(self):
         df = pd.DataFrame()
-        df["diesel_genset_percentage"] = (100 * np.arange(1, len(self.sequences_genset) + 1)
-                                          / len(self.sequences_genset))
         df["diesel_genset_duration"] = (100 * np.sort(self.sequences_genset)[::-1] / self.sequences_genset.max())
-        df["pv_percentage"] = (100 * np.arange(1, len(self.sequences_pv) + 1) / len(self.sequences_pv))
         if self.sequences_pv.max() > 0:
             div = self.sequences_pv.max()
         else:
             div = 1
         df["pv_duration"] = (100 * np.sort(self.sequences_pv)[::-1] / div)
-        df["rectifier_percentage"] = (100 * np.arange(1, len(self.sequences_rectifier) + 1)
-                                      / len(self.sequences_rectifier))
         if not self.sequences_rectifier.abs().sum() == 0:
             df["rectifier_duration"] = 100 * np.nan_to_num(np.sort(self.sequences_rectifier)[::-1]
                                                            / self.sequences_rectifier.max())
         else:
             df["rectifier_duration"] = 0
-        df["inverter_percentage"] = (100 * np.arange(1, len(self.sequences_inverter) + 1)
-                                     / len(self.sequences_inverter))
         if self.sequences_inverter.max() > 0:
             div = self.sequences_inverter.max()
         else:
             div = 1
         df["inverter_duration"] = (100 * np.sort(self.sequences_inverter)[::-1] / div)
-        df["battery_charge_percentage"] = (100 * np.arange(1, len(self.sequences_battery_charge) + 1)
-                                           / len(self.sequences_battery_charge))
         if not self.sequences_battery_charge.max() > 0:
             div = 1
         else:
             div = self.sequences_battery_charge.max()
         df["battery_charge_duration"] = (100 * np.sort(self.sequences_battery_charge)[::-1] / div)
-        df["battery_discharge_percentage"] = (100 * np.arange(1, len(self.sequences_battery_discharge) + 1)
-                                              / len(self.sequences_battery_discharge))
         if self.sequences_battery_discharge.max() > 0:
             div = self.sequences_battery_discharge.max()
         else:
             div = 1
         df["battery_discharge_duration"] = (100 * np.sort(self.sequences_battery_discharge)[::-1] / div)
-        df['h'] = np.arange(1, len(self.sequences_genset) + 1)
+        df = df.copy()
+        df.index = pd.date_range("2022-01-01", periods=df.shape[0], freq="H")
+        df = df.resample("D").min().reset_index(drop=True)
+        df['pv_percentage'] = df.index.copy() / df.shape[0]
         df = df.round(3)
-        demand_curve = sa_tables.DurationCurve()
-        demand_curve.id = self.user_id
-        demand_curve.project_id = self.project_id
-        demand_curve.data = df.reset_index(drop=True).to_json()
-        sync_inserts.merge_model(demand_curve)
+        duration_curve = sa_tables.DurationCurve()
+        duration_curve.id = self.user_id
+        duration_curve.project_id = self.project_id
+        duration_curve.data = df.reset_index(drop=True).to_json()
+        sync_inserts.merge_model(duration_curve)
 
     def _results_to_db(self):
         results = sync_queries.get_model_instance(sa_tables.Results, self.user_id, self.project_id)

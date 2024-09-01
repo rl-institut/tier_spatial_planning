@@ -31,7 +31,8 @@
                     <div class="accordion-item">
                         <h2 class="accordion-header" id="headingTwo">
                             <button aria-controls="collapseTwo" aria-expanded="false" class="accordion-button"
-                                    data-bs-target="#collapseTwo" data-bs-toggle="collapse" style="display: flex; justify-content: space-between; align-items: center;"
+                                    data-bs-target="#collapseTwo" data-bs-toggle="collapse"
+                                    style="display: flex; justify-content: space-between; align-items: center;"
                                     type="button">
                                 <span style="flex-grow: 1;">Set Consumer Properties</span>
                                 <span style="flex-shrink: 0;  margin-right: 20px;">
@@ -119,7 +120,8 @@
                                         <td style="padding: 5px;">
                                             <a class="btn btn--medium" href="javascript:void(0);"
                                                id="submit"
-                                               onclick="delete_consumer();" style="height: 32px; display: flex; align-items: center; justify-content: center;">Delete</a>
+                                               onclick="delete_consumer();"
+                                               style="height: 32px; display: flex; align-items: center; justify-content: center;">Delete</a>
                                         </td>
                                         <td style="padding: 5px;"><span style="float:right;"><a>&nbsp;</a></span></td>
                                         <td style="padding: 5px;"><span style="float:right;"><a>&nbsp;</a></span></td>
@@ -250,7 +252,8 @@
 {% include '_scripts.html' %}
 <script>
     let project_id = "{{ project_id }}";
-    let steps = {{ steps | tojson | default('null') }};
+    let steps = {{steps | tojson | default ('null')}};
+
     function loadDrawingToolsJS() {
         var script = document.createElement('script');
         script.src = "{{ url_for('js', path='add_drawing_tools_to_map.js') }}";
