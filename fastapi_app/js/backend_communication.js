@@ -921,7 +921,6 @@ async function save_grid_design(href) {
 
 function save_demand_estimation(href) {
     let custom_calibration = document.getElementById("toggleswitch").checked;
-    let use_custom_shares = document.getElementById("use_custom_shares").checked;
     const toggleSwitch = document.getElementById('toggleswitch2');
     const uploadStatus = document.getElementById('uploadStatus').textContent.trim();
     const useCustomDemand = toggleSwitch.checked && uploadStatus === "Uploaded";
@@ -940,7 +939,7 @@ function save_demand_estimation(href) {
                     'maximum_peak_load': maximum_peak_load.value,
                     'average_daily_energy': average_daily_energy.value,
                     'custom_calibration': custom_calibration,
-                    'use_custom_shares': use_custom_shares,
+                    'use_custom_shares': true,
                     'custom_share_1': custom_share_1.value,
                     'custom_share_2': custom_share_2.value,
                     'custom_share_3': custom_share_3.value,
@@ -1052,7 +1051,6 @@ function load_previous_data(page_name) {
                         document.getElementById("maximum_peak_load").value = results['maximum_peak_load'];
                         document.getElementById("average_daily_energy").value = results['average_daily_energy'];
                         document.getElementById("toggleswitch").checked = results['custom_calibration'];
-                        document.getElementById("use_custom_shares").checked = results['use_custom_shares'];
                         let accordionItem2 = new bootstrap.Collapse(document.getElementById('collapseTwo'),
                             {toggle: false});
                         if (results['custom_calibration'] == true) {
@@ -1068,14 +1066,12 @@ function load_previous_data(page_name) {
                         } else {
                             accordionItem2.hide();
                         }
-                        if (results['use_custom_shares'] == true) {
                             document.getElementById("custom_share_1").value = results['custom_share_1'];
                             document.getElementById("custom_share_2").value = results['custom_share_2'];
                             document.getElementById("custom_share_3").value = results['custom_share_3'];
                             document.getElementById("custom_share_4").value = results['custom_share_4'];
                             document.getElementById("custom_share_5").value = results['custom_share_5'];
-                        } else {
-                        }
+
                         const radioButton = document.querySelector(`input[name="options"][id="option${results['household_option'] + 1}"]`);
                         if (radioButton) {
                             radioButton.checked = true;

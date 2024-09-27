@@ -35,7 +35,131 @@
                         <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne"
                              data-bs-parent="#accordionExample">
                             <div class="accordion-body">
+
+
+
                                 <div class="row">
+    <!-- Plot Column -->
+    <div class="col-md-8">
+        <div class="chart__plot" style="min-height: 200px;">
+            <div id="demand_plot"></div>
+        </div>
+    </div>
+
+    <!-- Texts and Input Labels Column -->
+<div class="col-md-4">
+    <p>
+        <a>Set Own Custom Shares of Households Allocated per Consumption Category</a>
+    </p>
+    <p><em>The default values correspond to the national average of rural areas</em></p>
+
+    <!-- Input Fields Container -->
+    <div style="display: grid; grid-template-columns: auto auto; grid-row-gap: 10px; align-items: center;">
+        <!-- First Input Field -->
+        <label for="custom_share_1">
+            Very Low (0.6kWh/hh/day)
+        </label>
+        <div class="input-group">
+            <input
+                type="number"
+                class="form-control"
+                id="custom_share_1"
+                placeholder="66.3"
+                min="0"
+                max="100"
+                step="0.1"
+            />
+            <span class="input-group-text">%</span>
+        </div>
+
+        <!-- Second Input Field -->
+        <label for="custom_share_2">
+            Low (1.5kWh/hh/day)
+        </label>
+        <div class="input-group">
+            <input
+                type="number"
+                class="form-control"
+                id="custom_share_2"
+                placeholder="21.5"
+                min="0"
+                max="100"
+                step="0.1"
+            />
+            <span class="input-group-text">%</span>
+        </div>
+
+        <!-- Third Input Field -->
+        <label for="custom_share_3">
+            Middle (2.2kWh/hh/day)
+        </label>
+        <div class="input-group">
+            <input
+                type="number"
+                class="form-control"
+                id="custom_share_3"
+                placeholder="7.6"
+                min="0"
+                max="100"
+                step="0.1"
+            />
+            <span class="input-group-text">%</span>
+        </div>
+
+        <!-- Fourth Input Field -->
+        <label for="custom_share_4">
+            High (2.9kWh/hh/day)
+        </label>
+        <div class="input-group">
+            <input
+                type="number"
+                class="form-control"
+                id="custom_share_4"
+                placeholder="3.1"
+                min="0"
+                max="100"
+                step="0.1"
+            />
+            <span class="input-group-text">%</span>
+        </div>
+
+        <!-- Fifth Input Field -->
+        <label for="custom_share_5">
+            Very High (3.4kWh/hh/day)
+        </label>
+        <div class="input-group" >
+            <input
+                type="number"
+                class="form-control"
+                id="custom_share_5"
+                placeholder="1.5"
+                min="0"
+                max="100"
+                step="0.1"
+            />
+            <span class="input-group-text">%</span>
+        </div>
+
+        <!-- Reset Button -->
+        <a
+            id="resetDefault"
+            class="btn btn--medium btn--hollow btn--previous"
+            style="margin-top: 15px; white-space: nowrap; border: none; height: 32px; color: #fff; background-color: var(--cdg); display: inline-flex; align-items: center; justify-content: center; grid-column: span 2;"
+            href="javascript:void(0);"
+        >
+            Reset
+        </a>
+    </div>
+</div>
+
+</div>
+
+
+
+
+
+                            <p><a>Demand Estimation </a>
+                            </p>
                                     <p>Several typical standardized household demand profiles have been developed from
                                         roughly 3600 energy appliance ownership and usage surveys that were conducted
                                         across Nigeria in 2020 in 3 prioritized geopolitical zones. Survey details can
@@ -47,40 +171,11 @@
                                         been used to develop 5 typical non-urban Nigerian household energy consumption
                                         categories (from Very Low to Very High). The pre-created default options below
                                         represent weighted combinations of each of these consumption categories that
-                                        match the observed data in each of the geographic zones. <br><i>Open-access
-                                            journal publication, methodological details, open-source code, and full data
-                                            release forthcoming.</i></p>
-                                    <p><b>Select a default combination of user profiles for the household community
-                                        demand profiles from one of the following options:</b></p>
-                                    <div class="col-lg-6">
-                                        <div class="btn-group-vertical btn-group-toggle" data-toggle="buttons">
-                                            <label class="btn btn-custom active d-flex align-items-center">
-                                                <input type="radio" name="options" id="option1" autocomplete="off"
-                                                       checked> National Distribution - Combination of Modelled
-                                                Consumption Categories
-                                            </label>
-                                            <label class="btn btn-custom d-flex align-items-center">
-                                                <input type="radio" name="options" id="option2" autocomplete="off">
-                                                South-South Zone - Combination of Modelled Consumption Categories
-                                            </label>
-                                            <label class="btn btn-custom d-flex align-items-center">
-                                                <input type="radio" name="options" id="option3" autocomplete="off">
-                                                North-West Zone - Combination of Modelled Consumption Categories
-                                            </label>
-                                            <label class="btn btn-custom d-flex align-items-center">
-                                                <input type="radio" name="options" id="option4" autocomplete="off">
-                                                North-Central Zone - Combination of Modelled Consumption Categories
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-6">
-
-                                    </div>
-                                    <div class="chart__plot" style="min-height: 500px">
-                                        <div id="demand_plot"></div>
-                                    </div>
+                                        match the observed data in each of the geographic zones.
                                 </div>
                             </div>
+                            <p><br></p>
+                            <hr>
                             <p style="display: flex; justify-content: space-between; align-items: center; color: var(--ccb);">
                         <span style="display: flex; align-items: center; margin-left: 10px">
                             <a id="downloadDemand" class="btn btn--medium"
@@ -110,108 +205,7 @@
                 <div class="accordion-item" style="border-top: none; padding: 10px">
                     <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo">
                         <div class="accordion-body">
-                            <p><a>Set Own Custom Shares of Households Allocated per Consumption Category (Optional)</a>
-                            </p>
 
-                            <span style="width: 600px">
-                                  Enable User-defined Percentage Shares Per Household Category (Advanced)
-                                  <label class="switch">
-                                  <input type="checkbox" id="use_custom_shares">
-                                  <span class="slider round"></span>
-                                  </label>
-                                </span>
-                            <p><br></p>
-
-                            <label class="input-group align-items-center">
-                                <span style="width: 500px">
-                                    Very Low Consumption Households - Set Share % (0.6kWh/hh/day)
-                                </span>
-                                <div class="input-group" style="max-width: 200px">
-                                    <input
-                                            type="number"
-                                            class="form-control"
-                                            id="custom_share_1"
-                                            placeholder="66.3"
-                                            value=""
-                                            min="0"
-                                            max="100"
-                                            step="0.1"
-                                    />
-                                    <span class="input-group-text" style="margin-right: 8px;">%</span>
-                                </div>
-                            </label>
-                            <label class="input-group align-items-center">
-                                <span style="width: 500px">
-                                    Low Consumption Households - Set Share % (1.5kWh/hh/day)
-                                </span>
-                                <div class="input-group" style="max-width: 200px">
-                                    <input
-                                            type="number"
-                                            class="form-control"
-                                            id="custom_share_2"
-                                            placeholder="21.5"
-                                            value=""
-                                            min="0"
-                                            max="100"
-                                            step="0.1"
-                                    />
-                                    <span class="input-group-text" style="margin-right: 8px;">%</span>
-                                </div>
-                            </label>
-                            <label class="input-group align-items-center">
-                                <span style="width: 500px">
-                                    Middle Consumption Households - Set Share % (2.2kWh/hh/day)
-                                </span>
-                                <div class="input-group" style="max-width: 200px">
-                                    <input
-                                            type="number"
-                                            class="form-control"
-                                            id="custom_share_3"
-                                            placeholder="7.6"
-                                            value=""
-                                            min="0"
-                                            max="100"
-                                            step="0.1"
-                                    />
-                                    <span class="input-group-text" style="margin-right: 8px;">%</span>
-                                </div>
-                            </label>
-                            <label class="input-group align-items-center">
-                                <span style="width: 500px">
-                                    High Consumption Households - Set Share % (2.9kWh/hh/day)
-                                </span>
-                                <div class="input-group" style="max-width: 200px">
-                                    <input
-                                            type="number"
-                                            class="form-control"
-                                            id="custom_share_4"
-                                            placeholder="3.1"
-                                            value=""
-                                            min="0"
-                                            max="100"
-                                            step="0.1"
-                                    />
-                                    <span class="input-group-text" style="margin-right: 8px;">%</span>
-                                </div>
-                            </label>
-                            <label class="input-group align-items-center">
-                                <span style="width: 500px">
-                                    Very High Consumption Households - Set Share % (3.4kWh/hh/day)
-                                </span>
-                                <div class="input-group" style="max-width: 200px">
-                                    <input
-                                            type="number"
-                                            class="form-control"
-                                            id="custom_share_5"
-                                            placeholder="1.5"
-                                            value=""
-                                            min="0"
-                                            max="100"
-                                            step="0.1"
-                                    />
-                                    <span class="input-group-text" style="margin-right: 8px;">%</span>
-                                </div>
-                            </label>
 
                             <p><a><br>Set Custom Total Profile Calibration Values (Optional)</a></p>
                             <p>These options will calibrate the total community demand profile to set value below <b>(including

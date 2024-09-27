@@ -67,33 +67,37 @@ function demand_ts(project_id) {
     let plotElement = document.getElementById("demand_plot");
 
     var layout = {
-                title: "<b>Typical Modelled Household Daily Electrical Demand Profiles</b><br>'Average days' estimating <i>average contributions of each household</i> (to be scaled by community size)<br>365 days are modelled and included in profiles for simulation with full variability",
-                font: {size: 14},
-                autosize: true,
-                width: 1100,
-                height: 500,
-
-                xaxis: {
-                    title: 'Hour of the day',
-                    hoverformat: '.1f',
-                    titlefont: {
-                        size: 16,
-                    },
-                    tickfont: {
-                        size: 14,
-                    },
-                },
-                yaxis: {
-                    title: 'Demand (W)',
-                    hoverformat: '.1f',
-                    titlefont: {
-                        size: 16,
-                    },
-                    tickfont: {
-                        size: 14,
-                    }
-                },
-            };
+        title: "<b>Typical Modelled Household Daily Electrical Demand Profiles</b><br>'Average days' estimating <i>average contributions of each household</i> (to be scaled by community size)<br>365 days are modelled and included in profiles for simulation with full variability",
+        font: {size: 14},
+        autosize: true,
+        xaxis: {
+            title: 'Hour of the day',
+            hoverformat: '.1f',
+            titlefont: {
+                size: 16,
+            },
+            tickfont: {
+                size: 14,
+            },
+        },
+        yaxis: {
+            title: 'Demand (W)',
+            hoverformat: '.1f',
+            titlefont: {
+                size: 16,
+            },
+            tickfont: {
+                size: 14,
+            }
+        },
+        legend: {
+            orientation: 'h', // Set the legend to horizontal
+            x: 0,
+            y: -0.3, // Position the legend below the x-axis
+            xanchor: 'left',
+            yanchor: 'top',
+        }
+    };
 
     Plotly.newPlot(plotElement, [], layout);
 
@@ -105,22 +109,26 @@ function demand_ts(project_id) {
             return response.json();
         })
         .then(data => {
-
-
             // Extracting data
-            const { x, y, 'Very High Consumption': Very_High, 'High Consumption': High,
-                    'Middle Consumption': Middle, 'Low Consumption': Low,
-                    'Very Low Consumption': Very_Low, National,
-                    'South South': South_South, 'North West': North_West,
-                    'North Central': North_Central } = data;
-
-
+            const {
+                x,
+                y,
+                'Very High Consumption': Very_High,
+                'High Consumption': High,
+                'Middle Consumption': Middle,
+                'Low Consumption': Low,
+                'Very Low Consumption': Very_Low,
+                National,
+                'South South': South_South,
+                'North West': North_West,
+                'North Central': North_Central
+            } = data;
 
             var trace1 = {
                 x: x,
                 y: Very_Low,
                 mode: 'line',
-                name: 'Very Low Consumption (Category)',
+                name: 'Very Low Consumption',
                 line: {
                     color: 'red',
                     width: 1,
@@ -132,94 +140,63 @@ function demand_ts(project_id) {
                 x: x,
                 y: Low,
                 mode: 'line',
-                name: 'Low Consumption (Category)',
+                name: 'Low Consumption',
                 line: {
                     color: 'orange',
                     width: 1,
                     shape: 'spline'
                 },
             };
+
             var trace3 = {
                 x: x,
                 y: Middle,
                 mode: 'line',
-                name: 'Middle Consumption (Category)',
+                name: 'Middle Consumption',
                 line: {
                     color: 'black',
                     width: 1,
                     shape: 'spline'
                 },
             };
+
             var trace4 = {
                 x: x,
                 y: High,
                 mode: 'line',
-                name: 'High Consumption (Category)',
+                name: 'High Consumption',
                 line: {
                     color: 'green',
                     width: 1,
                     shape: 'spline'
                 },
             };
+
             var trace5 = {
                 x: x,
                 y: Very_High,
                 mode: 'line',
-                name: 'Very High Consumption (Category)',
+                name: 'Very High Consumption',
                 line: {
                     color: 'blue',
                     width: 1,
                     shape: 'spline'
                 },
             };
+
             var trace6 = {
                 x: x,
                 y: National,
                 mode: 'line',
-                name: 'National (Combination)',
+                name: 'Demand Profile',
                 line: {
                     color: 'black',
                     width: 3,
                     shape: 'spline'
                 },
             };
-            var trace7 = {
-                x: x,
-                y: South_South,
-                mode: 'line',
-                name: 'South-South (Combination)',
-                line: {
-                    color: 'purple',
-                    width: 3,
-                    shape: 'spline'
-                },
-            };
-            var trace8 = {
-                x: x,
-                y: North_West,
-                mode: 'line',
-                name: 'North-West (Combination)',
-                line: {
-                    color: 'light-blue',
-                    width: 3,
-                    shape: 'spline'
-                },
-            };
-            var trace9 = {
-                x: x,
-                y: North_Central,
-                mode: 'line',
-                name: 'North-Central (Combination)',
-                line: {
-                    color: 'dark-red',
-                    width: 3,
-                    shape: 'spline'
-                },
-            };
 
-
-
-            var data = [trace9, trace8, trace7, trace6, trace5, trace4, trace3, trace2, trace1];
+            var data = [trace6, trace5, trace4, trace3, trace2, trace1];
 
             Plotly.react(plotElement, data, layout);
 
@@ -228,6 +205,7 @@ function demand_ts(project_id) {
             console.error('There was a problem with the fetch operation:', error);
         });
 }
+
 
 // Trigger the file input dialog when the "Import Consumers" button is clicked
 document.getElementById('importButton').addEventListener('click', function() {
