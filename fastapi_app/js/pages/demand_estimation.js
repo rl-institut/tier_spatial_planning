@@ -63,42 +63,39 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 function demand_ts(project_id) {
-    const url = 'get_demand_time_series/' + project_id;
+    const url = 'get_demand_plot_data/' + project_id;
     let plotElement = document.getElementById("demand_plot");
 
+    // Get references to the radio buttons
+    var radioTotalDemand = document.getElementById('optionTotalDemand');
+    var radioSingleHousehold = document.getElementById('optionSingleHousehold');
+
     var layout = {
-        title: "<b>Typical Modelled Household Daily Electrical Demand Profiles</b><br>'Average days' estimating <i>average contributions of each household</i> (to be scaled by community size)<br>365 days are modelled and included in profiles for simulation with full variability",
-        font: {size: 14},
+        font: { size: 14 },
         autosize: true,
         xaxis: {
             title: 'Hour of the day',
             hoverformat: '.1f',
-            titlefont: {
-                size: 16,
-            },
-            tickfont: {
-                size: 14,
-            },
+            titlefont: { size: 16 },
+            tickfont: { size: 14 },
         },
         yaxis: {
-            title: 'Demand (W)',
+            title: 'Demand (kW)',
             hoverformat: '.1f',
-            titlefont: {
-                size: 16,
-            },
-            tickfont: {
-                size: 14,
-            }
+            titlefont: { size: 16 },
+            tickfont: { size: 14 },
         },
         legend: {
-            orientation: 'h', // Set the legend to horizontal
+            orientation: 'h',
             x: 0,
-            y: -0.3, // Position the legend below the x-axis
+            y: -0.3,
             xanchor: 'left',
             yanchor: 'top',
+            traceorder: 'normal' // Ensure legendrank is honored
         }
     };
 
+    // Initialize the plot with empty data
     Plotly.newPlot(plotElement, [], layout);
 
     fetch(url)
@@ -109,102 +106,175 @@ function demand_ts(project_id) {
             return response.json();
         })
         .then(data => {
-            // Extracting data
+            // Extract data
             const {
-                x,
-                y,
+                'x': x,
                 'Very High Consumption': Very_High,
                 'High Consumption': High,
                 'Middle Consumption': Middle,
                 'Low Consumption': Low,
                 'Very Low Consumption': Very_Low,
-                National,
-                'South South': South_South,
-                'North West': North_West,
-                'North Central': North_Central
+                'National': National,
+                'households': households,
+                'enterprises': enterprises,
+                'public_services': public_services
             } = data;
 
-            var trace1 = {
+            // Compute Total_Demand
+            var Total_Demand = households.map((value, index) => {
+                return value + enterprises[index] + public_services[index];
+            });
+
+            // Define traces
+            var trace10 = {
                 x: x,
-                y: Very_Low,
-                mode: 'line',
-                name: 'Very Low Consumption',
-                line: {
-                    color: 'red',
-                    width: 1,
-                    shape: 'spline'
-                },
+                y: Total_Demand,
+                mode: 'lines',
+                name: 'Total Demand',
+                line: { color: 'black', width: 3, shape: 'spline' },
+                visible: true, // Initially visible
+                legendrank: 0
             };
 
-            var trace2 = {
+            var trace7 = {
                 x: x,
-                y: Low,
-                mode: 'line',
-                name: 'Low Consumption',
-                line: {
-                    color: 'orange',
-                    width: 1,
-                    shape: 'spline'
-                },
+                y: households,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Demand of Households',
+                stackgroup: 'one',
+                fill: 'tonexty',
+                hoverinfo: 'x+y',
+                line: { shape: 'spline', width: 0.5, color: 'rgba(31, 119, 180, 1)' },
+                fillcolor: 'rgba(31, 119, 180, 0.6)',
+                legendrank: 3
             };
 
-            var trace3 = {
+            var trace8 = {
                 x: x,
-                y: Middle,
-                mode: 'line',
-                name: 'Middle Consumption',
-                line: {
-                    color: 'black',
-                    width: 1,
-                    shape: 'spline'
-                },
+                y: enterprises,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Demand of Enterprises',
+                stackgroup: 'one',
+                fill: 'tonexty',
+                hoverinfo: 'x+y',
+                line: { shape: 'spline', width: 0.5, color: 'rgba(255, 127, 14, 1)' },
+                fillcolor: 'rgba(255, 127, 14, 0.6)',
+                legendrank: 2
             };
 
-            var trace4 = {
+            var trace9 = {
                 x: x,
-                y: High,
-                mode: 'line',
-                name: 'High Consumption',
-                line: {
-                    color: 'green',
-                    width: 1,
-                    shape: 'spline'
-                },
-            };
-
-            var trace5 = {
-                x: x,
-                y: Very_High,
-                mode: 'line',
-                name: 'Very High Consumption',
-                line: {
-                    color: 'blue',
-                    width: 1,
-                    shape: 'spline'
-                },
+                y: public_services,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Demand of Public Services',
+                stackgroup: 'one',
+                fill: 'tonexty',
+                hoverinfo: 'x+y',
+                line: { shape: 'spline', width: 0.5, color: 'rgba(44, 160, 44, 1)' },
+                fillcolor: 'rgba(44, 160, 44, 0.6)',
+                legendrank: 1
             };
 
             var trace6 = {
                 x: x,
                 y: National,
-                mode: 'line',
-                name: 'Demand Profile',
-                line: {
-                    color: 'black',
-                    width: 3,
-                    shape: 'spline'
-                },
+                mode: 'lines',
+                name: 'Single Household Profile',
+                line: { color: 'black', width: 2, shape: 'spline' },
+                visible: false, // Initially hidden
+                legendrank: 4
             };
 
-            var data = [trace6, trace5, trace4, trace3, trace2, trace1];
+            var trace5 = {
+                x: x,
+                y: Very_High,
+                mode: 'lines',
+                name: 'Very High Consumption',
+                line: { color: 'blue', width: 1, shape: 'spline' },
+                visible: 'legendonly',
+                legendrank: 5
+            };
 
-            Plotly.react(plotElement, data, layout);
+            var trace4 = {
+                x: x,
+                y: High,
+                mode: 'lines',
+                name: 'High Consumption',
+                line: { color: 'green', width: 1, shape: 'spline' },
+                visible: 'legendonly',
+                legendrank: 6
+            };
+
+            var trace3 = {
+                x: x,
+                y: Middle,
+                mode: 'lines',
+                name: 'Middle Consumption',
+                line: { color: 'black', width: 1, shape: 'spline' },
+                visible: 'legendonly',
+                legendrank: 7
+            };
+
+            var trace2 = {
+                x: x,
+                y: Low,
+                mode: 'lines',
+                name: 'Low Consumption',
+                line: { color: 'orange', width: 1, shape: 'spline' },
+                visible: 'legendonly',
+                legendrank: 8
+            };
+
+            var trace1 = {
+                x: x,
+                y: Very_Low,
+                mode: 'lines',
+                name: 'Very Low Consumption',
+                line: { color: 'red', width: 1, shape: 'spline' },
+                visible: 'legendonly',
+                legendrank: 9
+            };
+
+            // Data array (order is important for stacking and layering)
+            var dataTraces = [trace10, trace9, trace8, trace7, trace6, trace5, trace4, trace3, trace2, trace1];
+
+            // Render plot with all traces
+            Plotly.react(plotElement, dataTraces, layout);
+
+            // Function to update plot based on selection
+            function updatePlot() {
+                if (radioTotalDemand.checked) {
+                    // Activate traces 1 to 6 (indices 0 to 5)
+                    Plotly.restyle(plotElement, { 'visible': true }, [0, 1, 2, 3]);
+                    // Deactivate traces 7 to 10 (indices 6 to 9)
+                    Plotly.restyle(plotElement, { 'visible': 'legendonly' }, [4, 5, 6, 7, 8, 9]);
+                } else if (radioSingleHousehold.checked) {
+                    // Activate traces 7 to 10 (indices 6 to 9)
+                    Plotly.restyle(plotElement, { 'visible': true }, [4, 5, 6, 7, 8, 9]);
+                    // Deactivate traces 1 to 6 (indices 0 to 5)
+                    Plotly.restyle(plotElement, { 'visible': 'legendonly' }, [0, 1, 2, 3]);
+                }
+            }
+
+            // Add event listeners to radio buttons
+            radioTotalDemand.addEventListener('change', updatePlot);
+            radioSingleHousehold.addEventListener('change', updatePlot);
+
+            // Initial plot update based on default selection
+            updatePlot();
 
         })
         .catch(error => {
             console.error('There was a problem with the fetch operation:', error);
         });
 }
+
+
+
+
 
 
 // Trigger the file input dialog when the "Import Consumers" button is clicked

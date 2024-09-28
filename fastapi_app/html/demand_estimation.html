@@ -41,6 +41,16 @@
                                 <div class="row">
     <!-- Plot Column -->
     <div class="col-md-8">
+            <p>
+        <a>Electricity Demand Profile: First Monday of Simulation Period</a>
+    </p>
+        <div id="radioButtons" style="margin-bottom: 10px;">
+            <input type="radio" id="optionTotalDemand" name="plotOption" value="totalDemand" checked>
+            <label for="optionTotalDemand" style="margin-right: 10px">Show Total Demand</label>
+
+            <input type="radio" id="optionSingleHousehold" name="plotOption" value="singleHousehold">
+            <label for="optionSingleHousehold">Show Single Household Profile</label>
+        </div>
         <div class="chart__plot" style="min-height: 200px;">
             <div id="demand_plot"></div>
         </div>
@@ -51,6 +61,7 @@
     <p>
         <a>Set Own Custom Shares of Households Allocated per Consumption Category</a>
     </p>
+    <p><br></p>
     <p><em>The default values correspond to the national average of rural areas</em></p>
 
     <!-- Input Fields Container -->

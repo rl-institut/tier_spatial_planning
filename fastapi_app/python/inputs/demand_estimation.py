@@ -15,8 +15,6 @@ Note: This module was not developed by the TU Berlin but rather by the Rainer Li
 """
 
 def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distribution_lookup=None):
-    # print(nodes)
-
     num_households = get_number_of_households(nodes)
     lat, lon = get_location_gps(nodes).values()
     hh_demand_option = get_user_household_demand_option_selection(demand_par_dict)
@@ -25,38 +23,24 @@ def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distributi
         all_profiles = read_all_profiles(config.FULL_PATH_PROFILES)
     if distribution_lookup is None:
         distribution_lookup = read_distribution_lookup(config.FULL_PATH_DISTRIBUTIONS)
-    df_hh_profiles = combine_hh_profiles(all_profiles,
+    df_hh_profile = combine_hh_profiles(all_profiles,
                                          lat=lat,
                                          lon=lon,
                                          num_households=num_households,
                                          distribution_lookup=distribution_lookup,
                                          demand_par_dict=demand_par_dict,
                                          option=hh_demand_option)
-    enterprises = get_all_enterprise_customer_nodes(nodes)
-    # print(enterprises)
-    df_ent_profiles = combine_ent_profiles(all_profiles, enterprises)
-
-    # print("demand_par_dict:", demand_par_dict)
-    # print("use_custom_shares", demand_par_dict["use_custom_shares"])
-    # print("enterprises consumer type:", enterprises.consumer_type.iloc[0])
-    # print("enterprises consumer detail:", enterprises.consumer_detail.iloc[0])
-    # print("enterprises node_type:", enterprises.node_type.iloc[0])
-    # print("enterprises data:", enterprises.custom_specification.iloc[0])
-    # print("hh_demand_option: ", hh_demand_option)
-    # print("calibration_option:", calibration_option)
-    # print("calibration_target_value:", calibration_target_value)
-
-    calibrated_profile = combine_and_calibrate_total_profile(
-        df_hh_profiles=df_hh_profiles,
-        df_ent_profiles=df_ent_profiles,
+    enterprise_nodes = nodes[(nodes['consumer_type'] == 'enterprise') & (nodes['is_connected'] == True)]
+    public_service_nodes = nodes[(nodes['consumer_type'] == 'public_service') & (nodes['is_connected'] == True)]
+    df_ent_profile = combine_ent_profiles(all_profiles, enterprise_nodes)
+    df_pub_profile = combine_ent_profiles(all_profiles, public_service_nodes)
+    df  = calibrate_profiles(
+        df_hh_profile=df_hh_profile,
+        df_ent_profile=df_ent_profile,
+        df_pub_profile=df_pub_profile,
         calibration_target_value=calibration_target_value,
         calibration_option=calibration_option) / 1000
-    # calibration totals/setpoints are in kW
-    # profiles are still in W
-    # print("calibrated_profile_max:", calibrated_profile.max())
-    # print("calibrated_profile_sum:", calibrated_profile.sum())
-
-    return calibrated_profile
+    return df
 
 
 def get_calibration_target(demand_par_dict):
@@ -92,19 +76,8 @@ def get_location_gps(nodes):
 
 
 def get_user_household_demand_option_selection(demand_par_dict):
-    # Dummy function
-    # Gives chosen selection option from radio button list
     option = demand_par_dict['household_option']
     return option
-
-
-def get_all_enterprise_customer_nodes(nodes):
-    # Dummy function
-    # Returns a list or dataframe of all the enterprise node "strings" of the community
-    nodes = nodes[((nodes['consumer_type'] == 'enterprise') |
-                   (nodes['consumer_type'] == 'public_service')) &
-                  (nodes['is_connected'] == True)]
-    return nodes
 
 
 def read_all_profiles(filepath):
@@ -253,29 +226,24 @@ def combine_hh_profiles(all_profiles, lat, lon, num_households, distribution_loo
     return df_hh_profiles
 
 
-def combine_and_calibrate_total_profile(df_hh_profiles, df_ent_profiles, calibration_target_value,
-                                        calibration_option=None):
-    if df_ent_profiles.empty:
-        df_total_profile = df_hh_profiles
-    elif df_hh_profiles.empty:
-        df_total_profile = df_ent_profiles
-    else:
-        df_total_profile = df_hh_profiles + df_ent_profiles
-
+def calibrate_profiles(df_hh_profile, df_ent_profile, df_pub_profile, calibration_target_value, calibration_option=None):
+    df_lst = [df_hh_profile, df_ent_profile, df_pub_profile]
+    ts = [df for df in df_lst if not df.empty][0].index
+    for i, df in enumerate(df_lst):
+        if df.empty:
+            df_lst[i] = pd.DataFrame(0, index=ts, columns=['value'])
     if calibration_option is not None:
         if calibration_option == "kWh":
-            uncalibrated_profile_total = df_total_profile.sum() / 1000
+            uncalibrated_profile_total = (df_hh_profile + df_ent_profile).sum() / 1000
             calibration_factor = calibration_target_value / uncalibrated_profile_total
-
-            df_total_profile = df_total_profile * calibration_factor
-
         elif calibration_option == "kW":
-            uncalibrated_profile_max = df_total_profile.max() / 1000
+            uncalibrated_profile_max = (df_hh_profile + df_ent_profile).max() / 1000
             calibration_factor = calibration_target_value / uncalibrated_profile_max
-
-            df_total_profile = df_total_profile * calibration_factor
-
-    return df_total_profile
+        for i, df in enumerate(df_lst):
+            df_lst[i] = df_lst[i] * calibration_factor
+    df = pd.concat(df_lst, axis=1)
+    df.columns = ['households', 'enterprises', 'public_services']
+    return df
 
 
 def demand_time_series_df():
@@ -323,23 +291,6 @@ def demand_time_series_df():
                                              28.21763008, 30.15631678, 34.91153384, 43.0559128,
                                              57.45533386, 78.06794342, 105.14180938, 112.85265586,
                                              92.79837577, 57.37422364, 24.43075283, 10.17283565]),
-                       'South South': np.array([7.59576518, 8.77663148, 9.43299648, 10.21514974,
-                                                14.46818873, 26.29817153, 53.63220135, 90.78678721,
-                                                106.13775174, 83.94892101, 50.73709926, 35.50627643,
-                                                33.34018893, 35.93714277, 41.27636109, 50.11584547,
-                                                65.7657222, 88.70717813, 119.32227264, 127.94345367,
-                                                105.19852055, 65.3047414, 27.82862265, 11.54510958]),
-                       'North West': np.array([5.29625691, 6.16212933, 6.59688001, 7.16937018, 10.66362785,
-                                               20.21164531, 39.42077725, 65.38339492, 75.99187794, 60.11651999,
-                                               34.89565109, 22.87065063, 20.42097252, 21.65116242, 25.46146399,
-                                               32.64765436, 44.97426928, 61.68666255, 82.53722286, 88.57981725,
-                                               72.72273007, 44.59808762, 19.01262261, 7.8021738]),
-                       'North Central': np.array([7.47210137, 8.61269822, 9.25064465, 10.05469225,
-                                                  14.15435804, 25.54282695, 51.52387465, 86.51485357,
-                                                  101.09840014, 79.97340262, 48.07008928, 33.11615451,
-                                                  30.46242469, 32.47941038, 37.56649267, 45.90872794,
-                                                  60.96886459, 82.87602274, 112.02103791, 120.35567821,
-                                                  99.0204548, 61.30792301, 26.14380773, 11.03407203]),
                        'x': np.array(
                            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23])})
     return df

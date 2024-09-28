@@ -21,7 +21,7 @@ from passlib.context import CryptContext
 
 import fastapi_app
 from fastapi_app.python import config
-from fastapi_app.python.inputs.demand_estimation import demand_time_series_df
+from fastapi_app.python.inputs.demand_estimation import demand_time_series_df, get_demand_time_series
 from fastapi_app.python.db import async_inserts, sync_queries, async_queries, sync_inserts, sa_tables, \
     handle_user_accounts
 from fastapi_app.python.helper import identify_consumers_on_map
@@ -682,6 +682,12 @@ async def load_previous_data(page_name, request: Request):
             return demand_estimation
         if demand_estimation is None or not hasattr(demand_estimation, 'maximum_peak_load'):
             return None
+        if sum(value for key, value in demand_estimation.to_dict().items() if 'custom_share_' in key) == 0:
+            demand_estimation.custom_share_1 = 66.3
+            demand_estimation.custom_share_2 = 21.5
+            demand_estimation.custom_share_3 = 7.6
+            demand_estimation.custom_share_4 = 3.1
+            demand_estimation.custom_share_5 = 1.5
         demand_estimation.maximum_peak_load = str(demand_estimation.maximum_peak_load) \
             if demand_estimation.maximum_peak_load is not None else ''
         demand_estimation.average_daily_energy = str(demand_estimation.average_daily_energy) \
@@ -1077,9 +1083,26 @@ async def get_plot_data(project_id, plot_type, request: Request):
                                                       "sankey_data": sankey_data})
 
 
-@app.get("/get_demand_time_series/{project_id}")
-async def get_demand_time_series(project_id):
-    return demand_time_series_df().to_dict('list')
+@app.get("/get_demand_plot_data/{project_id}")
+async def get_demand_plot_data(project_id, request: Request):
+    user = await handle_user_accounts.get_user_from_cookie(request)
+    nodes = await async_queries.get_model_instance(sa_tables.Nodes, user.id, project_id)
+    demand_opt_dict = await async_queries.get_model_instance(sa_tables.Demand, user.id, project_id)
+    nodes = pd.read_json(nodes.data)
+    demand_opt_dict = demand_opt_dict.to_dict()
+    if sum(value for key, value in demand_opt_dict.items() if 'custom_share_' in key) == 0:
+        demand_opt_dict['custom_share_1'] = 66.3
+        demand_opt_dict['custom_share_2'] = 21.5
+        demand_opt_dict['custom_share_3'] = 7.6
+        demand_opt_dict['custom_share_4'] = 3.1
+        demand_opt_dict['custom_share_5'] = 1.5
+    demand_df = get_demand_time_series(nodes, demand_opt_dict).iloc[:24, :].reset_index(drop=True)
+    df = demand_time_series_df()
+    for col in df.columns:
+        if col != 'x':
+            df[col] = df[col].div(1000)
+    df = pd.concat([df, demand_df], axis=1)
+    return df.to_dict('list')
 
 
 @app.post("/add_buildings_inside_boundary")
@@ -1348,7 +1371,7 @@ async def export_demand(project_id, file_type: str, request: Request):
     nodes = pd.read_json(nodes.data)
     demand_opt_dict = await async_queries.get_model_instance(sa_tables.Demand, user.id, project_id)
     demand_opt_dict = demand_opt_dict.to_dict()
-    demand_full_year = fastapi_app.python.inputs.demand_estimation.get_demand_time_series(nodes, demand_opt_dict).to_frame('Demand')
+    demand_full_year = get_demand_time_series(nodes, demand_opt_dict).sum(axis=1).to_frame('Demand')
     df = demand_full_year.loc[ts.values]['Demand'].copy()
     df.index = df.index.strftime('%m.%d %H:%M')
     df = df.reset_index()
