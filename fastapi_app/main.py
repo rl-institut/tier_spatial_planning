@@ -1096,13 +1096,18 @@ async def get_demand_plot_data(project_id, request: Request):
         demand_opt_dict['custom_share_3'] = 7.6
         demand_opt_dict['custom_share_4'] = 3.1
         demand_opt_dict['custom_share_5'] = 1.5
-    demand_df = get_demand_time_series(nodes, demand_opt_dict).iloc[:24, :].reset_index(drop=True)
+    demand_df, calibration_target_value, calibration_option = get_demand_time_series(nodes, demand_opt_dict)
+    demand_df = demand_df.iloc[:24, :].reset_index(drop=True)
     df = demand_time_series_df()
     for col in df.columns:
         if col != 'x':
             df[col] = df[col].div(1000)
     df = pd.concat([df, demand_df], axis=1)
-    return df.to_dict('list')
+    res_dict = df.to_dict('list')
+    res_dict['calibration_target_value'] = calibration_target_value
+    res_dict['calibration_option'] = calibration_option
+    res_dict['num_households'] = len(nodes[(nodes['consumer_type'] == 'household') & (nodes['is_connected'] == True)].index)
+    return res_dict
 
 
 @app.post("/add_buildings_inside_boundary")

@@ -6,7 +6,6 @@
  * - Fetches and plots time series data for demand profiles using Plotly.
  */
 
-
 document.getElementById('toggleswitch').addEventListener('change', function (event) {
     const accordionItem2 = new bootstrap.Collapse(document.getElementById('collapseTwo'), {
         toggle: false
@@ -36,18 +35,33 @@ document.getElementById('toggleswitch2').addEventListener('change', function (ev
     }
 });
 
-$(function () {
-    $("input[name='options2']").change(function () {
-        if ($("#option7").is(':checked')) {
-            $("#average_daily_energy").prop('disabled', false);
-            $("#maximum_peak_load").prop('disabled', true).val('');
+// Adjust input fields based on radio button selection
+document.addEventListener('DOMContentLoaded', function () {
+    const option7Radio = document.getElementById('option7');
+    const option8Radio = document.getElementById('option8');
+    const averageDailyEnergyInput = document.getElementById('average_daily_energy');
+    const maximumPeakLoadInput = document.getElementById('maximum_peak_load');
+
+    function handleOptions2Change() {
+        if (option7Radio.checked) {
+            averageDailyEnergyInput.disabled = false;
+            maximumPeakLoadInput.disabled = true;
+            maximumPeakLoadInput.value = '';
         } else {
-            $("#average_daily_energy").prop('disabled', true).val('');
-            $("#maximum_peak_load").prop('disabled', false);
+            averageDailyEnergyInput.disabled = true;
+            averageDailyEnergyInput.value = '';
+            maximumPeakLoadInput.disabled = false;
         }
-    });
+    }
+
+    option7Radio.addEventListener('change', handleOptions2Change);
+    option8Radio.addEventListener('change', handleOptions2Change);
+
+    // Initial setup
+    handleOptions2Change();
 });
 
+// Store selected value from radio buttons with name 'options'
 const radioButtons = document.getElementsByName("options");
 let selectedValue = -1; // Default value if no selection is made
 
@@ -60,7 +74,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
-
 
 function demand_ts(project_id) {
     const url = 'get_demand_plot_data/' + project_id;
@@ -107,7 +120,7 @@ function demand_ts(project_id) {
         })
         .then(data => {
             // Extract data
-            const {
+            let {
                 'x': x,
                 'Very High Consumption': Very_High,
                 'High Consumption': High,
@@ -117,13 +130,28 @@ function demand_ts(project_id) {
                 'National': National,
                 'households': households,
                 'enterprises': enterprises,
-                'public_services': public_services
+                'public_services': public_services,
+                'calibration_target_value': calibration_target_value,
+                'calibration_option': calibration_option,
+                'num_households': num_households
             } = data;
 
-            // Compute Total_Demand
-            var Total_Demand = households.map((value, index) => {
-                return value + enterprises[index] + public_services[index];
-            });
+            // Get references to the elements
+            const toggleSwitch = document.getElementById('toggleswitch');
+            const averageDailyEnergyInput = document.getElementById('average_daily_energy');
+            const maximumPeakLoadInput = document.getElementById('maximum_peak_load');
+            const option7Radio = document.getElementById('option7');
+            const option8Radio = document.getElementById('option8');
+
+            // Function to calculate Total_Demand
+            function calculateTotalDemand(households, enterprises, public_services) {
+                return households.map((value, index) => {
+                    return value + enterprises[index] + public_services[index];
+                });
+            }
+
+            // Usage inside your main function or logic
+            var Total_Demand = calculateTotalDemand(households, enterprises, public_services);
 
             // Define traces
             var trace10 = {
@@ -244,38 +272,206 @@ function demand_ts(project_id) {
             // Render plot with all traces
             Plotly.react(plotElement, dataTraces, layout);
 
+            // Store trace1 to trace5 Y-values
+            const trace1Y = dataTraces[9].y; // trace1: index 9
+            const trace2Y = dataTraces[8].y; // trace2: index 8
+            const trace3Y = dataTraces[7].y; // trace3: index 7
+            const trace4Y = dataTraces[6].y; // trace4: index 6
+            const trace5Y = dataTraces[5].y; // trace5: index 5
+
+            // Get references to custom_share input fields
+            const customShare1 = document.getElementById('custom_share_1');
+            const customShare2 = document.getElementById('custom_share_2');
+            const customShare3 = document.getElementById('custom_share_3');
+            const customShare4 = document.getElementById('custom_share_4');
+            const customShare5 = document.getElementById('custom_share_5');
+
+            // Initialize an object to store previous values of custom share inputs
+            const previousValues = {
+                'custom_share_1': parseFloat(customShare1.value) || 0,
+                'custom_share_2': parseFloat(customShare2.value) || 0,
+                'custom_share_3': parseFloat(customShare3.value) || 0,
+                'custom_share_4': parseFloat(customShare4.value) || 0,
+                'custom_share_5': parseFloat(customShare5.value) || 0
+            };
+
             // Function to update plot based on selection
-            function updatePlot() {
+            function showOnlySelection() {
                 if (radioTotalDemand.checked) {
-                    // Activate traces 1 to 6 (indices 0 to 5)
+                    // Activate traces 1 to 4 (indices 0 to 3)
                     Plotly.restyle(plotElement, { 'visible': true }, [0, 1, 2, 3]);
-                    // Deactivate traces 7 to 10 (indices 6 to 9)
+                    // Deactivate traces 5 to 10 (indices 4 to 9)
                     Plotly.restyle(plotElement, { 'visible': 'legendonly' }, [4, 5, 6, 7, 8, 9]);
                 } else if (radioSingleHousehold.checked) {
-                    // Activate traces 7 to 10 (indices 6 to 9)
+                    // Activate traces 5 to 10 (indices 4 to 9)
                     Plotly.restyle(plotElement, { 'visible': true }, [4, 5, 6, 7, 8, 9]);
-                    // Deactivate traces 1 to 6 (indices 0 to 5)
+                    // Deactivate traces 1 to 4 (indices 0 to 3)
                     Plotly.restyle(plotElement, { 'visible': 'legendonly' }, [0, 1, 2, 3]);
                 }
             }
 
-            // Add event listeners to radio buttons
-            radioTotalDemand.addEventListener('change', updatePlot);
-            radioSingleHousehold.addEventListener('change', updatePlot);
+            function calibrate_demand(reverse = false) {
+                let calibration_factor;
 
-            // Initial plot update based on default selection
-            updatePlot();
+                if (calibration_option === 'kW') {
+                    calibration_factor = calibration_target_value / Math.max(...Total_Demand);
+
+                }
+                else if (calibration_option === 'kWh') {
+                    calibration_factor = calibration_target_value / Total_Demand.reduce((a, b) => a + b, 0) ;
+                }
+                else {
+                    return
+                }
+
+                if (reverse === false) {
+                    households.forEach((value, index) => households[index] *= calibration_factor);
+                    enterprises.forEach((value, index) => enterprises[index] *= calibration_factor);
+                    public_services.forEach((value, index) => public_services[index] *= calibration_factor);
+                } else {
+                    households.forEach((value, index) => households[index] /= calibration_factor);
+                    enterprises.forEach((value, index) => enterprises[index] /= calibration_factor);
+                    public_services.forEach((value, index) => public_services[index] /= calibration_factor);
+                }
+            }
+
+            function updateTrace7to10() {
+                Total_Demand = calculateTotalDemand(households, enterprises, public_services);
+                // Restyle all traces in one command
+                Plotly.restyle(plotElement, {
+                    'y': [Total_Demand, public_services, enterprises, households]
+                }, [0, 1, 2, 3]);
+            }
+
+            // Updates trace6 (Single Household Profile) based on custom share inputs
+            function updateTrace6() {
+                // Retrieve and parse input values, converting percentages to decimals
+                const share1 = parseFloat(customShare1.value) / 100 || 0;
+                const share2 = parseFloat(customShare2.value) / 100 || 0;
+                const share3 = parseFloat(customShare3.value) / 100 || 0;
+                const share4 = parseFloat(customShare4.value) / 100 || 0;
+                const share5 = parseFloat(customShare5.value) / 100 || 0;
+
+                // Update 'National' array elements directly
+                National.forEach((val, idx) => {
+                    National[idx] = (share1 * trace1Y[idx]) +
+                                    (share2 * trace2Y[idx]) +
+                                    (share3 * trace3Y[idx]) +
+                                    (share4 * trace4Y[idx]) +
+                                    (share5 * trace5Y[idx]);
+                });
+
+                // Update trace6's Y-values in the Plotly plot
+                Plotly.restyle(plotElement, { 'y': [National] }, [4]); // trace6 is at index 4
+            }
+
+            // Function to check if the change is significant (≥ 0.5)
+            function isSignificantChange(newValue, oldValue, threshold = 0.2) {
+                return Math.abs(newValue - oldValue) >= threshold;
+            }
+
+            // Function to handle input changes with threshold
+            function handleInputChange(inputId) {
+                return function () {
+                    const input = document.getElementById(inputId);
+                    const newValue = parseFloat(input.value) || 0;
+                    const oldValue = previousValues[inputId];
+                    if (isSignificantChange(newValue, oldValue)) {
+                        previousValues[inputId] = newValue;
+                        updateTrace6();
+                        calibrate_demand(true);
+                        households = National.map(value => value * num_households);
+                        calibrate_demand(false);
+                        updateTrace7to10();
+                    }
+                };
+            }
+
+            // Add event listeners with threshold logic
+            customShare1.addEventListener('input', handleInputChange('custom_share_1'));
+            customShare2.addEventListener('input', handleInputChange('custom_share_2'));
+            customShare3.addEventListener('input', handleInputChange('custom_share_3'));
+            customShare4.addEventListener('input', handleInputChange('custom_share_4'));
+            customShare5.addEventListener('input', handleInputChange('custom_share_5'));
+
+            // Add event listeners to radio buttons
+            radioTotalDemand.addEventListener('change', showOnlySelection);
+            radioSingleHousehold.addEventListener('change', showOnlySelection);
+
+            // Function to handle calibration input changes
+            function handleCalibrationInputChange() {
+                // Only proceed if the toggle switch is activated
+                if (toggleSwitch.checked) {
+                    if (option7Radio.checked) {
+                        // Option 7: "Set Average Total Annual Energy (kWh/year)"
+                        const value = parseFloat(averageDailyEnergyInput.value);
+                        if (!isNaN(value) && value >= 0) {
+                            calibrate_demand(true);
+                            calibration_target_value = value;
+                            calibration_option = 'kWh';
+                            calibrate_demand(false);
+                            updateTrace7to10();
+                        }
+                    } else if (option8Radio.checked) {
+                        // Option 8: "Set Maximum Peak Demand (kW)"
+                        const value = parseFloat(maximumPeakLoadInput.value);
+                        if (!isNaN(value) && value >= 0) {
+                            calibrate_demand(true);
+                            calibration_target_value = value;
+                            calibration_option = 'kW';
+                            calibrate_demand(false);
+                            updateTrace7to10();
+                        }
+                    }
+                } else {
+                    // Toggle is deactivated
+                    calibrate_demand(true);
+                    calibration_target_value = 1;
+                    calibration_option = null;
+                    updateTrace7to10();
+                    households = National.map(value => value * num_households);
+                    calibrate_demand(false);
+                }
+            }
+
+            // Add event listener to the toggle switch
+            toggleSwitch.addEventListener('change', function(event) {
+                if (!event.target.checked) {
+                    // Toggle is deactivated
+                    calibration_target_value = 1;
+                    calibration_option = null;
+                    updateTrace7to10();
+                }
+            });
+
+            // Add event listeners to the radio buttons for calibration options
+            function handleRadioButtonChange() {
+                if (option7Radio.checked) {
+                    averageDailyEnergyInput.disabled = false;
+                    maximumPeakLoadInput.disabled = true;
+                    maximumPeakLoadInput.value = '';
+                    handleCalibrationInputChange();
+                } else if (option8Radio.checked) {
+                    averageDailyEnergyInput.disabled = true;
+                    averageDailyEnergyInput.value = '';
+                    maximumPeakLoadInput.disabled = false;
+                    handleCalibrationInputChange();
+                }
+            }
+
+            option7Radio.addEventListener('change', handleRadioButtonChange);
+            option8Radio.addEventListener('change', handleRadioButtonChange);
+
+            // Add event listeners to the calibration input fields
+            averageDailyEnergyInput.addEventListener('input', handleCalibrationInputChange);
+            maximumPeakLoadInput.addEventListener('input', handleCalibrationInputChange);
+
 
         })
         .catch(error => {
             console.error('There was a problem with the fetch operation:', error);
         });
 }
-
-
-
-
-
 
 // Trigger the file input dialog when the "Import Consumers" button is clicked
 document.getElementById('importButton').addEventListener('click', function() {
