@@ -17,6 +17,17 @@ document.getElementById('toggleswitch').addEventListener('change', function (eve
     }
 });
 
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+}
+
+
+
 document.getElementById('toggleswitch2').addEventListener('change', function (event) {
     const accordionItem1 = new bootstrap.Collapse(document.getElementById('collapseOne'), {toggle: false});
     const accordionItem2 = document.getElementById('collapseTwo').closest('.accordion-item');
@@ -343,8 +354,7 @@ function demand_ts(project_id) {
                 }, [0, 1, 2, 3]);
             }
 
-            // Updates trace6 (Single Household Profile) based on custom share inputs
-            function updateTrace6() {
+            function updateNationalArray() {
                 // Retrieve and parse input values, converting percentages to decimals
                 const share1 = parseFloat(customShare1.value) / 100 || 0;
                 const share2 = parseFloat(customShare2.value) / 100 || 0;
@@ -360,7 +370,19 @@ function demand_ts(project_id) {
                                     (share4 * trace4Y[idx]) +
                                     (share5 * trace5Y[idx]);
                 });
+                // Update 'National' array elements directly
+                National.forEach((val, idx) => {
+                    National[idx] = (share1 * trace1Y[idx]) +
+                                    (share2 * trace2Y[idx]) +
+                                    (share3 * trace3Y[idx]) +
+                                    (share4 * trace4Y[idx]) +
+                                    (share5 * trace5Y[idx]);
+                });
+            }
 
+
+            // Updates trace6 (Single Household Profile) based on custom share inputs
+            function updateTrace6() {
                 // Update trace6's Y-values in the Plotly plot
                 Plotly.restyle(plotElement, { 'y': [National] }, [4]); // trace6 is at index 4
             }
@@ -378,6 +400,7 @@ function demand_ts(project_id) {
                     const oldValue = previousValues[inputId];
                     if (isSignificantChange(newValue, oldValue)) {
                         previousValues[inputId] = newValue;
+                        updateNationalArray()
                         updateTrace6();
                         calibrate_demand(true);
                         households = National.map(value => value * num_households);
@@ -388,11 +411,11 @@ function demand_ts(project_id) {
             }
 
             // Add event listeners with threshold logic
-            customShare1.addEventListener('input', handleInputChange('custom_share_1'));
-            customShare2.addEventListener('input', handleInputChange('custom_share_2'));
-            customShare3.addEventListener('input', handleInputChange('custom_share_3'));
-            customShare4.addEventListener('input', handleInputChange('custom_share_4'));
-            customShare5.addEventListener('input', handleInputChange('custom_share_5'));
+            customShare1.addEventListener('input', handleInputChange('custom_share_1'), 250, false);
+            customShare2.addEventListener('input', handleInputChange('custom_share_2'), 250, false);
+            customShare3.addEventListener('input', handleInputChange('custom_share_3'), 250, false);
+            customShare4.addEventListener('input', handleInputChange('custom_share_4'), 250, false);
+            customShare5.addEventListener('input', handleInputChange('custom_share_5'), 250, false);
 
             // Add event listeners to radio buttons
             radioTotalDemand.addEventListener('change', showOnlySelection);
@@ -459,12 +482,14 @@ function demand_ts(project_id) {
                 }
             }
 
-            option7Radio.addEventListener('change', handleRadioButtonChange);
-            option8Radio.addEventListener('change', handleRadioButtonChange);
+            option7Radio.addEventListener('change', handleRadioButtonChange, 1, false);
+            option8Radio.addEventListener('change', handleRadioButtonChange, 1, false);
 
-            // Add event listeners to the calibration input fields
-            averageDailyEnergyInput.addEventListener('input', handleCalibrationInputChange);
-            maximumPeakLoadInput.addEventListener('input', handleCalibrationInputChange);
+
+            // Add event listeners to the calibration input fields with debounce
+            averageDailyEnergyInput.addEventListener('input', debounce(handleCalibrationInputChange, 1000, false));
+            maximumPeakLoadInput.addEventListener('input', debounce(handleCalibrationInputChange, 1000, false));
+
 
 
         })

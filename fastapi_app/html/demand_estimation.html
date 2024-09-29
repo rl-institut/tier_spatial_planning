@@ -179,9 +179,9 @@
                                     represent weighted combinations of each of these consumption categories that
                                     match the observed data in each of the geographic zones.
                             </div>
-                                                    <p><br></p>
-                        <hr>
-                        <p style="display: flex; justify-content: space-between; align-items: center; color: var(--ccb);">
+                            <p><br></p>
+                            <hr>
+                            <p style="display: flex; justify-content: space-between; align-items: center; color: var(--ccb);">
                         <span style="display: flex; align-items: center; margin-left: 10px">
                             <a id="downloadDemand" class="btn btn--medium"
                                style="height: 32px; display: flex; align-items: center; justify-content: center; margin-right: 10px; color: #fff;"
@@ -194,86 +194,80 @@
                                 <option value="xlsx">File type: XLSX</option>
                             </select>
                         </span>
-                            <span style="display: flex; align-items: center; ; margin-right: 10px">
+                                <span style="display: flex; align-items: center; ; margin-right: 10px">
                             <a style="margin-right: 10px;">Show Advanced Options</a>
                             <label class="switch">
                                 <input type="checkbox" id="toggleswitch">
                                 <span class="slider round"></span>
                             </label>
                         </span>
-                        </p>
+                            </p>
                         </div>
 
                     </div>
+                    <div class="accordion-item" style="border-top: none; padding: 10px">
+                        <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo">
+                            <div class="accordion-body">
+                                <p><a><br>Set Custom Total Profile Calibration Values (Optional)</a></p>
+                                <p>These options will calibrate the total community demand profile to set value below <b>(including
+                                    enterprises and any other non-household demands chosen previously)</b>.<br>They can be
+                                    calibrated either by total annual mini-grid energy demand OR maximum peak demand over
+                                    the year - both cannot be chosen together.<br>This is compatible with choosing custom
+                                    percentage shares of consumption categories, but the total will be re-scaled
+                                    accordingly.</p>
 
-
-                </div>
-            </div>
-            <div class="accordion-item" style="border-top: none; padding: 10px">
-                <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo">
-                    <div class="accordion-body">
-
-
-                        <p><a><br>Set Custom Total Profile Calibration Values (Optional)</a></p>
-                        <p>These options will calibrate the total community demand profile to set value below <b>(including
-                            enterprises and any other non-household demands chosen previously)</b>.<br>They can be
-                            calibrated either by total annual mini-grid energy demand OR maximum peak demand over
-                            the year - both cannot be chosen together.<br>This is compatible with choosing custom
-                            percentage shares of consumption categories, but the total will be re-scaled
-                            accordingly.</p>
-
-                        <div class="btn-group-vertical btn-group-toggle" data-toggle="buttons">
-                            <label class="btn btn-custom active d-flex align-items-center justify-content-between">
+                                <div class="btn-group-vertical btn-group-toggle" data-toggle="buttons">
+                                    <label class="btn btn-custom active d-flex align-items-center justify-content-between">
                                 <span style="width: 450px">
                                     <input type="radio" name="options2" id="option7" autocomplete="off" checked>
                                     Set Average Total Annual Energy (kWh/year)
                                 </span>
-                                <div class="input-group" style="max-width: 200px">
-                                    <input
-                                            type="number"
-                                            class="form-control"
-                                            id="average_daily_energy"
-                                            placeholder=""
-                                            value=""
-                                            min="1"
-                                            max="100000000"
-                                            step="1000"
-                                            required
-                                    />
-                                    <span class="input-group-text" style="margin-right: 8px;">kWh</span>
-                                </div>
-                            </label>
-                            <label class="btn btn-custom d-flex align-items-center justify-content-between">
+                                        <div class="input-group" style="max-width: 200px">
+                                            <input
+                                                    type="number"
+                                                    class="form-control"
+                                                    id="average_daily_energy"
+                                                    placeholder=""
+                                                    value=""
+                                                    min="1"
+                                                    max="100000000"
+                                                    step="1000"
+                                                    required
+                                            />
+                                            <span class="input-group-text" style="margin-right: 8px;">kWh</span>
+                                        </div>
+                                    </label>
+                                    <label class="btn btn-custom d-flex align-items-center justify-content-between">
                                 <span style="width: 450px">
                                     <input type="radio" name="options2" id="option8" autocomplete="off">
                                     Set Maximum Peak Demand (kW)
                                 </span>
-                                <div class="input-group" style="max-width: 200px">
-                                    <input
-                                            type="number"
-                                            class="form-control"
-                                            id="maximum_peak_load"
-                                            placeholder=""
-                                            value=""
-                                            min="1"
-                                            max="100000"
-                                            step="1"
-                                            required
-                                            disabled
-                                    />
-                                    <span class="input-group-text" style="margin-right: 8px;">kW</span>
+                                        <div class="input-group" style="max-width: 200px">
+                                            <input
+                                                    type="number"
+                                                    class="form-control"
+                                                    id="maximum_peak_load"
+                                                    placeholder=""
+                                                    value=""
+                                                    min="1"
+                                                    max="100000"
+                                                    step="1"
+                                                    required
+                                                    disabled
+                                            />
+                                            <span class="input-group-text" style="margin-right: 8px;">kW</span>
+                                        </div>
+                                    </label>
                                 </div>
-                            </label>
+
+                            </div>
+
                         </div>
-
                     </div>
-
-                </div>
-            </div>
-            <div class="accordion-item" style="border-top: none; padding: 10px">
-                <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree">
-                    <div class="accordion-body">
-                        <p style="display: flex; align-items: center; color: var(--ccb);">
+                    <div class="accordion-item" style="border-top: none; padding: 10px">
+                        <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree">
+                            <div class="accordion-body">
+                                <p style="display: flex; align-items: center; color: var(--ccb);">
                                 <span style="display: flex; align-items: center;">
                                     <input type="file" id="fileInput" style="display: none;"/>
                                     <a id="importButton" class="btn btn--medium"
@@ -284,13 +278,17 @@
                                           style="margin-right: 10px;">
                                     </span>
                                 </span>
-                            <a style="margin-left: 20px; margin-right: 20px;">Status: </a>
-                            <a id="uploadStatus" style="margin-right: 10px;">No File Uploaded</a>
-                        </p>
+                                    <a style="margin-left: 20px; margin-right: 20px;">Status: </a>
+                                    <a id="uploadStatus" style="margin-right: 10px;">No File Uploaded</a>
+                                </p>
 
+                            </div>
+                        </div>
                     </div>
+
                 </div>
             </div>
+
         </div>
         </div>
     </section>
@@ -300,14 +298,7 @@
 </body>
 {% include '_scripts.html' %}
 <script>let project_id = "{{ project_id }}";
-let steps = {
-{
-    steps | tojson |
-default
-    ('null')
-}
-}
-;</script>
+let steps = {{ steps | tojson | default('null') }};</script>
 <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <script src="https://cdn.plot.ly/plotly-2.0.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.0/jspdf.umd.min.js"></script>
