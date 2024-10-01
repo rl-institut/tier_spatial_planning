@@ -19,8 +19,6 @@
                 <div class="accordion" id="accordionExample" style="margin-top: 12px">
                     <div class="accordion-item" style="padding: 10px">
                         <h2 class="accordion-header" id="headingOne">
-
-
                             <button class="accordion-button no-arrow" type="button">
                                 <span style="flex-grow: 1;">Set Consumer Properties</span>
                                 <span style="flex-shrink: 0;  margin-right: 20px;">
@@ -195,7 +193,7 @@
                             </select>
                         </span>
                                 <span style="display: flex; align-items: center; ; margin-right: 10px">
-                            <a style="margin-right: 10px;">Show Advanced Options</a>
+                            <a style="margin-right: 10px;">Activate Custom Calibration</a>
                             <label class="switch">
                                 <input type="checkbox" id="toggleswitch">
                                 <span class="slider round"></span>
@@ -215,13 +213,12 @@
                                     the year - both cannot be chosen together.<br>This is compatible with choosing custom
                                     percentage shares of consumption categories, but the total will be re-scaled
                                     accordingly.</p>
-
                                 <div class="btn-group-vertical btn-group-toggle" data-toggle="buttons">
-                                    <label class="btn btn-custom active d-flex align-items-center justify-content-between">
-                                <span style="width: 450px">
-                                    <input type="radio" name="options2" id="option7" autocomplete="off" checked>
-                                    Set Average Total Annual Energy (kWh/year)
-                                </span>
+    <label class="btn btn-custom active d-inline-flex align-items-center justify-content-start">
+        <span style="width: 450px; text-align: left;">
+            <input type="radio" name="options2" id="option7" autocomplete="off" checked>
+            Set Average Total Annual Energy (kWh/year)
+        </span>
                                         <div class="input-group" style="max-width: 200px">
                                             <input
                                                     type="number"
@@ -237,11 +234,11 @@
                                             <span class="input-group-text" style="margin-right: 8px;">kWh</span>
                                         </div>
                                     </label>
-                                    <label class="btn btn-custom d-flex align-items-center justify-content-between">
-                                <span style="width: 450px">
-                                    <input type="radio" name="options2" id="option8" autocomplete="off">
-                                    Set Maximum Peak Demand (kW)
-                                </span>
+    <label class="btn btn-custom d-inline-flex align-items-center justify-content-start">
+        <span style="width: 450px; text-align: left;">
+            <input type="radio" name="options2" id="option8" autocomplete="off">
+            Set Maximum Peak Demand (kW)
+        </span>
                                         <div class="input-group" style="max-width: 200px">
                                             <input
                                                     type="number"

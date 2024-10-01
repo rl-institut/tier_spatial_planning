@@ -1096,7 +1096,8 @@ async def get_demand_plot_data(project_id, request: Request):
         demand_opt_dict['custom_share_3'] = 7.6
         demand_opt_dict['custom_share_4'] = 3.1
         demand_opt_dict['custom_share_5'] = 1.5
-    demand_df, calibration_target_value, calibration_option = get_demand_time_series(nodes, demand_opt_dict)
+    demand_df, calibration_target_value, calibration_option, calibration_factor = get_demand_time_series(nodes, demand_opt_dict,
+                                                                                                         df_only=False)
     demand_df = demand_df.iloc[:24, :].reset_index(drop=True)
     df = demand_time_series_df()
     for col in df.columns:
@@ -1106,6 +1107,7 @@ async def get_demand_plot_data(project_id, request: Request):
     res_dict = df.to_dict('list')
     res_dict['calibration_target_value'] = calibration_target_value
     res_dict['calibration_option'] = calibration_option
+    res_dict['calibration_factor'] = calibration_factor
     res_dict['num_households'] = len(nodes[(nodes['consumer_type'] == 'household') & (nodes['is_connected'] == True)].index)
     return res_dict
 
@@ -1376,7 +1378,7 @@ async def export_demand(project_id, file_type: str, request: Request):
     nodes = pd.read_json(nodes.data)
     demand_opt_dict = await async_queries.get_model_instance(sa_tables.Demand, user.id, project_id)
     demand_opt_dict = demand_opt_dict.to_dict()
-    demand_full_year = get_demand_time_series(nodes, demand_opt_dict).sum(axis=1).to_frame('Demand')
+    demand_full_year = get_demand_time_series(nodes, demand_opt_dict, df_only=True).sum(axis=1).to_frame('Demand')
     df = demand_full_year.loc[ts.values]['Demand'].copy()
     df.index = df.index.strftime('%m.%d %H:%M')
     df = df.reset_index()

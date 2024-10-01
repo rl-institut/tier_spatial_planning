@@ -144,8 +144,12 @@ function demand_ts(project_id) {
                 'public_services': public_services,
                 'calibration_target_value': calibration_target_value,
                 'calibration_option': calibration_option,
+                'calibration_factor': calibration_factor,
                 'num_households': num_households
             } = data;
+
+            const enterprises_raw = enterprises.map(value => value / calibration_factor);
+            const public_services_raw = public_services.map(value => value / calibration_factor);
 
             // Get references to the elements
             const toggleSwitch = document.getElementById('toggleswitch');
@@ -322,28 +326,21 @@ function demand_ts(project_id) {
             }
 
             function calibrate_demand(reverse = false) {
+
+                var households_raw = National.map(value => value * num_households);
+
                 let calibration_factor;
-
+                const total_demand_raw = calculateTotalDemand(households_raw, enterprises_raw, public_services_raw);
                 if (calibration_option === 'kW') {
-                    calibration_factor = calibration_target_value / Math.max(...Total_Demand);
-
-                }
-                else if (calibration_option === 'kWh') {
-                    calibration_factor = calibration_target_value / Total_Demand.reduce((a, b) => a + b, 0) ;
-                }
-                else {
-                    return
-                }
-
-                if (reverse === false) {
-                    households.forEach((value, index) => households[index] *= calibration_factor);
-                    enterprises.forEach((value, index) => enterprises[index] *= calibration_factor);
-                    public_services.forEach((value, index) => public_services[index] *= calibration_factor);
+                    calibration_factor = calibration_target_value / Math.max(...total_demand_raw);
+                } else if (calibration_option === 'kWh') {
+                    calibration_factor = calibration_target_value / total_demand_raw.reduce((a, b) => a + b, 0);
                 } else {
-                    households.forEach((value, index) => households[index] /= calibration_factor);
-                    enterprises.forEach((value, index) => enterprises[index] /= calibration_factor);
-                    public_services.forEach((value, index) => public_services[index] /= calibration_factor);
+                    calibration_factor = 1
                 }
+                households = households_raw.map(value => value * calibration_factor);
+                enterprises = enterprises_raw.map(value => value * calibration_factor);
+                public_services = public_services_raw.map(value => value * calibration_factor);
             }
 
             function updateTrace7to10() {
@@ -362,24 +359,58 @@ function demand_ts(project_id) {
                 const share4 = parseFloat(customShare4.value) / 100 || 0;
                 const share5 = parseFloat(customShare5.value) / 100 || 0;
 
-                // Update 'National' array elements directly
                 National.forEach((val, idx) => {
                     National[idx] = (share1 * trace1Y[idx]) +
                                     (share2 * trace2Y[idx]) +
                                     (share3 * trace3Y[idx]) +
                                     (share4 * trace4Y[idx]) +
                                     (share5 * trace5Y[idx]);
-                });
-                // Update 'National' array elements directly
-                National.forEach((val, idx) => {
-                    National[idx] = (share1 * trace1Y[idx]) +
-                                    (share2 * trace2Y[idx]) +
-                                    (share3 * trace3Y[idx]) +
-                                    (share4 * trace4Y[idx]) +
-                                    (share5 * trace5Y[idx]);
-                });
+                0});
             }
 
+            // Attach event listener to reset button
+            document.getElementById('resetDefault').addEventListener('click', resetToDefault);
+
+            function resetToDefault() {
+                // Set default values for custom shares
+                customShare1.value = 66.3;
+                customShare2.value = 21.5;
+                customShare3.value = 7.6;
+                customShare4.value = 3.1;
+                customShare5.value = 1.5;
+
+                // Update previousValues to match defaults
+                previousValues['custom_share_1'] = 66.3;
+                previousValues['custom_share_2'] = 21.5;
+                previousValues['custom_share_3'] = 7.6;
+                previousValues['custom_share_4'] = 3.1;
+                previousValues['custom_share_5'] = 1.5;
+
+                // Recalculate 'National' using default shares
+                updateNationalArray();
+
+                // Update trace6 (Single Household Profile)
+                updateTrace6();
+
+                // Reset calibration settings
+                calibration_target_value = 1;
+                calibration_option = null;
+
+                // Recalculate 'households' based on new 'National' and 'num_households'
+                households = National.map(value => value * num_households);
+
+                // Reset 'enterprises' and 'public_services' to their raw values
+                enterprises = enterprises_raw.slice(); // Make a copy to avoid modifying the original array
+                public_services = public_services_raw.slice(); // Make a copy
+
+                // Recalculate 'Total_Demand'
+                Total_Demand = calculateTotalDemand(households, enterprises, public_services);
+
+                // Update the plot for traces 0 to 3 (Total Demand, public services, enterprises, households)
+                Plotly.restyle(plotElement, {
+                    'y': [Total_Demand, public_services, enterprises, households]
+                }, [0, 1, 2, 3]);
+            }
 
             // Updates trace6 (Single Household Profile) based on custom share inputs
             function updateTrace6() {
@@ -402,9 +433,7 @@ function demand_ts(project_id) {
                         previousValues[inputId] = newValue;
                         updateNationalArray()
                         updateTrace6();
-                        calibrate_demand(true);
-                        households = National.map(value => value * num_households);
-                        calibrate_demand(false);
+                        calibrate_demand();
                         updateTrace7to10();
                     }
                 };

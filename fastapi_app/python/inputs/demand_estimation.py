@@ -14,25 +14,27 @@ and consumer types.
 Note: This module was not developed by the TU Berlin but rather by the Rainer Limone Institute.
 """
 
-def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, distribution_lookup=None):
+def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, df_only=True):
     num_households =     len(nodes[(nodes['consumer_type'] == 'household') & (nodes['is_connected'] == True)].index)
     calibration_target_value, calibration_option = get_calibration_target(demand_par_dict)
     if all_profiles is None:
         all_profiles = pd.read_parquet(path=config.FULL_PATH_PROFILES, engine="pyarrow")
     df_hh_profile = combine_hh_profiles(all_profiles,
-                                         num_households=num_households,
-                                         demand_par_dict=demand_par_dict)
+                                        num_households=num_households,
+                                        demand_par_dict=demand_par_dict)
     enterprise_nodes = nodes[(nodes['consumer_type'] == 'enterprise') & (nodes['is_connected'] == True)]
     public_service_nodes = nodes[(nodes['consumer_type'] == 'public_service') & (nodes['is_connected'] == True)]
     df_ent_profile = combine_ent_or_pubs_profiles(all_profiles, enterprise_nodes)
     df_pub_profile = combine_ent_or_pubs_profiles(all_profiles, public_service_nodes)
-    df  = calibrate_profiles(
-        df_hh_profile=df_hh_profile,
-        df_ent_profile=df_ent_profile,
-        df_pub_profile=df_pub_profile,
-        calibration_target_value=calibration_target_value,
-        calibration_option=calibration_option) / 1000
-    return df, calibration_target_value, calibration_option
+    df, calibration_factor = calibrate_profiles(df_hh_profile,
+                                                df_ent_profile,
+                                                df_pub_profile,
+                                                calibration_target_value,
+                                                calibration_option)
+    if df_only:
+        return df / 1000
+    else:
+        return df / 1000, calibration_target_value, calibration_option, calibration_factor
 
 
 def get_calibration_target(demand_par_dict):
@@ -101,6 +103,7 @@ def combine_hh_profiles(all_profiles, num_households, demand_par_dict):
 
 
 def calibrate_profiles(df_hh_profile, df_ent_profile, df_pub_profile, calibration_target_value, calibration_option=None):
+    calibration_factor = 1
     df_lst = [df_hh_profile, df_ent_profile, df_pub_profile]
     ts = [df for df in df_lst if not df.empty][0].index
     for i, df in enumerate(df_lst):
@@ -108,14 +111,14 @@ def calibrate_profiles(df_hh_profile, df_ent_profile, df_pub_profile, calibratio
             df_lst[i] = pd.DataFrame(0, index=ts, columns=['value'])
     if calibration_option is not None:
         if calibration_option == "kWh":
-            calibration_factor = calibration_target_value / (df_hh_profile + df_ent_profile + df_pub_profile).sum().div(1000)
+            calibration_factor = calibration_target_value / ((df_hh_profile + df_ent_profile + df_pub_profile).sum() / 1000)
         elif calibration_option == "kW":
-            calibration_factor = calibration_target_value / (df_hh_profile + df_ent_profile + df_pub_profile).max().div(1000)
+            calibration_factor = calibration_target_value / ((df_hh_profile + df_ent_profile + df_pub_profile).max() / 1000)
         for i, df in enumerate(df_lst):
             df_lst[i] = df_lst[i] * calibration_factor
     df = pd.concat(df_lst, axis=1)
     df.columns = ['households', 'enterprises', 'public_services']
-    return df
+    return df, calibration_factor
 
 
 def demand_time_series_df():
