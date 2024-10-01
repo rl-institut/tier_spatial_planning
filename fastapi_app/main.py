@@ -2,10 +2,15 @@ import ast
 import asyncio
 import base64
 import json
+import subprocess
 import os
 import io
+import aiofiles
+import cairosvg
+import tempfile
 import random
 import uuid
+import urllib.parse
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Union, Optional
@@ -19,7 +24,6 @@ from fastapi.templating import Jinja2Templates
 from jose import jwt
 from passlib.context import CryptContext
 
-import fastapi_app
 from fastapi_app.python import config
 from fastapi_app.python.inputs.demand_estimation import demand_time_series_df, get_demand_time_series
 from fastapi_app.python.db import async_inserts, sync_queries, async_queries, sync_inserts, sa_tables, \
@@ -1360,6 +1364,107 @@ async def export_data(project_id, file_type: str, request: Request):
                                  media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_results.xlsx"
     return response
+
+
+@app.post("/download_pdf_report/{project_id}")
+async def download_pdf_report(project_id: int, request: Request):
+    try:
+        data = await request.json()
+        images = data.get('images')
+
+        if not images or not isinstance(images, list):
+            raise HTTPException(status_code=400, detail="No images data provided")
+
+        image_files = []
+
+        for image in images:
+            plot_id = image.get('id')
+            image_data = image.get('data')
+
+            if not plot_id or not image_data:
+                continue  # Skip if data is missing
+
+            # Detect and decode URL-encoded SVG data
+            if image_data.startswith('data:image/svg+xml,'):
+                # Remove 'data:image/svg+xml,' prefix and URL-decode the SVG
+                image_data = image_data.replace('data:image/svg+xml,', '')
+                svg_text = urllib.parse.unquote(image_data)
+                svg_bytes = svg_text.encode('utf-8')
+            else:
+                continue  # Skip if format is unsupported
+
+            # Convert SVG to PDF in-memory using cairosvg
+            # Create a temporary file for the image
+            temp_image_file = tempfile.NamedTemporaryFile(suffix='.pdf', delete=False)
+            temp_image_file.close()
+
+            # Convert SVG to PDF and save to temporary file
+            cairosvg.svg2pdf(bytestring=svg_bytes, write_to=temp_image_file.name)
+            image_files.append({'plot_id': plot_id, 'file_path': temp_image_file.name})
+
+        # Create LaTeX document including these images
+        with tempfile.TemporaryDirectory() as tempdir:
+            # Prepare LaTeX content
+            latex_content = r'''
+            \documentclass{article}
+            \usepackage{graphicx}
+            \usepackage{float}
+            \usepackage[margin=1in]{geometry}
+            \begin{document}
+            '''
+
+            for image_file in image_files:
+                plot_id = image_file['plot_id']
+                file_path = image_file['file_path']
+                # Move the image file to the temporary directory
+                image_filename = os.path.basename(file_path)
+                new_image_path = os.path.join(tempdir, image_filename)
+                os.rename(file_path, new_image_path)
+                # Include image in LaTeX document
+                latex_content += f'''
+                \\section*{{{plot_id.replace('_', ' ').title()}}}
+                \\begin{{figure}}[H]
+                \\centering
+                \\includegraphics[width=\\linewidth]{{{image_filename}}}
+                \\end{{figure}}
+                '''
+            latex_content += r'\end{document}'
+
+            # Write LaTeX content to a file
+            tex_file_path = os.path.join(tempdir, 'report.tex')
+            with open(tex_file_path, 'w') as tex_file:
+                tex_file.write(latex_content)
+
+            # Compile the LaTeX document to PDF
+            command = ['pdflatex', '-interaction', 'nonstopmode', 'report.tex']
+            proc = subprocess.Popen(command, cwd=tempdir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = proc.communicate()
+
+            if proc.returncode != 0:
+                raise Exception(f"LaTeX compilation failed: {stderr.decode()}")
+
+            # Read the generated PDF file
+            pdf_file_path = os.path.join(tempdir, 'report.pdf')
+            if not os.path.exists(pdf_file_path):
+                raise Exception("PDF file was not created.")
+
+            # Read PDF content
+            with open(pdf_file_path, 'rb') as pdf_file:
+                pdf_content = pdf_file.read()
+
+            # Cleanup temporary image files
+            for image_file in image_files:
+                if os.path.exists(image_file['file_path']):
+                    os.remove(image_file['file_path'])
+
+            # Return the PDF file as a response
+            return Response(content=pdf_content, media_type='application/pdf',
+                            headers={"Content-Disposition": f"attachment; filename=report_{project_id}.pdf"})
+
+    except HTTPException as http_exc:
+        return JSONResponse(content={"error": http_exc.detail}, status_code=http_exc.status_code)
+    except Exception as e:
+        return JSONResponse(content={"error": f"An error occurred: {str(e)}"}, status_code=500)
 
 
 @app.get("/export_demand/{project_id}/{file_type}/")

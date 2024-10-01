@@ -135,14 +135,20 @@
                        class="btn btn--medium"
                        style="height: 32px; display: flex; align-items: center; justify-content: center; width: 50%; margin-right: 10px;"
                        href="#">Download Results (xlsx-format)</a>
+                    <a id="downloadPDF"
+                       class="btn btn--medium"
+                       style="height: 32px; display: flex; align-items: center; justify-content: center; width: 50%; margin-right: 10px;"
+                       href="#">Download Results (PDF)</a>
                     <a id="rerunCalculation"
                        class="btn btn--medium"
-                       style="height: 32px; display: flex; align-items: center; justify-content: center; width: 50%; margin-left: 10px;"
+                       style="height: 32px; display: flex; align-items: center; justify-content: center; width: 50%; margin-right: 10px;
+                       margin-left: 10px"
                        href="javascript:void(0);"
                        onclick="forward_if_no_task_is_pending({{ project_id }});">Recalculate</a>
+                    <a class="btn btn--medium"
+                       style="height: 32px; display: flex; align-items: center; justify-content: center; width: 50%"
+                       href="/">My Projects</a>
                 </div>
-
-
             </div>
             <div class="row" id="resultsChart">
                 <div class="col" style="display: flex; justify-content: center;">

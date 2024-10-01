@@ -86,7 +86,7 @@ async def get_input_df(user_id, project_id):
     grid_design = await get_model_instance(sa_tables.GridDesign, user_id, project_id)
     grid_design = grid_design.to_dict()
     project_setup.update(grid_design)
-    df = pd.DataFrame.from_records(project_setup).drop(columns=['id', 'project_id'])
+    df = pd.DataFrame.from_records([project_setup]).drop(columns=['id', 'project_id'])
     return df
 
 

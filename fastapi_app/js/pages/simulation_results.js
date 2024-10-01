@@ -1,6 +1,117 @@
 document.getElementById('downloadCSV').addEventListener('click', function () {
     window.location.href = '/download_data/' + project_id + '/csv';
 });
+
+document.getElementById('downloadPDF').addEventListener('click', function () {
+        const plotIds = [
+        'optimalSizes',
+        'sankeyDiagram',
+        'energyFlows',
+        'lcoeBreakdown',
+        'demandCoverage',
+        'durationCurves',
+        'co2Emissions'
+        ];
+        generatePlotImages(plotIds)
+        .then(function(images) {
+            // Filter out any null values in case some images failed
+            images = images.filter(img => img !== null);
+            // Send the images to the backend
+            sendImagesToBackend(images);
+        })
+        .catch(function(error) {
+            console.error('Error generating plot images:', error);
+        });
+});
+
+function sendImagesToBackend(images) {
+    const data = {
+        images: images  // Array of { id: plotId, data: imageData }
+    };
+
+    fetch(`/download_pdf_report/` + project_id, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.blob(); // Get the response as a blob (PDF file)
+    })
+    .then(blob => {
+        // Create a URL for the blob
+        const url = window.URL.createObjectURL(blob);
+
+        // Create a temporary link to trigger the download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `report_${project_id}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+
+        // Clean up
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+}
+
+
+
+function generatePlotImages(plotIds) {
+    let imagePromises = [];
+
+    plotIds.forEach(plotId => {
+        let plotElement = document.getElementById(plotId);
+        if (plotElement) {
+            let imagePromise = Plotly.toImage(plotElement, {format: 'svg'})
+                .then(function(imageData) {
+                    return { id: plotId, data: imageData };
+                })
+                .catch(function(error) {
+                    console.error(`Error generating image for ${plotId}:`, error);
+                    return null;
+                });
+            imagePromises.push(imagePromise);
+        } else {
+            console.warn(`Plot element with ID '${plotId}' not found.`);
+        }
+    });
+
+    return Promise.all(imagePromises);
+}
+
+
+
+function sendImageToBackend(imageData) {
+    // Prepare the data payload
+    const data = {
+        image: imageData
+    };
+
+    // Send the data using fetch API
+    fetch('/download_pdf_report/' + project_id, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Image saved successfully:', data);
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+}
+
 var targetNode = document.getElementById('responseMsg');
 var config = {childList: true, subtree: true, characterData: true};
 var callback = function (mutationsList, observer) {
