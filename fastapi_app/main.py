@@ -8,6 +8,8 @@ import io
 import aiofiles
 import cairosvg
 import tempfile
+from PIL import Image as PILImage
+from svglib.svglib import svg2rlg
 import random
 import uuid
 import urllib.parse
@@ -17,6 +19,9 @@ from typing import List, Dict, Union, Optional
 import pandas as pd
 import pyutilib.subprocess.GlobalData
 from captcha.image import ImageCaptcha
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Image, Spacer
+from reportlab.lib.units import inch
 from fastapi import FastAPI, Request, Response, HTTPException, File, UploadFile
 from fastapi.responses import RedirectResponse, FileResponse, JSONResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -1368,103 +1373,79 @@ async def export_data(project_id, file_type: str, request: Request):
 
 @app.post("/download_pdf_report/{project_id}")
 async def download_pdf_report(project_id: int, request: Request):
-    try:
-        data = await request.json()
-        images = data.get('images')
+    data = await request.json()
+    images = data.get('images')
 
-        if not images or not isinstance(images, list):
-            raise HTTPException(status_code=400, detail="No images data provided")
+    if not images or not isinstance(images, list):
+        raise HTTPException(status_code=400, detail="No images data provided")
 
-        image_files = []
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
 
-        for image in images:
-            plot_id = image.get('id')
-            image_data = image.get('data')
+    elements = []
 
-            if not plot_id or not image_data:
-                continue  # Skip if data is missing
+    for image in images:
+        plot_id = image.get('id')
+        image_data = image.get('data')
 
-            # Detect and decode URL-encoded SVG data
-            if image_data.startswith('data:image/svg+xml,'):
-                # Remove 'data:image/svg+xml,' prefix and URL-decode the SVG
-                image_data = image_data.replace('data:image/svg+xml,', '')
-                svg_text = urllib.parse.unquote(image_data)
-                svg_bytes = svg_text.encode('utf-8')
-            else:
-                continue  # Skip if format is unsupported
+        if not plot_id or not image_data:
+            continue
 
-            # Convert SVG to PDF in-memory using cairosvg
-            # Create a temporary file for the image
-            temp_image_file = tempfile.NamedTemporaryFile(suffix='.pdf', delete=False)
-            temp_image_file.close()
+        if image_data.startswith('data:image/svg+xml,'):
+            image_data = image_data.replace('data:image/svg+xml,', '')
+            svg_text = urllib.parse.unquote(image_data)
+            img_bytes = svg_text.encode('utf-8')
+            drawing = svg2rlg(io.BytesIO(img_bytes))
 
-            # Convert SVG to PDF and save to temporary file
-            cairosvg.svg2pdf(bytestring=svg_bytes, write_to=temp_image_file.name)
-            image_files.append({'plot_id': plot_id, 'file_path': temp_image_file.name})
+            # Optional: Skalieren Sie das Drawing, um in die Seite zu passen
+            max_width, max_height = A4
+            scale_x = max_width / drawing.width
+            scale_y = (max_height - 2 * inch) / drawing.height  # Platz für Spacer lassen
+            scale = min(scale_x, scale_y, 1)  # Verhindern Sie Hochskalierung
+            drawing.scale(scale, scale)
 
-        # Create LaTeX document including these images
-        with tempfile.TemporaryDirectory() as tempdir:
-            # Prepare LaTeX content
-            latex_content = r'''
-            \documentclass{article}
-            \usepackage{graphicx}
-            \usepackage{float}
-            \usepackage[margin=1in]{geometry}
-            \begin{document}
-            '''
+            # Fügen Sie den Drawable zum PDF hinzu
+            elements.append(drawing)
+            elements.append(Spacer(1, 0.5 * inch))  # Platz nach jedem Bild
+        else:
+            img_bytes = image_data.replace('data:image/png;base64,', '')
+            img_bytes = base64.b64decode(img_bytes)
+            image_io = io.BytesIO(img_bytes)
+            # Verwenden Sie Pillow, um die Bildgröße zu ermitteln
+            pil_image = PILImage.open(image_io)
+            width_px, height_px = pil_image.size
+            dpi = 96  # Standard-Web-DPI; anpassen, falls erforderlich
+            width_inch = width_px / dpi
+            height_inch = height_px / dpi
 
-            for image_file in image_files:
-                plot_id = image_file['plot_id']
-                file_path = image_file['file_path']
-                # Move the image file to the temporary directory
-                image_filename = os.path.basename(file_path)
-                new_image_path = os.path.join(tempdir, image_filename)
-                os.rename(file_path, new_image_path)
-                # Include image in LaTeX document
-                latex_content += f'''
-                \\section*{{{plot_id.replace('_', ' ').title()}}}
-                \\begin{{figure}}[H]
-                \\centering
-                \\includegraphics[width=\\linewidth]{{{image_filename}}}
-                \\end{{figure}}
-                '''
-            latex_content += r'\end{document}'
+            # Reset BytesIO-Objekt für ReportLab
+            image_io.seek(0)
 
-            # Write LaTeX content to a file
-            tex_file_path = os.path.join(tempdir, 'report.tex')
-            with open(tex_file_path, 'w') as tex_file:
-                tex_file.write(latex_content)
+            # Berechnen Sie die maximale Breite und Höhe in Inches
+            max_width, max_height = A4
+            max_width = max_width / inch - 1  # Einen Zoll Rand lassen
+            max_height = max_height / inch - 1
 
-            # Compile the LaTeX document to PDF
-            command = ['pdflatex', '-interaction', 'nonstopmode', 'report.tex']
-            proc = subprocess.Popen(command, cwd=tempdir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = proc.communicate()
+            # Berechnen Sie die Skalierungsfaktoren, um das Seitenverhältnis beizubehalten
+            scale_x = min(max_width / width_inch, 1)
+            scale_y = min(max_height / height_inch, 1)
+            scale = min(scale_x, scale_y)
 
-            if proc.returncode != 0:
-                raise Exception(f"LaTeX compilation failed: {stderr.decode()}")
+            # Berechnen Sie die endgültigen Bildgrößen
+            final_width = width_inch * scale * inch
+            final_height = height_inch * scale * inch
 
-            # Read the generated PDF file
-            pdf_file_path = os.path.join(tempdir, 'report.pdf')
-            if not os.path.exists(pdf_file_path):
-                raise Exception("PDF file was not created.")
+            # Erstellen Sie ein ReportLab Image-Objekt mit berechneter Größe
+            img = Image(image_io, width=final_width, height=final_height)
+            elements.append(img)
+            elements.append(Spacer(1, 0.5 * inch))  # Platz nach jedem Bild
 
-            # Read PDF content
-            with open(pdf_file_path, 'rb') as pdf_file:
-                pdf_content = pdf_file.read()
+    doc.build(elements)
+    buffer.seek(0)
 
-            # Cleanup temporary image files
-            for image_file in image_files:
-                if os.path.exists(image_file['file_path']):
-                    os.remove(image_file['file_path'])
+    return Response(content=buffer.read(), media_type='application/pdf',
+                    headers={"Content-Disposition": f"attachment; filename=report_{project_id}.pdf"})
 
-            # Return the PDF file as a response
-            return Response(content=pdf_content, media_type='application/pdf',
-                            headers={"Content-Disposition": f"attachment; filename=report_{project_id}.pdf"})
-
-    except HTTPException as http_exc:
-        return JSONResponse(content={"error": http_exc.detail}, status_code=http_exc.status_code)
-    except Exception as e:
-        return JSONResponse(content={"error": f"An error occurred: {str(e)}"}, status_code=500)
 
 
 @app.get("/export_demand/{project_id}/{file_type}/")

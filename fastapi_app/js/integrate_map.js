@@ -98,6 +98,7 @@ function initializeMap(center = null, zoom = null, bounds = null) {
     if (!map) {
         // Only initialize the map if it hasn't been initialized yet
         map = L.map('map', {
+            preferCanvas: true, // This ensures Leaflet renders vectors and geometries on a Canvas.
             maxBounds: nigeriaBounds,
             maxBoundsViscosity: 1.0,
         });

@@ -2,27 +2,98 @@ document.getElementById('downloadCSV').addEventListener('click', function () {
     window.location.href = '/download_data/' + project_id + '/csv';
 });
 
+
 document.getElementById('downloadPDF').addEventListener('click', function () {
-        const plotIds = [
+    const plotIds = [
         'optimalSizes',
         'sankeyDiagram',
         'energyFlows',
         'lcoeBreakdown',
         'demandCoverage',
         'durationCurves',
-        'co2Emissions'
-        ];
-        generatePlotImages(plotIds)
+        'map'
+    ];
+
+    generateImages(plotIds)
         .then(function(images) {
-            // Filter out any null values in case some images failed
-            images = images.filter(img => img !== null);
-            // Send the images to the backend
-            sendImagesToBackend(images);
+            // Filtere null-Werte heraus, falls einige Bilder fehlgeschlagen sind
+            const validImages = images.filter(img => img !== null);
+            if (validImages.length > 0) {
+                // Sende die Bilder an das Backend
+                sendImagesToBackend(validImages);
+            } else {
+                console.warn('Keine gültigen Bilder zum Senden.');
+            }
         })
         .catch(function(error) {
-            console.error('Error generating plot images:', error);
+            console.error('Fehler beim Generieren der Plotbilder:', error);
         });
 });
+
+function generateImages(plotIds) {
+    const imagePromises = plotIds.map(plotId => {
+        const plotElement = document.getElementById(plotId);
+        if (!plotElement) {
+            console.warn(`Plot-Element mit ID '${plotId}' wurde nicht gefunden.`);
+            return Promise.resolve(null);
+        }
+
+        if (plotId === "map") {
+            return generateMapImage(map) // Stellen Sie sicher, dass 'map' definiert ist
+                .then(function(imageData) {
+                    return { id: plotId, data: imageData };
+                })
+                .catch(function(error) {
+                    console.error(`Fehler beim Generieren des Bildes für ${plotId}:`, error);
+                    return null;
+                });
+        } else {
+            return Plotly.toImage(plotElement, { format: 'svg' })
+                .then(function(imageData) {
+                    return { id: plotId, data: imageData };
+                })
+                .catch(function(error) {
+                    console.error(`Fehler beim Generieren des Bildes für ${plotId}:`, error);
+                    return null;
+                });
+        }
+    });
+
+    return Promise.all(imagePromises);
+}
+
+function generateMapImage(map) {
+    return new Promise((resolve, reject) => {
+        if (!map || typeof map.getContainer !== 'function') {
+            console.error('Map-Objekt ist nicht definiert oder ungültig.');
+            return reject(new Error('Ungültiges Map-Objekt.'));
+        }
+
+        const mapContainer = map.getContainer();
+
+        html2canvas(mapContainer, {
+            useCORS: true, // Cross-Origin Bilder erlauben, falls vorhanden
+            allowTaint: true,
+            logging: false,
+            backgroundColor: null,
+            scale: 1, // Erhöht die Auflösung
+            // Versuch, die richtige Rendering-Reihenfolge sicherzustellen
+            windowWidth: mapContainer.scrollWidth,
+            windowHeight: mapContainer.scrollHeight,
+            scrollX: -window.scrollX,
+            scrollY: -window.scrollY
+        })
+        .then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            resolve(imgData);
+        })
+        .catch(err => {
+            console.error('Fehler beim Generieren des Kartenbildes mit html2canvas:', err);
+            reject(err);
+        });
+    });
+}
+
 
 function sendImagesToBackend(images) {
     const data = {
@@ -63,54 +134,6 @@ function sendImagesToBackend(images) {
 }
 
 
-
-function generatePlotImages(plotIds) {
-    let imagePromises = [];
-
-    plotIds.forEach(plotId => {
-        let plotElement = document.getElementById(plotId);
-        if (plotElement) {
-            let imagePromise = Plotly.toImage(plotElement, {format: 'svg'})
-                .then(function(imageData) {
-                    return { id: plotId, data: imageData };
-                })
-                .catch(function(error) {
-                    console.error(`Error generating image for ${plotId}:`, error);
-                    return null;
-                });
-            imagePromises.push(imagePromise);
-        } else {
-            console.warn(`Plot element with ID '${plotId}' not found.`);
-        }
-    });
-
-    return Promise.all(imagePromises);
-}
-
-
-
-function sendImageToBackend(imageData) {
-    // Prepare the data payload
-    const data = {
-        image: imageData
-    };
-
-    // Send the data using fetch API
-    fetch('/download_pdf_report/' + project_id, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Image saved successfully:', data);
-    })
-    .catch((error) => {
-        console.error('Error:', error);
-    });
-}
 
 var targetNode = document.getElementById('responseMsg');
 var config = {childList: true, subtree: true, characterData: true};
