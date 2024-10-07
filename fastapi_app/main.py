@@ -5,9 +5,6 @@ import json
 import subprocess
 import os
 import io
-import aiofiles
-import cairosvg
-import tempfile
 from PIL import Image as PILImage
 from svglib.svglib import svg2rlg
 import random
@@ -1373,75 +1370,59 @@ async def export_data(project_id, file_type: str, request: Request):
 
 @app.post("/download_pdf_report/{project_id}")
 async def download_pdf_report(project_id: int, request: Request):
+    user = await handle_user_accounts.get_user_from_cookie(request)
     data = await request.json()
     images = data.get('images')
-
     if not images or not isinstance(images, list):
         raise HTTPException(status_code=400, detail="No images data provided")
-
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
-
-    elements = []
-
+    image_dict = {}
     for image in images:
         plot_id = image.get('id')
         image_data = image.get('data')
-
         if not plot_id or not image_data:
             continue
-
         if image_data.startswith('data:image/svg+xml,'):
             image_data = image_data.replace('data:image/svg+xml,', '')
             svg_text = urllib.parse.unquote(image_data)
             img_bytes = svg_text.encode('utf-8')
             drawing = svg2rlg(io.BytesIO(img_bytes))
-
-            # Optional: Skalieren Sie das Drawing, um in die Seite zu passen
             max_width, max_height = A4
             scale_x = max_width / drawing.width
-            scale_y = (max_height - 2 * inch) / drawing.height  # Platz für Spacer lassen
-            scale = min(scale_x, scale_y, 1)  # Verhindern Sie Hochskalierung
+            scale_y = (max_height - 2 * inch) / drawing.height
+            scale = min(scale_x, scale_y, 1)
             drawing.scale(scale, scale)
-
-            # Fügen Sie den Drawable zum PDF hinzu
-            elements.append(drawing)
-            elements.append(Spacer(1, 0.5 * inch))  # Platz nach jedem Bild
+            image_dict[plot_id] = drawing
         else:
             img_bytes = image_data.replace('data:image/png;base64,', '')
             img_bytes = base64.b64decode(img_bytes)
             image_io = io.BytesIO(img_bytes)
-            # Verwenden Sie Pillow, um die Bildgröße zu ermitteln
             pil_image = PILImage.open(image_io)
             width_px, height_px = pil_image.size
-            dpi = 96  # Standard-Web-DPI; anpassen, falls erforderlich
+            dpi = 96
             width_inch = width_px / dpi
             height_inch = height_px / dpi
-
-            # Reset BytesIO-Objekt für ReportLab
             image_io.seek(0)
-
-            # Berechnen Sie die maximale Breite und Höhe in Inches
             max_width, max_height = A4
-            max_width = max_width / inch - 1  # Einen Zoll Rand lassen
+            max_width = max_width / inch - 1
             max_height = max_height / inch - 1
-
-            # Berechnen Sie die Skalierungsfaktoren, um das Seitenverhältnis beizubehalten
             scale_x = min(max_width / width_inch, 1)
             scale_y = min(max_height / height_inch, 1)
             scale = min(scale_x, scale_y)
-
-            # Berechnen Sie die endgültigen Bildgrößen
             final_width = width_inch * scale * inch
             final_height = height_inch * scale * inch
-
-            # Erstellen Sie ein ReportLab Image-Objekt mit berechneter Größe
             img = Image(image_io, width=final_width, height=final_height)
-            elements.append(img)
-            elements.append(Spacer(1, 0.5 * inch))  # Platz nach jedem Bild
+            image_dict[plot_id] = img
+    input_parameters_df = await async_queries.get_input_df(user.id, project_id)
+    results_df = await async_queries.get_df(sa_tables.Results, user.id, project_id)
+    energy_flow = await async_queries.get_model_instance(sa_tables.EnergyFlow, user.id, project_id)
+    energy_flow_df = pd.read_json(energy_flow.data) if energy_flow is not None else pd.DataFrame()
+    nodes = await async_queries.get_model_instance(sa_tables.Nodes, user.id, project_id)
+    links = await async_queries.get_model_instance(sa_tables.Links, user.id, project_id)
+    nodes_df = pd.read_json(nodes.data) if nodes is not None else pd.DataFrame()
+    links_df = pd.read_json(links.data) if links is not None else pd.DataFrame()
+    energy_system_design = await async_queries.get_df(sa_tables.EnergySystemDesign, user.id, project_id)
+    doc, buffer = data_to_file.create_pdf_report(image_dict, input_parameters_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df)
 
-    doc.build(elements)
-    buffer.seek(0)
 
     return Response(content=buffer.read(), media_type='application/pdf',
                     headers={"Content-Disposition": f"attachment; filename=report_{project_id}.pdf"})

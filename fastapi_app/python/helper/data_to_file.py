@@ -5,6 +5,17 @@ import os
 import io
 import numpy as np
 import pandas as pd
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph,  Table, TableStyle, PageBreak
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, PageBreak, Table, TableStyle, Spacer, KeepInFrame, Image, KeepTogether
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle, TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
+from reportlab.pdfbase import pdfmetrics
+from reportlab.lib.utils import ImageReader
+from reportlab.lib.units import inch
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+
 
 """
 This module contains functions for generating an Excel file based on the results of the user-project. It includes 
@@ -137,8 +148,7 @@ def check_imported_demand_data(df, input_parameters_df):
     df.index = ts.values[:len(df.index)]
     return df.to_frame('demand'), ''
 
-
-def project_data_df_to_xlsx(input_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df):
+def prepare_data_for_export(input_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df):
     input_df = pd.concat([input_df.T, energy_system_design.T])
     input_df.columns = ["User specified input parameters"]
     input_df.index.name = ""
@@ -198,6 +208,12 @@ def project_data_df_to_xlsx(input_df, energy_system_design, energy_flow_df, resu
     nodes_df = format_column_names(nodes_df)
     links_df = links_df[['link_type', 'length', 'lat_from', 'lon_from', 'lat_to', 'lon_to']]
     links_df = format_column_names(links_df)
+    return input_df, energy_flow_df, results_df, nodes_df, links_df
+
+
+def project_data_df_to_xlsx(input_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df):
+    input_df, energy_flow_df, results_df, nodes_df, links_df \
+        = prepare_data_for_export(input_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df)
     excel_file = io.BytesIO()
     with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
         workbook = writer.book
@@ -271,3 +287,179 @@ def format_first_col(df):
 def format_column_names(df):
     df.columns = [col.replace('_', ' ').capitalize() for col in df.columns]
     return df
+
+
+
+def create_pdf_report(img_dict, input_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df):
+    # Prepare data (assuming this function is defined elsewhere)
+    input_df, energy_flow_df, results_df, nodes_df, links_df = prepare_data_for_export(
+        input_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df
+    )
+
+    elements = []
+    styles = getSampleStyleSheet()
+
+    image_path = 'fastapi_app/files/public/media_files/assets/logos/PeopleSunLogo.png'
+    image_reader = ImageReader(image_path)
+    img_width, img_height = image_reader.getSize()
+    desired_height = 1 * inch  # Adjust as needed
+    desired_width = desired_height * img_width / img_height
+    logo = Image(image_path, width=desired_width, height=desired_height)
+    logo.hAlign = 'LEFT'
+    # Add Subtitle
+    subtitle_style = ParagraphStyle(
+        'Subtitle',
+        parent=styles['Title'],  # Changed to an existing style
+        fontSize=14,
+        alignment=TA_CENTER,
+        spaceAfter=24,
+        leading=18
+    )
+
+    # Use KeepTogether to keep the logo and title together
+    title = Paragraph("Off-Grid System Planning Results", styles['Title'])
+    subtitle = Paragraph(
+        "Energy System Optimization Carried Out with the Tool Offgridplanner (https://offgridplanner.org)",
+        subtitle_style
+    )
+
+    elements.append(KeepTogether([
+        logo,
+        Spacer(1, 12),  # Space between logo and title
+        title,
+        subtitle,
+        Spacer(1, 12)
+    ]))
+
+    # Add Project Information
+    project_name = input_df[input_df[""] == "Project name"]['User specified input parameters'].iat[0]
+    project_description = input_df[input_df[""] == "Project description"]['User specified input parameters'].iat[0]
+
+    body_style = ParagraphStyle(
+        'BodyText',
+        parent=styles['BodyText'],
+        fontSize=12,
+        alignment=TA_LEFT,
+        spaceAfter=12
+    )
+    elements.append(Paragraph(f'Project Name: {project_name}', body_style))
+    elements.append(Paragraph('Project Description: ' + project_description, body_style))
+
+    # Add Table of Contents Title with Horizontal Line
+    toc_title_style = ParagraphStyle(
+        'toc_title',
+        parent=styles['Title'],
+        fontSize=16,
+        alignment=TA_LEFT,
+        spaceAfter=6
+    )
+    elements.append(Spacer(0, 48))
+    elements.append(Paragraph("Table of Contents", toc_title_style))
+    elements.append(Spacer(0, 12))
+
+    # Define ToC data without dots
+    toc = [
+        ["Section", "Page"],
+        ["1. Overview of Project Parameters", "&nbsp;&nbsp;1"],
+        ["2. Brief Tool Description", "&nbsp;&nbsp;2"],
+        ["3. Optimal Design of Energy Converters and Storage", "&nbsp;&nbsp;3"],
+        ["4. Optimal Spatial Distribution of the Grid", "&nbsp;&nbsp;4"]
+    ]
+
+    # Create ToC entries
+    toc_entries = []
+    left_margin = right_margin = 72  # 1 inch margins
+    max_table_width = A4[0] - left_margin - right_margin  # A4 width minus margins
+    page_number_width = 40  # Width reserved for page numbers
+
+    # Define styles
+    header_style = ParagraphStyle(
+        'Header',
+        parent=styles['Heading4'],
+        fontSize=12,
+        alignment=TA_LEFT,
+        spaceAfter=6,
+        leading=14
+    )
+
+    toc_style = ParagraphStyle(
+        'ToC',
+        parent=styles['BodyText'],
+        fontSize=12,
+        alignment=TA_LEFT,
+        leading=14
+    )
+
+    # Build ToC entries
+    for section, page in toc:
+        section_para = Paragraph(f"<b>{section}</b>", header_style)
+        page_para = Paragraph(f"<b>{page}</b>", header_style)
+        toc_entries.append([section_para, page_para])
+
+    # Define column widths
+    col_widths = [
+        max_table_width - page_number_width,  # First column width (section titles)
+        page_number_width  # Second column width (page numbers)
+    ]
+
+    # Create Table
+    toc_table = Table(toc_entries, colWidths=col_widths)
+
+    # Apply styles to the table
+    toc_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),  # Left-align section titles
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),  # Right-align page numbers
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('FONTSIZE', (0, 0), (-1, -1), 12),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),  # Bold font for header row
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),  # Regular font for other rows
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        # Add a horizontal line below the header row
+        ('LINEBELOW', (0, 0), (-1, 0), 1, colors.black),
+    ]))
+
+    elements.append(toc_table)
+
+    # Page break after ToC
+    elements.append(PageBreak())
+
+    # Add sections as before
+    elements.append(Paragraph("1. Overview of Project Parameters", styles['Heading1']))
+    elements.append(Paragraph("Here, you will describe the project parameters.", styles['BodyText']))
+    elements.append(PageBreak())
+
+    elements.append(Paragraph("2. Brief Tool Description", styles['Heading1']))
+    elements.append(Paragraph("This section contains the description of the tool Offgridplanner.", styles['BodyText']))
+    elements.append(PageBreak())
+
+    elements.append(Paragraph("3. Optimal Design of Energy Converters and Storage", styles['Heading1']))
+    elements.append(Paragraph("Here, the design of energy converters and storage is discussed.", styles['BodyText']))
+    elements.append(PageBreak())
+
+    elements.append(Paragraph("4. Optimal Spatial Distribution of the Grid", styles['Heading1']))
+
+    # Insert image and caption
+    table_data = [
+        [img_dict['map']],
+        [Paragraph('Figure: Distribution Grid of the Off-Grid System',
+                   ParagraphStyle('FigureCaption', fontSize=8, alignment=TA_LEFT, spaceAfter=24, fontName='Helvetica-Oblique'))]
+    ]
+    table = Table(table_data, colWidths=[img_dict['map']._restrictSize(A4[0] - 72, A4[1] - 72)[0]])
+    table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+    ]))
+    elements.append(table)
+    elements.append(Paragraph("This section presents the spatial distribution of the grid.", styles['BodyText']))
+
+    # Build the document
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=left_margin, rightMargin=right_margin)
+    doc.build(elements)
+    buffer.seek(0)
+    return doc, buffer
+
+

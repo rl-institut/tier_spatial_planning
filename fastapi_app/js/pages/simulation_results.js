@@ -71,28 +71,51 @@ function generateMapImage(map) {
 
         const mapContainer = map.getContainer();
 
+        // Select elements you want to hide (adjust selectors as needed)
+        const zoomControl = document.querySelector('.leaflet-control-zoom');
+        const layerControl = document.querySelector('.leaflet-control-layers');
+        const customZoomButton = document.querySelector('.leaflet-control-custom');
+
+        // Hide elements before capturing
+        if (zoomControl) zoomControl.style.display = 'none';
+        if (layerControl) layerControl.style.display = 'none';
+        if (customZoomButton) customZoomButton.style.display = 'none';
+
+        const fixedWidth = 1600;
+        const fixedHeight = 800;
+
         html2canvas(mapContainer, {
-            useCORS: true, // Cross-Origin Bilder erlauben, falls vorhanden
+            useCORS: true,
             allowTaint: true,
             logging: false,
             backgroundColor: null,
-            scale: 1, // Erhöht die Auflösung
-            // Versuch, die richtige Rendering-Reihenfolge sicherzustellen
-            windowWidth: mapContainer.scrollWidth,
-            windowHeight: mapContainer.scrollHeight,
+            scale: 1,
+            windowWidth: fixedWidth,
+            windowHeight: fixedHeight,
             scrollX: -window.scrollX,
             scrollY: -window.scrollY
         })
         .then(canvas => {
             const imgData = canvas.toDataURL('image/png');
             resolve(imgData);
+
+            // Restore the visibility of hidden elements after capturing
+            if (zoomControl) zoomControl.style.display = '';
+            if (layerControl) layerControl.style.display = '';
+            if (customZoomButton) customZoomButton.style.display = '';
         })
         .catch(err => {
             console.error('Fehler beim Generieren des Kartenbildes mit html2canvas:', err);
             reject(err);
+
+            // Restore visibility if there's an error
+            if (zoomControl) zoomControl.style.display = '';
+            if (layerControl) layerControl.style.display = '';
+            if (customZoomButton) customZoomButton.style.display = '';
         });
     });
 }
+
 
 
 function sendImagesToBackend(images) {
