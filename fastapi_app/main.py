@@ -1386,10 +1386,16 @@ async def download_pdf_report(project_id: int, request: Request):
             svg_text = urllib.parse.unquote(image_data)
             img_bytes = svg_text.encode('utf-8')
             drawing = svg2rlg(io.BytesIO(img_bytes))
+            drawing_width = drawing.width
+            drawing_height = drawing.height
             max_width, max_height = A4
-            scale_x = max_width / drawing.width
-            scale_y = (max_height - 2 * inch) / drawing.height
+            max_width -= 1 * inch
+            max_height -= 1 * inch
+            scale_x = max_width / drawing_width
+            scale_y = max_height / drawing_height
             scale = min(scale_x, scale_y, 1)
+            drawing.width *= scale
+            drawing.height *= scale
             drawing.scale(scale, scale)
             image_dict[plot_id] = drawing
         else:
@@ -1421,9 +1427,11 @@ async def download_pdf_report(project_id: int, request: Request):
     nodes_df = pd.read_json(nodes.data) if nodes is not None else pd.DataFrame()
     links_df = pd.read_json(links.data) if links is not None else pd.DataFrame()
     energy_system_design = await async_queries.get_df(sa_tables.EnergySystemDesign, user.id, project_id)
-    doc, buffer = data_to_file.create_pdf_report(image_dict, input_parameters_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df)
-
-
+    custom_demand = await async_queries.get_model_instance(sa_tables.CustomDemand, user.id, project_id)
+    custom_demand_df = pd.read_json(custom_demand.data) if custom_demand is not None else pd.DataFrame()
+    demand_options =  await async_queries.get_model_instance(sa_tables.Demand, user.id, project_id)
+    doc, buffer = data_to_file.create_pdf_report(image_dict, input_parameters_df, energy_system_design, energy_flow_df, results_df,
+                                                 nodes_df, links_df, demand_options, custom_demand_df)
     return Response(content=buffer.read(), media_type='application/pdf',
                     headers={"Content-Disposition": f"attachment; filename=report_{project_id}.pdf"})
 

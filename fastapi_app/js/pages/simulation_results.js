@@ -7,6 +7,7 @@ document.getElementById('downloadPDF').addEventListener('click', function () {
     const plotIds = [
         'optimalSizes',
         'sankeyDiagram',
+        'demandTs',
         'energyFlows',
         'lcoeBreakdown',
         'demandCoverage',
@@ -34,26 +35,125 @@ function generateImages(plotIds) {
     const imagePromises = plotIds.map(plotId => {
         const plotElement = document.getElementById(plotId);
         if (!plotElement) {
-            console.warn(`Plot-Element mit ID '${plotId}' wurde nicht gefunden.`);
+            console.warn(`Plot element with ID '${plotId}' was not found.`);
             return Promise.resolve(null);
         }
 
         if (plotId === "map") {
-            return generateMapImage(map) // Stellen Sie sicher, dass 'map' definiert ist
+            // Existing code for generating map image
+            return generateMapImage(map) // Ensure 'map' is defined
                 .then(function(imageData) {
                     return { id: plotId, data: imageData };
                 })
                 .catch(function(error) {
-                    console.error(`Fehler beim Generieren des Bildes für ${plotId}:`, error);
+                    console.error(`Error generating image for ${plotId}:`, error);
                     return null;
                 });
+        } else if (plotId === 'energyFlows' || plotId === 'demandCoverage') {
+            // For these plots, we need to clone and adjust data, x-axis, and legend
+
+            // Clone the plot data and layout
+            const clonedData = JSON.parse(JSON.stringify(plotElement.data));
+            const clonedLayout = JSON.parse(JSON.stringify(plotElement.layout));
+
+            // Determine the x-axis range
+            let maxX = 0;
+            clonedData.forEach(trace => {
+                if (trace.x && trace.x.length > 0) {
+                    const traceMaxX = Math.max(...trace.x);
+                    if (traceMaxX > maxX) {
+                        maxX = traceMaxX;
+                    }
+                }
+            });
+
+            // Desired x-axis end point
+            const desiredEnd = 672; // 672 hours (4 weeks)
+
+            // Adjust x-axis range(s)
+            for (let axisName in clonedLayout) {
+                if (axisName.startsWith('xaxis')) {
+                    clonedLayout[axisName] = clonedLayout[axisName] || {};
+                    // Set the x-axis range based on data availability
+                    if (maxX >= desiredEnd) {
+                        clonedLayout[axisName].range = [0, desiredEnd];
+                    } else {
+                        clonedLayout[axisName].range = [0, maxX];
+                    }
+                    clonedLayout[axisName].autorange = false; // Disable autorange
+                }
+            }
+
+            // **New Part: Replace data between x=0 and x=24 with data from x=24 to x=48**
+            clonedData.forEach(trace => {
+                if (trace.x && trace.y) {
+                    const x = trace.x;
+                    const y = trace.y;
+
+                    // Check if we have enough data to perform the replacement
+                    const hasEnoughData = x.some(value => value >= 48);
+
+                    if (hasEnoughData) {
+                        // Create new arrays for x and y
+                        const newY = [...y]; // Clone y to avoid modifying original
+
+                        // Map x values between 0 and 24 to x + 24
+                        for (let i = 0; i < x.length; i++) {
+                            if (x[i] >= 0 && x[i] <= 24) {
+                                // Find the index where x equals x[i] + 24
+                                const targetX = x[i] + 24;
+                                const targetIndex = x.indexOf(targetX);
+                                if (targetIndex !== -1) {
+                                    // Replace y value at current index with y value from target index
+                                    newY[i] = y[targetIndex];
+                                }
+                            }
+                        }
+                        // Assign the modified y-values back to the trace
+                        trace.y = newY;
+                    } else {
+                        console.warn(`Not enough data to replace values for ${plotId}.`);
+                    }
+                }
+            });
+
+            // Create a hidden div
+            const tempDiv = document.createElement('div');
+            tempDiv.style.display = 'none';
+            document.body.appendChild(tempDiv);
+
+            // Render the cloned plot into the hidden div
+            return Plotly.newPlot(tempDiv, clonedData, clonedLayout).then(function() {
+                // Generate the image
+                return Plotly.toImage(tempDiv, { format: 'svg' })
+                    .then(function(imageData) {
+                        // Clean up
+                        Plotly.purge(tempDiv);
+                        tempDiv.parentNode.removeChild(tempDiv);
+                        return { id: plotId, data: imageData };
+                    })
+                    .catch(function(error) {
+                        console.error(`Error generating image for ${plotId}:`, error);
+                        // Clean up
+                        Plotly.purge(tempDiv);
+                        tempDiv.parentNode.removeChild(tempDiv);
+                        return null;
+                    });
+            }).catch(function(error) {
+                console.error(`Error rendering cloned plot for ${plotId}:`, error);
+                // Clean up
+                Plotly.purge(tempDiv);
+                tempDiv.parentNode.removeChild(tempDiv);
+                return null;
+            });
         } else {
+            // For other plots, proceed as usual
             return Plotly.toImage(plotElement, { format: 'svg' })
                 .then(function(imageData) {
                     return { id: plotId, data: imageData };
                 })
                 .catch(function(error) {
-                    console.error(`Fehler beim Generieren des Bildes für ${plotId}:`, error);
+                    console.error(`Error generating image for ${plotId}:`, error);
                     return null;
                 });
         }
@@ -61,6 +161,9 @@ function generateImages(plotIds) {
 
     return Promise.all(imagePromises);
 }
+
+
+
 
 function generateMapImage(map) {
     return new Promise((resolve, reject) => {
@@ -491,11 +594,12 @@ function plot_energy_flows(energy_flows) {
             showgrid: false,
         },
         legend: {
-            x: 1, // This positions the legend at the right edge of the chart.
-            y: 1, // This positions the legend at the top of the chart.
-            xanchor: 'auto', // The anchor for the x position. The 'auto' value will let Plotly decide the best location.
-            yanchor: 'auto', // The anchor for the y position. The 'auto' value will let Plotly decide the best location.
-            bgcolor: 'rgba(255, 255, 255, 1)', // Fully opaque white background.
+            x: 0.5,           // Positions the legend horizontally at the center (50% of the plot width)
+            y: 1.15,          // Positions the legend vertically above the plot area
+            xanchor: 'center',// Anchors the legend horizontally at its center
+            yanchor: 'bottom',// Anchors the legend vertically at the bottom
+            orientation: 'h', // Sets the legend items to be displayed horizontally
+            bgcolor: 'rgba(255, 255, 255, 1)', // Fully opaque white background
             bordercolor: '#E2E2E2',
             borderwidth: 2,
         },
@@ -570,6 +674,16 @@ function plot_demand_coverage(demand_coverage) {
             tickfont: {
                 size: 14,
             }
+        },
+        legend: {
+            x: 0.5,           // Positions the legend horizontally at the center (50% of the plot width)
+            y: 1.15,          // Positions the legend vertically above the plot area
+            xanchor: 'center',// Anchors the legend horizontally at its center
+            yanchor: 'bottom',// Anchors the legend vertically at the bottom
+            orientation: 'h', // Sets the legend items to be displayed horizontally
+            bgcolor: 'rgba(255, 255, 255, 1)', // Fully opaque white background
+            bordercolor: '#E2E2E2',
+            borderwidth: 2,
         },
     };
 
@@ -861,3 +975,83 @@ async function replaceSummaryChart() {
     // Replace the existing chart with the new content
     summaryChart.outerHTML = newContent;
 }
+
+function plot_demand_24h(data) {
+    let demandTs = document.getElementById("demandTs");
+
+    var layout = {
+        font: { size: 14 },
+        autosize: true,
+        xaxis: {
+            title: 'Hour of the day',
+            hoverformat: '.1f',
+            titlefont: { size: 16 },
+            tickfont: { size: 14 },
+        },
+        yaxis: {
+            title: 'Demand (kW)',
+            hoverformat: '.1f',
+            titlefont: { size: 16 },
+            tickfont: { size: 14 },
+        },
+        legend: {
+            x: 0.5,           // Positions the legend horizontally at the center (50% of the plot width)
+            y: 1.15,          // Positions the legend vertically above the plot area
+            xanchor: 'center',// Anchors the legend horizontally at its center
+            yanchor: 'bottom',// Anchors the legend vertically at the bottom
+            orientation: 'h', // Sets the legend items to be displayed horizontally
+            bgcolor: 'rgba(255, 255, 255, 1)', // Fully opaque white background
+            bordercolor: '#E2E2E2',
+            borderwidth: 2,
+        }
+    };
+
+    // Extract data from the passed-in data object
+    let {
+        'x': x,
+        'households': households,
+        'enterprises': enterprises,
+        'public_services': public_services
+    } = data;
+
+    // Define traces
+    var traceHouseholds = {
+        x: x,
+        y: households,
+        type: 'scatter',
+        mode: 'lines',
+        name: 'Demand of Households',
+        line: { shape: 'spline', width: 2, color: 'rgba(31, 119, 180, 1)' },
+        fill: 'tozeroy',
+        fillcolor: 'rgba(31, 119, 180, 0.5)'
+    };
+
+    var traceEnterprises = {
+        x: x,
+        y: enterprises,
+        type: 'scatter',
+        mode: 'lines',
+        name: 'Demand of Enterprises',
+        line: { shape: 'spline', width: 2, color: 'rgba(255, 127, 14, 1)' },
+        fill: 'tozeroy',
+        fillcolor: 'rgba(255, 127, 14, 0.5)'
+    };
+
+    var tracePublicServices = {
+        x: x,
+        y: public_services,
+        type: 'scatter',
+        mode: 'lines',
+        name: 'Demand of Public Services',
+        line: { shape: 'spline', width: 2, color: 'rgba(44, 160, 44, 1)' },
+        fill: 'tozeroy',
+        fillcolor: 'rgba(44, 160, 44, 0.5)'
+    };
+
+    // Data array
+    var dataTraces = [traceHouseholds, traceEnterprises, tracePublicServices];
+
+    // Render plot with the traces
+    Plotly.react(demandTs, dataTraces, layout);
+}
+

@@ -37,38 +37,67 @@ async function plot_results(sequential = false) {
 
     if (sequential) {
         // Sequential execution: wait for each fetch and plot to complete before starting the next
-                const response3 = await fetch('/get_plot_data/' + project_id + '/other');
+
+        // Fetch and plot 'other' data
+        const response3 = await fetch('/get_plot_data/' + project_id + '/other');
         const data3 = await response3.json();
         plot_lcoe_pie(data3.lcoe_breakdown);
         plot_bar_chart(data3.optimal_capacities);
         plot_sankey(data3.sankey_data);
 
+        // Check if 'steps' exists and if steps[0] is true
+        if (typeof steps !== 'undefined' && steps[0]) {
+            // Proceed with fetching and plotting 'demand_24h' data
+            const response6 = await fetch('/get_demand_plot_data/' + project_id);
+            const data6 = await response6.json();
+            plot_demand_24h(data6);
+        } else {
+            // Hide the div with id 'demandtsChart'
+            const demandTsChartDiv = document.getElementById('demandtsChart');
+            if (demandTsChartDiv) {
+                demandTsChartDiv.style.display = 'none';
+            }
+        }
+
+        // Fetch and plot 'demand_coverage' data
         const response1 = await fetch('/get_plot_data/' + project_id + '/demand_coverage');
         const data1 = await response1.json();
         plot_demand_coverage(data1.demand_coverage);
 
+        // Fetch and plot 'energy_flow' data
         const response2 = await fetch('/get_plot_data/' + project_id + '/energy_flow');
         const data2 = await response2.json();
         plot_energy_flows(data2.energy_flow);
 
+        // Fetch and plot 'duration_curve' data
         const response4 = await fetch('/get_plot_data/' + project_id + '/duration_curve');
         const data4 = await response4.json();
         plot_duration_curves(data4.duration_curve);
 
+        // Fetch and plot 'emissions' data
         const response5 = await fetch('/get_plot_data/' + project_id + '/emissions');
         const data5 = await response5.json();
         plot_co2_emissions(data5.emissions);
 
     } else {
         // Parallel execution: fetch data in parallel and plot as soon as each dataset is available
+
+        // Initialize an array to hold fetch and plot promises
+        const fetchAndPlotPromises = [];
+
+        // Fetch and plot 'demand_coverage' data
         const fetchAndPlot1 = fetch('/get_plot_data/' + project_id + '/demand_coverage')
             .then(response => response.json())
             .then(data => plot_demand_coverage(data.demand_coverage));
+        fetchAndPlotPromises.push(fetchAndPlot1);
 
+        // Fetch and plot 'energy_flow' data
         const fetchAndPlot2 = fetch('/get_plot_data/' + project_id + '/energy_flow')
             .then(response => response.json())
             .then(data => plot_energy_flows(data.energy_flow));
+        fetchAndPlotPromises.push(fetchAndPlot2);
 
+        // Fetch and plot 'other' data
         const fetchAndPlot3 = fetch('/get_plot_data/' + project_id + '/other')
             .then(response => response.json())
             .then(data => {
@@ -76,19 +105,40 @@ async function plot_results(sequential = false) {
                 plot_bar_chart(data.optimal_capacities);
                 plot_sankey(data.sankey_data);
             });
+        fetchAndPlotPromises.push(fetchAndPlot3);
 
+        // Fetch and plot 'duration_curve' data
         const fetchAndPlot4 = fetch('/get_plot_data/' + project_id + '/duration_curve')
             .then(response => response.json())
             .then(data => plot_duration_curves(data.duration_curve));
+        fetchAndPlotPromises.push(fetchAndPlot4);
 
+        // Fetch and plot 'emissions' data
         const fetchAndPlot5 = fetch('/get_plot_data/' + project_id + '/emissions')
             .then(response => response.json())
             .then(data => plot_co2_emissions(data.emissions));
+        fetchAndPlotPromises.push(fetchAndPlot5);
+
+        // Check if 'steps' exists and if steps[0] is true
+        if (typeof steps !== 'undefined' && steps[0]) {
+            // Proceed with fetching and plotting 'demand_24h' data
+            const fetchAndPlot6 = fetch('/get_demand_plot_data/' + project_id)
+                .then(response => response.json())
+                .then(data => plot_demand_24h(data));
+            fetchAndPlotPromises.push(fetchAndPlot6);
+        } else {
+            // Hide the div with id 'demandtsChart'
+            const demandTsChartDiv = document.getElementById('demandtsChart');
+            if (demandTsChartDiv) {
+                demandTsChartDiv.style.display = 'none';
+            }
+        }
 
         // Wait for all fetch and plot operations to complete (parallel execution)
-        await Promise.all([fetchAndPlot1, fetchAndPlot2, fetchAndPlot3, fetchAndPlot4, fetchAndPlot5]);
+        await Promise.all(fetchAndPlotPromises);
     }
 }
+
 
 
 async function db_links_to_js(project_id) {

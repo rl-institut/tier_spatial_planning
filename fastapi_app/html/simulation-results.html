@@ -5,6 +5,7 @@
     {% include '_head.html' %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <link href="{{ url_for('css', path='pages/simulation_results.css') }}" rel="stylesheet"/>
     <style>
         .item__name {
@@ -21,6 +22,7 @@
 <body onload="redirect_if_cookie_is_missing(true, true);
               update_wizards_and_buttons_based_on_planning_step_selection({{ project_id }}, 'simulation_results');
               load_results({{ project_id }});
+              plot_demand_24h({{ project_id }});
               show_email_and_project_in_navbar({{ project_id }});">
 {% include '_navbar.html' %}
 {% include '_wizard.html' %}
@@ -390,28 +392,6 @@
                             <div>
                                 <span class="title">Optimal Capacity of Components</span>
                             </div>
-                            <div class="dropdown">
-                                <button
-                                        class="btn dropdown-toggle btn--transparent"
-                                        type="button"
-                                        id="dropdownMenuButton3"
-                                        data-bs-toggle="dropdown"
-                                        aria-expanded="false"
-                                >
-                                    <span class="icon icon-more"></span>
-                                </button>
-                                <ul
-                                        class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton3"
-                                >
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as .xls</a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as PDF</a>
-                                    </li>
-                                </ul>
-                            </div>
                         </div>
                         <div class="chart__plot">
                             <div id="optimalSizes"></div>
@@ -463,28 +443,6 @@
                       System</span
                     >
                             </div>
-                            <div class="dropdown">
-                                <button
-                                        class="btn dropdown-toggle btn--transparent"
-                                        type="button"
-                                        id="dropdownMenuButton7"
-                                        data-bs-toggle="dropdown"
-                                        aria-expanded="false"
-                                >
-                                    <span class="icon icon-more"></span>
-                                </button>
-                                <ul
-                                        class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton7"
-                                >
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as .xls</a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as PDF</a>
-                                    </li>
-                                </ul>
-                            </div>
                         </div>
                         <div class="chart__plot">
                             <div id="sankeyDiagram"></div>
@@ -492,6 +450,22 @@
                         <p style="font-size: 12px">
                             *electricity surplus is not shown
                         </p>
+                    </div>
+                </div>
+            </div>
+            <div class="row" id="demandtsChart">
+                <div class="col">
+                    <div class="chart">
+                        <div class="chart__header">
+                            <div>
+                    <span class="title"
+                    >Electricity Demand Profile Illustration: First Monday of Simulation Period</span
+                    >
+                            </div>
+                        </div>
+                        <div class="chart__plot">
+                            <div id="demandTs"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -504,28 +478,6 @@
                     >Demand Coverage by Renewable and Non-Renewable
                       Resources</span
                     >
-                            </div>
-                            <div class="dropdown">
-                                <button
-                                        class="btn dropdown-toggle btn--transparent"
-                                        type="button"
-                                        id="dropdownMenuButton1"
-                                        data-bs-toggle="dropdown"
-                                        aria-expanded="false"
-                                >
-                                    <span class="icon icon-more"></span>
-                                </button>
-                                <ul
-                                        class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton1"
-                                >
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as .xls</a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as PDF</a>
-                                    </li>
-                                </ul>
                             </div>
                         </div>
                         <div class="chart__plot">
@@ -543,28 +495,6 @@
                     >Annual Energy Flows with 1-Hour Resolution</span
                     >
                             </div>
-                            <div class="dropdown">
-                                <button
-                                        class="btn dropdown-toggle btn--transparent"
-                                        type="button"
-                                        id="dropdownMenuButton2"
-                                        data-bs-toggle="dropdown"
-                                        aria-expanded="false"
-                                >
-                                    <span class="icon icon-more"></span>
-                                </button>
-                                <ul
-                                        class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton2"
-                                >
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as .xls</a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as PDF</a>
-                                    </li>
-                                </ul>
-                            </div>
                         </div>
                         <div class="chart__plot">
                             <div id="energyFlows"></div>
@@ -581,28 +511,6 @@
                     >Duration Curves for All Components</span
                     >
                             </div>
-                            <div class="dropdown">
-                                <button
-                                        class="btn dropdown-toggle btn--transparent"
-                                        type="button"
-                                        id="dropdownMenuButton5"
-                                        data-bs-toggle="dropdown"
-                                        aria-expanded="false"
-                                >
-                                    <span class="icon icon-more"></span>
-                                </button>
-                                <ul
-                                        class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton5"
-                                >
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as .xls</a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as PDF</a>
-                                    </li>
-                                </ul>
-                            </div>
                         </div>
                         <div class="chart__plot">
                             <div id="durationCurves"></div>
@@ -614,28 +522,6 @@
                         <div class="chart__header">
                             <div>
                                 <span class="title">Cumulative CO<sub>2</sub> Emissions</span>
-                            </div>
-                            <div class="dropdown">
-                                <button
-                                        class="btn dropdown-toggle btn--transparent"
-                                        type="button"
-                                        id="dropdownMenuButton6"
-                                        data-bs-toggle="dropdown"
-                                        aria-expanded="false"
-                                >
-                                    <span class="icon icon-more"></span>
-                                </button>
-                                <ul
-                                        class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton6"
-                                >
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as .xls</a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as PDF</a>
-                                    </li>
-                                </ul>
                             </div>
                         </div>
                         <div class="chart__plot">

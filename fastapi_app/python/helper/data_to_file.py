@@ -8,13 +8,15 @@ import pandas as pd
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph,  Table, TableStyle, PageBreak
 from reportlab.lib.styles import ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, PageBreak, Table, TableStyle, Spacer, KeepInFrame, Image, KeepTogether
+from reportlab.platypus import (SimpleDocTemplate, Paragraph, PageBreak, Table, TableStyle, Spacer, KeepInFrame, Image, KeepTogether,
+                                ListFlowable, ListItem)
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle, TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
 from reportlab.pdfbase import pdfmetrics
 from reportlab.lib.utils import ImageReader
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
+from types import SimpleNamespace
 
 
 """
@@ -290,11 +292,17 @@ def format_column_names(df):
 
 
 
-def create_pdf_report(img_dict, input_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df):
+def create_pdf_report(img_dict, input_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df, demand_options,
+                      custom_demand_df):
     # Prepare data (assuming this function is defined elsewhere)
     input_df, energy_flow_df, results_df, nodes_df, links_df = prepare_data_for_export(
-        input_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df
-    )
+        input_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df)
+    input = input_df.copy()
+    input.iloc[:, 0] = input_df.iloc[:, 0].str.replace(' ', '_').str.lower()
+    input = SimpleNamespace(**dict(zip(input.iloc[:, 0], input.iloc[:, 1])))
+    results = results_df.copy()
+    results.iloc[:, 0] = results.iloc[:, 0].str.replace(' ', '_').str.lower()
+    results = SimpleNamespace(**dict(zip(results.iloc[:, 0], results.iloc[:, 1])))
 
     elements = []
     styles = getSampleStyleSheet()
@@ -331,19 +339,15 @@ def create_pdf_report(img_dict, input_df, energy_system_design, energy_flow_df, 
         Spacer(1, 12)
     ]))
 
-    # Add Project Information
-    project_name = input_df[input_df[""] == "Project name"]['User specified input parameters'].iat[0]
-    project_description = input_df[input_df[""] == "Project description"]['User specified input parameters'].iat[0]
-
     body_style = ParagraphStyle(
         'BodyText',
         parent=styles['BodyText'],
         fontSize=12,
-        alignment=TA_LEFT,
+        alignment=TA_JUSTIFY,
         spaceAfter=12
     )
-    elements.append(Paragraph(f'Project Name: {project_name}', body_style))
-    elements.append(Paragraph('Project Description: ' + project_description, body_style))
+    elements.append(Paragraph(f'Project Name: {input.project_name}', body_style))
+    elements.append(Paragraph('Project Description: ' + input.project_description, body_style))
 
     # Add Table of Contents Title with Horizontal Line
     toc_title_style = ParagraphStyle(
@@ -362,8 +366,10 @@ def create_pdf_report(img_dict, input_df, energy_system_design, energy_flow_df, 
         ["Section", "Page"],
         ["1. Overview of Project Parameters", "&nbsp;&nbsp;1"],
         ["2. Brief Tool Description", "&nbsp;&nbsp;2"],
-        ["3. Optimal Design of Energy Converters and Storage", "&nbsp;&nbsp;3"],
-        ["4. Optimal Spatial Distribution of the Grid", "&nbsp;&nbsp;4"]
+        ["3. Demand Estimation", "&nbsp;&nbsp;3"],
+        ["4. Optimal Spatial Distribution of the Grid", "&nbsp;&nbsp;4"],
+        ["5. Optimal Design of Energy Converters and Storage", "&nbsp;&nbsp;5"],
+
     ]
 
     # Create ToC entries
@@ -382,13 +388,6 @@ def create_pdf_report(img_dict, input_df, energy_system_design, energy_flow_df, 
         leading=14
     )
 
-    toc_style = ParagraphStyle(
-        'ToC',
-        parent=styles['BodyText'],
-        fontSize=12,
-        alignment=TA_LEFT,
-        leading=14
-    )
 
     # Build ToC entries
     for section, page in toc:
@@ -423,21 +422,102 @@ def create_pdf_report(img_dict, input_df, energy_system_design, energy_flow_df, 
 
     elements.append(toc_table)
 
-    # Page break after ToC
     elements.append(PageBreak())
 
-    # Add sections as before
+
     elements.append(Paragraph("1. Overview of Project Parameters", styles['Heading1']))
-    elements.append(Paragraph("Here, you will describe the project parameters.", styles['BodyText']))
-    elements.append(PageBreak())
+
+    latitude = nodes_df['Latitude'].median().round(4)
+    longitude = nodes_df['Longitude'].median().round(4)
+
+    elements.append(Paragraph(
+        f"For the location at latitude {latitude}° and longitude {longitude}° with {results.n_consumers} selected consumers, the following planning steps were carried out:",
+        styles['BodyText']
+    ))
+
+    planning_steps = []
+    if input.do_demand_estimation:
+        planning_steps.append('Demand estimation based on selected consumers')
+    if input.do_grid_optimization:
+        text = 'Spatial optimization of distribution grid'
+        if input.shs_max_specific_marginal_grid_cost < 990:
+            text += f' with the option to exclude consumers with specific marginal connection costs above {input.shs_max_specific_marginal_grid_cost} c/kWh'
+        planning_steps.append(text)
+    if input.do_es_design_optimization:
+        planning_steps.append('Design optimization of energy converters and storage')
+
+    planning_steps = ListFlowable(
+        [ListItem(Paragraph(step, styles['BodyText']), leftIndent=20) for step in planning_steps],
+        bulletType='bullet',
+        spaceBefore=12,
+        spaceAfter=12,
+        bulletFontName='Helvetica',
+        bulletFontSize=12,
+        bulletColor='black'
+    )
+    elements.append(planning_steps)
+
+    text = f"For the economic assessment, a project duration of {input.project_lifetime} years and an interest rate of {input.interest_rate}% have been applied."
+    if input.do_es_design_optimization:
+        text += f" The optimization of the design for energy converters and storage is based on a model of cost-minimal unit commitment over a time horizon of {input.n_days} days."
+    elements.append(Paragraph(text, styles['BodyText']))
 
     elements.append(Paragraph("2. Brief Tool Description", styles['Heading1']))
     elements.append(Paragraph("This section contains the description of the tool Offgridplanner.", styles['BodyText']))
-    elements.append(PageBreak())
 
-    elements.append(Paragraph("3. Optimal Design of Energy Converters and Storage", styles['Heading1']))
-    elements.append(Paragraph("Here, the design of energy converters and storage is discussed.", styles['BodyText']))
-    elements.append(PageBreak())
+    elements.append(Paragraph("3. Demand Estimation", styles['Heading1']))
+
+    def pluralize(count, singular, plural):
+        return singular if count == 1 else plural
+
+    if bool(demand_options.use_custom_demand) is True:
+        elements.append(Paragraph("The demand estimation feature of the tool was not used. Instead, a time series was uploaded by "
+                                  "the user.", styles['BodyText']))
+        demand_ts = custom_demand_df
+    else:
+        consumers_df = nodes_df[nodes_df['Node type'] == 'consumer']
+        n_households = consumers_df[consumers_df['Consumer type'] == 'household'].index.__len__()
+        n_enterprises = consumers_df[consumers_df['Consumer type'] == 'enterprise'].index.__len__()
+        n_public_services = consumers_df[consumers_df['Consumer type'] == 'public_service'].index.__len__()
+
+
+        elements.append(Paragraph(
+            f"A total of {n_households} {pluralize(n_households, 'household', 'households')}, "
+            f"{n_enterprises} {pluralize(n_enterprises, 'enterprise', 'enterprises')}, and "
+            f"{n_public_services} {pluralize(n_public_services, 'public service', 'public services')} were selected.",
+            styles['BodyText']
+        ))
+
+        demand_ts = energy_flow_df['Demand [kW]']
+    yearly_demand = demand_ts.sum()
+    num_hours = demand_ts.index.__len__()
+    if num_hours < 8700:
+        yearly_demand = yearly_demand * 8760 / num_hours
+    text = (f"The demand time series has a maximum load of {demand_ts.max():.2f} kW, "
+            f"a minimum load of {demand_ts.min():.2f} kW, and an average load of {demand_ts.mean():.2f} kW. "
+            f"The total annual demand is estimated to be {yearly_demand:.2f} kWh.")
+    if num_hours < 8700:
+        text += (f" Note: The original demand time series covered {num_hours} hours and has been scaled up "
+                 f"to represent a full year (8760 hours) for annual demand estimation.")
+
+    # Add the text to your PDF elements
+    elements.append(Paragraph(text, styles['BodyText']))
+    # Insert image and caption
+    table_data = [
+        [img_dict['demandTs']],
+        [Paragraph('Figure: Demand Coverage of the Off-Grid System',
+                   ParagraphStyle('FigureCaption', fontSize=8, alignment=TA_LEFT, spaceAfter=24, fontName='Helvetica-Oblique'))]
+    ]
+
+    # Use the width of the resized drawing
+    table = Table(table_data, colWidths=[img_dict['demandTs'].width])
+
+    table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+    ]))
+
+    elements.append(table)
 
     elements.append(Paragraph("4. Optimal Spatial Distribution of the Grid", styles['Heading1']))
 
@@ -453,7 +533,21 @@ def create_pdf_report(img_dict, input_df, energy_system_design, energy_flow_df, 
         ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
     ]))
     elements.append(table)
-    elements.append(Paragraph("This section presents the spatial distribution of the grid.", styles['BodyText']))
+
+
+    if results.n_shs_consumers == 0:
+        text += " Alle consumer wurden an das Netz angeschlossen."
+    else:
+        text += (f" Davon wurden jedoch {results.n_shs_consumers} consumer nicht an das Netz angeschlossen, da ihre speficic marginal"
+                 f"connections costs den vom user gestzten schwennelwert von {input.shs_max_specific_marginal_grid_cost} c/kWh "
+                 f"überschreiten würden.")
+
+    elements.append(PageBreak())
+
+    elements.append(Paragraph("5. Optimal Design of Energy Converters and Storage", styles['Heading1']))
+    elements.append(Paragraph("Here, the design of energy converters and storage is discussed.", styles['BodyText']))
+    elements.append(PageBreak())
+
 
     # Build the document
     buffer = io.BytesIO()
