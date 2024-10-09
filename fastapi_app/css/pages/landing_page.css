@@ -1,0 +1,17 @@
+body {
+    text-align: justify;
+}
+
+.image-container {
+    display: flex;
+    justify-content: space-between; /* Adjusts space between images */
+}
+
+.image-container img {
+    width: 150px; /* Adjust width as needed */
+    height: auto; /* Maintains aspect ratio */
+}
+
+.row {
+    animation: loadingEffect 1s;
+}

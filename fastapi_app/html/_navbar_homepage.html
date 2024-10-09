@@ -1,0 +1,47 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-light navbar--scenario">
+    <div class="container-fluid">
+        <span class="navbar-brand">
+            <a href="/"><img src="{{ url_for('public', path='media_files/assets/logos/PeopleSunLogo.png') }}"
+                             alt="peoplesun Logo"></a>
+        </span>
+        <button
+                class="navbar-toggler"
+                type="button"
+                name="open"
+                data-bs-toggle="collapse"
+                data-bs-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent"
+                aria-expanded="false"
+                aria-label="Toggle navigation"
+        >
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <a class="btn btn--medium"
+               href="#"
+               style="height: 32px; display: flex; justify-content: center; align-items: center; max-width: 180px; margin-top: 10px"
+               onclick=document.getElementById('login').style.display='block'
+            >Log in / Sign up</a>
+            <ul class="navbar-nav mb-2 mb-lg-0">
+                <li class="nav-item dropdown profile">
+                    <a
+                            class="nav-link dropdown-toggle"
+                            href="#"
+                            id="navbarDropdown"
+                            role="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                    >
+                        <img src="{{ url_for('public', path='media_files/assets/icons/i_profile.svg') }}"
+                             alt="Profile icon"/>
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('contact') }}">Contact</a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>

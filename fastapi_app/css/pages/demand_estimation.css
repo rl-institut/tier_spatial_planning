@@ -1,0 +1,20 @@
+.input-item select, .input-group input, .input-group-text, .btn btn--medium {
+    height: 32px; /* Adjust this value to your preference */
+}
+
+.btn-custom {
+    color: black;
+    background-color: transparent;
+    border-color: transparent;
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.btn-custom:hover, .btn-custom:active, .btn-custom.focus, .btn-custom:focus, .btn-custom.active {
+    background-color: transparent;
+    border-color: transparent;
+}
+
+.btn-custom input[type='radio'] {
+    margin-right: 5px;
+}
