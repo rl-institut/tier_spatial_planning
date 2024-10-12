@@ -11,7 +11,6 @@ document.getElementById('downloadPDF').addEventListener('click', function () {
         'energyFlows',
         'lcoeBreakdown',
         'demandCoverage',
-        'durationCurves',
         'map'
     ];
 
@@ -49,12 +48,36 @@ function generateImages(plotIds) {
                     console.error(`Error generating image for ${plotId}:`, error);
                     return null;
                 });
-        } else if (plotId === 'energyFlows' || plotId === 'demandCoverage') {
+        } else if (plotId === 'energyFlows' || plotId === 'demandCoverage' || plotId === 'sankeyDiagram') {
             // For these plots, we need to clone and adjust data, x-axis, and legend
 
             // Clone the plot data and layout
             const clonedData = JSON.parse(JSON.stringify(plotElement.data));
             const clonedLayout = JSON.parse(JSON.stringify(plotElement.layout));
+
+            // Specific adjustments based on plotId
+            if (plotId === 'sankeyDiagram') {
+                // 1. Change margin top and bottom to 30
+                clonedLayout.margin = clonedLayout.margin || {};
+                clonedLayout.margin.t = 30;
+                clonedLayout.margin.b = 30;
+
+                // 2. Reduce height by 33% (set to 67% of original)
+                if (clonedLayout.height) {
+                    clonedLayout.height = clonedLayout.height * 0.5;
+                } else {
+                    // If height is not defined, set a default height reduced by 33%
+                    clonedLayout.height = 600 * 0.5; // Example: original height = 600
+                }
+            } else if (plotId === 'energyFlows' || plotId === 'demandCoverage') {
+                // Reduce height to 80% of original
+                if (clonedLayout.height) {
+                    clonedLayout.height = clonedLayout.height * 0.80;
+                } else {
+                    // If height is not defined, set a default height reduced to 80%
+                    clonedLayout.height = 400; // Example: original height = 600
+                }
+            }
 
             // Determine the x-axis range
             let maxX = 0;
@@ -68,7 +91,7 @@ function generateImages(plotIds) {
             });
 
             // Desired x-axis end point
-            const desiredEnd = 672; // 672 hours (4 weeks)
+            const desiredEnd = 168; // Adjusted as per your requirement
 
             // Adjust x-axis range(s)
             for (let axisName in clonedLayout) {
@@ -127,17 +150,16 @@ function generateImages(plotIds) {
                 // Generate the image
                 return Plotly.toImage(tempDiv, { format: 'svg' })
                     .then(function(imageData) {
-                        // Clean up
-                        Plotly.purge(tempDiv);
-                        tempDiv.parentNode.removeChild(tempDiv);
                         return { id: plotId, data: imageData };
                     })
                     .catch(function(error) {
                         console.error(`Error generating image for ${plotId}:`, error);
+                        return null;
+                    })
+                    .finally(function() {
                         // Clean up
                         Plotly.purge(tempDiv);
                         tempDiv.parentNode.removeChild(tempDiv);
-                        return null;
                     });
             }).catch(function(error) {
                 console.error(`Error rendering cloned plot for ${plotId}:`, error);
@@ -161,6 +183,8 @@ function generateImages(plotIds) {
 
     return Promise.all(imagePromises);
 }
+
+
 
 
 

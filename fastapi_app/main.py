@@ -1382,6 +1382,8 @@ async def download_pdf_report(project_id: int, request: Request):
         if not plot_id or not image_data:
             continue
         if image_data.startswith('data:image/svg+xml,'):
+            left_margin = 2.4 * inch  # Example value
+            right_margin = 1 * inch  # Example value
             image_data = image_data.replace('data:image/svg+xml,', '')
             svg_text = urllib.parse.unquote(image_data)
             img_bytes = svg_text.encode('utf-8')
@@ -1394,9 +1396,10 @@ async def download_pdf_report(project_id: int, request: Request):
             scale_x = max_width / drawing_width
             scale_y = max_height / drawing_height
             scale = min(scale_x, scale_y, 1)
-            drawing.width *= scale
-            drawing.height *= scale
             drawing.scale(scale, scale)
+            delta_margin = left_margin - right_margin
+            shift_x = -delta_margin / 2  # Negative to shift left
+            drawing.translate(shift_x, 0)
             image_dict[plot_id] = drawing
         else:
             img_bytes = image_data.replace('data:image/png;base64,', '')
