@@ -1,34 +1,161 @@
-document.getElementById('downloadCSV').addEventListener('click', function () {
-    window.location.href = '/download_data/' + project_id + '/csv';
-});
+// Flag to track if a download is in progress
+let isDownloadingCSV = false;
 
+document.getElementById('downloadCSV').addEventListener('click', function (event) {
+    event.preventDefault();
 
-document.getElementById('downloadPDF').addEventListener('click', function () {
-    const plotIds = [
-        'optimalSizes',
-        'sankeyDiagram',
-        'demandTs',
-        'energyFlows',
-        'lcoeBreakdown',
-        'demandCoverage',
-        'map'
-    ];
+    // Check if a download is already in progress
+    if (isDownloadingCSV) {
+        // Optionally, inform the user
+        alert('A download is already in progress. Please wait.');
+        return; // Exit the function to prevent multiple downloads
+    }
 
-    generateImages(plotIds)
-        .then(function(images) {
-            // Filtere null-Werte heraus, falls einige Bilder fehlgeschlagen sind
-            const validImages = images.filter(img => img !== null);
-            if (validImages.length > 0) {
-                // Sende die Bilder an das Backend
-                sendImagesToBackend(validImages);
-            } else {
-                console.warn('Keine gültigen Bilder zum Senden.');
+    // Set the flag to indicate a download is in progress
+    isDownloadingCSV = true;
+
+    const downloadButton = this;
+    const originalButtonText = downloadButton.innerHTML;
+
+    // Disable the button visually and functionally
+    downloadButton.style.pointerEvents = 'none'; // Prevent further clicks
+    downloadButton.style.opacity = '0.6'; // Make it look disabled
+    downloadButton.innerHTML = 'Processing...';
+
+    // Allow the UI to update before starting the download
+    requestAnimationFrame(() => {
+        (async () => {
+            try {
+                // Fetch the CSV file
+                const response = await fetch('/download_data/' + project_id + '/csv');
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.statusText}`);
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+
+                // Create a temporary link to trigger the download
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `offgridplanner_data.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+
+                // Clean up
+                a.remove();
+                window.URL.revokeObjectURL(url);
+
+                // Change button text to 'Downloading...'
+                downloadButton.innerHTML = 'Downloading...';
+
+                // Re-enable the button after a delay (e.g., 2 minutes)
+                setTimeout(() => {
+                    downloadButton.innerHTML = originalButtonText;
+                }, 5000); // Delay of 120,000 milliseconds (2 minutes)
+
+                // Re-enable the button after a delay (e.g., 2 minutes)
+                setTimeout(() => {
+                    // Reset the flag and re-enable the button
+                    isDownloadingPDF = false;
+                    downloadButton.style.pointerEvents = '';
+                    downloadButton.style.opacity = '';
+                }, 120000); // Delay of 120,000 milliseconds (2 minutes)
+            } catch (error) {
+                console.error('Error downloading CSV:', error);
+                alert('An error occurred while downloading the XLSX file. Please try again.');
+
+                // Reset the flag and re-enable the button immediately
+                isDownloadingCSV = false;
+                downloadButton.style.pointerEvents = '';
+                downloadButton.style.opacity = '';
+                downloadButton.innerHTML = originalButtonText;
             }
-        })
-        .catch(function(error) {
-            console.error('Fehler beim Generieren der Plotbilder:', error);
-        });
+        })();
+    });
 });
+
+
+// Flag to track if a PDF download is in progress
+let isDownloadingPDF = false;
+
+document.getElementById('downloadPDF').addEventListener('click', function (event) {
+    event.preventDefault();
+
+    // Check if a download is already in progress
+    if (isDownloadingPDF) {
+        alert('A download is already in progress. Please wait.');
+        return; // Exit the function to prevent multiple downloads
+    }
+
+    // Set the flag to indicate a download is in progress
+    isDownloadingPDF = true;
+
+    const downloadButton = this;
+    const originalButtonText = downloadButton.innerHTML;
+
+    // Disable the button visually and functionally
+    downloadButton.style.pointerEvents = 'none'; // Prevent further clicks
+    downloadButton.style.opacity = '0.6'; // Make it look disabled
+    downloadButton.innerHTML = 'Processing...';
+
+    // Use setTimeout to allow the UI to update before heavy computations
+    setTimeout(() => {
+        (async () => {
+            try {
+                const plotIds = [
+                    'optimalSizes',
+                    'sankeyDiagram',
+                    'demandTs',
+                    'energyFlows',
+                    'lcoeBreakdown',
+                    'demandCoverage',
+                    'map'
+                ];
+
+                // Generate images (ensure this function is asynchronous)
+                const images = await generateImages(plotIds);
+
+                // Filter out null values
+                const validImages = images.filter(img => img !== null);
+                if (validImages.length === 0) {
+                    console.warn('No valid images to send.');
+                    alert('No valid images were generated. Please try again.');
+                    throw new Error('No valid images generated.');
+                }
+
+                // Send images to the backend
+                await sendImagesToBackend(validImages);
+
+                // Change button text to 'Downloading...'
+                downloadButton.innerHTML = 'Downloading...';
+                setTimeout(() => {
+                    downloadButton.innerHTML = originalButtonText;
+                }, 5000); // Delay of 120,000 milliseconds (2 minutes)
+
+                // Re-enable the button after a delay (e.g., 2 minutes)
+                setTimeout(() => {
+                    // Reset the flag and re-enable the button
+                    isDownloadingPDF = false;
+                    downloadButton.style.pointerEvents = '';
+                    downloadButton.style.opacity = '';
+                }, 120000); // Delay of 120,000 milliseconds (2 minutes)
+
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('An error occurred while generating the PDF. Please try again.');
+
+                // Reset the flag and re-enable the button immediately
+                isDownloadingPDF = false;
+                downloadButton.style.pointerEvents = '';
+                downloadButton.style.opacity = '';
+                downloadButton.innerHTML = originalButtonText;
+            }
+        })();
+    }, 0); // Delay of 0 milliseconds
+});
+
+
 
 function generateImages(plotIds) {
     const imagePromises = plotIds.map(plotId => {
@@ -244,12 +371,10 @@ function generateMapImage(map) {
 }
 
 
-
 function sendImagesToBackend(images) {
     const data = {
         images: images  // Array of { id: plotId, data: imageData }
     };
-
     fetch(`/download_pdf_report/` + project_id, {
         method: 'POST',
         headers: {
@@ -266,14 +391,12 @@ function sendImagesToBackend(images) {
     .then(blob => {
         // Create a URL for the blob
         const url = window.URL.createObjectURL(blob);
-
         // Create a temporary link to trigger the download
         const a = document.createElement('a');
         a.href = url;
-        a.download = `report_${project_id}.pdf`;
+        a.download = `offgridplanner_results.pdf`;
         document.body.appendChild(a);
         a.click();
-
         // Clean up
         a.remove();
         window.URL.revokeObjectURL(url);
@@ -282,7 +405,6 @@ function sendImagesToBackend(images) {
         console.error('Error:', error);
     });
 }
-
 
 
 var targetNode = document.getElementById('responseMsg');

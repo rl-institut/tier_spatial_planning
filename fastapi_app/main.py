@@ -1436,7 +1436,7 @@ async def download_pdf_report(project_id: int, request: Request):
     doc, buffer = data_to_file.create_pdf_report(image_dict, input_parameters_df, energy_system_design, energy_flow_df, results_df,
                                                  nodes_df, links_df, demand_options, custom_demand_df)
     return Response(content=buffer.read(), media_type='application/pdf',
-                    headers={"Content-Disposition": f"attachment; filename=report_{project_id}.pdf"})
+                    headers={"Content-Disposition": f"attachment; filename=offgridplanner_results.pdf"})
 
 
 
@@ -1462,15 +1462,9 @@ async def export_demand(project_id, file_type: str, request: Request):
     df = df.reset_index()
     df.columns = ['timestamp', 'demand']
     df['demand'] = df['demand'].round(4)
-    io_file = data_to_file.df_to_file(df, file_type)
-    if file_type == 'xlsx':
-        response = StreamingResponse(io_file,
-                                     media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_demand.xlsx"
-    elif file_type == 'csv':
-        response = StreamingResponse(io_file,
-                                     media_type="text/csv")
-        response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_demand.csv"
+    io_file = data_to_file.df_to_file(df, 'xlsx')
+    response = StreamingResponse(io_file, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_demand.xlsx"
     return response
 
 
