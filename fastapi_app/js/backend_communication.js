@@ -1251,6 +1251,29 @@ async function redirect_if_cookie_is_missing(access_token, consent_cookie) {
 }
 
 
+async function toggleDropdownMenuItems() {
+    try {
+        const response = await fetch("has_cookie/", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                'access_token': true,
+                'consent_cookie': false
+            })
+        });
+        const responseData = await response.json();
+        if (responseData) {
+            const hiddenItems = document.querySelectorAll('.dropdown-menu li[style*="display: none"]');
+            hiddenItems.forEach(item => {
+                item.style.display = 'list-item';
+            });
+        }
+    } catch (error) {
+        console.error("Error checking login status:", error);
+    }
+}
+
+
 async function remove_project(project_id) {
     try {
         const response = await fetch("remove_project/" + project_id, {
