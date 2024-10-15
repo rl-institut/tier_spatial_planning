@@ -160,6 +160,10 @@ async def home(request: Request):
         return templates.TemplateResponse("user_projects.html", {"request": request,
                                                                  'projects': projects})
 
+@app.get("/model_description", response_class=HTMLResponse)
+async def model_description(request: Request):
+    return templates.TemplateResponse("model-description.html", {"request": request})
+
 
 @app.get("/project_setup", response_class=HTMLResponse)
 async def project_setup(request: Request, project_id=None):

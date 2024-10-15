@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    {% set title='ModelDescription' %}
+    {% include '_head.html' %}
+    <style>
+        .full-width-img {
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body onload="show_cookie_consent(); show_email_and_project_in_navbar(); get_captcha();" style="text-align: left;">
+{% include '_navbar_homepage.html' %}
+<main>
+    <section id="section" class="dashboard">
+        <div class="container" style="text-align: justify; margin-top: 100px;">
+            <!-- Section Header -->
+            <div class="row">
+                <div class="col-12" style="padding-left: 30px; padding-right: 30px; margin-top: -200px">
+                    <h1>Model Description</h1>
+                    <p>
+                        This section provides a brief overview of the models used in the backend of the tool. Each model is designed to address specific tasks related to demand estimation, spatial grid planning, and the optimal sizing of energy converters. Together, these models contribute to a comprehensive analysis framework, supporting the planning and optimization of off-grid energy systems. Below is a description of each model and its specific functionality.
+                    </p>
+                    <ul style="margin-left: 0; padding-left: 1.5em;">
+                        <li><a href="#demand_tool">Description of the Demand Estimation Model</a></li>
+                        <li><a href="#grid_tool">Description of the Spatial Grid Optimization Tool</a></li>
+                        <li><a href="#es_tool">Description of the Energy System Optimization Tool</a></li>
+                    </ul>
+                    <hr>
+                </div>
+            </div>
+
+            <!-- Main Content with Two Columns -->
+            <div class="row">
+                <!-- Left Column: Textual Content -->
+                <div class="col-md-6" style="padding-left: 30px; padding-right: 30px">
+                    <h4  style="margin-bottom: 50px" id="demand_tool">Description of the Demand Estimation Model</h4>
+                    <p>
+                        The demand modeling tool developed by PeopleSuN aims to predict electricity demand in non-urban Nigerian villages by integrating extensive survey data with the simulation capabilities of the Remote Area Multi-Energy Profiles (RAMP) software. The primary goal of the tool is to model appliance ownership, electricity consumption trends, and the financial capacity of households and enterprises to afford electricity services. By generating detailed consumer profiles based on geographical zones and wealth categories, it provides nuanced predictions of electricity demand to inform off-grid energy planning and implementation.
+                    </p>
+
+                    <p><strong>Survey Data Collection</strong></p>
+
+                    <p>
+                        Quantitative household and enterprise energy surveys (~5,000 total) were conducted, targeting users who already use electricity in some capacity. The survey gathered key data, including:
+                    </p>
+                    <ul style="margin-left: 0; padding-left: 1.5em;">
+                        <li>Average appliance ownership likelihood (%)</li>
+                        <li>Average daily appliance usage duration (minutes)</li>
+                        <li>Appliance power and time of use assumptions (W)</li>
+                        <li>For enterprises and public services: daily opening and closing times, as well as additional "high power energy-intensive appliances"</li>
+                    </ul>
+                    <p>
+                        This data forms the foundation for modeling energy consumption profiles, providing insights into appliance usage patterns, energy demand, and operational characteristics across different user types.
+                    </p>
+
+                    <p><strong>Generating Demand Profiles Using RAMP</strong></p>
+
+                    <p>
+                        The Remote Area Multi-Energy Profiles (RAMP) tool is an open-source software for the stochastic simulation of user-driven energy demand time series. By inputting survey data into RAMP, typical energy consumption profiles for non-urban Nigerian households were developed. The process involved:
+                    </p>
+                    <ol style="margin-left: 0; padding-left: 1.5em;">
+                        <li><strong>Data Analysis and Categorization:</strong> Survey data was analyzed to identify patterns in appliance ownership and usage. Households were categorized into consumption levels: Very Low, Low, Medium, High, and Very High, considering factors like appliance types, usage frequency, and household income.</li>
+                        <li><strong>Creation of a National Consumption Profile:</strong> A national profile was developed to reflect the diversity of households, accounting for regional variations in wealth, access to energy, and cultural practices.</li>
+                        <li><strong>Simulation with RAMP:</strong> The categorized data was used in RAMP to simulate energy consumption patterns, considering hourly, daily, and seasonal variations. Appliance-specific energy use allowed for detailed profiles, including peak demand and load variations.</li>
+                        <li><strong>Stochastic Algorithms:</strong> Stochastic methods were applied to account for variability in electricity demand, generating likely distributions of demand rather than fixed values. This enhances the reliability of predictions by considering factors like random appliance breakdowns or changes in usage behavior.</li>
+                    </ol>
+                </div>
+                <div class="col-md-6">
+                    <img src="{{ url_for('public', path='media_files/images/ramp_profile_generation.png') }}" class="img-fluid" alt="Grid Optimization" style="margin-top: 20px;">
+                </div>
+                <hr>
+            </div>
+
+            <!-- Additional Sections Below the Columns -->
+            <div class="row">
+                <div class="col-md-6" style="padding-left: 30px; padding-right: 30px">
+                    <h4  id="grid_tool">Description of the Spatial Grid Optimization Tool</h4>
+                    <img src="{{ url_for('public', path='media_files/images/grid_alg_7.png') }}" class="img-fluid" alt="Grid Optimization"
+                    style="width: 100%; height: auto; margin-top: 20px; margin-bottom: 20px">
+                    <p>The Spatial Grid Optimization model strategically identifies optimal locations for poles, distribution cables, and connection cables to build the distribution grid. It achieves this by first clustering consumers and then connecting these clusters in a way that results in the lowest total distance. This approach minimizes investment and operational costs while ensuring comprehensive coverage and adherence to connection and distance constraints. Additionally, the model calculates annualized costs for assessing the Levelized Cost of Energy (LCOE).</p>
+                    <p>
+                    The model provides the option to identify consumers with particularly high connection costs and exclude them from being connected to the grid. Instead, these consumers should be equipped with a solar home system. To achieve this, the costs for poles, connection, and distribution cables are distributed among consumers along each branch and its sub-branches, starting from the load center of the grid, which is the pole closest to the median longitude and latitude values. For each branch and its sub-branches, the costs are allocated from the load center, with consumers only responsible for the costs of poles and cables connecting them towards the load center. Costs for poles and cables beyond a consumer are borne by subsequent consumers.
+                    </p>
+                    <p>
+                        The user can set a threshold value called Max Specific Grid Cost. If a consumer exceeds this cost, they are excluded from the grid. Starting from the ends of the branches, consumers with excessive costs are identified, and when consumers are excluded, the cost distribution is recalculated iteratively. The process continues until the consumer at the end of a branch falls below the threshold. Once this happens, the branch is no longer evaluated. The process stops when all consumers at the ends of branches have costs below the threshold.
+                        When consumers are excluded, the grid components like poles and cables that were needed to connect these consumers are removed from the grid layout. This iterative approach ensures that only consumers with reasonable grid connection costs remain connected, while others are excluded and offered solar home systems instead.
+
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p style="margin-left: 50px"><strong>Optimization Approach</strong></p>
+                    <ol style="margin-left: 0; padding-left: 1.5em;">
+                        <li style="margin-left: 50px; margin-right: 50px">The starting point for the optimization are the respective geolocations of the consumers.
+                    <div class="text-center" style="margin-top: 20px;">
+                        <img src="{{ url_for('public', path='media_files/images/grid_alg_1.png') }}" class="img-fluid" alt="Grid Optimization"
+                        style="margin-bottom: 10px">
+                    </div></li>
+                        <li style="margin-left: 50px; margin-right: 50px">Clustering of consumers by constrained Kmeans algorithm (size of clusters are limited).</li>
+                    <div class="text-center" style="margin-top: 20px;">
+                        <img src="{{ url_for('public', path='media_files/images/grid_alg_2.png') }}" class="img-fluid" alt="Grid Optimization"
+                        style="margin-bottom: 10px">
+                    </div>
+                        <li style="margin-left: 50px; margin-right: 50px">The centroids of the clusters are taken as the geolocations of the poles.
+                    <div class="text-center" style="margin-top: 20px;">
+                        <img src="{{ url_for('public', path='media_files/images/grid_alg_3.png') }}" class="img-fluid" alt="Grid Optimization"
+                        style="margin-bottom: 10px">
+                    </div></li>
+                        <li style="margin-left: 50px; margin-right: 50px">Each consumer is connected to its cluster pole.
+                    <div class="text-center" style="margin-top: 20px;">
+                        <img src="{{ url_for('public', path='media_files/images/grid_alg_4.png') }}" class="img-fluid" alt="Grid Optimization"
+                        style="margin-bottom: 10px">
+                    </div></li>
+                        <li style="margin-left: 50px; margin-right: 50px">A minimum spanning tree (MST) is then constructed from this graph, which connects all the poles with minimum total distance (Kruskal's algorithm).</li>
+                    <div class="text-center" style="margin-top: 20px;">
+                        <img src="{{ url_for('public', path='media_files/images/grid_alg_5.png') }}" class="img-fluid" alt="Grid Optimization"
+                        style="margin-bottom: 10px">
+                    </div>
+                        <li style="margin-left: 50px; margin-right: 50px">Addition of intermediate poles to prevent unacceptable cable spans.
+                    </ol>
+                    <div class="text-center" style="margin-top: 20px; margin-bottom: 20px">
+                        <img src="{{ url_for('public', path='media_files/images/grid_alg_6.png') }}" class="img-fluid" alt="Grid Optimization"
+                        style="margin-bottom: 10px">
+                    </div></li>
+                </div>
+                <hr>
+            </div>
+            <div class="row">
+                <div class="col-md-6" style="padding-left: 30px; padding-right: 30px">
+                    <h4 style="margin-bottom: 30px" id="es_tool">Description of the Energy System Optimization Tool</h4>
+                    <p>This tool is a comprehensive solution for the design and optimization of off-grid energy systems. It integrates a variety of energy sources, including photovoltaic (PV) systems and diesel generators, and supports key components such as battery systems, inverters, and rectifiers. The tool's core functionality lies in its ability to design and optimize these systems to meet specific energy demands in the most cost-efficient way. It uses advanced data modeling techniques, including ERA5 satellite data and PVLIB, to accurately simulate solar potentials, ensuring that PV systems are optimized for the specific environmental conditions of the installation site.</p>
+                    <p>A central aspect of the tool is its focus on minimizing the total annualized costs. Annualized costs account for both the capital expenditures (CapEx) associated with the installation of energy systems and the operational expenditures (OpEx) incurred throughout their lifetime. By optimizing the balance between these costs, the tool generates a configuration that not only meets consumer energy demands but does so in the most financially sustainable manner. This optimization is achieved through mixed-integer linear programming (MILP), a mathematical modeling approach that enables the tool to explore multiple possible configurations and select the one that offers the lowest total annualized cost.</p>
+
+                    <strong style="margin-bottom: 20px">OEMOF-Solph and MILP for Investment Optimization</strong>
+
+                    <p>The tool's optimization relies on the OEMOF (Open Energy Modeling Framework) and its Solph library, which specialize in energy system optimization. OEMOF Solph offers a flexible, open-source platform for modeling various energy converters, storage solutions, and energy flows. Using mixed-integer linear programming (MILP), the tool addresses complex tasks like investment planning and unit commitment.</p>
+
+                    <p>Investment optimization using MILP offers an efficient approach to system design by minimizing total annualized costs, which include both initial capital investments and ongoing operational expenses. MILP enables the tool to handle discrete decisions, such as selecting additional PV arrays or generators, as well as continuous decisions like determining their optimal capacities. By focusing on a minimal formulation and foregoing the global optimality guarantees of nonlinear programming (NLP), MILP can be solved more efficiently. However, this efficiency comes with the trade-off of accepting some inaccuracies due to the linearization of nonlinear relationships. Nonetheless, MILP provides a practical balance between solution quality and computational performance, making it well-suited for optimizing energy technologies.</p>
+
+                    <p>Unit commitment refers to the tool's ability to determine which energy units (such as generators or battery systems) should be activated at any given time to meet energy demands efficiently. By using MILP, the tool ensures that these decisions are made in a way that minimizes operational costs, such as fuel consumption and wear-and-tear on equipment, while adhering to technical constraints such as storage capacity and generation limits.</p>
+
+                    <p><strong style="margin-bottom: 20px">Data-Driven Results for Strategic Decision-Making</strong></p>
+                <p>
+                    The tool generates detailed results regarding the energy system's performance and financial metrics. Key outputs include installed capacities, operational time series, investment costs, CO<sub>2</sub> emissions, and fuel requirements. These results provide stakeholders with a comprehensive overview of the system's operational efficiency and its long-term economic and environmental impacts. This information supports strategic planning for off-grid energy systems across various scales, from small rural electrification projects to larger industrial applications.
+                </p>
+                </div>
+                <div class="col-md-6">
+                <div class="text-center my-4">
+                    <img src="{{ url_for('public', path='media_files/images/es_description_slide_1.svg') }}"
+                         class="img-fluid full-width-img" alt="Grid Optimization"
+                         style=" padding: 20px; border: 2px solid #000; margin-top: -25px; width: 80%; height: auto;"
+                    >
+                </div>
+                <div class="text-center my-4">
+                    <img src="{{ url_for('public', path='media_files/images/es_description_slide_2.svg') }}"
+                         class="img-fluid full-width-img" alt="Grid Optimization"
+                         style=" padding: 20px; border: 2px solid #000; margin-top: 20px; width: 80%; height: auto;"
+                    >
+                </div>
+                <div class="text-center my-4">
+                    <img src="{{ url_for('public', path='media_files/images/es_description_slide_5.svg') }}"
+                         class="img-fluid full-width-img" alt="Grid Optimization"
+                         style=" padding: 20px; border: 2px solid #000; margin-top: 20px; width: 80%; height: auto;"
+                    >
+                </div>
+                <div class="text-center my-4">
+                    <img src="{{ url_for('public', path='media_files/images/es_description_slide_3.svg') }}"
+                         class="img-fluid full-width-img" alt="Grid Optimization"
+                         style=" padding: 20px; border: 2px solid #000; margin-top: 20px; width: 80%; height: auto;"
+                    >
+                </div>
+                <div class="text-center my-4">
+                    <img src="{{ url_for('public', path='media_files/images/es_description_slide_4.svg') }}"
+                         class="img-fluid full-width-img" alt="Grid Optimization"
+                         style=" padding: 20px; border: 2px solid #000; margin-top: 20px; width: 80%; height: auto;"
+                    >
+                </div>
+            </div>
+            </div>
+        </div>
+
+    </section>
+
+    <div class="container-fluid" style="background-color: var(--ccb); width: 100%; padding-bottom: 2rem; margin-bottom: 0px; text-align: left;">
+        <div class="container" style="background-color: var(--ccb); width: 100%; text-align: left;">
+            <div class="row" style="text-align: left;">
+                <h1 style="color: var(--cdg);">About</h1>
+                <p style="color: var(--cdg);">
+                    PeopleSuN is a project funded by the German Federal Ministry of Education and Research (BMBF) within
+                    the funding initiative "Client II - International Partnerships for Sustainable Innovations". The
+                    off-grid tool was developed by the Department of Energy Engineering and Environmental Protection at the Technische Universität
+                    Berlin in cooperation with the Reiner-Lemoine-Institute.
+                </p>
+                <div class="image-container">
+                    <a href="https://www.tu.berlin/energietechnik" target="_blank">
+                        <img src="{{ url_for('public', path='media_files/assets/logos/LogoTUB.svg') }}">
+                    </a>
+                    <a href="https://reiner-lemoine-institut.de/" target="_blank">
+                        <img src="{{ url_for('public', path='media_files/assets/logos/LogoRLI.svg') }}">
+                    </a>
+                    <a href="https://www.bmbf.de/" target="_blank">
+                        <img src="{{ url_for('public', path='media_files/assets/logos/LogoBMBF.svg') }}">
+                    </a>
+                    <a href="https://www.bmbf-client.de/" target="_blank">
+                        <img src="{{ url_for('public', path='media_files/assets/logos/logo-client2-en.svg') }}">
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- The rest of your modals and scripts remain unchanged -->
+
+</main>
+{% include '_footer_homepage.html' %}
+</body>
+{% include '_scripts.html' %}
+<script src="https://unpkg.com/scrollreveal"></script>
+<script src="{{ url_for('js', path='pages/landing_page.js') }}"></script>
+<script src="{{ url_for('js', path='backend_communication.js') }}"></script>
+</html>
