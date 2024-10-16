@@ -1,0 +1,172 @@
+<div id="login" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999; text-align: left">
+        <form class="modal-content" style="max-width: 24rem">
+            <div class="container">
+                <h1 style="text-align:left;">Login</h1>
+
+                <div style="display:inline">
+                    <p style="text-align: left">Email</p>
+                    <div class="input-item">
+                        <input type="text" class="form-control" id="userEmail" name="email"
+                               placeholder="Enter your mail address"/>
+                    </div>
+                    <p style="text-align: left">Password</p>
+                    <div class="input-item">
+                        <input type="password" class="form-control" id="userPassword" name="password"
+                               placeholder="Enter your password"/>
+                    </div>
+                </div>
+                <div style="text-align: left;">
+                    <input type="checkbox" class="form-check-input" id="isEnabled"/>
+                    <label for="isEnabled" style="margin-left: 5px;"><span>Remember me</span></label>
+                </div>
+                <p style="text-align:left;">&nbsp;Don't have an account yet?
+                    <a href="#"
+                       onclick="document.getElementById('registration').style.display='block'; document.getElementById('login').style.display='none';">Register
+                        here</a>
+                <p style="text-align: left"><a href="#"
+                                               onclick="document.getElementById('forgotPassword').style.display='block'">&nbsp;Forgot
+                    your password?</a></p>
+
+                </p>
+                <button onclick="login();" type="button" class="deletebtn">Log in</button>
+                <button onclick="document.getElementById('login').style.display='none'" type="button" class="cancelbtn">
+                    Close
+                </button>
+                <p id="responseMsg"></p>
+
+            </div>
+        </form>
+    </div>
+<div id="registration" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999;">
+        <form class="modal-content" style="max-width: 20rem">
+            <div class="container">
+                <h1 style="text-align:left;">Registration</h1>
+                <div class="clearfix">
+                    <div class="input-item" style="text-align: left">
+                        <div style="display: flex; align-items: center;">
+                            <img id="captcha_img2" style="margin-right: 1rem;">
+                            <a style="font-family: Lucida Sans Unicode; font-weight: 900; font-size: 2rem"
+                               type="button"
+                               onclick="get_captcha();"
+                            >&#x21bb;
+                            </a>
+                        </div>
+                        <p style="display:inline; text-align: left">
+                            Captcha <i>(Hint: capital letters only)</i>
+                        </p>
+                        <input
+                                type="text"
+                                class="form-control"
+                                id="captcha_input2"
+                                placeholder="Please enter the capital letters shown above"
+                                value=""
+                                required
+                        />
+                        <p style="display:inline">
+                            Email
+                        </p>
+                        <input
+                                type="text"
+                                class="form-control"
+                                id="userEmail2"
+                                placeholder="Enter your mail address"
+                                value=""
+                                required
+                        />
+                    </div>
+                    <div class="input-item" style="text-align: left">
+                        <p style="display:inline">
+                            Password
+                        </p>
+                        <input
+                                type="password"
+                                class="form-control"
+                                id="userPassword2"
+                                placeholder="Enter your password"
+                                value=""
+                                required
+                        />
+                    </div>
+                    <div class="input-item" style="text-align: left">
+                        <p style="display:inline">
+                            Repeat Password
+                        </p>
+                        <input
+                                type="password"
+                                class="form-control"
+                                id="userPassword3"
+                                placeholder="Enter your password"
+                                value=""
+                                required
+                        />
+                    </div>
+                    <p id="responseMsg2"></p>
+                    <button onclick="add_user_to_db();"
+                            type="button"
+                            class="deletebtn"
+                    >Register
+                    </button>
+                    <button onclick="document.getElementById('registration').style.display='none'"
+                            type="button" class="cancelbtn">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+<div id="forgotPassword" class="modal" style="background-color: rgba(0,0,0,0.5); z-index: 999;">
+        <form class="modal-content" style="max-width: 20rem">
+            <div class="container">
+                <h1 style="text-align:left;">Reset Password</h1>
+                <p style="text-align: left">If you have forgotten your password, a link can be sent to your registered
+                    email address that
+                    will allow you to reset your password.</p>
+                <div class="clearfix">
+                    <div class="input-item" style="text-align: left">
+                        <p style="display:inline">
+                        </p>
+                        <div style="display: flex; align-items: center;">
+                            <img id="captcha_img" style="margin-right: 1rem;">
+                            <a style="font-family: Lucida Sans Unicode; font-weight: 900; font-size: 2rem"
+                               type="button"
+                               onclick="get_captcha();"
+                            >&#x21bb;
+                            </a>
+                        </div>
+                        <p style="display:inline; text-align: left">
+                            Captcha <i>(Hint: capital letters only)</i>
+                        </p>
+                        <input
+                                type="text"
+                                class="form-control"
+                                id="captcha_input"
+                                placeholder="Please enter the capital letters shown above"
+                                value=""
+                                required
+                        />
+                        <p style="display:inline">
+                            Email
+                        </p>
+                        <input
+                                type="text"
+                                class="form-control"
+                                id="userEmail4"
+                                placeholder="Enter your mail address"
+                                value=""
+                                required
+                        />
+                    </div>
+                    <p id="responseMsg4"></p>
+                    <button onclick="send_reset_password_email();"
+                            type="button"
+                            class="deletebtn"
+                    >Send Mail
+                    </button>
+                    <button onclick="document.getElementById('forgotPassword').style.display='none'"
+                            type="button" class="cancelbtn">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>

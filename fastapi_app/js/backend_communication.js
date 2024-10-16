@@ -1261,17 +1261,35 @@ async function toggleDropdownMenuItems() {
                 'consent_cookie': false
             })
         });
+
         const responseData = await response.json();
-        if (responseData) {
+
+        if (responseData === true) { // Ensuring it's exactly true
+            // Show hidden dropdown menu items
             const hiddenItems = document.querySelectorAll('.dropdown-menu li[style*="display: none"]');
             hiddenItems.forEach(item => {
                 item.style.display = 'list-item';
             });
+
+            // Hide the login button
+            const loginButton = document.getElementById('login_button');
+            if (loginButton) {
+                loginButton.style.display = 'none';
+            }
+
+            // Hide the paragraph with ID 'paragraph_register_suggestion' if it exists
+            const registerSuggestionParagraph = document.getElementById('paragraph_register_suggestion');
+            if (registerSuggestionParagraph) {
+                registerSuggestionParagraph.style.display = 'none';
+            }
         }
     } catch (error) {
         console.error("Error checking login status:", error);
     }
 }
+
+
+
 
 
 async function remove_project(project_id) {

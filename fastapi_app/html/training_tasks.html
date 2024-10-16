@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    {% set title='Tutorial' %}
+    {% include '_head.html' %}
+    <style>
+        /* Add any necessary styles here */
+        /* Override wizard styles to make it visible */
+        .wizard {
+            visibility: visible !important;
+            opacity: 1 !important;
+            transition: none !important;
+        }
+
+        /* Use data-step-number to display numbering */
+        .wizard__steps li::before {
+            content: attr(data-step-number) ".";
+            margin-right: 5px;
+            font-weight: bold;
+            color: WHITE;
+        }
+
+        /* Style for active step */
+        .wizard__steps li.active::before {
+            color: WHITE;
+        }
+
+        /* Ensure steps are displayed correctly */
+        .wizard__steps li {
+            display: inline-block !important;
+        }
+
+        /* Optional: Adjust step text color */
+        .wizard__steps li a {
+            color: inherit !important;
+            text-decoration: none;
+        }
+
+
+        .dashboard {
+            display: none;
+            margin: 0 auto;
+            max-width: 1200px; /* Adjust as needed */
+            padding: 20px;
+        }
+        .dashboard.active {
+            display: block;
+        }
+
+        /* Footer styles */
+        .step-footer {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+        }
+        .step-footer__left,
+        .step-footer__center,
+        .step-footer__right {
+            flex: 1;
+            text-align: center;
+        }
+        /* Button styles */
+        .btn {
+            padding: 5px 10px;
+            margin: 0 5px;
+            text-decoration: none;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            cursor: pointer;
+        }
+        .btn--hollow {
+            background-color: transparent;
+            color: #007bff;
+            border: 1px solid #007bff;
+        }
+    </style>
+</head>
+<body onload="toggleDropdownMenuItems();" style="text-align: left;">
+{% include '_navbar_public.html' %}
+<main>
+    <section>
+        <div class="container" style="text-align: justify">
+            <div class="row">
+                <div class="col-12" style="padding-left: 6rem; padding-right: 6rem;">
+                    <h1>Training Tasks</h1>
+                    <p>
+                        Five tasks are presented that initially explain the basic functions of the tool. As the tasks progress, advanced options are introduced, such as identifying consumers with high connection costs, allowing a certain level of undersupply instead of sizing for peak demand to reduce system costs, and the scenario where specific components are already in place and need to be complemented with additional energy converters.
+                    </p>
+                    <p id="paragraph_register_suggestion">
+                        It is recommended to create an account first. To do so, click on the 'Log in/Sign up' button in the upper right area. A registration form will appear; there, click on 'Register here' and follow the registration process.</p>
+                    <p>
+                        It is recommended to create a new project for each task and name it accordingly, for example, 'Training Task 1'.
+                    </p>
+                    <hr>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="wizard" id="wizard">
+        <div>
+            <div class="wizard__steps">
+                <ul id="wiz">
+                    <li id="wizElement1" data-step-number="1" class="active" onclick="showTask(1);">
+                        <a href="javascript:void(0);">Task One</a>
+                    </li>
+                    <li id="wizElement2" data-step-number="2" onclick="showTask(2);">
+                        <a href="javascript:void(0);">Task Two</a>
+                    </li>
+                    <li id="wizElement3" data-step-number="3" onclick="showTask(3);">
+                        <a href="javascript:void(0);">Task Three</a>
+                    </li>
+                    <li id="wizElement4" data-step-number="4" onclick="showTask(4);">
+                        <a href="javascript:void(0);">Task Four</a>
+                    </li>
+                    <li id="wizElement5" data-step-number="5" onclick="showTask(5);">
+                        <a href="javascript:void(0);">Task Five</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </section>
+<section id="task1" class="dashboard active">
+        <!-- Accordion for Task One -->
+        <div class="accordion" id="accordionTask1" style="margin-top: 12px">
+            <!-- Accordion Item 1 -->
+            <div class="accordion-item" style="padding: 10px">
+                <h2 class="accordion-header" id="task1HeadingOne">
+                    <button class="accordion-button no-arrow" type="button" data-bs-toggle="collapse" data-bs-target="#task1CollapseOne" aria-expanded="true" aria-controls="task1CollapseOne">
+                        Task Description
+                    </button>
+                </h2>
+                <div id="task1CollapseOne" class="accordion-collapse collapse show" aria-labelledby="task1HeadingOne" data-bs-parent="#accordionTask1">
+                    <div class="accordion-body">
+                        <p>
+                            An off-grid system is to be planned for the Nigerian locality of Ikah Ichala (7.699508, 7.710631), to which all buildings in the village will be connected. The drawing tools are used to mark an area on the map where buildings are automatically identified as consumers. All consumers are defined as households by default. Change the consumer types to enterprises or public services for the consumers marked in the figure, and select the appropriate consumer categories.
+                        </p>
+                        <p>
+                            In this task, we will not modify the Project Setup, Demand Estimation, Grid Design, and Energy System Design pages. Instead, we'll maintain the default parameters and proceed by clicking 'Next' or 'Optimize' in the final step.
+                        </p>
+                        <p>
+                            This entails conducting a Demand Estimation based on the national average of rural areas. In terms of Grid Design, it involves connecting all consumers and adopting the default cost parameters for all components. For Energy System Design, the available components include PV systems, diesel generators, battery systems, and inverters, with the optimization algorithm determining the optimal sizing of these components.
+                        </p>
+                            <img src="{{ url_for('public', path='media_files/images/task_1.jpg') }}" class="img-fluid" alt="Grid Optimization" style="margin-top: 20px; margin-bottom: 20px;">
+                    </div>
+                </div>
+            </div>
+            <!-- Accordion Item 2 -->
+            <div class="accordion-item" style="padding: 10px">
+                <h2 class="accordion-header" id="task1HeadingTwo">
+                    <button class="accordion-button no-arrow collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#task1CollapseTwo" aria-expanded="false" aria-controls="task1CollapseTwo">
+                        Step-By-Step Guide
+                    </button>
+                </h2>
+                <div id="task1CollapseTwo" class="accordion-collapse collapse" aria-labelledby="task1HeadingTwo" data-bs-parent="#accordionTask1">
+                    <div class="accordion-body">
+                        <p>
+                            <strong>
+                                Step One: Project Setup
+                            </strong>
+                        </p>
+                        <p>
+                            In the first step, a new project should be created (Note: To do this, open a new tab). Navigate to "Projects" and click on the 'New Project' button in the upper right area. You will be taken to the first page of the project settings, "Project Setup". Here, you should first change the project's default name to "Training Task 1". Additionally, you can modify the project description. The parameters such as Interest Rate, Simulation Period, and Project Lifetime remain unchanged. If you have questions about individual parameters, you can hover the mouse pointer over the question mark to view the corresponding explanations. Proceed to the next planning step by clicking 'Next' at the bottom of the page.
+                        </p>
+                         <p>
+                            <strong>
+                                Step Two: Consumer Selection
+                            </strong>
+                        </p>
+                        <p>
+                            On the Consumer Selection page, enter the coordinates "7.699508, 7.710631" into the search field labeled "Search Location within Nigeria" and press Enter. The map will then center on the specified geolocation. To zoom in closer to the location, you can use the mouse wheel or click the '+' symbol on the map interface. <strong>Note:</strong> While locations can typically be searched by name and country—such as "Ikah Ichala, Nigeria"—the mapping system in use, OpenStreetMap, does not recognize this particular location and will display an error message.
+                        </p>
+                        <p>
+                            Next, using the drawing tool, select all buildings in the area and designate them as consumers. By default, all consumers are designated as households. Reclassify some of these consumers as enterprises and public services according to the specifications outlined in the figure from the task instructions. Detailed instructions on how to use the drawing tools for consumer identification can be found in the tutorial video. Once the consumers have been selected and the settings have been configured, click on 'Next' to proceed to the next planning step.
+                        </p>
+                        <p>
+                            <strong>
+                                Step Three: Start Optimization
+                            </strong>
+                        </p>
+                        <p>
+                            As outlined in the task instructions, no modifications will be made on the subsequent three pages. Please click 'Next' on each page, and on the final page, click 'Optimize'. The optimization process will then begin. Upon completion of the optimization, you will be automatically redirected to the results page.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <!-- Accordion Item 3 -->
+            <div class="accordion-item" style="padding: 10px">
+                <h2 class="accordion-header" id="task1HeadingThree">
+                    <button class="accordion-button no-arrow collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#task1CollapseThree" aria-expanded="false" aria-controls="task1CollapseThree">
+                        Result Overview
+                    </button>
+                </h2>
+                <div id="task1CollapseThree" class="accordion-collapse collapse" aria-labelledby="task1HeadingThree" data-bs-parent="#accordionTask1">
+                    <div class="accordion-body">
+                        <img src="{{ url_for('public', path='media_files/images/task_1_result.jpg') }}"
+                                 class="img-fluid"
+                                 alt="Grid Optimization"
+                                 style="margin-top: 20px; margin-bottom: 20px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+<section id="task2" class="dashboard">
+        <!-- Accordion for Task Two -->
+        <div class="accordion" id="accordionTask2" style="margin-top: 12px">
+            <!-- Similar accordion items with IDs adjusted for task2 -->
+            <!-- Accordion Item 1 -->
+            <div class="accordion-item" style="padding: 10px">
+                <h2 class="accordion-header" id="task2HeadingOne">
+                    <button class="accordion-button no-arrow" type="button" data-bs-toggle="collapse" data-bs-target="#task2CollapseOne" aria-expanded="true" aria-controls="task2CollapseOne">
+                        Task Description
+                    </button>
+                </h2>
+                <div id="task2CollapseOne" class="accordion-collapse collapse show" aria-labelledby="task2HeadingOne" data-bs-parent="#accordionTask2">
+                    <div class="accordion-body">
+                        <p>Blablabla</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Accordion Item 2 and 3 similar to above -->
+            <!-- Accordion Item 2 -->
+            <div class="accordion-item" style="padding: 10px">
+                <h2 class="accordion-header" id="task2HeadingTwo">
+                    <button class="accordion-button no-arrow collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#task2CollapseTwo" aria-expanded="false" aria-controls="task2CollapseTwo">
+                        Step-By-Step Guide
+                    </button>
+                </h2>
+                <div id="task2CollapseTwo" class="accordion-collapse collapse" aria-labelledby="task2HeadingTwo" data-bs-parent="#accordionTask2">
+                    <div class="accordion-body">
+                        <p>Blablabla</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Accordion Item 3 -->
+            <div class="accordion-item" style="padding: 10px">
+                <h2 class="accordion-header" id="task2HeadingThree">
+                    <button class="accordion-button no-arrow collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#task2CollapseThree" aria-expanded="false" aria-controls="task2CollapseThree">
+                        Result Overview
+                    </button>
+                </h2>
+                <div id="task2CollapseThree" class="accordion-collapse collapse" aria-labelledby="task2HeadingThree" data-bs-parent="#accordionTask2">
+                    <div class="accordion-body">
+                        <p>Blablabla</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+<section id="task3" class="dashboard">
+    <!-- Accordion for Task Three -->
+    <div class="accordion" id="accordionTask3" style="margin-top: 12px">
+        <!-- Accordion Item 1 -->
+        <div class="accordion-item" style="padding: 10px">
+            <h2 class="accordion-header" id="task3HeadingOne">
+                <button class="accordion-button no-arrow" type="button" data-bs-toggle="collapse" data-bs-target="#task3CollapseOne" aria-expanded="true" aria-controls="task3CollapseOne">
+                    Task Description
+                </button>
+            </h2>
+            <div id="task3CollapseOne" class="accordion-collapse collapse show" aria-labelledby="task3HeadingOne" data-bs-parent="#accordionTask3">
+                <div class="accordion-body">
+                    <p>Blablabla</p>
+                </div>
+            </div>
+        </div>
+        <!-- Accordion Item 2 -->
+        <div class="accordion-item" style="padding: 10px">
+            <h2 class="accordion-header" id="task3HeadingTwo">
+                <button class="accordion-button no-arrow collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#task3CollapseTwo" aria-expanded="false" aria-controls="task3CollapseTwo">
+                    Step-By-Step Guide
+                </button>
+            </h2>
+            <div id="task3CollapseTwo" class="accordion-collapse collapse" aria-labelledby="task3HeadingTwo" data-bs-parent="#accordionTask3">
+                <div class="accordion-body">
+                    <p>Blablabla</p>
+                </div>
+            </div>
+        </div>
+        <!-- Accordion Item 3 -->
+        <div class="accordion-item" style="padding: 10px">
+            <h2 class="accordion-header" id="task3HeadingThree">
+                <button class="accordion-button no-arrow collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#task3CollapseThree" aria-expanded="false" aria-controls="task3CollapseThree">
+                    Result Overview
+                </button>
+            </h2>
+            <div id="task3CollapseThree" class="accordion-collapse collapse" aria-labelledby="task3HeadingThree" data-bs-parent="#accordionTask3">
+                <div class="accordion-body">
+                    <p>Blablabla</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section id="task4" class="dashboard">
+    <!-- Accordion for Task Four -->
+    <div class="accordion" id="accordionTask4" style="margin-top: 12px">
+        <!-- Accordion Item 1 -->
+        <div class="accordion-item" style="padding: 10px">
+            <h2 class="accordion-header" id="task4HeadingOne">
+                <button class="accordion-button no-arrow" type="button" data-bs-toggle="collapse" data-bs-target="#task4CollapseOne" aria-expanded="true" aria-controls="task4CollapseOne">
+                    Task Description
+                </button>
+            </h2>
+            <div id="task4CollapseOne" class="accordion-collapse collapse show" aria-labelledby="task4HeadingOne" data-bs-parent="#accordionTask4">
+                <div class="accordion-body">
+                    <p>Blablabla</p>
+                </div>
+            </div>
+        </div>
+        <!-- Accordion Item 2 -->
+        <div class="accordion-item" style="padding: 10px">
+            <h2 class="accordion-header" id="task4HeadingTwo">
+                <button class="accordion-button no-arrow collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#task4CollapseTwo" aria-expanded="false" aria-controls="task4CollapseTwo">
+                    Step-By-Step Guide
+                </button>
+            </h2>
+            <div id="task4CollapseTwo" class="accordion-collapse collapse" aria-labelledby="task4HeadingTwo" data-bs-parent="#accordionTask4">
+                <div class="accordion-body">
+                    <p>Blablabla</p>
+                </div>
+            </div>
+        </div>
+        <!-- Accordion Item 3 -->
+        <div class="accordion-item" style="padding: 10px">
+            <h2 class="accordion-header" id="task4HeadingThree">
+                <button class="accordion-button no-arrow collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#task4CollapseThree" aria-expanded="false" aria-controls="task4CollapseThree">
+                    Result Overview
+                </button>
+            </h2>
+            <div id="task4CollapseThree" class="accordion-collapse collapse" aria-labelledby="task4HeadingThree" data-bs-parent="#accordionTask4">
+                <div class="accordion-body">
+                    <p>Blablabla</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section id="task5" class="dashboard">
+    <!-- Accordion for Task Five -->
+    <div class="accordion" id="accordionTask5" style="margin-top: 12px">
+        <!-- Accordion Item 1 -->
+        <div class="accordion-item" style="padding: 10px">
+            <h2 class="accordion-header" id="task5HeadingOne">
+                <button class="accordion-button no-arrow" type="button" data-bs-toggle="collapse" data-bs-target="#task5CollapseOne" aria-expanded="true" aria-controls="task5CollapseOne">
+                    Task Description
+                </button>
+            </h2>
+            <div id="task5CollapseOne" class="accordion-collapse collapse show" aria-labelledby="task5HeadingOne" data-bs-parent="#accordionTask5">
+                <div class="accordion-body">
+                    <p>Blablabla</p>
+                </div>
+            </div>
+        </div>
+        <!-- Accordion Item 2 -->
+        <div class="accordion-item" style="padding: 10px">
+            <h2 class="accordion-header" id="task5HeadingTwo">
+                <button class="accordion-button no-arrow collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#task5CollapseTwo" aria-expanded="false" aria-controls="task5CollapseTwo">
+                    Step-By-Step Guide
+                </button>
+            </h2>
+            <div id="task5CollapseTwo" class="accordion-collapse collapse" aria-labelledby="task5HeadingTwo" data-bs-parent="#accordionTask5">
+                <div class="accordion-body">
+                    <p>Blablabla</p>
+                </div>
+            </div>
+        </div>
+        <!-- Accordion Item 3 -->
+        <div class="accordion-item" style="padding: 10px">
+            <h2 class="accordion-header" id="task5HeadingThree">
+                <button class="accordion-button no-arrow collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#task5CollapseThree" aria-expanded="false" aria-controls="task5CollapseThree">
+                    Result Overview
+                </button>
+            </h2>
+            <div id="task5CollapseThree" class="accordion-collapse collapse" aria-labelledby="task5HeadingThree" data-bs-parent="#accordionTask5">
+                <div class="accordion-body">
+                    <p>Blablabla</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% include '_login_and_register_modal.html' %}
+</main>
+<footer class="step-footer">
+    <div>
+        <div class="step-footer__left">
+            <a href="contact.html">&nbsp;&nbsp;&nbsp;Contact</a>
+        </div>
+        <div class="step-footer__center">
+            <button class="btn btn--medium btn--hollow btn--previous" id="prevButton" onclick="prevTask();">Previous</button>
+            <button class="btn btn--medium" style="color: #fff" id="nextButton" onclick="nextTask();">Next</button>
+        </div>
+        <div class="step-footer__right">
+            <a href="privacy.html">Data Privacy Protection/Datenschutz&nbsp;&nbsp;&nbsp;</a>
+            <a href="imprint.html">Imprint/Impressum&nbsp;&nbsp;&nbsp;</a>
+        </div>
+    </div>
+</footer>
+</body>
+{% include '_scripts.html' %}
+<script src="{{ url_for('js', path='backend_communication.js') }}"></script>
+<script src="{{ url_for('js', path='pages/training_tasks.js') }}"></script>
+</html>

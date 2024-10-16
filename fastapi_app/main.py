@@ -165,6 +165,11 @@ async def model_description(request: Request):
     return templates.TemplateResponse("model-description.html", {"request": request})
 
 
+@app.get("/training_tasks", response_class=HTMLResponse)
+async def training_tasks(request: Request):
+    return templates.TemplateResponse("training_tasks.html", {"request": request})
+
+
 @app.get("/project_setup", response_class=HTMLResponse)
 async def project_setup(request: Request, project_id=None):
     user = await handle_user_accounts.get_user_from_cookie(request)
@@ -692,7 +697,7 @@ async def load_previous_data(page_name, request: Request):
             return demand_estimation
         if demand_estimation is None or not hasattr(demand_estimation, 'maximum_peak_load'):
             return None
-        if sum(value for key, value in demand_estimation.to_dict().items() if 'custom_share_' in key) == 0:
+        if pd.Series([value for key, value in demand_estimation.to_dict().items() if 'custom_share_' in key]).fillna(0).sum() == 0:
             demand_estimation.custom_share_1 = 66.3
             demand_estimation.custom_share_2 = 21.5
             demand_estimation.custom_share_3 = 7.6
@@ -1100,7 +1105,7 @@ async def get_demand_plot_data(project_id, request: Request):
     demand_opt_dict = await async_queries.get_model_instance(sa_tables.Demand, user.id, project_id)
     nodes = pd.read_json(nodes.data)
     demand_opt_dict = demand_opt_dict.to_dict()
-    if sum(value for key, value in demand_opt_dict.items() if 'custom_share_' in key) == 0:
+    if pd.Series([value for key, value in demand_opt_dict.items() if 'custom_share_' in key]).fillna(0).sum() == 0:
         demand_opt_dict['custom_share_1'] = 66.3
         demand_opt_dict['custom_share_2'] = 21.5
         demand_opt_dict['custom_share_3'] = 7.6
