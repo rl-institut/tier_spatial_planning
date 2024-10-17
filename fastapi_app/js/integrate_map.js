@@ -200,8 +200,12 @@ async function put_markers_on_map(array, markers_only) {
     let counter;
     let selected_icon;
 
-    // Initialize the consumer counter
+    // Initialize the counters
     let num_consumers = 0;
+    let num_households = 0;
+    let num_enterprises = 0;
+    let num_public_services = 0;
+
     let latLonList = array.map(obj => L.latLng(obj.latitude, obj.longitude));
     let bounds = L.latLngBounds(latLonList);
 
@@ -211,6 +215,16 @@ async function put_markers_on_map(array, markers_only) {
         if (array[counter]["node_type"] === "consumer") {
             num_consumers++;  // Increase the consumer counter
 
+            // Count the specific types of consumers
+            if (array[counter]["consumer_type"] === "household") {
+                num_households++;
+            } else if (array[counter]["consumer_type"] === "enterprise") {
+                num_enterprises++;
+            } else if (array[counter]["consumer_type"] === "public_service") {
+                num_public_services++;
+            }
+
+            // Determine the icon to use
             if (markers_only) {
                 if (array[counter]["shs_options"] == 2) {
                     selected_icon = markerShs;
@@ -238,18 +252,32 @@ async function put_markers_on_map(array, markers_only) {
             selected_icon = icons[array[counter]["node_type"]];
         }
 
-        L.marker([array[counter]["latitude"], array[counter]["longitude"]], {icon: selected_icon,})
-            .on('click', markerOnClick).addTo(map);
+        // Add the marker to the map
+        L.marker([array[counter]["latitude"], array[counter]["longitude"]], {icon: selected_icon})
+            .on('click', markerOnClick)
+            .addTo(map);
     }
-    // Update the element with the count of consumers
+
+    // Update the elements with the counts
     if (document.getElementById("n_consumers")) {
         document.getElementById("n_consumers").innerText = num_consumers;
     }
+    if (document.getElementById("n_households")) {
+        document.getElementById("n_households").innerText = num_households;
+    }
+    if (document.getElementById("n_enterprises")) {
+        document.getElementById("n_enterprises").innerText = num_enterprises;
+    }
+    if (document.getElementById("n_public_services")) {
+        document.getElementById("n_public_services").innerText = num_public_services;
+    }
+
     zoomAll(map);
     if (typeof loadDrawingToolsJS === 'undefined' || loadDrawingToolsJS === null) {
         db_links_to_js(project_id);
     }
 }
+
 
 
 function removeLinksFromMap(map) {

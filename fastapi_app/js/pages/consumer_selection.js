@@ -30,7 +30,13 @@ let consumer_type = "H";
         option_consumer += '<option value="' + consumer_code + '"' + selected + '>' + consumer_list[consumer_code] + '</option>';
     }
     document.getElementById('consumer').innerHTML = option_consumer;
+
+    // Add event listener to the dropdown menu
+    document.getElementById('consumer').addEventListener('change', function() {
+        count_consumers();
+    });
 })();
+
 
 
 let public_service_list = {
@@ -310,6 +316,7 @@ function update_map_elements() {
             }
         });
     }
+    count_consumers(false)
 }
 
 function move_marker() {
@@ -452,14 +459,6 @@ document.querySelector('#headingTwo .accordion-button').addEventListener('click'
         accordionItem3.show();
     }
 });
-
-function add_consumer() {
-    update_map_elements();
-    let lat = document.getElementById('latitude2').value;
-    let lng = document.getElementById('longitude2').value;
-    add_single_consumer_to_array(lat, lng, 'manual', 'consumer')
-    drawMarker(lat, lng, 'consumer');
-}
 
 function delete_consumer() {
     let lat = parseFloat(document.getElementById('latitude').value);

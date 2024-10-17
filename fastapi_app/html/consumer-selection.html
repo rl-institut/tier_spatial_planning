@@ -35,10 +35,7 @@
                                     style="display: flex; justify-content: space-between; align-items: center;"
                                     type="button">
                                 <span style="flex-grow: 1;">Set Consumer Properties</span>
-                                <span style="flex-shrink: 0;  margin-right: 20px;">
-        <strong>Number of selected Consumers: </strong>
-        <a id="n_consumers" style="color: var(--ccb); font-weight: bold;">17</a>
-    </span>
+
                             </button>
                         </h2>
                         <div aria-labelledby="headingTwo" class="accordion-collapse" data-bs-parent="#accordionExample"
@@ -127,45 +124,58 @@
                                         <td style="padding: 5px;"><span style="float:right;"><a>&nbsp;</a></span></td>
                                     </tr>
                                 </table>
-
-
+                                <hr>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="flex: 1; text-align: left; padding-left: 10px">
+                                        <strong>Number of Selected Households: </strong>
+                                        <a id="n_households" style="color: var(--ccb); font-weight: bold;">0</a>
+                                    </span>
+                                    <span style="flex: 1; text-align: center;">
+                                        <strong>Number of Selected Enterprises: </strong>
+                                        <a id="n_enterprises" style="color: var(--ccb); font-weight: bold;">0</a>
+                                    </span>
+                                    <span style="flex: 1; text-align: right;; padding-right: 10px">
+                                        <strong>Number of Selected Public Services: </strong>
+                                        <a id="n_public_services" style="color: var(--ccb); font-weight: bold;">0</a>
+                                    </span>
+                                </div>
                                 <hr>
                                 <p>
                               <span>
-<p style="display: flex; justify-content: space-between; align-items: center; color: var(--ccb);">
-    <span style="display: flex; align-items: center;">
-        <input id="fileInput" style="display: none;" type="file"/>
-        <a class="btn btn--medium" href="javascript:void(0);"
-           id="importButton"
-           style="height: 32px; display: flex; align-items: center; justify-content: center; margin-right: 10px;">Import Consumers</a>
+                        <p style="display: flex; justify-content: space-between; align-items: center; color: var(--ccb);">
+                            <span style="display: flex; align-items: center;">
+                                <input id="fileInput" style="display: none;" type="file"/>
+                                <a class="btn btn--medium" href="javascript:void(0);"
+                                   id="importButton"
+                                   style="height: 32px; display: flex; align-items: center; justify-content: center; margin-right: 10px;">Import Consumers</a>
 
-        <a class="btn btn--medium" href="javascript:void(0);"
-           id="exportButton"
-           onclick="consumer_to_db(null, document.getElementById('fileTypeDropdown').value);"
-           style="height: 32px; display: flex; align-items: center; justify-content: center; margin-right: 10px; color: #fff;">
-           Export Consumers
-        </a>
+                                <a class="btn btn--medium" href="javascript:void(0);"
+                                   id="exportButton"
+                                   onclick="consumer_to_db(null, document.getElementById('fileTypeDropdown').value);"
+                                   style="height: 32px; display: flex; align-items: center; justify-content: center; margin-right: 10px; color: #fff;">
+                                   Export Consumers
+                                </a>
 
-        <select class="form-select" id="fileTypeDropdown"
-                style="max-width: 150px; margin-right: 10px; height: 32px; line-height: 20px; padding: 0 24px 0 8px;">
-            <option value="csv">File type: CSV</option>
-            <option value="xlsx">File type: XLSX</option>
-        </select>
+                                <select class="form-select" id="fileTypeDropdown"
+                                        style="max-width: 150px; margin-right: 10px; height: 32px; line-height: 20px; padding: 0 24px 0 8px;">
+                                    <option value="csv">File type: CSV</option>
+                                    <option value="xlsx">File type: XLSX</option>
+                                </select>
 
-        <span class="icon icon-question" data-bs-toggle="tooltip"
-              style="margin-right: 10px;"
-              title="The first row of the CSV or Excel file should contain the column headers, with subsequent rows containing the respective values. The file must include a 'latitude' column and a 'longitude' column, both of which are mandatory and should use a dot as a decimal separator, with the unit in decimal degrees. Additionally, the file can optionally include a 'consumer_type' column, which should specify whether the consumer is a 'household', 'enterprise', or 'public_service'. If no value is provided, it will default to 'household'. Another optional column is 'consumer_detail', which should be selected from the options available in the 'Consumer Category' drop-down menu. The 'shs_options' column is also optional and should either be set to 0 (for optimization) or 1 (for grid connection), with 0 being the default. Finally, the file must contain a 'custom_specification' column, which should be populated with a value selected from the 'Large Loads to add' drop-down menu, if applicable. Each value in this column must start with a leading integer followed by a space, the letter 'x', and another space (e.g. '1 x Milling Machine (7.5kW)'). This specific format is mandatory.">
-        </span>
+                                <span class="icon icon-question" data-bs-toggle="tooltip"
+                                      style="margin-right: 10px;"
+                                      title="The first row of the CSV or Excel file should contain the column headers, with subsequent rows containing the respective values. The file must include a 'latitude' column and a 'longitude' column, both of which are mandatory and should use a dot as a decimal separator, with the unit in decimal degrees. Additionally, the file can optionally include a 'consumer_type' column, which should specify whether the consumer is a 'household', 'enterprise', or 'public_service'. If no value is provided, it will default to 'household'. Another optional column is 'consumer_detail', which should be selected from the options available in the 'Consumer Category' drop-down menu. The 'shs_options' column is also optional and should either be set to 0 (for optimization) or 1 (for grid connection), with 0 being the default. Finally, the file must contain a 'custom_specification' column, which should be populated with a value selected from the 'Large Loads to add' drop-down menu, if applicable. Each value in this column must start with a leading integer followed by a space, the letter 'x', and another space (e.g. '1 x Milling Machine (7.5kW)'). This specific format is mandatory.">
+                                </span>
 
-    </span>
-    <span style="display: flex; align-items: center;">
-        <a style="margin-right: 10px;">Show Advanced Options</a>
-        <label class="switch">
-            <input id="toggleswitch2" type="checkbox">
-            <span class="slider round"></span>
-        </label>
-    </span>
-</p>
+                            </span>
+                            <span style="display: flex; align-items: center;">
+                                <a style="margin-right: 10px;">Show Advanced Options</a>
+                                <label class="switch">
+                                    <input id="toggleswitch2" type="checkbox">
+                                    <span class="slider round"></span>
+                                </label>
+                            </span>
+                        </p>
 
 
 
