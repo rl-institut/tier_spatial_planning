@@ -3108,3 +3108,9 @@ input:checked + .slider:before {
 .slider.round:before {
     border-radius: 50%;
 }
+
+.currency-sub {
+        font-size: 0.8em;
+        vertical-align: sub;
+        color: #555;
+    }

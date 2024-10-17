@@ -868,9 +868,9 @@ class EnergySystemOptimizer(BaseOptimizer):
         results.inverter_to_demand = self.sequences_inverter.sum() / 1000
         results.time_energy_system_design = self.execution_time
         results.co2_savings = self.co2_savings / self.n_days * 365
-        results.total_annual_consumption = self.demand_full_year.iloc[:, 0].sum()
-        results.average_annual_demand_per_consumer = self.demand_full_year.iloc[:,
-                                                     0].mean() / self.num_households * 1000
+        results.total_annual_consumption = self.demand_full_year.iloc[:, 0].sum() * (100 -  self.shortage) / 100
+        results.average_annual_demand_per_consumer = (self.demand_full_year.iloc[:, 0].mean() * (100 -  self.shortage) / 100
+                                                      / self.num_households * 1000)
         results.base_load = self.demand_full_year.iloc[:, 0].quantile(0.1)
         results.max_shortage = (self.sequences_shortage / self.demand).max() * 100
 
