@@ -271,7 +271,14 @@
                                        style="height: 32px; display: flex; align-items: center; justify-content: center; margin-right: 10px;"
                                        href="javascript:void(0);">Import Demand</a>
                                     <span class="icon icon-question" data-bs-toggle="tooltip"
-                                          title="The first row of the CSV or Excel file should contain the column headers, with subsequent rows containing the respective values. The file must include a 'latitude' column and a 'longitude' column, both of which are mandatory and should use a dot as a decimal separator, with the unit in decimal degrees. Additionally, the file can optionally include a 'consumer_type' column, which should specify whether the consumer is a 'household', 'enterprise', or 'public_service'. If no value is provided, it will default to 'household'. Another optional column is 'consumer_detail', which should be selected from the options available in the 'Consumer Category' drop-down menu. The 'shs_options' column is also optional and should either be set to 0 (for optimization) or 1 (for grid connection), with 0 being the default. Finally, the file must contain a 'custom_specification' column, which should be populated with a value selected from the 'Large Loads to add' drop-down menu, if applicable. Each value in this column must start with a leading integer followed by a space, the letter 'x', and another space (e.g. '1 x Milling Machine (7.5kW)'). This specific format is mandatory."
+                                          title="The first row of the CSV or Excel file should contain the column headers, with subsequent
+                                          rows containing the respective values. The file must include a 'demand' column. Please provide
+                                          hourly data with at least as many timestamps as your selected simulation days multiplied by 24
+                                          (e.g., 365 days require a minimum of 8,760 timestamps). Any additional timestamps beyond this
+                                          requirement will be truncated. If you encounter issues uploading your file, try deselecting
+                                          Use Custom Demand. This will display a button at the bottom of the section, allowing you to
+                                          download the estimated demand time series. Use the downloaded file as a template to understand
+                                          the required data structure."
                                           style="margin-right: 10px;">
                                     </span>
                                 </span>

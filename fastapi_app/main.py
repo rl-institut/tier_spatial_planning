@@ -1491,10 +1491,20 @@ async def export_demand(project_id, file_type: str, request: Request):
     df = df.reset_index()
     df.columns = ['timestamp', 'demand']
     df['demand'] = df['demand'].round(4)
-    io_file = data_to_file.df_to_file(df, 'xlsx')
-    response = StreamingResponse(io_file, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_demand.xlsx"
+    if file_type.lower() == 'xlsx':
+        io_file = data_to_file.df_to_file(df, 'xlsx')
+        media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        filename = "offgridplanner_demand.xlsx"
+    elif file_type.lower() == 'csv':
+        io_file = data_to_file.df_to_file(df, 'csv')
+        media_type = "text/csv"
+        filename = "offgridplanner_demand.csv"
+    else:
+        return JSONResponse(status_code=400, content={"detail": "Invalid file type"})
+    response = StreamingResponse(io_file, media_type=media_type)
+    response.headers["Content-Disposition"] = f"attachment; filename={filename}"
     return response
+
 
 
 @app.post("/import_demand/{project_id}")
