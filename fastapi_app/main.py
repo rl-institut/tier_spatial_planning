@@ -27,7 +27,7 @@ from jose import jwt
 from passlib.context import CryptContext
 
 from fastapi_app.python import config
-from fastapi_app.python.inputs.demand_estimation import demand_time_series_df, get_demand_time_series
+from fastapi_app.python.inputs.demand_estimation import demand_time_series_df, get_demand_time_series, default_wealth_share
 from fastapi_app.python.db import async_inserts, sync_queries, async_queries, sync_inserts, sa_tables, \
     handle_user_accounts
 from fastapi_app.python.helper import identify_consumers_on_map
@@ -698,11 +698,12 @@ async def load_previous_data(page_name, request: Request):
         if demand_estimation is None or not hasattr(demand_estimation, 'maximum_peak_load'):
             return None
         if pd.Series([value for key, value in demand_estimation.to_dict().items() if 'custom_share_' in key]).fillna(0).sum() == 0:
-            demand_estimation.custom_share_1 = 66.3
-            demand_estimation.custom_share_2 = 21.5
-            demand_estimation.custom_share_3 = 7.6
-            demand_estimation.custom_share_4 = 3.1
-            demand_estimation.custom_share_5 = 1.5
+            wealth_share_dict = default_wealth_share()
+            demand_estimation.custom_share_1 = wealth_share_dict['custom_share_1']
+            demand_estimation.custom_share_2 = wealth_share_dict['custom_share_2']
+            demand_estimation.custom_share_3 = wealth_share_dict['custom_share_3']
+            demand_estimation.custom_share_4 = wealth_share_dict['custom_share_4']
+            demand_estimation.custom_share_5 = wealth_share_dict['custom_share_5']
         demand_estimation.maximum_peak_load = str(demand_estimation.maximum_peak_load) \
             if demand_estimation.maximum_peak_load is not None else ''
         demand_estimation.average_daily_energy = str(demand_estimation.average_daily_energy) \
@@ -1106,11 +1107,9 @@ async def get_demand_plot_data(project_id, request: Request):
     nodes = pd.read_json(nodes.data)
     demand_opt_dict = demand_opt_dict.to_dict()
     if pd.Series([value for key, value in demand_opt_dict.items() if 'custom_share_' in key]).fillna(0).sum() == 0:
-        demand_opt_dict['custom_share_1'] = 66.3
-        demand_opt_dict['custom_share_2'] = 21.5
-        demand_opt_dict['custom_share_3'] = 7.6
-        demand_opt_dict['custom_share_4'] = 3.1
-        demand_opt_dict['custom_share_5'] = 1.5
+        wealth_share_dict = default_wealth_share()
+        for i in range(1, 6):
+            demand_opt_dict[f'custom_share_{i}'] = wealth_share_dict[f'custom_share_{i}']
     demand_df, calibration_target_value, calibration_option, calibration_factor = get_demand_time_series(nodes, demand_opt_dict,
                                                                                                          df_only=False)
     demand_df = demand_df.iloc[:24, :].reset_index(drop=True)

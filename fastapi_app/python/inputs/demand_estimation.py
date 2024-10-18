@@ -14,8 +14,9 @@ and consumer types.
 Note: This module was not developed by the TU Berlin but rather by the Rainer Limone Institute.
 """
 
+
 def get_demand_time_series(nodes, demand_par_dict, all_profiles=None, df_only=True):
-    num_households =     len(nodes[(nodes['consumer_type'] == 'household') & (nodes['is_connected'] == True)].index)
+    num_households = len(nodes[(nodes['consumer_type'] == 'household') & (nodes['is_connected'] == True)].index)
     calibration_target_value, calibration_option = get_calibration_target(demand_par_dict)
     if all_profiles is None:
         all_profiles = pd.read_parquet(path=config.FULL_PATH_PROFILES, engine="pyarrow")
@@ -121,6 +122,15 @@ def calibrate_profiles(df_hh_profile, df_ent_profile, df_pub_profile, calibratio
     return df, calibration_factor
 
 
+def default_wealth_share():
+    wealth_share_dict = {'custom_share_1': 66.3,
+                        'custom_share_2': 21.5,
+                        'custom_share_3': 7.6,
+                        'custom_share_4': 3.1,
+                        'custom_share_5': 1.5}
+    return wealth_share_dict
+
+
 def demand_time_series_df():
     df = pd.DataFrame({'y': np.array([13.49953974, 15.83398798, 16.89947568, 18.20875497,
                                       23.60429479, 37.54596197, 80.07917413, 142.83629643,
@@ -165,7 +175,7 @@ def demand_time_series_df():
                                              43.9772818481, 30.86112595343, 28.697827788989997, 30.483016968389997, 33.95727485125,
                                              40.55115510699999, 52.32323178992, 71.63215689872, 97.69653366776, 105.3834658837,
                                              85.47975574876, 53.575437463259995, 23.0758509773, 10.21992548139]
-),
+                                            ),
                        'x': np.array(
                            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23])})
     return df
