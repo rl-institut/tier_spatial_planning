@@ -1141,12 +1141,12 @@ function plot_demand_24h(data) {
             tickfont: { size: 14 },
         },
         legend: {
-            x: 0.5,           // Positions the legend horizontally at the center (50% of the plot width)
-            y: 1.15,          // Positions the legend vertically above the plot area
-            xanchor: 'center',// Anchors the legend horizontally at its center
-            yanchor: 'bottom',// Anchors the legend vertically at the bottom
-            orientation: 'h', // Sets the legend items to be displayed horizontally
-            bgcolor: 'rgba(255, 255, 255, 1)', // Fully opaque white background
+            x: 0.5,
+            y: 1.15,
+            xanchor: 'center',
+            yanchor: 'bottom',
+            orientation: 'h',
+            bgcolor: 'rgba(255, 255, 255, 1)',
             bordercolor: '#E2E2E2',
             borderwidth: 2,
         }
@@ -1154,13 +1154,13 @@ function plot_demand_24h(data) {
 
     // Extract data from the passed-in data object
     let {
-        'x': x,
-        'households': households,
-        'enterprises': enterprises,
-        'public_services': public_services
+        x,
+        households,
+        enterprises,
+        public_services
     } = data;
 
-    // Define traces
+    // Define traces with 'stackgroup'
     var traceHouseholds = {
         x: x,
         y: households,
@@ -1168,8 +1168,9 @@ function plot_demand_24h(data) {
         mode: 'lines',
         name: 'Demand of Households',
         line: { shape: 'spline', width: 2, color: 'rgba(31, 119, 180, 1)' },
-        fill: 'tozeroy',
-        fillcolor: 'rgba(31, 119, 180, 0.5)'
+        fill: 'tonexty',
+        fillcolor: 'rgba(31, 119, 180, 0.5)',
+        stackgroup: 'one' // Group for stacking
     };
 
     var traceEnterprises = {
@@ -1179,8 +1180,9 @@ function plot_demand_24h(data) {
         mode: 'lines',
         name: 'Demand of Enterprises',
         line: { shape: 'spline', width: 2, color: 'rgba(255, 127, 14, 1)' },
-        fill: 'tozeroy',
-        fillcolor: 'rgba(255, 127, 14, 0.5)'
+        fill: 'tonexty',
+        fillcolor: 'rgba(255, 127, 14, 0.5)',
+        stackgroup: 'one' // Same group as above
     };
 
     var tracePublicServices = {
@@ -1190,14 +1192,16 @@ function plot_demand_24h(data) {
         mode: 'lines',
         name: 'Demand of Public Services',
         line: { shape: 'spline', width: 2, color: 'rgba(44, 160, 44, 1)' },
-        fill: 'tozeroy',
-        fillcolor: 'rgba(44, 160, 44, 0.5)'
+        fill: 'tonexty',
+        fillcolor: 'rgba(44, 160, 44, 0.5)',
+        stackgroup: 'one' // Same group as above
     };
 
     // Data array
-    var dataTraces = [traceHouseholds, traceEnterprises, tracePublicServices];
+    var dataTraces = [tracePublicServices, traceEnterprises, traceHouseholds];
 
     // Render plot with the traces
     Plotly.react(demandTs, dataTraces, layout);
 }
+
 
