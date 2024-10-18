@@ -12,6 +12,7 @@ document.getElementById('toggleswitch').addEventListener('change', function (eve
     });
     if (event.target.checked) {
         accordionItem2.show();
+
     } else {
         accordionItem2.hide();
     }
@@ -38,11 +39,17 @@ document.getElementById('toggleswitch2').addEventListener('change', function (ev
         accordionItem2.style.display = 'none';
         accordionItem3.show();
         accordionItem3_all.style.display = 'block';
+        if (steps) {
+            steps[0] = false;
+        }
     } else {
         accordionItem1.show();
         accordionItem2.style.display = 'block';
         accordionItem3.hide();
         accordionItem3_all.style.display = 'none';
+        if (steps) {
+            steps[0] = true;
+        }
     }
 });
 

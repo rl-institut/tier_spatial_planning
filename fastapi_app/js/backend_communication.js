@@ -1750,7 +1750,6 @@ async function update_wizards_and_buttons_based_on_planning_step_selection(proje
     if (results !== null && Object.keys(results).length > 1) {
         if (page_name.includes("demand_estimation")) {
             if (results['do_grid_optimization'] === true && results['do_es_design_optimization'] === true) {
-                // No changes needed if both optimizations are true
             } else if (results['do_grid_optimization'] === false && results['do_es_design_optimization'] === true) {
                 nextButton.setAttribute('onclick', `save_demand_estimation(\`energy_system_design?project_id=${project_id}\`);`);
                 if (results['do_demand_estimation'] === false) {
@@ -1760,6 +1759,10 @@ async function update_wizards_and_buttons_based_on_planning_step_selection(proje
                 nextButton.setAttribute('onclick', `save_demand_estimation('/export_demand/` + project_id + '/' + document.getElementById('fileTypeDropdown').value + `/')`);
                 nextButton.textContent = 'Export Demand';
             }
+            if (results['do_demand_estimation'] === false) {
+                document.getElementById("toggleswitch2").checked = true;
+                document.getElementById("toggleswitch2").dispatchEvent(new Event('change'));
+                }
         } else if (page_name.includes("grid_design")) {
             if (results['do_es_design_optimization'] === false) {
                 nextButton.setAttribute('onclick', `save_grid_design(); forward_if_no_task_is_pending(${project_id});`);

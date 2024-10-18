@@ -1010,6 +1010,9 @@ async def save_demand_estimation(project_id, request: Request, data: pydantic_sc
 
     demand_estimation = sa_tables.Demand(**dictionary)
     await async_inserts.merge_model(demand_estimation)
+    project_setup = await async_queries.get_model_instance(sa_tables.ProjectSetup, user.id, project_id)
+    project_setup.do_demand_estimation = not use_custom_demand
+    await async_inserts.merge_model(project_setup)
     return JSONResponse(status_code=200, content={"message": "Success"})
 
 
@@ -1112,6 +1115,11 @@ async def get_demand_plot_data(project_id, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
     nodes = await async_queries.get_model_instance(sa_tables.Nodes, user.id, project_id)
     demand_opt_dict = await async_queries.get_model_instance(sa_tables.Demand, user.id, project_id)
+    if demand_opt_dict is None:
+        demand_opt_dict = sa_tables.Demand().to_dict()
+        wealth_share_dict = default_wealth_share()
+        for i in range(1, 6):
+            demand_opt_dict[f'custom_share_{i}'] = wealth_share_dict[f'custom_share_{i}']
     nodes = pd.read_json(nodes.data)
     demand_opt_dict = demand_opt_dict.to_dict()
     if pd.Series([value for key, value in demand_opt_dict.items() if 'custom_share_' in key]).fillna(0).sum() == 0:
