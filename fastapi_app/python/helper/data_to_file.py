@@ -208,7 +208,7 @@ def prepare_data_for_export(input_df, energy_system_design, energy_flow_df, resu
         if col in nodes_df.columns:
             nodes_df = nodes_df.drop(columns=[col])
     nodes_df = format_column_names(nodes_df)
-    links_df = links_df[['link_type', 'length', 'lat_from', 'lon_from', 'lat_to', 'lon_to']]
+    links_df = links_df[['link_type', 'length', 'lat_from', 'lon_from', 'lat_to', 'lon_to']] if not links_df.empty else links_df
     links_df = format_column_names(links_df)
     return input_df, energy_flow_df, results_df, nodes_df, links_df
 
@@ -482,7 +482,7 @@ def create_pdf_report(
     toc = [
         ["Section", "Page"],
         ["1. Overview of Project Parameters", "&nbsp;&nbsp;1"],
-        ["2. Brief Tool Description", "&nbsp;&nbsp;1"],
+        ["2. Brief Tool Description", "&nbsp;&nbsp;2"],
     ]
 
     planning_steps = []
@@ -490,9 +490,9 @@ def create_pdf_report(
     # Demand Estimation Step
     if input_data.do_demand_estimation:
         planning_steps.append('Demand estimation based on selected consumers')
-        toc.append(["3. Demand Estimation", "&nbsp;&nbsp;3"])
+        toc.append(["3. Demand Estimation", "&nbsp;&nbsp;4"])
     else:
-        toc.append(["3. Demand Time Series", "&nbsp;&nbsp;3"])
+        toc.append(["3. Demand Time Series", "&nbsp;&nbsp;4"])
 
     # Grid Optimization Step
     if input_data.do_grid_optimization:
@@ -500,18 +500,23 @@ def create_pdf_report(
         if input_data.shs_max_specific_marginal_grid_cost < 990:
             grid_text += f' with the option to exclude consumers with specific marginal connection costs above {input_data.shs_max_specific_marginal_grid_cost} c/kWh'
         planning_steps.append(grid_text)
-        toc.append(["4. Optimal Spatial Distribution of the Grid", "&nbsp;&nbsp;4"])
+        toc.append(["4. Optimal Spatial Distribution of the Grid", "&nbsp;&nbsp;5"])
 
     # Energy System Design Optimization Step
     if input_data.do_es_design_optimization:
         planning_steps.append('Design optimization of energy converters and storage')
-        page = 5 if input_data.do_grid_optimization else 4
-        toc.append(["5. Optimal Design of Energy Converters and Storage", f"&nbsp;&nbsp;{page}"])
-    else:
-        page = 4 if input_data.do_grid_optimization else 3
+        pos = 5 if input_data.do_grid_optimization else 4
+        page = 6 if input_data.do_grid_optimization else 5
+        toc.append([f"{pos}. Optimal Design of Energy Converters and Storage", f"&nbsp;&nbsp;{page}"])
 
-    # Overview of Economic Results
-    toc.append(["6. Overview of Economic Results", f"&nbsp;&nbsp;{page + 2}"])
+    if input_data.do_es_design_optimization or input_data.do_grid_optimization:
+        page = 5
+        if input_data.do_grid_optimization:
+            page += 1
+        if input_data.do_es_design_optimization:
+            page += 4
+        pos = 6 if input_data.do_es_design_optimization and input_data.do_grid_optimization else 5
+        toc.append([f"{pos}. Overview of Economic Results", f"&nbsp;&nbsp;{page}"])
 
     # Create ToC entries
     toc_entries = []
@@ -577,7 +582,7 @@ def create_pdf_report(
     elements.append(Paragraph(economic_assessment_text, body_style))
 
     # Add Spacer
-    elements.append(Spacer(1, 24))
+    elements.append(PageBreak())
 
     # Section 2: Brief Tool Description
     elements.append(Paragraph("2. Brief Tool Description", styles['Heading1']))
@@ -623,7 +628,7 @@ def create_pdf_report(
     elements.append(PageBreak())
 
     # Section 3: Demand Estimation
-    elements.append(Paragraph("3. Demand Estimation", styles['Heading1']))
+    elements.append(Paragraph(toc[3][0], styles['Heading1']))
     elements.append(Spacer(1, 24))
 
     # Helper function for pluralization
@@ -687,14 +692,11 @@ def create_pdf_report(
             )
         ))
 
-    # Add Page Break
-    elements.append(PageBreak())
-
-    # Section 4: Optimal Spatial Distribution of the Grid
-    elements.append(Paragraph("4. Optimal Spatial Distribution of the Grid", styles['Heading1']))
-    elements.append(Spacer(1, 24))
-
     if input_data.do_grid_optimization:
+        elements.append(PageBreak())
+        # Section 4: Optimal Spatial Distribution of the Grid
+        elements.append(Paragraph(toc[4][0], styles['Heading1']))
+        elements.append(Spacer(1, 24))
         # Add distribution grid map
         elements.append(img_dict.get('map'))
         elements.append(Paragraph(
@@ -737,177 +739,177 @@ def create_pdf_report(
             "information, including latitude and longitude values, can be found in the Excel file."
         )
         elements.append(Paragraph(positioning_text, body_style))
-    else:
-        # Handle case where grid optimization was not performed
-        elements.append(Paragraph('Ensprechend der', body_style))  # Verify context as this seems incomplete
 
-    # Add Page Break
-    elements.append(PageBreak())
+        # Add Page Break
+        elements.append(PageBreak())
 
     # Section 5: Optimal Design of Energy Converters and Storage
-    elements.append(Paragraph("5. Optimal Design of Energy Converters and Storage", styles['Heading1']))
-    elements.append(Spacer(1, 24))
+    if input_data.do_es_design_optimization:
+        elements.append(Paragraph(toc[-2][0], styles['Heading1']))
+        elements.append(Spacer(1, 24))
 
-    # Introduction to energy design
-    energy_design_intro = "The minimization of the project's total costs during project lifetime results in the following installations:"
-    elements.append(Paragraph(energy_design_intro, body_style))
+        # Introduction to energy design
+        energy_design_intro = "The minimization of the project's total costs during project lifetime results in the following installations:"
+        elements.append(Paragraph(energy_design_intro, body_style))
 
-    # Create capacity dictionary
-    capacity_dict = {}
-    if results.pv_capacity > 0:
-        capacity_dict['PV'] = f'{results.pv_capacity:,.1f} kW'
-    if results.diesel_genset_capacity > 0:
-        capacity_dict['Diesel Generator'] = f'{results.diesel_genset_capacity:,.1f} kW'
-    if results.inverter_capacity > 0:
-        capacity_dict['Inverter'] = f'{results.inverter_capacity:,.1f} kW'
-    if results.rectifier_capacity > 0:
-        capacity_dict['Rectifier'] = f'{results.rectifier_capacity:,.1f} kW'
-    if results.battery_capacity:
-        capacity_dict['Battery System'] = f'{results.battery_capacity:,.1f} kWh'  # Corrected typo
+        # Create capacity dictionary
+        capacity_dict = {}
+        if results.pv_capacity > 0:
+            capacity_dict['PV'] = f'{results.pv_capacity:,.1f} kW'
+        if results.diesel_genset_capacity > 0:
+            capacity_dict['Diesel Generator'] = f'{results.diesel_genset_capacity:,.1f} kW'
+        if results.inverter_capacity > 0:
+            capacity_dict['Inverter'] = f'{results.inverter_capacity:,.1f} kW'
+        if results.rectifier_capacity > 0:
+            capacity_dict['Rectifier'] = f'{results.rectifier_capacity:,.1f} kW'
+        if results.battery_capacity:
+            capacity_dict['Battery System'] = f'{results.battery_capacity:,.1f} kWh'  # Corrected typo
 
-    # Define table headers
-    table_data = [['Unit', 'Capacity']]
-    for unit, capacity in capacity_dict.items():
-        table_data.append([unit, capacity])
+        # Define table headers
+        table_data = [['Unit', 'Capacity']]
+        for unit, capacity in capacity_dict.items():
+            table_data.append([unit, capacity])
 
-    # Create capacity table
-    capacity_table = Table(table_data, colWidths=[250, 150])
-    capacity_table.setStyle(table_style)
-    elements.append(capacity_table)
-    elements.append(Spacer(1, 24))
+        # Create capacity table
+        capacity_table = Table(table_data, colWidths=[250, 150])
+        capacity_table.setStyle(table_style)
+        elements.append(capacity_table)
+        elements.append(Spacer(1, 24))
 
-    # System performance text
-    system_performance_text = (
-        f"With this system, a renewable energy share of {results.res_share:.1f}% is achieved. "
-        f"An electricity surplus of {results.surplus_rate:.1f}% occurs. "
-    )
-    if results.shortage_total == 0:
-        system_performance_text += "The demand is met at all times."
-    else:
-        system_performance_text += (
-            f"The demand is not fully met at all times; the shortage amounts to {results.shortage_total:.1f}%. "
-            "Note: Designing the energy system without accounting for maximum load peaks can lead to significant cost savings, "
-            "but it may compromise grid stability."
+        # System performance text
+        system_performance_text = (
+            f"With this system, a renewable energy share of {results.res_share:.1f}% is achieved. "
+            f"An electricity surplus of {results.surplus_rate:.1f}% occurs. "
         )
-    elements.append(Paragraph(system_performance_text, body_style))
+        if results.shortage_total == 0:
+            system_performance_text += "The demand is met at all times."
+        else:
+            system_performance_text += (
+                f"The demand is not fully met at all times; the shortage amounts to {results.shortage_total:.1f}%. "
+                "Note: Designing the energy system without accounting for maximum load peaks can lead to significant cost savings, "
+                "but it may compromise grid stability."
+            )
+        elements.append(Paragraph(system_performance_text, body_style))
 
-    # Add Sankey Diagram
-    sankey_text = "The presented Sankey diagram visualizes the extent to which each component contributes to meeting the demand."
-    elements.append(Paragraph(sankey_text, body_style))
-    elements.append(img_dict.get('sankeyDiagram'))
-    elements.append(Paragraph(
-        'Figure: Sankey Diagram Representing the Energy Flow in the System',
-        ParagraphStyle(
-            'FigureCaption',
-            fontSize=8,
-            alignment=1,  # TA_CENTER
-            spaceAfter=24,
-            fontName='Helvetica-Oblique'
+        # Add Sankey Diagram
+        sankey_text = "The presented Sankey diagram visualizes the extent to which each component contributes to meeting the demand."
+        elements.append(Paragraph(sankey_text, body_style))
+        elements.append(img_dict.get('sankeyDiagram'))
+        elements.append(Paragraph(
+            'Figure: Sankey Diagram Representing the Energy Flow in the System',
+            ParagraphStyle(
+                'FigureCaption',
+                fontSize=8,
+                alignment=1,  # TA_CENTER
+                spaceAfter=24,
+                fontName='Helvetica-Oblique'
+            )
+        ))
+
+        # Additional Diagrams
+        additional_diagrams_text = (
+            "The following two diagrams illustrate an exemplary period at the beginning of the simulation timeframe, "
+            "depicting the system's demand coverage and energy flows."
         )
-    ))
+        elements.append(Paragraph(additional_diagrams_text, body_style))
 
-    # Additional Diagrams
-    additional_diagrams_text = (
-        "The following two diagrams illustrate an exemplary period at the beginning of the simulation timeframe, "
-        "depicting the system's demand coverage and energy flows."
-    )
-    elements.append(Paragraph(additional_diagrams_text, body_style))
+        elements.append(img_dict.get('demandCoverage'))
+        elements.append(Paragraph(
+            'Figure: Range by Renewable and Non-Renewable Resources',
+            ParagraphStyle(
+                'FigureCaption',
+                fontSize=8,
+                alignment=1,  # TA_CENTER
+                spaceAfter=24,
+                fontName='Helvetica-Oblique'
+            )
+        ))
 
-    elements.append(img_dict.get('demandCoverage'))
-    elements.append(Paragraph(
-        'Figure: Range by Renewable and Non-Renewable Resources',
-        ParagraphStyle(
-            'FigureCaption',
-            fontSize=8,
-            alignment=1,  # TA_CENTER
-            spaceAfter=24,
-            fontName='Helvetica-Oblique'
-        )
-    ))
+        elements.append(img_dict.get('energyFlows'))
+        elements.append(Paragraph(
+            'Figure: Energy Flows with 1-Hour Resolution',
+            ParagraphStyle(
+                'FigureCaption',
+                fontSize=8,
+                alignment=1,  # TA_CENTER
+                spaceAfter=24,
+                fontName='Helvetica-Oblique'
+            )
+        ))
 
-    elements.append(img_dict.get('energyFlows'))
-    elements.append(Paragraph(
-        'Figure: Energy Flows with 1-Hour Resolution',
-        ParagraphStyle(
-            'FigureCaption',
-            fontSize=8,
-            alignment=1,  # TA_CENTER
-            spaceAfter=24,
-            fontName='Helvetica-Oblique'
-        )
-    ))
-
-    # Add Page Break
-    elements.append(PageBreak())
+        # Add Page Break
+        elements.append(PageBreak())
 
     # Section 6: Overview of Economic Results
-    elements.append(Paragraph("6. Overview of Economic Results", styles['Heading1']))
-    elements.append(Spacer(1, 24))
+    if input_data.do_es_design_optimization or input_data.do_grid_optimization:
 
-    # Calculate investment costs
-    upfront_invest_total = results_df[results_df.iloc[:, 0].str.contains('Upfront')]['Value'].sum()
-    upfront_invest_converters_and_storage = upfront_invest_total - results.upfront_invest_grid
+        elements.append(Paragraph(toc[-1][0], styles['Heading1']))
+        elements.append(Spacer(1, 24))
 
-    # Add investment costs text
-    economic_costs_text = (
-        f"The total upfront investment costs amount to {upfront_invest_total:,.0f} USD. "
-        f"Of this, {results.upfront_invest_grid:,.0f} USD is allocated to grid investment costs, and "
-        f"{upfront_invest_converters_and_storage:,.0f} USD is allocated to energy converters and battery systems."
-    )
-    elements.append(Paragraph(economic_costs_text, body_style))
+        # Calculate investment costs
+        upfront_invest_total = results_df[results_df.iloc[:, 0].str.contains('Upfront')]['Value'].sum()
+        upfront_invest_converters_and_storage = upfront_invest_total - results.upfront_invest_grid
 
-    # Add LCOE text
-    lcoe_text = f"The Levelized Cost of Electricity for the energy system is {results.lcoe:,.0f} cents per kWh."
-    elements.append(Paragraph(lcoe_text, body_style))
-
-    # Add LCOE Breakdown Image
-    elements.append(img_dict.get('lcoeBreakdown'))
-    elements.append(Paragraph(
-        'Figure: Levelized Cost of Electricity Breakdown',
-        ParagraphStyle(
-            'FigureCaption',
-            fontSize=8,
-            alignment=1,  # TA_CENTER
-            spaceAfter=24,
-            fontName='Helvetica-Oblique'
+        # Add investment costs text
+        economic_costs_text = (
+            f"The total upfront investment costs amount to {upfront_invest_total:,.0f} USD. "
+            f"Of this, {results.upfront_invest_grid:,.0f} USD is allocated to grid investment costs, and "
+            f"{upfront_invest_converters_and_storage:,.0f} USD is allocated to energy converters and battery systems."
         )
-    ))
+        elements.append(Paragraph(economic_costs_text, body_style))
 
-    # Add Page Break
-    elements.append(PageBreak())
+        # Add LCOE text
+        lcoe_text = f"The Levelized Cost of Electricity for the energy system is {results.lcoe:,.0f} cents per kWh."
+        elements.append(Paragraph(lcoe_text, body_style))
 
-    # Add economic details table
-    economic_details_text = (
-        "The following table lists the respective upfront investment costs of individual components of the energy system, as well as "
-        "the annualized costs."
-    )
-    elements.append(Paragraph(economic_details_text, body_style))
+        # Add LCOE Breakdown Image
+        elements.append(img_dict.get('lcoeBreakdown'))
+        elements.append(Paragraph(
+            'Figure: Levelized Cost of Electricity Breakdown',
+            ParagraphStyle(
+                'FigureCaption',
+                fontSize=8,
+                alignment=1,  # TA_CENTER
+                spaceAfter=24,
+                fontName='Helvetica-Oblique'
+            )
+        ))
 
-    table_data = [
-        ['Component of Energy System', 'Upfront Investment Costs', 'Annualized Costs'],
-        ['Total', f'{upfront_invest_total:,.0f} USD', f'{results.epc_total:,.0f} USD'],
-        ['Grid', f'{results.upfront_invest_grid:,.0f} USD', f'{results.cost_grid:,.0f} USD'],
-        ['PV', f'{results.upfront_invest_pv:,.0f} USD', f'{results.epc_pv:,.0f} USD'],
-        ['Diesel Genset', f'{results.upfront_invest_diesel_gen:,.0f} USD', f'{results.epc_diesel_genset:,.0f} USD'],
-        ['Inverter', f'{results.upfront_invest_inverter:,.0f} USD', f'{results.epc_inverter:,.0f} USD'],
-        ['Rectifier', f'{results.upfront_invest_rectifier:,.0f} USD', f'{results.epc_rectifier:,.0f} USD'],
-        ['Battery', f'{results.upfront_invest_battery:,.0f} USD', f'{results.epc_battery:,.0f} USD'],
-        ['Diesel Fuel', '-', f'{results.cost_fuel:,.0f} USD'],
-    ]
+        # Add Page Break
+        elements.append(PageBreak())
 
-    economic_table = Table(table_data, colWidths=[200, 100, 100])
-    economic_table.setStyle(table_style)
-    elements.append(economic_table)
-    elements.append(Spacer(1, 24))
+        # Add economic details table
+        economic_details_text = (
+            "The following table lists the respective upfront investment costs of individual components of the energy system, as well as "
+            "the annualized costs."
+        )
+        elements.append(Paragraph(economic_details_text, body_style))
 
-    # Add Note on Annualized Costs
-    note_text = (
-        "Note: Annualized costs provide a comprehensive view of the expenses related to an investment over its duration. These costs include the initial investment expenses, "
-        "the costs for replacing assets with a lifespan shorter than the project, variable costs, fuel expenses, and the residual value at the end of the project's lifecycle. "
-        "By incorporating the time value of money using a specified interest rate, annualized costs translate these multifaceted expenditures into a standardized yearly figure. "
-        "The Capital Recovery Factor (CRF) is utilized in the calculation to ensure a consistent and accurate understanding of the total costs over time."
-    )
-    elements.append(Paragraph(note_text, italic_body_style))
+        table_data = [
+            ['Component of Energy System', 'Upfront Investment Costs', 'Annualized Costs'],
+            ['Total', f'{upfront_invest_total:,.0f} USD', f'{results.epc_total:,.0f} USD'],
+            ['Grid', f'{results.upfront_invest_grid:,.0f} USD', f'{results.cost_grid:,.0f} USD'],
+            ['PV', f'{results.upfront_invest_pv:,.0f} USD', f'{results.epc_pv:,.0f} USD'],
+            ['Diesel Genset', f'{results.upfront_invest_diesel_gen:,.0f} USD', f'{results.epc_diesel_genset:,.0f} USD'],
+            ['Inverter', f'{results.upfront_invest_inverter:,.0f} USD', f'{results.epc_inverter:,.0f} USD'],
+            ['Rectifier', f'{results.upfront_invest_rectifier:,.0f} USD', f'{results.epc_rectifier:,.0f} USD'],
+            ['Battery', f'{results.upfront_invest_battery:,.0f} USD', f'{results.epc_battery:,.0f} USD'],
+            ['Diesel Fuel', '-', f'{results.cost_fuel:,.0f} USD'],
+        ]
+
+        economic_table = Table(table_data, colWidths=[200, 100, 100])
+        economic_table.setStyle(table_style)
+        elements.append(economic_table)
+        elements.append(Spacer(1, 24))
+
+        # Add Note on Annualized Costs
+        note_text = (
+            "Note: Annualized costs provide a comprehensive view of the expenses related to an investment over its duration. These costs include the initial investment expenses, "
+            "the costs for replacing assets with a lifespan shorter than the project, variable costs, fuel expenses, and the residual value at the end of the project's lifecycle. "
+            "By incorporating the time value of money using a specified interest rate, annualized costs translate these multifaceted expenditures into a standardized yearly figure. "
+            "The Capital Recovery Factor (CRF) is utilized in the calculation to ensure a consistent and accurate understanding of the total costs over time."
+        )
+        elements.append(Paragraph(note_text, italic_body_style))
 
     # Build the PDF document
     buffer = io.BytesIO()

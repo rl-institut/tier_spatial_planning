@@ -84,6 +84,8 @@ async def get_input_df(user_id, project_id):
     project_setup = await get_model_instance(sa_tables.ProjectSetup, user_id, project_id)
     project_setup = project_setup.to_dict()
     grid_design = await get_model_instance(sa_tables.GridDesign, user_id, project_id)
+    if grid_design is None:
+        grid_design = sa_tables.GridDesign()
     grid_design = grid_design.to_dict()
     project_setup.update(grid_design)
     df = pd.DataFrame.from_records([project_setup]).drop(columns=['id', 'project_id'])

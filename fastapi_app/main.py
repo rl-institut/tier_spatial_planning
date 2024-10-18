@@ -1389,6 +1389,18 @@ async def download_pdf_report(project_id: int, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
     data = await request.json()
     images = data.get('images')
+    input_parameters_df = await async_queries.get_input_df(user.id, project_id)
+    results_df = await async_queries.get_df(sa_tables.Results, user.id, project_id)
+    energy_flow = await async_queries.get_model_instance(sa_tables.EnergyFlow, user.id, project_id)
+    energy_flow_df = pd.read_json(energy_flow.data) if energy_flow is not None else pd.DataFrame()
+    nodes = await async_queries.get_model_instance(sa_tables.Nodes, user.id, project_id)
+    links = await async_queries.get_model_instance(sa_tables.Links, user.id, project_id)
+    nodes_df = pd.read_json(nodes.data) if nodes is not None else pd.DataFrame()
+    links_df = pd.read_json(links.data) if links is not None else pd.DataFrame()
+    energy_system_design = await async_queries.get_df(sa_tables.EnergySystemDesign, user.id, project_id)
+    custom_demand = await async_queries.get_model_instance(sa_tables.CustomDemand, user.id, project_id)
+    custom_demand_df = pd.read_json(custom_demand.data) if custom_demand is not None else pd.DataFrame()
+    demand_options =  await async_queries.get_model_instance(sa_tables.Demand, user.id, project_id)
     if not images or not isinstance(images, list):
         raise HTTPException(status_code=400, detail="No images data provided")
     image_dict = {}
@@ -1397,6 +1409,11 @@ async def download_pdf_report(project_id: int, request: Request):
         image_data = image.get('data')
         if not plot_id or not image_data:
             continue
+        if plot_id == 'map' and not input_parameters_df['do_grid_optimization'].iat[0]:
+            continue
+        if not input_parameters_df['do_es_design_optimization'].iat[0]:
+            if plot_id in ['optimalSizes', 'sankeyDiagram', 'energyFlows', 'lcoeBreakdown', 'demandCoverage']:
+                continue
         if image_data.startswith('data:image/svg+xml,'):
             left_margin = 2.4 * inch  # Example value
             right_margin = 1 * inch  # Example value
@@ -1437,18 +1454,6 @@ async def download_pdf_report(project_id: int, request: Request):
             final_height = height_inch * scale * inch
             img = Image(image_io, width=final_width, height=final_height)
             image_dict[plot_id] = img
-    input_parameters_df = await async_queries.get_input_df(user.id, project_id)
-    results_df = await async_queries.get_df(sa_tables.Results, user.id, project_id)
-    energy_flow = await async_queries.get_model_instance(sa_tables.EnergyFlow, user.id, project_id)
-    energy_flow_df = pd.read_json(energy_flow.data) if energy_flow is not None else pd.DataFrame()
-    nodes = await async_queries.get_model_instance(sa_tables.Nodes, user.id, project_id)
-    links = await async_queries.get_model_instance(sa_tables.Links, user.id, project_id)
-    nodes_df = pd.read_json(nodes.data) if nodes is not None else pd.DataFrame()
-    links_df = pd.read_json(links.data) if links is not None else pd.DataFrame()
-    energy_system_design = await async_queries.get_df(sa_tables.EnergySystemDesign, user.id, project_id)
-    custom_demand = await async_queries.get_model_instance(sa_tables.CustomDemand, user.id, project_id)
-    custom_demand_df = pd.read_json(custom_demand.data) if custom_demand is not None else pd.DataFrame()
-    demand_options =  await async_queries.get_model_instance(sa_tables.Demand, user.id, project_id)
     doc, buffer = data_to_file.create_pdf_report(image_dict, input_parameters_df, energy_system_design, energy_flow_df, results_df,
                                                  nodes_df, links_df, demand_options, custom_demand_df)
     return Response(content=buffer.read(), media_type='application/pdf',
