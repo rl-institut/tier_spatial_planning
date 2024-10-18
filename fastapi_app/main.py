@@ -74,6 +74,8 @@ async def get_workshop_slides():
         raise HTTPException(status_code=404, detail="File not found")
 
 
+from fastapi.responses import JSONResponse
+
 @app.exception_handler(Exception)
 async def exception_handler(request: Request, exc: Exception):
     try:
@@ -87,8 +89,14 @@ async def exception_handler(request: Request, exc: Exception):
                 break
     except Exception:
         user_name = 'unknown username'
+
     error_logger.error_log(exc, request, user_name)
-    return RedirectResponse(url="/?internal_error", status_code=303)
+
+    return JSONResponse(
+        status_code=500,
+        content={"error": "internal_error", "message": "An internal error occurred. You will be redirected."},
+    )
+
 
 
 @app.post("/renew_token")

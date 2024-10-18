@@ -436,21 +436,28 @@ function plot_bar_chart(data) {
     yValue[4] = Number(optimal_capacities['peak_demand']);
     yValue[5] = Number(optimal_capacities['surplus']);
     yValue2 = Number(optimal_capacities['battery']);
+
     let optimalSizes = document.getElementById('optimalSizes');
-    let xValue = ['PV  ',
-        'Inverter  ',
-        'Rectifier  ',
-        'Diesel Genset  ',
-        'Peak Demand  ',
-        'Max. Surplus  ',
-        'Battery  '];
+    let xValue = [
+        'PV',
+        'Inverter',
+        'Rectifier',
+        'Diesel Genset',
+        'Peak Demand',
+        'Max. Surplus',
+        'Battery'
+    ];
+
     // Reverse the arrays
     xValue = xValue.reverse();
     yValue = yValue.reverse();
-    let colors = ['rgb(8,48,107)', 'rgb(8,48,107)', 'rgb(8,48,107)', 'rgb(8,48,107)',
-        'rgb(8,48,107)', 'rgb(8,48,107)', 'rgb(133, 52, 124)'];
+    let colors = [
+        'rgb(8,48,107)', 'rgb(8,48,107)', 'rgb(8,48,107)', 'rgb(8,48,107)',
+        'rgb(8,48,107)', 'rgb(8,48,107)', 'rgb(133, 52, 124)'
+    ];
     colors = colors.reverse();  // Reverse the color array
-    var data = [
+
+    var dataTraces = [
         {
             y: xValue,
             x: yValue,
@@ -471,7 +478,7 @@ function plot_bar_chart(data) {
             showlegend: false
         },
         {
-            y: ['Battery  '],
+            y: ['Battery'],
             x: [yValue2],
             xaxis: 'x2',
             type: 'bar',
@@ -482,6 +489,7 @@ function plot_bar_chart(data) {
             showlegend: false
         }
     ];
+
     const layout = {
         plot_bgcolor: '#FAFAFA',
         paper_bgcolor: '#FAFAFA',
@@ -489,7 +497,7 @@ function plot_bar_chart(data) {
             tickfont: {
                 size: 14,
             },
-            tickangle: -30,
+            automargin: true, // Enable automatic margin adjustment
         },
         xaxis: {
             title: 'Capacity in kW',
@@ -521,9 +529,9 @@ function plot_bar_chart(data) {
         barmode: 'stack',
         bargap: 0.5,
         showlegend: false,
-        autosize: false,
+        autosize: true,  // Enable automatic sizing
         margin: {
-            l: 150,  // Increase left margin
+            l: 80,  // Reduced left margin
             r: 50,
             b: 100,
             t: 100,
@@ -531,8 +539,9 @@ function plot_bar_chart(data) {
         },
     };
 
-    Plotly.newPlot(optimalSizes, data, layout);
-}
+    Plotly.newPlot(optimalSizes, dataTraces, layout);
+};
+
 
 
 function plot_lcoe_pie(lcoe_breakdown) {
