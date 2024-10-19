@@ -169,7 +169,7 @@
                             </strong>
                         </p>
                         <p>
-                            On the <i>Consumer Selection</i> page, enter the coordinates "7.699508, 7.710631" into the search field labeled <i>"Search Location within Nigeria"</i> and press Enter. The map will then center on the specified geolocation. To zoom in closer to the location, you can use the mouse wheel or click the <i>'+'</i> symbol on the map interface. <strong>Note:</strong> While locations can typically be searched by name and country—such as <i>"Ikah Ichala, Nigeria"</i>—the mapping system in use, <i>OpenStreetMap</i>, does not recognize this particular location and will display an error message.
+                            On the <i>Consumer Selection</i> page, enter the coordinates "7.699508, 7.710631" into the search field labeled <i>"Search Location within Nigeria"</i> and press Enter. The map will then center on the specified geolocation. To zoom in closer to the location, you can use the mouse wheel or click the <i>'+'</i> symbol on the map interface. <strong>Note:</strong> While locations can typically be searched by name and country—such as <i>"Ikah Ichala, Nigeria"</i>—the mapping system in use, <i>OpenStreetMap</i>, does not recognize this particular village by name and will display an error message.
                         </p>
                         <p>
                             Next, using the <i>drawing tool</i>, select all buildings in the area and designate them as <i>consumers</i>. By default, all consumers are designated as <i>households</i>. Reclassify some of these consumers as <i>enterprises</i> and <i>public services</i> according to the specifications outlined in the figure from the task instructions. Detailed instructions on how to use the drawing tools for consumer identification can be found in the tutorial video. Once the consumers have been selected and the settings have been configured, click on <i>'Next'</i> to proceed to the next planning step.
@@ -456,13 +456,10 @@
             <div id="task5CollapseOne" class="accordion-collapse collapse show" aria-labelledby="task5HeadingOne" data-bs-parent="#accordionTask5">
                 <div class="accordion-body">
                     <p>
-                      In the final task, the planning of an energy system solely equipped with PV and a battery system, excluding a diesel genset, is explored. To achieve this, the diesel genset option on the <i>Energy System Design</i> page is deactivated, and the calculation is executed again.
+                        In the final task, the planning of an energy system solely equipped with PV and a battery system, excluding a diesel genset, is explored. To achieve this, the diesel genset option on the <i>Energy System Design</i> page is deactivated, and the calculation is executed again.
                     </p>
                     <p>
-                      It is observed that with the current settings, without a diesel genset, the condition of covering at least 90% of the demand at each timestep cannot be met. To enable the solver to find a solution, individual timesteps where the demand cannot be met must be allowed by setting <i>Max. Shortage Each Timestep</i> to 100%.
-                    </p>
-                    <p>
-                      Different levels of total allowable shortage are experimented with. Firstly, the <i>Max. Total Shortage</i> is set to 10%, and the calculation is executed to observe the impact on the energy system’s design and performance. Then, the <i>Max. Total Shortage</i> is adjusted to 20%, and the outcomes are recalculated for comparison.
+                        After analyzing the results, we will perform a recalculation, this time increasing <i>Max. Total Shortage</i> to 10% and <i>Max. Shortage Each Timestep</i> to 30%, observing the effects on the outcomes.
                     </p>
                 </div>
             </div>
