@@ -96,18 +96,23 @@ class EnergySystemOptimizer(BaseOptimizer):
         self.inverter = energy_system_design['inverter']
         self.rectifier = energy_system_design['rectifier']
         self.shortage = energy_system_design['shortage']
-        if not self.nodes[self.nodes['consumer_type'] == 'power_house'].empty:
-            lat, lon = self.nodes[self.nodes['consumer_type'] == 'power_house']['latitude', 'longitude'].to_list()
+        if not self.nodes.empty:
+            self.num_households = len(self.nodes[(self.nodes['consumer_type'] == 'household') &
+                                                 (self.nodes['is_connected'] == True)].index)
+            links = sync_queries.get_model_instance(sa_tables.Links, user_id, project_id)
+            self.links = pd.read_json(links.data) if links is not None and links.data is not None else None
+            if not self.nodes[self.nodes['consumer_type'] == 'power_house'].empty:
+                lat, lon = self.nodes[self.nodes['consumer_type'] == 'power_house']['latitude', 'longitude'].to_list()
+            else:
+                lat, lon = self.nodes[['latitude', 'longitude']].mean().to_list()
         else:
-            lat, lon = self.nodes[['latitude', 'longitude']].mean().to_list()
+            lat, lon = 9.055158, 7.497112
+            self.num_households = 1
+            self.links = sa_tables.Links()
         self.solar_potential = solar_potential.get_dc_feed_in_sync_db_query(lat, lon, self.dt_index).loc[self.dt_index]
         self.solar_potential_peak = self.solar_potential.max()
         self.demand_peak = self.demand.max()
         self.infeasible = False
-        self.num_households = len(self.nodes[(self.nodes['consumer_type'] == 'household') &
-                                             (self.nodes['is_connected'] == True)].index)
-        links = sync_queries.get_model_instance(sa_tables.Links, user_id, project_id)
-        self.links = pd.read_json(links.data) if links is not None and links.data is not None else None
         self.energy_system_design = energy_system_design
 
     def optimize_energy_system(self):

@@ -416,6 +416,7 @@ def create_pdf_report(
         tuple: A tuple containing the PDF document object and a BytesIO buffer.
     """
     # Prepare data (assuming this function is defined elsewhere)
+    demand_ts = energy_flow_df['Demand [kW]'].copy()
     input_df, energy_flow_df, results_df, nodes_df, links_df = prepare_data_for_export(
         input_df, energy_system_design, energy_flow_df, results_df, nodes_df, links_df
     )
@@ -509,7 +510,7 @@ def create_pdf_report(
         page = 6 if input_data.do_grid_optimization else 5
         toc.append([f"{pos}. Optimal Design of Energy Converters and Storage", f"&nbsp;&nbsp;{page}"])
 
-    if input_data.do_es_design_optimization or input_data.do_grid_optimization:
+    if input_data.do_es_design_optimization:
         page = 5
         if input_data.do_grid_optimization:
             page += 1
@@ -547,13 +548,18 @@ def create_pdf_report(
     elements.append(Paragraph("1. Overview of Project Parameters", styles['Heading1']))
     elements.append(Spacer(1, 24))
 
-    latitude = nodes_df['Latitude'].median().round(4)
-    longitude = nodes_df['Longitude'].median().round(4)
+    if not nodes_df.empty:
+        latitude = nodes_df['Latitude'].median().round(4)
+        longitude = nodes_df['Longitude'].median().round(4)
 
-    overview_text = (
-        f"For the location at latitude {latitude}° and longitude {longitude}° with {results.n_consumers} selected consumers, "
-        "the following planning steps were carried out:"
-    )
+        overview_text = (
+            f"For the location at latitude {latitude}° and longitude {longitude}° with {results.n_consumers} selected consumers, "
+            "the following planning steps were carried out:"
+        )
+    else:
+        overview_text = (
+            f"The following planning steps were carried out:"
+        )
     elements.append(Paragraph(overview_text, body_style))
 
     # Create Planning Steps List
@@ -641,7 +647,7 @@ def create_pdf_report(
             "The demand estimation feature of the tool was not used. Instead, a time series was uploaded by the user.",
             body_style
         ))
-        demand_ts = custom_demand_df
+        demand_ts = custom_demand_df.iloc[:, 0]
     else:
         # Count different types of consumers
         consumers_df = nodes_df[nodes_df['Node type'] == 'consumer']
@@ -657,7 +663,8 @@ def create_pdf_report(
             body_style
         ))
 
-        demand_ts = energy_flow_df['Demand [kW]']
+        if 'Demand [kW]' in energy_flow_df.columns:
+            demand_ts = energy_flow_df['Demand [kW]']
 
     # Calculate yearly demand
     yearly_demand = demand_ts.sum()
@@ -691,9 +698,9 @@ def create_pdf_report(
                 fontName='Helvetica-Oblique'
             )
         ))
-
+    elements.append(PageBreak())
     if input_data.do_grid_optimization:
-        elements.append(PageBreak())
+
         # Section 4: Optimal Spatial Distribution of the Grid
         elements.append(Paragraph(toc[4][0], styles['Heading1']))
         elements.append(Spacer(1, 24))
@@ -841,7 +848,7 @@ def create_pdf_report(
         elements.append(PageBreak())
 
     # Section 6: Overview of Economic Results
-    if input_data.do_es_design_optimization or input_data.do_grid_optimization:
+    if input_data.do_es_design_optimization:
 
         elements.append(Paragraph(toc[-1][0], styles['Heading1']))
         elements.append(Spacer(1, 24))
@@ -859,21 +866,22 @@ def create_pdf_report(
         elements.append(Paragraph(economic_costs_text, body_style))
 
         # Add LCOE text
-        lcoe_text = f"The Levelized Cost of Electricity for the energy system is {results.lcoe:,.0f} cents per kWh."
-        elements.append(Paragraph(lcoe_text, body_style))
+        if input_data.do_es_design_optimization:
+            lcoe_text = f"The Levelized Cost of Electricity for the energy system is {results.lcoe:,.0f} cents per kWh."
+            elements.append(Paragraph(lcoe_text, body_style))
 
-        # Add LCOE Breakdown Image
-        elements.append(img_dict.get('lcoeBreakdown'))
-        elements.append(Paragraph(
-            'Figure: Levelized Cost of Electricity Breakdown',
-            ParagraphStyle(
-                'FigureCaption',
-                fontSize=8,
-                alignment=1,  # TA_CENTER
-                spaceAfter=24,
-                fontName='Helvetica-Oblique'
-            )
-        ))
+            # Add LCOE Breakdown Image
+            elements.append(img_dict.get('lcoeBreakdown'))
+            elements.append(Paragraph(
+                'Figure: Levelized Cost of Electricity Breakdown',
+                ParagraphStyle(
+                    'FigureCaption',
+                    fontSize=8,
+                    alignment=1,  # TA_CENTER
+                    spaceAfter=24,
+                    fontName='Helvetica-Oblique'
+                )
+            ))
 
         # Add Page Break
         elements.append(PageBreak())
@@ -887,29 +895,33 @@ def create_pdf_report(
 
         table_data = [
             ['Component of Energy System', 'Upfront Investment Costs', 'Annualized Costs'],
-            ['Total', f'{upfront_invest_total:,.0f} USD', f'{results.epc_total:,.0f} USD'],
-            ['Grid', f'{results.upfront_invest_grid:,.0f} USD', f'{results.cost_grid:,.0f} USD'],
-            ['PV', f'{results.upfront_invest_pv:,.0f} USD', f'{results.epc_pv:,.0f} USD'],
+        ]
+        if input_data.do_grid_optimization:
+            table_data.append(['Grid', f'{results.upfront_invest_grid:,.0f} USD', f'{results.cost_grid:,.0f} USD'])
+        if input_data.do_es_design_optimization:
+            table_data += [['PV', f'{results.upfront_invest_pv:,.0f} USD', f'{results.epc_pv:,.0f} USD'],
             ['Diesel Genset', f'{results.upfront_invest_diesel_gen:,.0f} USD', f'{results.epc_diesel_genset:,.0f} USD'],
             ['Inverter', f'{results.upfront_invest_inverter:,.0f} USD', f'{results.epc_inverter:,.0f} USD'],
             ['Rectifier', f'{results.upfront_invest_rectifier:,.0f} USD', f'{results.epc_rectifier:,.0f} USD'],
             ['Battery', f'{results.upfront_invest_battery:,.0f} USD', f'{results.epc_battery:,.0f} USD'],
-            ['Diesel Fuel', '-', f'{results.cost_fuel:,.0f} USD'],
-        ]
+            ['Diesel Fuel', '-', f'{results.cost_fuel:,.0f} USD'],]
+        if input_data.do_grid_optimization and input_data.do_es_design_optimization:
+            table_data.append(['Total', f'{upfront_invest_total:,.0f} USD', f'{results.epc_total:,.0f} USD'])
 
         economic_table = Table(table_data, colWidths=[200, 100, 100])
         economic_table.setStyle(table_style)
         elements.append(economic_table)
         elements.append(Spacer(1, 24))
 
-        # Add Note on Annualized Costs
-        note_text = (
-            "Note: Annualized costs provide a comprehensive view of the expenses related to an investment over its duration. These costs include the initial investment expenses, "
-            "the costs for replacing assets with a lifespan shorter than the project, variable costs, fuel expenses, and the residual value at the end of the project's lifecycle. "
-            "By incorporating the time value of money using a specified interest rate, annualized costs translate these multifaceted expenditures into a standardized yearly figure. "
-            "The Capital Recovery Factor (CRF) is utilized in the calculation to ensure a consistent and accurate understanding of the total costs over time."
-        )
-        elements.append(Paragraph(note_text, italic_body_style))
+        if input_data.do_grid_optimization and input_data.do_es_design_optimization:
+            # Add Note on Annualized Costs
+            note_text = (
+                "Note: Annualized costs provide a comprehensive view of the expenses related to an investment over its duration. These costs include the initial investment expenses, "
+                "the costs for replacing assets with a lifespan shorter than the project, variable costs, fuel expenses, and the residual value at the end of the project's lifecycle. "
+                "By incorporating the time value of money using a specified interest rate, annualized costs translate these multifaceted expenditures into a standardized yearly figure. "
+                "The Capital Recovery Factor (CRF) is utilized in the calculation to ensure a consistent and accurate understanding of the total costs over time."
+            )
+            elements.append(Paragraph(note_text, italic_body_style))
 
     # Build the PDF document
     buffer = io.BytesIO()

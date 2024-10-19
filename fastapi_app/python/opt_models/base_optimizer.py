@@ -55,9 +55,12 @@ class BaseOptimizer:
         self.tax = 0
         self.crf = (self.wacc * (1 + self.wacc) ** self.project_lifetime) / \
                    ((1 + self.wacc) ** self.project_lifetime - 1)
-        self.nodes = pd.read_json(sync_queries.get_model_instance(sa_tables.Nodes, self.user_id, self.project_id).data)
         demand_opt_dict = sync_queries.get_model_instance(sa_tables.Demand, user_id, project_id).to_dict()
-        if demand_opt_dict['use_custom_demand'] is False:
+        if self.project_setup['do_demand_estimation'] or self.project_setup['do_grid_optimization']:
+            self.nodes = pd.read_json(sync_queries.get_model_instance(sa_tables.Nodes, self.user_id, self.project_id).data)
+        else:
+            self.nodes = pd.DataFrame()
+        if self.project_setup['do_demand_estimation']:
             self.demand_full_year \
                 = demand_estimation.get_demand_time_series(self.nodes, demand_opt_dict, df_only=True).sum(axis=1).to_frame('Demand')
             self.demand = self.demand_full_year.loc[self.dt_index]['Demand'].copy()

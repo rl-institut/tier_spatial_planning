@@ -258,7 +258,7 @@ async function consumer_to_db(href, file_type = "db") {
             const downloadUrl = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = downloadUrl;
-            a.download = file_type === "xlsx" ? "offgridplanner_results.xlsx" : "offgridplanner_results.csv";
+            a.download = file_type === "xlsx" ? "offgridplanner_consumers.xlsx" : "offgridplanner_consumers.csv";
             document.body.appendChild(a);
             a.click();
             a.remove();
@@ -529,6 +529,9 @@ async function load_results(project_id) {
                     await replaceSummaryChart()
                     await hide_es_results()
                     document.getElementById('responseMsg').innerHTML = results['responseMsg'];
+                    const response6 = await fetch('/get_demand_plot_data/' + project_id);
+                    const data6 = await response6.json();
+                    plot_demand_24h(data6);
                 }
             } else {
                 if (results['do_es_design_optimization'] === true) {

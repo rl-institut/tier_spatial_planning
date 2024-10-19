@@ -36,6 +36,7 @@ from fastapi_app.python.helper.error_logger import logger as error_logger
 from fastapi_app.python.db.handle_user_accounts import Hasher, create_guid, is_valid_credentials, \
     send_activation_link, activate_mail, authenticate_user, create_access_token, send_mail
 from fastapi_app.python.helper import data_to_file, pydantic_schema
+from fastapi_app.python.opt_models.base_optimizer import BaseOptimizer
 from fastapi_app.python.opt_models.grid_optimizer import optimize_grid
 from fastapi_app.python.opt_models.supply_optimizer import optimize_energy_system
 from fastapi_app.python.task_queue.celery_tasks import task_grid_opt, task_supply_opt, task_remove_anonymous_users, \
@@ -1388,6 +1389,7 @@ async def export_data(project_id, file_type: str, request: Request):
     nodes_df = pd.read_json(nodes.data) if nodes is not None else pd.DataFrame()
     links_df = pd.read_json(links.data) if links is not None else pd.DataFrame()
     energy_system_design = await async_queries.get_df(sa_tables.EnergySystemDesign, user.id, project_id)
+    energy_system_design = sa_tables.EnergySystemDesign().to_df() if energy_system_design.empty else energy_system_design
     excel_file = data_to_file.project_data_df_to_xlsx(input_parameters_df, energy_system_design, energy_flow_df, results_df,
                                          nodes_df, links_df)
     response = StreamingResponse(excel_file,
@@ -1410,6 +1412,7 @@ async def download_pdf_report(project_id: int, request: Request):
     nodes_df = pd.read_json(nodes.data) if nodes is not None else pd.DataFrame()
     links_df = pd.read_json(links.data) if links is not None else pd.DataFrame()
     energy_system_design = await async_queries.get_df(sa_tables.EnergySystemDesign, user.id, project_id)
+    energy_system_design = sa_tables.EnergySystemDesign().to_df() if energy_system_design.empty else energy_system_design
     custom_demand = await async_queries.get_model_instance(sa_tables.CustomDemand, user.id, project_id)
     custom_demand_df = pd.read_json(custom_demand.data) if custom_demand is not None else pd.DataFrame()
     demand_options =  await async_queries.get_model_instance(sa_tables.Demand, user.id, project_id)
@@ -1466,11 +1469,12 @@ async def download_pdf_report(project_id: int, request: Request):
             final_height = height_inch * scale * inch
             img = Image(image_io, width=final_width, height=final_height)
             image_dict[plot_id] = img
+    if 'Demand [kW]' not in energy_flow_df.columns:
+        energy_flow_df['Demand [kW]'] = BaseOptimizer(user.id, project_id).demand
     doc, buffer = data_to_file.create_pdf_report(image_dict, input_parameters_df, energy_system_design, energy_flow_df, results_df,
                                                  nodes_df, links_df, demand_options, custom_demand_df)
     return Response(content=buffer.read(), media_type='application/pdf',
                     headers={"Content-Disposition": f"attachment; filename=offgridplanner_results.pdf"})
-
 
 
 @app.get("/export_demand/{project_id}/{file_type}/")

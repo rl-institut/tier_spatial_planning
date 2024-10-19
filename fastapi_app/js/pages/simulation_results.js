@@ -103,15 +103,11 @@ document.getElementById('downloadPDF').addEventListener('click', function (event
     setTimeout(() => {
         (async () => {
             try {
-                const plotIds = [
-                    'optimalSizes',
-                    'sankeyDiagram',
-                    'demandTs',
-                    'energyFlows',
-                    'lcoeBreakdown',
-                    'demandCoverage',
-                    'map'
-                ];
+                const plotIds = [];
+                if (steps[0]) plotIds.push('demandTs');
+                if (steps[1]) plotIds.push('map');
+                if (steps[2]) plotIds.push('sankeyDiagram', 'energyFlows', 'lcoeBreakdown', 'demandCoverage');
+
 
                 // Generate images (ensure this function is asynchronous)
                 const images = await generateImages(plotIds);
