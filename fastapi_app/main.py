@@ -23,6 +23,7 @@ from fastapi import FastAPI, Request, Response, HTTPException, File, UploadFile
 from fastapi.responses import RedirectResponse, FileResponse, JSONResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+import jose
 from jose import jwt
 from passlib.context import CryptContext
 
@@ -104,7 +105,10 @@ async def renew_token(request: Request):
     token = request.cookies.get('access_token', None)
     if token:
         token = token.replace("Bearer ", "")
-        token_data = jwt.decode(token, config.KEY_FOR_ACCESS_TOKEN, algorithms=[config.TOKEN_ALG])
+        try:
+            token_data = jwt.decode(token, config.KEY_FOR_ACCESS_TOKEN, algorithms=[config.TOKEN_ALG])
+        except jose.exceptions.ExpiredSignatureError:
+            return None
         if token_data.get("exp"):
             time_left = token_data.get("exp") - datetime.utcnow().timestamp()
             if time_left < 1200:
