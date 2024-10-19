@@ -2,7 +2,6 @@ import ast
 import asyncio
 import base64
 import json
-import subprocess
 import os
 import io
 from PIL import Image as PILImage
@@ -1125,8 +1124,9 @@ async def get_demand_plot_data(project_id, request: Request):
         wealth_share_dict = default_wealth_share()
         for i in range(1, 6):
             demand_opt_dict[f'custom_share_{i}'] = wealth_share_dict[f'custom_share_{i}']
+    else:
+        demand_opt_dict = demand_opt_dict.to_dict()
     nodes = pd.read_json(nodes.data)
-    demand_opt_dict = demand_opt_dict.to_dict()
     if pd.Series([value for key, value in demand_opt_dict.items() if 'custom_share_' in key]).fillna(0).sum() == 0:
         wealth_share_dict = default_wealth_share()
         for i in range(1, 6):

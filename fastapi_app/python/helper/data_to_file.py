@@ -5,16 +5,11 @@ import os
 import io
 import numpy as np
 import pandas as pd
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, PageBreak
-from reportlab.lib.styles import ParagraphStyle
-from reportlab.platypus import (SimpleDocTemplate, Paragraph, PageBreak, Table, TableStyle, Spacer, KeepInFrame, Image, KeepTogether,
+from reportlab.platypus import (SimpleDocTemplate, Paragraph, PageBreak, Table, TableStyle, Spacer, Image, KeepTogether,
                                 ListFlowable, ListItem)
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle, TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
-from reportlab.pdfbase import pdfmetrics
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle, TA_LEFT, TA_CENTER, TA_JUSTIFY
 from reportlab.lib.utils import ImageReader
 from reportlab.lib.units import inch, mm
-from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from types import SimpleNamespace
 

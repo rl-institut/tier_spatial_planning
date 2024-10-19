@@ -2,6 +2,7 @@ import calendar
 import os
 import time
 import warnings
+import xarray as xr
 
 import pandas as pd
 from sqlalchemy import delete, text
@@ -135,7 +136,7 @@ def update_weather_db(country='Nigeria', year=None):
     elif year != 2022:
         warnings.warn("Currently, only simulation the year 2022 is possible. Refer to the comments for "
                       "detailed explanations.")
-    year = (pd.Timestamp.now() + pd.Timedelta(24 * 14, unit='H')).year - 1 if year is None else int(year)
+    # year = (pd.Timestamp.now() + pd.Timedelta(24 * 14, unit='H')).year - 1 if year is None else int(year)
     year = 2022 # so fast demand data is only available for 2022 and start_date is always 2022-01-01 and max. duration
     # is one year (see func 'save_project_setup' in static/js/backend_communications.js )
     for month in range(1, 13, 3):  # Increment by 3
