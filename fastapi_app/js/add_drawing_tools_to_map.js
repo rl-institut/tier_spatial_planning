@@ -233,7 +233,18 @@ function remove_marker_from_map() {
             map.removeLayer(layer);
         }
     });
-    document.getElementById("n_consumers").innerText = 0;
+    if (document.getElementById("n_consumers")) {
+        document.getElementById("n_consumers").innerText = 0;
+    }
+    if (document.getElementById("n_households")) {
+        document.getElementById("n_households").innerText = 0;
+    }
+    if (document.getElementById("n_enterprises")) {
+        document.getElementById("n_enterprises").innerText = 0;
+    }
+    if (document.getElementById("n_public_services")) {
+        document.getElementById("n_public_services").innerText = 0;
+    }
 }
 
 L.Control.Trashbin = L.Control.extend({
@@ -261,6 +272,7 @@ function customTrashBinAction() {
     remove_marker_from_map();
     polygonCoordinates = [];
     map_elements = [];
+    count_consumers()
 }
 
 const trashbinControl = new L.Control.Trashbin();
