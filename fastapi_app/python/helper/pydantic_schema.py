@@ -23,6 +23,21 @@ class ChangePW(BaseModel):
     captcha_input: str
     captcha_hash: str
 
+class PlanningSteps(BaseModel):
+    do_demand_estimation: Optional[bool] = None
+    do_grid_optimization: Optional[bool] = None
+    do_es_design_optimization: Optional[bool] = None
+
+    @classmethod
+    def from_list(cls, values_list: List[Optional[bool]]):
+        # Fill the list with None to ensure it has at least three items
+        padded_list = values_list + [None] * (3 - len(values_list))
+        # Assign values, allowing None for invalid or missing values
+        return cls(
+            do_demand_estimation=padded_list[0],
+            do_grid_optimization=padded_list[1],
+            do_es_design_optimization=padded_list[2],
+        )
 
 class ValidRegistration(BaseModel):
     validation: bool

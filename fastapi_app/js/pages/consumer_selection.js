@@ -15,6 +15,7 @@
  *   a geographical mapping context.
  */
 
+
 let consumer_list = {
     'H': 'Household',
     'E': 'Enterprise',
@@ -29,7 +30,13 @@ let consumer_type = "H";
         option_consumer += '<option value="' + consumer_code + '"' + selected + '>' + consumer_list[consumer_code] + '</option>';
     }
     document.getElementById('consumer').innerHTML = option_consumer;
+
+    // Add event listener to the dropdown menu
+    document.getElementById('consumer').addEventListener('change', function() {
+        count_consumers();
+    });
 })();
+
 
 
 let public_service_list = {
@@ -309,6 +316,7 @@ function update_map_elements() {
             }
         });
     }
+    count_consumers(false)
 }
 
 function move_marker() {
@@ -452,14 +460,6 @@ document.querySelector('#headingTwo .accordion-button').addEventListener('click'
     }
 });
 
-function add_consumer() {
-    update_map_elements();
-    let lat = document.getElementById('latitude2').value;
-    let lng = document.getElementById('longitude2').value;
-    add_single_consumer_to_array(lat, lng, 'manual', 'consumer')
-    drawMarker(lat, lng, 'consumer');
-}
-
 function delete_consumer() {
     let lat = parseFloat(document.getElementById('latitude').value);
     let lng = parseFloat(document.getElementById('longitude').value);
@@ -517,7 +517,7 @@ document.getElementById('fileInput').addEventListener('change', async function(e
     if (file) {
         const formData = new FormData();
         formData.append('file', file);
-        file_nodes_to_js(formData);
+        await file_nodes_to_js(formData);
 
         // Clear the file input value to allow selecting the same file again
         document.getElementById('fileInput').value = '';

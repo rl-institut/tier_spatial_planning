@@ -192,6 +192,11 @@ function add_single_consumer_to_array(latitude, longitude, how_added, node_type)
         consumer_type = '';
     }
 
+    // You may want to set consumer_type based on some logic or accept it as a parameter
+    // For this example, we'll assume consumer_type can be 'household', 'enterprise', or 'public_service'
+    // If you have a way to determine consumer_type, update the logic here accordingly
+
+    // Add the new consumer to the map_elements array
     map_elements.push({
         latitude: latitude,
         longitude: longitude,
@@ -204,11 +209,22 @@ function add_single_consumer_to_array(latitude, longitude, how_added, node_type)
         is_connected: true
     });
 
-    // Fetch the current value of n_consumers, increment it, and set it back
-    let nConsumerElem = document.getElementById("n_consumers");
-    let currentCount = parseInt(nConsumerElem.innerText, 10);
-    nConsumerElem.innerText = currentCount + 1;
+    // Update the counts for each consumer type
+    if (consumer_type === 'household') {
+        let nHouseholdsElem = document.getElementById("n_households");
+        let currentHouseholds = parseInt(nHouseholdsElem.innerText, 10) || 0;
+        nHouseholdsElem.innerText = currentHouseholds + 1;
+    } else if (consumer_type === 'enterprise') {
+        let nEnterprisesElem = document.getElementById("n_enterprises");
+        let currentEnterprises = parseInt(nEnterprisesElem.innerText, 10) || 0;
+        nEnterprisesElem.innerText = currentEnterprises + 1;
+    } else if (consumer_type === 'public_service') {
+        let nPublicServicesElem = document.getElementById("n_public_services");
+        let currentPublicServices = parseInt(nPublicServicesElem.innerText, 10) || 0;
+        nPublicServicesElem.innerText = currentPublicServices + 1;
+    }
 }
+
 
 
 function remove_marker_from_map() {
@@ -217,7 +233,18 @@ function remove_marker_from_map() {
             map.removeLayer(layer);
         }
     });
-    document.getElementById("n_consumers").innerText = 0;
+    if (document.getElementById("n_consumers")) {
+        document.getElementById("n_consumers").innerText = 0;
+    }
+    if (document.getElementById("n_households")) {
+        document.getElementById("n_households").innerText = 0;
+    }
+    if (document.getElementById("n_enterprises")) {
+        document.getElementById("n_enterprises").innerText = 0;
+    }
+    if (document.getElementById("n_public_services")) {
+        document.getElementById("n_public_services").innerText = 0;
+    }
 }
 
 L.Control.Trashbin = L.Control.extend({
@@ -245,6 +272,7 @@ function customTrashBinAction() {
     remove_marker_from_map();
     polygonCoordinates = [];
     map_elements = [];
+    count_consumers()
 }
 
 const trashbinControl = new L.Control.Trashbin();
@@ -347,16 +375,48 @@ function unique_map_elements() {
     map_elements = uniqueMapElements;
 }
 
-function count_consumers() {
-    update_map_elements();
-    unique_map_elements()
+function count_consumers(first_update = true) {
+    if (first_update) {
+        update_map_elements();
+        unique_map_elements();
+    }
     const n = map_elements.length;
-    let num_consumers = 0;  // Initialize the consumer counter
+
+    // Initialize the counters
+    let num_consumers = 0;
+    let num_households = 0;
+    let num_enterprises = 0;
+    let num_public_services = 0;
+
     for (let counter = 0; counter < n; counter++) {
         if (map_elements[counter]["node_type"] === "consumer") {
             num_consumers++;  // Increase the consumer counter
+
+            // Count the specific types of consumers
+            let consumer_type = map_elements[counter]["consumer_type"];
+            if (consumer_type === "household") {
+                num_households++;
+            } else if (consumer_type === "enterprise") {
+                num_enterprises++;
+            } else if (consumer_type === "public_service") {
+                num_public_services++;
+            }
         }
     }
-    document.getElementById("n_consumers").innerText = num_consumers;
+
+    // Update the HTML elements with the counts
+    if (document.getElementById("n_consumers")) {
+        document.getElementById("n_consumers").innerText = num_consumers;
+    }
+    if (document.getElementById("n_households")) {
+        document.getElementById("n_households").innerText = num_households;
+    }
+    if (document.getElementById("n_enterprises")) {
+        document.getElementById("n_enterprises").innerText = num_enterprises;
+    }
+    if (document.getElementById("n_public_services")) {
+        document.getElementById("n_public_services").innerText = num_public_services;
+    }
 }
+
 

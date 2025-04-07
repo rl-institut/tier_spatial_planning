@@ -6,7 +6,8 @@
 </head>
 <body onload="redirect_if_cookie_is_missing(true, true);
         load_previous_data('grid_design?project_id={{ project_id }}');
-        show_email_and_project_in_navbar({{ project_id }});">
+        show_email_and_project_in_navbar({{ project_id }});
+        update_wizards_and_buttons_based_on_planning_step_selection({{ project_id }}, 'grid_design');">
 {% include '_navbar.html' %}
 {% include '_wizard.html' %}
 <main>
@@ -338,7 +339,10 @@
 {% include '_footer.html' %}
 </body>
 {% include '_scripts.html' %}
-<script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=Promise"></script>
+<script>
+    let project_id = "{{ project_id }}";
+    let steps = {{ steps | tojson | default('null') }};
+</script>
 <script src="{{ url_for('js', path='pages/grid_design.js') }}"></script>
 <script src="{{ url_for('js', path='backend_communication.js') }}"></script>
 </html>

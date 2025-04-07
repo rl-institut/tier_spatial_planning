@@ -37,8 +37,8 @@ class BaseOptimizer:
 
     def __init__(
             self, user_id, project_id, ):
-        self.project_setup = {k: v[0] if isinstance(v, tuple) and len(v) == 1 else v for k, v in
-                              sync_queries.get_input_df(user_id, project_id).iloc[0].to_dict().items()}
+        self.project_setup = sync_queries.get_model_instance(sa_tables.ProjectSetup, user_id, project_id).to_dict()
+        self.project_setup.update(sync_queries.get_model_instance(sa_tables.GridDesign, user_id, project_id).to_dict())
         self.user_id = user_id
         self.project_id = project_id
         n_days = min(self.project_setup["n_days"], int(os.environ.get('MAX_DAYS', 365)))
@@ -55,10 +55,21 @@ class BaseOptimizer:
         self.tax = 0
         self.crf = (self.wacc * (1 + self.wacc) ** self.project_lifetime) / \
                    ((1 + self.wacc) ** self.project_lifetime - 1)
-        self.nodes = pd.read_json(sync_queries.get_model_instance(sa_tables.Nodes, self.user_id, self.project_id).data)
         demand_opt_dict = sync_queries.get_model_instance(sa_tables.Demand, user_id, project_id).to_dict()
-        self.demand_full_year = demand_estimation.get_demand_time_series(self.nodes, demand_opt_dict).to_frame('Demand')
-        self.demand = self.demand_full_year.loc[self.dt_index]['Demand'].copy()
+        if self.project_setup['do_demand_estimation'] or self.project_setup['do_grid_optimization']:
+            self.nodes = pd.read_json(sync_queries.get_model_instance(sa_tables.Nodes, self.user_id, self.project_id).data)
+        else:
+            self.nodes = pd.DataFrame()
+        if self.project_setup['do_demand_estimation']:
+            self.demand_full_year \
+                = demand_estimation.get_demand_time_series(self.nodes, demand_opt_dict, df_only=True).sum(axis=1).to_frame('Demand')
+            self.demand = self.demand_full_year.loc[self.dt_index]['Demand'].copy()
+        else:
+            self.demand_full_year = pd.read_json(sync_queries.get_model_instance(sa_tables.CustomDemand,
+                                                                                 self.user_id,
+                                                                                 self.project_id).data).sort_index()
+            self.demand = self.demand_full_year.iloc[:len(self.dt_index)]['demand'].copy()
+
 
     def capex_multi_investment(self, capex_0, component_lifetime):
         """

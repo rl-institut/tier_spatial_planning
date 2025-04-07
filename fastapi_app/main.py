@@ -4,33 +4,38 @@ import base64
 import json
 import os
 import io
+from PIL import Image as PILImage
+from svglib.svglib import svg2rlg
 import random
-import traceback
 import uuid
+import urllib.parse
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
-from typing import Dict
-
+from typing import List, Dict, Union, Optional
 import pandas as pd
 import pyutilib.subprocess.GlobalData
 from captcha.image import ImageCaptcha
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Image, Spacer
+from reportlab.lib.units import inch
 from fastapi import FastAPI, Request, Response, HTTPException, File, UploadFile
 from fastapi.responses import RedirectResponse, FileResponse, JSONResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+import jose
 from jose import jwt
 from passlib.context import CryptContext
 
-import fastapi_app.python.helper.pydantic_schema
 from fastapi_app.python import config
-from fastapi_app.python.inputs.demand_estimation import demand_time_series_df
+from fastapi_app.python.inputs.demand_estimation import demand_time_series_df, get_demand_time_series, default_wealth_share
 from fastapi_app.python.db import async_inserts, sync_queries, async_queries, sync_inserts, sa_tables, \
     handle_user_accounts
 from fastapi_app.python.helper import identify_consumers_on_map
 from fastapi_app.python.helper.error_logger import logger as error_logger
 from fastapi_app.python.db.handle_user_accounts import Hasher, create_guid, is_valid_credentials, \
     send_activation_link, activate_mail, authenticate_user, create_access_token, send_mail
-from fastapi_app.python.helper import data_to_file
+from fastapi_app.python.helper import data_to_file, pydantic_schema
+from fastapi_app.python.opt_models.base_optimizer import BaseOptimizer
 from fastapi_app.python.opt_models.grid_optimizer import optimize_grid
 from fastapi_app.python.opt_models.supply_optimizer import optimize_energy_system
 from fastapi_app.python.task_queue.celery_tasks import task_grid_opt, task_supply_opt, task_remove_anonymous_users, \
@@ -70,6 +75,8 @@ async def get_workshop_slides():
         raise HTTPException(status_code=404, detail="File not found")
 
 
+from fastapi.responses import JSONResponse
+
 @app.exception_handler(Exception)
 async def exception_handler(request: Request, exc: Exception):
     try:
@@ -83,8 +90,14 @@ async def exception_handler(request: Request, exc: Exception):
                 break
     except Exception:
         user_name = 'unknown username'
+
     error_logger.error_log(exc, request, user_name)
-    return RedirectResponse(url="/?internal_error", status_code=303)
+
+    return JSONResponse(
+        status_code=500,
+        content={"error": "internal_error", "message": "An internal error occurred. You will be redirected."},
+    )
+
 
 
 @app.post("/renew_token")
@@ -92,7 +105,10 @@ async def renew_token(request: Request):
     token = request.cookies.get('access_token', None)
     if token:
         token = token.replace("Bearer ", "")
-        token_data = jwt.decode(token, config.KEY_FOR_ACCESS_TOKEN, algorithms=[config.TOKEN_ALG])
+        try:
+            token_data = jwt.decode(token, config.KEY_FOR_ACCESS_TOKEN, algorithms=[config.TOKEN_ALG])
+        except jose.exceptions.ExpiredSignatureError:
+            return None
         if token_data.get("exp"):
             time_left = token_data.get("exp") - datetime.utcnow().timestamp()
             if time_left < 1200:
@@ -156,13 +172,21 @@ async def home(request: Request):
         return templates.TemplateResponse("user_projects.html", {"request": request,
                                                                  'projects': projects})
 
+@app.get("/model_description", response_class=HTMLResponse)
+async def model_description(request: Request):
+    return templates.TemplateResponse("model-description.html", {"request": request})
+
+
+@app.get("/training_tasks", response_class=HTMLResponse)
+async def training_tasks(request: Request):
+    return templates.TemplateResponse("training_tasks.html", {"request": request})
+
 
 @app.get("/project_setup", response_class=HTMLResponse)
-async def project_setup(request: Request):
+async def project_setup(request: Request, project_id=None):
     user = await handle_user_accounts.get_user_from_cookie(request)
     if user is None:
         return RedirectResponse('/')
-    project_id = request.query_params.get('project_id')
     if project_id is None:
         project_id = await async_queries.next_project_id_of_user(user.id)
     max_days = int(os.environ.get('MAX_DAYS', 365))
@@ -232,7 +256,7 @@ async def reset_password(form_data: Dict[str, str]):
             else:
                 validation = False
                 res = 'The password needs to be at least 8 characters long'
-            return fastapi_app.python.helper.pydantic_schema.ValidRegistration(validation=validation, msg=res)
+            return pydantic_schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.get("/account_overview")
@@ -276,17 +300,33 @@ async def copy_project(request: Request):
 @app.get("/consumer_selection")
 async def consumer_selection(request: Request):
     project_id = request.query_params.get('project_id')
+    steps = request.query_params.get('steps')
+    if steps is not None:
+        steps = json.loads(steps.lower())
     try:
         int(project_id)
     except (TypeError, ValueError):
         RedirectResponse('/')
-    return templates.TemplateResponse("consumer-selection.html", {"request": request, 'project_id': project_id})
+    return templates.TemplateResponse("consumer-selection.html", {
+        'request': request, 
+        'project_id': project_id,
+        'steps': steps})
 
 
 @app.get("/grid_design", response_class=HTMLResponse)
 async def grid_design(request: Request):
     project_id = request.query_params.get('project_id')
-    return templates.TemplateResponse("grid-design.html", {"request": request, 'project_id': project_id})
+    steps = request.query_params.get('steps')
+    if steps is not None:
+        steps = json.loads(steps.lower())
+    try:
+        int(project_id)
+    except (TypeError, ValueError):
+        RedirectResponse('/')
+    return templates.TemplateResponse("grid-design.html", {
+        'request': request,
+        'project_id': project_id,
+        'steps': steps})
 
 
 @app.post("/remove_project/{project_id}")
@@ -299,13 +339,33 @@ async def remove_project(project_id, request: Request):
 @app.get("/demand_estimation", response_class=HTMLResponse)
 async def demand_estimation(request: Request):
     project_id = request.query_params.get('project_id')
-    return templates.TemplateResponse("demand_estimation.html", {"request": request, 'project_id': project_id})
+    steps = request.query_params.get('steps')
+    if steps is not None:
+        steps = json.loads(steps.lower())
+    try:
+        int(project_id)
+    except (TypeError, ValueError):
+        RedirectResponse('/')
+    return templates.TemplateResponse("demand_estimation.html", {
+        'request': request,
+        'project_id': project_id,
+        'steps': steps})
 
 
 @app.get("/energy_system_design", response_class=HTMLResponse)
 async def energy_system_design(request: Request):
     project_id = request.query_params.get('project_id')
-    return templates.TemplateResponse("energy-system-design.html", {"request": request, 'project_id': project_id})
+    steps = request.query_params.get('steps')
+    if steps is not None:
+        steps = json.loads(steps.lower())
+    try:
+        int(project_id)
+    except (TypeError, ValueError):
+        RedirectResponse('/')
+    return templates.TemplateResponse("energy-system-design.html", {
+        'request': request,
+        'project_id': project_id,
+        'steps': steps})
 
 
 @app.get("/simulation_results", response_class=HTMLResponse)
@@ -425,7 +485,7 @@ async def file_nodes_to_js(file: UploadFile = File(...)):
 
 
 @app.post("/consumer_to_db/{project_id}")
-async def consumer_to_db(project_id: str, data: fastapi_app.python.helper.pydantic_schema.MapDataRequest, request: Request):
+async def consumer_to_db(project_id: str, data: pydantic_schema.MapDataRequest, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
     if user is None:
         return
@@ -482,6 +542,7 @@ async def consumer_to_db(project_id: str, data: fastapi_app.python.helper.pydant
 @app.get("/load_results/{project_id}")
 async def load_results(project_id, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
+    project_setup = await async_queries.get_model_instance(sa_tables.ProjectSetup, user.id, project_id)
     if user is None:
         return
     project_id = int(project_id)
@@ -492,14 +553,20 @@ async def load_results(project_id, request: Request):
         df = await async_queries.get_df(sa_tables.Results, user.id, project_id)
         if df.empty or df['lcoe'].isna() is True:
             return JSONResponse(content={})
-    if bool(df['lcoe'].isna()[0]) is True:
+    if bool(df['lcoe'].isna()[0]) is True and project_setup.do_es_design_optimization is True:
         return JSONResponse(content={})
-    df["average_length_distribution_cable"] = df["length_distribution_cable"] / df["n_distribution_links"]
-    df["average_length_connection_cable"] = df["length_connection_cable"] / df["n_connection_links"]
-    df["time"] = (df["time_grid_design"] + df["time_energy_system_design"]) * 3
-    df["gridLcoe"] = df['cost_grid'].astype(float) / df["epc_total"].astype(float) * 100
-    df["esLcoe"] = (df["epc_total"].astype(float) - df['cost_grid'].astype(float)) \
-                   / df["epc_total"].astype(float) * 100
+    elif bool(df['n_poles'].isna()[0]) is True and project_setup.do_grid_optimization is True:
+        return JSONResponse(content={})
+    if project_setup.do_grid_optimization is True:
+        df["average_length_distribution_cable"] = df["length_distribution_cable"] / df["n_distribution_links"]
+        df["average_length_connection_cable"] = df["length_connection_cable"] / df["n_connection_links"]
+        df["gridLcoe"] = df['cost_grid'].astype(float) / df["epc_total"].astype(float) * 100
+    else:
+        df["average_length_distribution_cable"] = None
+        df["average_length_connection_cable"] = None
+        df["gridLcoe"] = 0
+    df[["time_grid_design", "time_energy_system_design"]] = df[["time_grid_design", "time_energy_system_design"]].fillna(0)
+    df["time"] = (df["time_grid_design"] + df["time_energy_system_design"])
     unit_dict = {'n_poles': '',
                  'n_consumers': '',
                  'n_shs_consumers': '',
@@ -545,13 +612,19 @@ async def load_results(project_id, request: Request):
                  'epc_battery': 'USD/a',
                  'epc_total': 'USD/a'
                  }
-    if int(df['n_consumers'].iat[0]) != int(df['n_shs_consumers'].iat[0]) and not infeasible:
-        df['upfront_invest_converters'] = sum(
-            df[col].iat[0] for col in df.columns if 'upfront' in col and 'grid' not in col)
-        df['upfront_invest_total'] = df['upfront_invest_converters'] + df['upfront_invest_grid']
+    if project_setup.do_es_design_optimization is True:
+        df["esLcoe"] = (df["epc_total"].astype(float) - df['cost_grid'].astype(float)) / df["epc_total"].astype(float) * 100
+        if int(df['n_consumers'].iat[0]) != int(df['n_shs_consumers'].iat[0]) and not infeasible:
+            df['upfront_invest_converters'] = sum(
+                df[col].iat[0] for col in df.columns if 'upfront' in col and 'grid' not in col)
+            df['upfront_invest_total'] = df['upfront_invest_converters'] + df['upfront_invest_grid']
+        else:
+            df['upfront_invest_converters'] = None
+            df['upfront_invest_total'] = None
     else:
         df['upfront_invest_converters'] = None
         df['upfront_invest_total'] = None
+        df["esLcoe"] = 0
     df = df[list(unit_dict.keys())].round(1).astype(str)
     for col in df.columns:
         if unit_dict[col] in ['%', 's', 'kW', 'kWh']:
@@ -562,6 +635,8 @@ async def load_results(project_id, request: Request):
             if df[col].isna().sum() == 0 and df.loc[0, col] != 'None':
                 df[col] = "{:,}".format(df[col].astype(float).astype(int).iat[0])
         df[col] = df[col] + ' ' + unit_dict[col]
+    df["do_grid_optimization"] = project_setup.do_grid_optimization
+    df["do_es_design_optimization"] = project_setup.do_es_design_optimization
     results = df.to_dict(orient='records')[0]
     if infeasible is True:
         results['responseMsg'] = 'There are no results of the energy system optimization. There were no feasible ' \
@@ -575,7 +650,7 @@ async def load_results(project_id, request: Request):
     return JSONResponse(content=results, status_code=200)
 
 
-@app.get("/show_video_tutorial")
+@app.get("/show_video_tutorial/")
 async def show_video_tutorial(request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
     if user is None:
@@ -628,8 +703,19 @@ async def load_previous_data(page_name, request: Request):
         except (ValueError, TypeError):
             return None
         demand_estimation = await async_queries.get_model_instance(sa_tables.Demand, user.id, project_id)
+        if (demand_estimation is not None
+                and hasattr(demand_estimation, 'use_custom_demand')
+                and demand_estimation.use_custom_demand is True):
+            return demand_estimation
         if demand_estimation is None or not hasattr(demand_estimation, 'maximum_peak_load'):
             return None
+        if pd.Series([value for key, value in demand_estimation.to_dict().items() if 'custom_share_' in key]).fillna(0).sum() == 0:
+            wealth_share_dict = default_wealth_share()
+            demand_estimation.custom_share_1 = wealth_share_dict['custom_share_1']
+            demand_estimation.custom_share_2 = wealth_share_dict['custom_share_2']
+            demand_estimation.custom_share_3 = wealth_share_dict['custom_share_3']
+            demand_estimation.custom_share_4 = wealth_share_dict['custom_share_4']
+            demand_estimation.custom_share_5 = wealth_share_dict['custom_share_5']
         demand_estimation.maximum_peak_load = str(demand_estimation.maximum_peak_load) \
             if demand_estimation.maximum_peak_load is not None else ''
         demand_estimation.average_daily_energy = str(demand_estimation.average_daily_energy) \
@@ -675,7 +761,7 @@ async def add_user_to_db(data: Dict[str, str]):
             await async_inserts.merge_model(user)
         else:
             res = [False, 'Please enter a valid captcha']
-    return fastapi_app.python.helper.pydantic_schema.ValidRegistration(validation=res[0], msg=res[1])
+    return pydantic_schema.ValidRegistration(validation=res[0], msg=res[1])
 
 
 @app.post("/anonymous_login/")
@@ -706,11 +792,11 @@ async def anonymous_login(data: Dict[str, str], response: Response):
         validation, res = True, ''
     else:
         validation, res = False, 'Please enter a valid captcha'
-    return fastapi_app.python.helper.pydantic_schema.ValidRegistration(validation=validation, msg=res)
+    return pydantic_schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/login/")
-async def login(response: Response, credentials: fastapi_app.python.helper.pydantic_schema.Credentials):
+async def login(response: Response, credentials: pydantic_schema.Credentials):
     if isinstance(credentials.email, str) and len(credentials.email) > 3:
         is_valid, res = await authenticate_user(credentials.email.strip(), credentials.password)
         if is_valid:
@@ -721,10 +807,10 @@ async def login(response: Response, credentials: fastapi_app.python.helper.pydan
             del credentials
             access_token = create_access_token(data={"sub": res.email}, expires_delta=access_token_expires)
             response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
-            return fastapi_app.python.helper.pydantic_schema.ValidRegistration(validation=True, msg="")
+            return pydantic_schema.ValidRegistration(validation=True, msg="")
         else:
             del credentials
-            return fastapi_app.python.helper.pydantic_schema.ValidRegistration(validation=False, msg=res)
+            return pydantic_schema.ValidRegistration(validation=False, msg=res)
 
 
 @app.post("/consent_cookie/")
@@ -736,7 +822,7 @@ async def consent_cookie(response: Response):
 
 
 @app.post("/change_email/")
-async def change_email(request: Request, credentials: fastapi_app.python.helper.pydantic_schema.Credentials):
+async def change_email(request: Request, credentials: pydantic_schema.Credentials):
     if isinstance(credentials.email.strip(), str) and len(credentials.email.strip()) > 3:
         user = await handle_user_accounts.get_user_from_cookie(request)
         if user is None:
@@ -756,7 +842,7 @@ async def change_email(request: Request, credentials: fastapi_app.python.helper.
                 res = 'Please enter a valid email address.'
         else:
             del credentials
-        return fastapi_app.python.helper.pydantic_schema.ValidRegistration(validation=validation, msg=res)
+        return pydantic_schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/change_pw/")
@@ -776,7 +862,7 @@ async def change_pw(request: Request, passwords: Dict[str, str]):
             res = 'The password needs to be at least 8 characters long'
     else:
         del passwords
-    return fastapi_app.python.helper.pydantic_schema.ValidRegistration(validation=validation, msg=res)
+    return pydantic_schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/send_reset_password_email/")
@@ -801,11 +887,11 @@ async def send_reset_password_email(data: Dict[str, str]):
             validation, res = True, 'Please click the link we sent to your email.'
         else:
             validation, res = False, 'Please enter a valid captcha'
-    return fastapi_app.python.helper.pydantic_schema.ValidRegistration(validation=validation, msg=res)
+    return pydantic_schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/delete_account/")
-async def change_pw(response: Response, request: Request, form_data: fastapi_app.python.helper.pydantic_schema.Password):
+async def change_pw(response: Response, request: Request, form_data: pydantic_schema.Password):
     user = await handle_user_accounts.get_user_from_cookie(request)
     if user is None:
         return
@@ -816,7 +902,7 @@ async def change_pw(response: Response, request: Request, form_data: fastapi_app
         response.delete_cookie("access_token")
         res = 'Account removed'
         validation = True
-    return fastapi_app.python.helper.pydantic_schema.ValidRegistration(validation=validation, msg=res)
+    return pydantic_schema.ValidRegistration(validation=validation, msg=res)
 
 
 @app.post("/logout/")
@@ -826,7 +912,7 @@ async def logout(response: Response):
 
 
 @app.post("/query_account_data/")
-async def query_account_data(project_id: fastapi_app.python.helper.pydantic_schema.ProjectID, request: Request):
+async def query_account_data(project_id: pydantic_schema.ProjectID, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
     if user is None:
         return
@@ -841,13 +927,13 @@ async def query_account_data(project_id: fastapi_app.python.helper.pydantic_sche
                 project = await async_queries.get_project_name_by_id(user.id, project_id.project_id)
                 if hasattr(project, 'project_name'):
                     project_name = project.project_name
-        return fastapi_app.python.helper.pydantic_schema.UserOverview(email=name, project_name=project_name)
+        return pydantic_schema.UserOverview(email=name, project_name=project_name)
     else:
-        return fastapi_app.python.helper.pydantic_schema.UserOverview(email="", project_name="")
+        return pydantic_schema.UserOverview(email="", project_name="")
 
 
 @app.post("/has_cookie/")
-async def has_cookie(request: Request, has_cookies: fastapi_app.python.helper.pydantic_schema.HasCookies):
+async def has_cookie(request: Request, has_cookies: pydantic_schema.HasCookies):
     if has_cookies.access_token:
         token = request.cookies.get("access_token")
         if token is None:
@@ -859,12 +945,11 @@ async def has_cookie(request: Request, has_cookies: fastapi_app.python.helper.py
     return True
 
 
-@app.post("/save_grid_design/")
-async def save_grid_design(request: Request, data: fastapi_app.python.helper.pydantic_schema.SaveGridDesign):
+@app.post("/save_grid_design/{project_id}")
+async def save_grid_design(project_id, request: Request, data: pydantic_schema.SaveGridDesign):
     user = await handle_user_accounts.get_user_from_cookie(request)
     if user is None:
         return
-    project_id = get_project_id_from_request(request)
     data.grid_design['id'] = user.id
     data.grid_design['project_id'] = project_id
     grid_design = sa_tables.GridDesign(**data.grid_design)
@@ -872,44 +957,47 @@ async def save_grid_design(request: Request, data: fastapi_app.python.helper.pyd
     return JSONResponse(status_code=200, content={"message": "Success"})
 
 
-@app.post("/save_demand_estimation/")
-async def save_demand_estimation(request: Request, data: fastapi_app.python.helper.pydantic_schema.SaveDemandEstimation):
+@app.post("/save_demand_estimation/{project_id}")
+async def save_demand_estimation(project_id, request: Request, data: pydantic_schema.SaveDemandEstimation):
     user = await handle_user_accounts.get_user_from_cookie(request)
     if user is None:
         return
-    project_id = get_project_id_from_request(request)
     custom_calibration = ast.literal_eval(data.demand_estimation['custom_calibration'])
     use_custom_shares_bool = ast.literal_eval(data.demand_estimation['use_custom_shares'])
     use_custom_shares = 0
+    maximum_peak_load = None
+    average_daily_energy = None
     custom_share_1, custom_share_2, custom_share_3, custom_share_4, custom_share_5 = 0, 0, 0, 0, 0
 
-    if custom_calibration is None or '':
-        maximum_peak_load = None
-        average_daily_energy = None
-    else:
-        try:
-            maximum_peak_load = round(float(data.demand_estimation['maximum_peak_load']), 1)
-        except ValueError:
+    use_custom_demand = ast.literal_eval(data.demand_estimation['use_custom_demand'])
+
+    if use_custom_demand is False:
+        if custom_calibration is None or '':
             maximum_peak_load = None
-        try:
-            average_daily_energy = round(float(data.demand_estimation['average_daily_energy']), 1)
-        except ValueError:
             average_daily_energy = None
+        else:
+            try:
+                maximum_peak_load = round(float(data.demand_estimation['maximum_peak_load']), 1)
+            except ValueError:
+                maximum_peak_load = None
+            try:
+                average_daily_energy = round(float(data.demand_estimation['average_daily_energy']), 1)
+            except ValueError:
+                average_daily_energy = None
 
-    if use_custom_shares_bool is None or '':
-        use_custom_shares = 0
-    else:
-        try:
-            if use_custom_shares_bool:
-                use_custom_shares = 1
-                custom_share_1 = round(float(data.demand_estimation['custom_share_1']), 1)
-                custom_share_2 = round(float(data.demand_estimation['custom_share_2']), 1)
-                custom_share_3 = round(float(data.demand_estimation['custom_share_3']), 1)
-                custom_share_4 = round(float(data.demand_estimation['custom_share_4']), 1)
-                custom_share_5 = round(float(data.demand_estimation['custom_share_5']), 1)
-
-        except ValueError:
+        if use_custom_shares_bool is None or '':
             use_custom_shares = 0
+        else:
+            try:
+                if use_custom_shares_bool:
+                    use_custom_shares = 1
+                    custom_share_1 = round(float(data.demand_estimation['custom_share_1']), 1)
+                    custom_share_2 = round(float(data.demand_estimation['custom_share_2']), 1)
+                    custom_share_3 = round(float(data.demand_estimation['custom_share_3']), 1)
+                    custom_share_4 = round(float(data.demand_estimation['custom_share_4']), 1)
+                    custom_share_5 = round(float(data.demand_estimation['custom_share_5']), 1)
+            except ValueError:
+                use_custom_shares = 0
 
     dictionary = {'id': user.id,
                   'project_id': project_id,
@@ -921,14 +1009,19 @@ async def save_demand_estimation(request: Request, data: fastapi_app.python.help
                   'custom_share_2': custom_share_2,
                   'custom_share_3': custom_share_3,
                   'custom_share_4': custom_share_4,
-                  'custom_share_5': custom_share_5, }
+                  'custom_share_5': custom_share_5,
+                  'use_custom_demand': use_custom_demand}
+
     demand_estimation = sa_tables.Demand(**dictionary)
     await async_inserts.merge_model(demand_estimation)
+    project_setup = await async_queries.get_model_instance(sa_tables.ProjectSetup, user.id, project_id)
+    project_setup.do_demand_estimation = not use_custom_demand
+    await async_inserts.merge_model(project_setup)
     return JSONResponse(status_code=200, content={"message": "Success"})
 
 
 @app.post("/send_mail_route/")
-async def send_mail_route(mail: fastapi_app.python.helper.pydantic_schema.Mail):
+async def send_mail_route(mail: pydantic_schema.Mail):
     body = 'offgridplanner.org contact form. email from: {}'.format(mail.from_address) + '\n' + mail.body
     subject = 'offgridplanner.org contact form: {}'.format(mail.subject)
     send_mail('internal', body, subject)
@@ -936,7 +1029,7 @@ async def send_mail_route(mail: fastapi_app.python.helper.pydantic_schema.Mail):
 
 
 @app.post("/save_project_setup/{project_id}")
-async def save_project_setup(project_id, request: Request, data: fastapi_app.python.helper.pydantic_schema.SaveProjectSetup):
+async def save_project_setup(project_id, request: Request, data: pydantic_schema.SaveProjectSetup):
     user = await handle_user_accounts.get_user_from_cookie(request)
     if user is None:
         return
@@ -945,18 +1038,20 @@ async def save_project_setup(project_id, request: Request, data: fastapi_app.pyt
     data.page_setup['updated_at'] = timestamp
     data.page_setup['id'] = user.id
     data.page_setup['project_id'] = project_id
+    data.page_setup['do_demand_estimation'] = data.page_setup['do_demand_estimation'] == 'True'
+    data.page_setup['do_grid_optimization'] = data.page_setup['do_grid_optimization'] == 'True'
+    data.page_setup['do_es_design_optimization'] = data.page_setup['do_es_design_optimization'] == 'True'
     project_setup = sa_tables.ProjectSetup(**data.page_setup)
     await async_inserts.merge_model(project_setup)
     return JSONResponse(status_code=200, content={"message": "Success"})
 
 
-@app.post("/save_energy_system_design/")
-async def save_energy_system_design(request: Request,
-                                    data: fastapi_app.python.helper.pydantic_schema.OptimizeEnergySystemRequest):
+@app.post("/save_energy_system_design/{project_id}")
+async def save_energy_system_design(project_id, request: Request,
+                                    data: pydantic_schema.OptimizeEnergySystemRequest):
     user = await handle_user_accounts.get_user_from_cookie(request)
     if user is None:
         return
-    project_id = get_project_id_from_request(request)
     df = data.to_df()
     await async_inserts.insert_energysystemdesign_df(df, user.id, project_id)
 
@@ -984,20 +1079,22 @@ async def get_plot_data(project_id, plot_type, request: Request):
         energy_flow['battery'] = energy_flow['battery_discharge'] - energy_flow['battery_charge']
         energy_flow.drop(columns=['battery_charge', 'battery_discharge'], inplace=True)
         energy_flow.reset_index(drop=True, inplace=True)
-        energy_flow = json.loads(energy_flow.to_json())
+        energy_flow = energy_flow.dropna(how='all', axis=0).fillna(0).to_dict('list')
         return JSONResponse(status_code=200, content={"energy_flow": energy_flow})
     elif plot_type == 'duration_curve':
-        duration_curve = json.loads(
-            (await async_queries.get_model_instance(sa_tables.DurationCurve, user.id, project_id)).data)
-        for dic in duration_curve.values():
-            dic['0'] = 100 if dic['0'] is None else dic['0']
+        duration_curve = await async_queries.get_model_instance(sa_tables.DurationCurve, user.id, project_id)
+        duration_curve = pd.read_json(duration_curve.data)
+        duration_curve = duration_curve.dropna(how='all', axis=0).fillna(0).to_dict('list')
         return JSONResponse(status_code=200, content={"duration_curve": duration_curve})
     elif plot_type == 'emissions':
-        emissions = json.loads((await async_queries.get_model_instance(sa_tables.Emissions, user.id, project_id)).data)
+        emissions = await async_queries.get_model_instance(sa_tables.Emissions, user.id, project_id)
+        emissions = pd.read_json(emissions.data)
+        emissions = emissions.dropna(how='all', axis=0).fillna(0).to_dict('list')
         return JSONResponse(status_code=200, content={"emissions": emissions})
     elif plot_type == 'demand_coverage':
-        demand_coverage = json.loads(
-            (await async_queries.get_model_instance(sa_tables.DemandCoverage, user.id, project_id)).data)
+        demand_coverage = await async_queries.get_model_instance(sa_tables.DemandCoverage, user.id, project_id)
+        demand_coverage = pd.read_json(demand_coverage.data)
+        demand_coverage = demand_coverage.dropna(how='all', axis=0).fillna(0).to_dict('list')
         return JSONResponse(status_code=200, content={"demand_coverage": demand_coverage})
     else:
         df = await async_queries.get_df(sa_tables.Results, user.id, project_id)
@@ -1017,13 +1114,41 @@ async def get_plot_data(project_id, plot_type, request: Request):
                                                       "sankey_data": sankey_data})
 
 
-@app.get("/get_demand_time_series/{project_id}")
-async def get_demand_time_series(project_id):
-    return demand_time_series_df().to_dict('list')  # converts dataframe to dict format with lists as values
+@app.get("/get_demand_plot_data/{project_id}")
+async def get_demand_plot_data(project_id, request: Request):
+    user = await handle_user_accounts.get_user_from_cookie(request)
+    nodes = await async_queries.get_model_instance(sa_tables.Nodes, user.id, project_id)
+    demand_opt_dict = await async_queries.get_model_instance(sa_tables.Demand, user.id, project_id)
+    if demand_opt_dict is None:
+        demand_opt_dict = sa_tables.Demand().to_dict()
+        wealth_share_dict = default_wealth_share()
+        for i in range(1, 6):
+            demand_opt_dict[f'custom_share_{i}'] = wealth_share_dict[f'custom_share_{i}']
+    else:
+        demand_opt_dict = demand_opt_dict.to_dict()
+    nodes = pd.read_json(nodes.data)
+    if pd.Series([value for key, value in demand_opt_dict.items() if 'custom_share_' in key]).fillna(0).sum() == 0:
+        wealth_share_dict = default_wealth_share()
+        for i in range(1, 6):
+            demand_opt_dict[f'custom_share_{i}'] = wealth_share_dict[f'custom_share_{i}']
+    demand_df, calibration_target_value, calibration_option, calibration_factor = get_demand_time_series(nodes, demand_opt_dict,
+                                                                                                         df_only=False)
+    demand_df = demand_df.iloc[:24, :].reset_index(drop=True)
+    df = demand_time_series_df()
+    for col in df.columns:
+        if col != 'x':
+            df[col] = df[col].div(1000)
+    df = pd.concat([df, demand_df], axis=1)
+    res_dict = df.to_dict('list')
+    res_dict['calibration_target_value'] = calibration_target_value
+    res_dict['calibration_option'] = calibration_option
+    res_dict['calibration_factor'] = calibration_factor
+    res_dict['num_households'] = len(nodes[(nodes['consumer_type'] == 'household') & (nodes['is_connected'] == True)].index)
+    return res_dict
 
 
 @app.post("/add_buildings_inside_boundary")
-async def add_buildings_inside_boundary(js_data: fastapi_app.python.helper.pydantic_schema.MapData, request: Request):
+async def add_buildings_inside_boundary(js_data: pydantic_schema.MapData, request: Request):
     user = await handle_user_accounts.get_user_from_cookie(request)
     if user is None:
         return
@@ -1073,7 +1198,7 @@ async def add_buildings_inside_boundary(js_data: fastapi_app.python.helper.pydan
 
 
 @app.post("/remove_buildings_inside_boundary")
-async def remove_buildings_inside_boundary(data: fastapi_app.python.helper.pydantic_schema.MapData):
+async def remove_buildings_inside_boundary(data: pydantic_schema.MapData):
     df = pd.DataFrame.from_records(data.map_elements)
     if not df.empty:
         boundaries = pd.DataFrame.from_records(data.boundary_coordinates[0][0]).values.tolist()
@@ -1089,22 +1214,16 @@ async def optimization(user_id, project_id):
     project_setup.status = "queued"
     await async_inserts.merge_model(project_setup)
     if bool(os.environ.get('DOCKERIZED')):
-        task = task_grid_opt.delay(user_id, project_id)
+        if project_setup.do_grid_optimization is True:
+            task = task_grid_opt.delay(user_id, project_id)
+        else:
+            task = task_supply_opt.delay(user_id, project_id)
         return task.id
     else:  # if app is not running in docker, celery isn't available
-        optimize_grid(user_id, project_id)
-        optimize_energy_system(user_id, project_id)
-        return 'no_celery_id'
-
-
-@app.get("/optimize_without_celery/{project_id}")
-async def forward_if_consumer_selection_exists(project_id: int, request: Request):
-    user = await handle_user_accounts.get_user_from_cookie(request)
-    if user is None:
-        return
-    if bool(user.is_superuser) is True:
-        optimize_grid(user.id, project_id)
-        optimize_energy_system(user.id, project_id)
+        if project_setup.do_grid_optimization is True:
+            optimize_grid(user_id, project_id)
+        if project_setup.do_es_design_optimization is True:
+            optimize_energy_system(user_id, project_id)
         return 'no_celery_id'
 
 
@@ -1155,7 +1274,7 @@ async def start_calculation(project_id, request: Request):
 
 
 @app.post('/waiting_for_results/')
-async def waiting_for_results(request: Request, data: fastapi_app.python.helper.pydantic_schema.TaskInfo):
+async def waiting_for_results(request: Request, data: pydantic_schema.TaskInfo):
     try:
         max_time = 3600 * 24 * 7
         t_wait = -2E-05 * data.time + 0.0655 * data.time + 5.7036 if data.time < 1800 else 60
@@ -1188,7 +1307,8 @@ async def waiting_for_results(request: Request, data: fastapi_app.python.helper.
                         break
                     else:
                         print('Could not get user from task id')
-            if data.model == 'grid' and bool(os.environ.get('DOCKERIZED')):
+            project_setup = await async_queries.get_model_instance(sa_tables.ProjectSetup, user.id, data.project_id)
+            if data.model == 'grid' and bool(os.environ.get('DOCKERIZED')) and project_setup.do_es_design_optimization is True:
                 task = task_supply_opt.delay(user.id, data.project_id)
                 user.task_id = task.id
                 await async_inserts.update_model_by_user_id(user)
@@ -1235,7 +1355,7 @@ async def has_pending_task(project_id, request: Request):
 
 
 @app.post('/revoke_task/')
-async def revoke_task(request: Request, data: fastapi_app.python.helper.pydantic_schema.TaskID):
+async def revoke_task(request: Request, data: pydantic_schema.TaskID):
     celery_task = worker.AsyncResult(data.task_id)
     celery_task.revoke(terminate=True, signal='SIGKILL')
     user = await handle_user_accounts.get_user_from_cookie(request)
@@ -1269,6 +1389,7 @@ async def export_data(project_id, file_type: str, request: Request):
     nodes_df = pd.read_json(nodes.data) if nodes is not None else pd.DataFrame()
     links_df = pd.read_json(links.data) if links is not None else pd.DataFrame()
     energy_system_design = await async_queries.get_df(sa_tables.EnergySystemDesign, user.id, project_id)
+    energy_system_design = sa_tables.EnergySystemDesign().to_df() if energy_system_design.empty else energy_system_design
     excel_file = data_to_file.project_data_df_to_xlsx(input_parameters_df, energy_system_design, energy_flow_df, results_df,
                                          nodes_df, links_df)
     response = StreamingResponse(excel_file,
@@ -1276,3 +1397,155 @@ async def export_data(project_id, file_type: str, request: Request):
     response.headers["Content-Disposition"] = "attachment; filename=offgridplanner_results.xlsx"
     return response
 
+
+@app.post("/download_pdf_report/{project_id}")
+async def download_pdf_report(project_id: int, request: Request):
+    user = await handle_user_accounts.get_user_from_cookie(request)
+    data = await request.json()
+    images = data.get('images')
+    input_parameters_df = await async_queries.get_input_df(user.id, project_id)
+    results_df = await async_queries.get_df(sa_tables.Results, user.id, project_id)
+    energy_flow = await async_queries.get_model_instance(sa_tables.EnergyFlow, user.id, project_id)
+    energy_flow_df = pd.read_json(energy_flow.data) if energy_flow is not None else pd.DataFrame()
+    nodes = await async_queries.get_model_instance(sa_tables.Nodes, user.id, project_id)
+    links = await async_queries.get_model_instance(sa_tables.Links, user.id, project_id)
+    nodes_df = pd.read_json(nodes.data) if nodes is not None else pd.DataFrame()
+    links_df = pd.read_json(links.data) if links is not None else pd.DataFrame()
+    energy_system_design = await async_queries.get_df(sa_tables.EnergySystemDesign, user.id, project_id)
+    energy_system_design = sa_tables.EnergySystemDesign().to_df() if energy_system_design.empty else energy_system_design
+    custom_demand = await async_queries.get_model_instance(sa_tables.CustomDemand, user.id, project_id)
+    custom_demand_df = pd.read_json(custom_demand.data) if custom_demand is not None else pd.DataFrame()
+    demand_options =  await async_queries.get_model_instance(sa_tables.Demand, user.id, project_id)
+    if not images or not isinstance(images, list):
+        raise HTTPException(status_code=400, detail="No images data provided")
+    image_dict = {}
+    for image in images:
+        plot_id = image.get('id')
+        image_data = image.get('data')
+        if not plot_id or not image_data:
+            continue
+        if plot_id == 'map' and not input_parameters_df['do_grid_optimization'].iat[0]:
+            continue
+        if not input_parameters_df['do_es_design_optimization'].iat[0]:
+            if plot_id in ['optimalSizes', 'sankeyDiagram', 'energyFlows', 'lcoeBreakdown', 'demandCoverage']:
+                continue
+        if image_data.startswith('data:image/svg+xml,'):
+            left_margin = 2.4 * inch  # Example value
+            right_margin = 1 * inch  # Example value
+            image_data = image_data.replace('data:image/svg+xml,', '')
+            svg_text = urllib.parse.unquote(image_data)
+            img_bytes = svg_text.encode('utf-8')
+            drawing = svg2rlg(io.BytesIO(img_bytes))
+            drawing_width = drawing.width
+            drawing_height = drawing.height
+            max_width, max_height = A4
+            max_width -= 1 * inch
+            max_height -= 1 * inch
+            scale_x = max_width / drawing_width
+            scale_y = max_height / drawing_height
+            scale = min(scale_x, scale_y, 1)
+            drawing.scale(scale, scale)
+            delta_margin = left_margin - right_margin
+            shift_x = -delta_margin / 2  # Negative to shift left
+            drawing.translate(shift_x, 0)
+            image_dict[plot_id] = drawing
+        else:
+            img_bytes = image_data.replace('data:image/png;base64,', '')
+            img_bytes = base64.b64decode(img_bytes)
+            image_io = io.BytesIO(img_bytes)
+            pil_image = PILImage.open(image_io)
+            width_px, height_px = pil_image.size
+            dpi = 96
+            width_inch = width_px / dpi
+            height_inch = height_px / dpi
+            image_io.seek(0)
+            max_width, max_height = A4
+            max_width = max_width / inch - 1
+            max_height = max_height / inch - 1
+            scale_x = min(max_width / width_inch, 1)
+            scale_y = min(max_height / height_inch, 1)
+            scale = min(scale_x, scale_y)
+            final_width = width_inch * scale * inch
+            final_height = height_inch * scale * inch
+            img = Image(image_io, width=final_width, height=final_height)
+            image_dict[plot_id] = img
+    if 'Demand [kW]' not in energy_flow_df.columns:
+        energy_flow_df['Demand [kW]'] = BaseOptimizer(user.id, project_id).demand
+    doc, buffer = data_to_file.create_pdf_report(image_dict, input_parameters_df, energy_system_design, energy_flow_df, results_df,
+                                                 nodes_df, links_df, demand_options, custom_demand_df)
+    return Response(content=buffer.read(), media_type='application/pdf',
+                    headers={"Content-Disposition": f"attachment; filename=offgridplanner_results.pdf"})
+
+
+@app.get("/export_demand/{project_id}/{file_type}/")
+async def export_demand(project_id, file_type: str, request: Request):
+    user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
+    input_parameters_df = await async_queries.get_input_df(user.id, project_id)
+    n_days = min(input_parameters_df['n_days'].iat[0], int(os.environ.get('MAX_DAYS', 365)))
+    ts = pd.Series(pd.date_range(pd.to_datetime('2022').to_pydatetime(),
+                                  pd.to_datetime('2022').to_pydatetime() + pd.to_timedelta(n_days, unit="D"),
+                                  freq='H',
+                                  closed='left'))
+    ts.name = 'timestamp'
+    nodes = await async_queries.get_model_instance(sa_tables.Nodes, user.id, project_id)
+    nodes = pd.read_json(nodes.data)
+    demand_opt_dict = await async_queries.get_model_instance(sa_tables.Demand, user.id, project_id)
+    demand_opt_dict = demand_opt_dict.to_dict()
+    demand_full_year = get_demand_time_series(nodes, demand_opt_dict, df_only=True).sum(axis=1).to_frame('Demand')
+    df = demand_full_year.loc[ts.values]['Demand'].copy()
+    df.index = df.index.strftime('%m.%d %H:%M')
+    df = df.reset_index()
+    df.columns = ['timestamp', 'demand']
+    df['demand'] = df['demand'].round(4)
+    if file_type.lower() == 'xlsx':
+        io_file = data_to_file.df_to_file(df, 'xlsx')
+        media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        filename = "offgridplanner_demand.xlsx"
+    elif file_type.lower() == 'csv':
+        io_file = data_to_file.df_to_file(df, 'csv')
+        media_type = "text/csv"
+        filename = "offgridplanner_demand.csv"
+    else:
+        return JSONResponse(status_code=400, content={"detail": "Invalid file type"})
+    response = StreamingResponse(io_file, media_type=media_type)
+    response.headers["Content-Disposition"] = f"attachment; filename={filename}"
+    return response
+
+
+
+@app.post("/import_demand/{project_id}")
+async def import_demand(project_id, request: Request, file: UploadFile = File(...)):
+    user = await handle_user_accounts.get_user_from_cookie(request)
+    if user is None:
+        return
+    filename = file.filename
+    file_extension = filename.split('.')[-1].lower()
+    if file_extension not in ['csv', 'xlsx']:
+        raise HTTPException(status_code=400, detail="Unsupported file type. Please upload a CSV or Excel file.")
+    try:
+        if file_extension == 'csv':
+            file_content = await file.read()
+            decoded_content = file_content.decode('utf-8')
+            df = pd.read_csv(io.StringIO(decoded_content))
+        elif file_extension == 'xlsx':
+            df = pd.read_excel(io.BytesIO(await file.read()), engine='openpyxl')
+        if not df.empty:
+            input_parameters_df = await async_queries.get_input_df(user.id, project_id)
+            try:
+                df, msg = data_to_file.check_imported_demand_data(df, input_parameters_df)
+                if df is None and msg is not None:
+                    return JSONResponse(content={'responseMsg': msg}, status_code=500)
+            except Exception as e:
+                err_msg = str(e)
+                msg = f"Failed to import file. Internal error message: {err_msg}"
+                return JSONResponse(content={'responseMsg': msg}, status_code=500)
+            custom_demand = sa_tables.CustomDemand()
+            custom_demand.id = user.id
+            custom_demand.project_id = project_id
+            custom_demand.data = df.to_json()
+            await async_inserts.merge_model(custom_demand)
+            return JSONResponse(status_code=200, content={'responseMsg': ''})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process the file: {e}")

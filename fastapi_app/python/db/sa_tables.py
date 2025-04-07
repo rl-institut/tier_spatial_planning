@@ -87,6 +87,9 @@ class ProjectSetup(Base):
     n_days = Column(SMALLINT(unsigned=True), nullable=False, server_default="365")
     status = Column(VARCHAR(25), default="not yet started")
     email_notification = Column(Boolean(), default=False)
+    do_demand_estimation = Column(Boolean(), default=True)
+    do_grid_optimization = Column(Boolean(), default=True)
+    do_es_design_optimization = Column(Boolean(), default=True)
 
 
 class GridDesign(Base):
@@ -207,6 +210,7 @@ class Demand(Base):
     custom_share_3 = Column(Numeric(10, 3), default=None)
     custom_share_4 = Column(Numeric(10, 3), default=None)
     custom_share_5 = Column(Numeric(10, 3), default=None)
+    use_custom_demand = Column(Boolean(), default=False)
 
 
 class Results(Base):
@@ -336,3 +340,14 @@ class WeatherData(Base):
     ghi = Column(Numeric(6, 2))
     dni = Column(Numeric(6, 2))
     dhi = Column(Numeric(6, 2))
+
+
+class CustomDemand(Base):
+
+    @staticmethod
+    def __name__():
+        return 'CustomDemand'
+
+    id = Column(SMALLINT, primary_key=True, index=True)
+    project_id = Column(SMALLINT, primary_key=True, index=True)
+    data = Column(JSON)

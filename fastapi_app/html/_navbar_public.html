@@ -18,6 +18,7 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <a class="btn btn--medium"
+               id="login_button"
                href="#"
                style="height: 32px; display: flex; justify-content: center; align-items: center; max-width: 180px; margin-top: 10px"
                onclick=document.getElementById('login').style.display='block'
@@ -36,8 +37,24 @@
                              alt="Profile icon"/>
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li style="display: none;"><a class="dropdown-item" href="/">Projects</a></li>
+                        <li style="display: none;">
+                            <a class="dropdown-item" href="{{ url_for('account_overview') }}">Account</a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('training_tasks') }}">Traning Tasks</a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('model_description') }}">Model Description</a>
+                        </li>
                         <li>
                             <a class="dropdown-item" href="{{ url_for('contact') }}">Contact</a>
+                        </li>
+                        <li style="display: none;">
+                            <hr class="dropdown-divider"/>
+                        </li>
+                        <li style="display: none;">
+                            <a class="dropdown-item" onclick="logout();">Log out</a>
                         </li>
                     </ul>
                 </li>

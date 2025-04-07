@@ -31,57 +31,130 @@
  */
 
 
-function plot_results() {
+async function plot_results(sequential = false) {
     const urlParams = new URLSearchParams(window.location.search);
-    project_id = urlParams.get('project_id');
-    fetch('/get_plot_data/' + project_id + '/demand_coverage')
-        .then(response => response.json())
-        .then(data => {
-            plot_demand_coverage(data.demand_coverage);
-        });
-    fetch('/get_plot_data/' + project_id + '/energy_flow')
-        .then(response => response.json())
-        .then(data => {
-            plot_energy_flows(data.energy_flow);
-        });
-    fetch('/get_plot_data/' + project_id + '/other')
-        .then(response => response.json())
-        .then(data => {
-            plot_lcoe_pie(data.lcoe_breakdown);
-            plot_bar_chart(data.optimal_capacities);
+    const project_id = urlParams.get('project_id');
 
-            plot_sankey(data.sankey_data);
-        });
-    fetch('/get_plot_data/' + project_id + '/duration_curve')
-        .then(response => response.json())
-        .then(data => {
-            plot_duration_curves(data.duration_curve);
-        });
-    fetch('/get_plot_data/' + project_id + '/emissions')
-        .then(response => response.json())
-        .then(data => {
-            plot_co2_emissions(data.emissions);
-        });
+    if (sequential) {
+        // Sequential execution: wait for each fetch and plot to complete before starting the next
+
+        // Fetch and plot 'other' data
+        const response3 = await fetch('/get_plot_data/' + project_id + '/other');
+        const data3 = await response3.json();
+        plot_lcoe_pie(data3.lcoe_breakdown);
+        plot_bar_chart(data3.optimal_capacities);
+        plot_sankey(data3.sankey_data);
+
+        // Check if 'steps' exists and if steps[0] is true
+        if (typeof steps !== 'undefined' && steps[0]) {
+            // Proceed with fetching and plotting 'demand_24h' data
+            const response6 = await fetch('/get_demand_plot_data/' + project_id);
+            const data6 = await response6.json();
+            plot_demand_24h(data6);
+        } else {
+            // Hide the div with id 'demandtsChart'
+            const demandTsChartDiv = document.getElementById('demandtsChart');
+            if (demandTsChartDiv) {
+                demandTsChartDiv.style.display = 'none';
+            }
+        }
+
+        // Fetch and plot 'demand_coverage' data
+        const response1 = await fetch('/get_plot_data/' + project_id + '/demand_coverage');
+        const data1 = await response1.json();
+        plot_demand_coverage(data1.demand_coverage);
+
+        // Fetch and plot 'energy_flow' data
+        const response2 = await fetch('/get_plot_data/' + project_id + '/energy_flow');
+        const data2 = await response2.json();
+        plot_energy_flows(data2.energy_flow);
+
+        // Fetch and plot 'duration_curve' data
+        const response4 = await fetch('/get_plot_data/' + project_id + '/duration_curve');
+        const data4 = await response4.json();
+        plot_duration_curves(data4.duration_curve);
+
+        // Fetch and plot 'emissions' data
+        const response5 = await fetch('/get_plot_data/' + project_id + '/emissions');
+        const data5 = await response5.json();
+        plot_co2_emissions(data5.emissions);
+
+    } else {
+        // Parallel execution: fetch data in parallel and plot as soon as each dataset is available
+
+        // Initialize an array to hold fetch and plot promises
+        const fetchAndPlotPromises = [];
+
+        // Fetch and plot 'demand_coverage' data
+        const fetchAndPlot1 = fetch('/get_plot_data/' + project_id + '/demand_coverage')
+            .then(response => response.json())
+            .then(data => plot_demand_coverage(data.demand_coverage));
+        fetchAndPlotPromises.push(fetchAndPlot1);
+
+        // Fetch and plot 'energy_flow' data
+        const fetchAndPlot2 = fetch('/get_plot_data/' + project_id + '/energy_flow')
+            .then(response => response.json())
+            .then(data => plot_energy_flows(data.energy_flow));
+        fetchAndPlotPromises.push(fetchAndPlot2);
+
+        // Fetch and plot 'other' data
+        const fetchAndPlot3 = fetch('/get_plot_data/' + project_id + '/other')
+            .then(response => response.json())
+            .then(data => {
+                plot_lcoe_pie(data.lcoe_breakdown);
+                plot_bar_chart(data.optimal_capacities);
+                plot_sankey(data.sankey_data);
+            });
+        fetchAndPlotPromises.push(fetchAndPlot3);
+
+        // Fetch and plot 'duration_curve' data
+        const fetchAndPlot4 = fetch('/get_plot_data/' + project_id + '/duration_curve')
+            .then(response => response.json())
+            .then(data => plot_duration_curves(data.duration_curve));
+        fetchAndPlotPromises.push(fetchAndPlot4);
+
+        // Fetch and plot 'emissions' data
+        const fetchAndPlot5 = fetch('/get_plot_data/' + project_id + '/emissions')
+            .then(response => response.json())
+            .then(data => plot_co2_emissions(data.emissions));
+        fetchAndPlotPromises.push(fetchAndPlot5);
+
+        // Check if 'steps' exists and if steps[0] is true
+        if (typeof steps !== 'undefined' && steps[0]) {
+            // Proceed with fetching and plotting 'demand_24h' data
+            const fetchAndPlot6 = fetch('/get_demand_plot_data/' + project_id)
+                .then(response => response.json())
+                .then(data => plot_demand_24h(data));
+            fetchAndPlotPromises.push(fetchAndPlot6);
+        } else {
+            // Hide the div with id 'demandtsChart'
+            const demandTsChartDiv = document.getElementById('demandtsChart');
+            if (demandTsChartDiv) {
+                demandTsChartDiv.style.display = 'none';
+            }
+        }
+
+        // Wait for all fetch and plot operations to complete (parallel execution)
+        await Promise.all(fetchAndPlotPromises);
+    }
 }
 
-function db_links_to_js(project_id) {
+
+
+async function db_links_to_js(project_id) {
     const url = "db_links_to_js/" + project_id;
 
-    fetch(url)
-        .then((response) => {
-            if (response.ok) {
-                return response.json();
-            } else {
-                throw new Error("Failed to fetch data");
-            }
-        })
-        .then((links) => {
-            removeLinksFromMap(map);
-            put_links_on_map(links)
-        })
-        .catch((error) => {
-            console.error("Error fetching data:", error);
-        });
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error("Failed to fetch data");
+        }
+        const links = await response.json();
+        removeLinksFromMap(map);
+        put_links_on_map(links);
+    } catch (error) {
+        console.error("Error fetching data:", error);
+    }
 }
 
 
@@ -92,12 +165,14 @@ async function db_nodes_to_js(project_id, markers_only) {
             if (data !== null) {
                 map_elements = data.map_elements;
                 is_load_center = data.is_load_center;
-                load_legend();
+
                 if (map_elements !== null) {
                     put_markers_on_map(map_elements, markers_only);
                 }
+
             } else {
                 map_elements = [];
+                put_markers_on_map(map_elements, markers_only);
             }
         });
 }
@@ -121,7 +196,7 @@ async function file_nodes_to_js(formData) {
                 }
             } else if (result !== null && 'responseMsg' in result) {
                 document.getElementById('responseMsg').innerHTML = result.responseMsg;
-                document.getElementById('msgBox').style.display = 'block';  // Show the modal
+                document.getElementById('msgBox').style.display = 'block';
             }
         } else {
             console.error('File upload failed with status:', response.status);
@@ -131,9 +206,28 @@ async function file_nodes_to_js(formData) {
     }
 }
 
+async function file_demand_to_db(formData) {
+    try {
+        const response = await fetch('/import_demand' + '/' + project_id, {
+            method: 'POST',
+            body: formData
+        });
+        if (response.ok) {
+            document.getElementById('responseMsg').innerHTML = '';
+            document.getElementById('msgBox').style.display = 'none';
+            document.getElementById('uploadStatus').textContent = 'Uploaded';
+        } else {
+            const result = await response.json();
+            document.getElementById('responseMsg').innerHTML = result.responseMsg;
+            document.getElementById('msgBox').style.display = 'block';
+            document.getElementById('uploadStatus').textContent = 'Upload Failed';
+        }
+    } catch (error) {
+        console.error('Error occurred during file upload:', error);
+    }
+}
 
-
-async function consumer_to_db(project_id, href, file_type = "db") {
+async function consumer_to_db(href, file_type = "db") {
     update_map_elements();
     const url = "/consumer_to_db/" + project_id;
     const response = await fetch(url, {
@@ -147,7 +241,16 @@ async function consumer_to_db(project_id, href, file_type = "db") {
             if (!href) {
                 forward_if_consumer_selection_exists(project_id);
             } else if (href) {
-                window.location.href = href;
+                let updatedHref;
+                // Check if 'steps' and 'href' are defined
+                if (typeof steps !== 'undefined' && typeof href !== 'undefined') {
+                    const stepsJson = encodeURIComponent(JSON.stringify(steps));
+                    const separator = href.includes('?') ? '&' : '?';
+                    updatedHref = `${href}${separator}steps=${stepsJson}`;
+                } else {
+                    updatedHref = href;
+                }
+                window.location.href = updatedHref;
             }
         } else {
             // Handle the file download for "csv" or "xlsx"
@@ -155,7 +258,7 @@ async function consumer_to_db(project_id, href, file_type = "db") {
             const downloadUrl = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = downloadUrl;
-            a.download = file_type === "xlsx" ? "offgridplanner_results.xlsx" : "offgridplanner_results.csv";
+            a.download = file_type === "xlsx" ? "offgridplanner_consumers.xlsx" : "offgridplanner_consumers.csv";
             document.body.appendChild(a);
             a.click();
             a.remove();
@@ -233,13 +336,8 @@ async function remove_buildings_inside_boundary({boundariesCoordinates} = {}) {
 }
 
 
-async function redirect(href) {
-    window.location.href = href;
-}
-
-
 async function save_energy_system_design(href) {
-    const url = "save_energy_system_design/";
+    const url = "save_energy_system_design/" + project_id;
     const data = {
         pv: {
             'settings': {
@@ -363,7 +461,7 @@ async function load_results(project_id) {
 
         const results = await response.json();
 
-        if (results['n_consumers'] > 0) {
+        if (results['n_consumers'] > 0 || results['lcoe'] > 0) {
             document.getElementById('noResults').style.display = 'none';
             document.getElementById("nConsumers").innerText = Number(results['n_consumers']) - Number(results['n_shs_consumers']);
             document.getElementById("nGridConsumers").innerText = Number(results['n_consumers']) - Number(results['n_shs_consumers']);
@@ -417,18 +515,31 @@ async function load_results(project_id) {
             document.getElementById('epc_diesel_genset').innerText = results['epc_diesel_genset'];
             document.getElementById('epc_battery').innerText = results['epc_battery'];
             document.getElementById('epc_total').innerText = results['epc_total'];
-            document.getElementById('LCOE').innerHTML = results['lcoe'].toString() + " Cent<sub class='sub'>USD</sub>/kWh";
-            db_nodes_to_js(project_id, false);
-            db_links_to_js(project_id);
-
+            document.getElementById('LCOE2').innerHTML = results['lcoe'].toString() + " Cent<sub class='sub'>USD</sub>/kWh";
+            await db_nodes_to_js(project_id, false);
+            if (results['do_grid_optimization'] === false) {
+                await hide_grid_results();
+            }
             if (results['lcoe'] === null || results['lcoe'] === undefined || results['lcoe'].includes('None')) {
-                if (results['responseMsg'].length === 0) {
+                if (results['responseMsg'].length === 0 && results['do_es_design_optimization'] === true) {
                     document.getElementById('responseMsg').innerHTML = 'Something went wrong. There are no results of the energy system optimization.';
+                    await replaceSummaryChart()
+                    await hide_es_results()
                 } else {
+                    await replaceSummaryChart()
+                    await hide_es_results()
                     document.getElementById('responseMsg').innerHTML = results['responseMsg'];
+                    const response6 = await fetch('/get_demand_plot_data/' + project_id);
+                    const data6 = await response6.json();
+                    plot_demand_24h(data6);
                 }
             } else {
-                plot_results();
+                if (results['do_es_design_optimization'] === true) {
+                    await plot_results();
+                } else {
+                    await replaceSummaryChart()
+                    await hide_es_results()
+                }
             }
 
         } else {
@@ -753,8 +864,24 @@ async function logout() {
 }
 
 
-async function save_project_setup(project_id, href) {
+async function save_project_setup(href) {
     event.preventDefault(); // prevent the link from navigating immediately
+
+    const toggleSwitch0 = document.getElementById('toggleswitch0');
+    const toggleSwitch1 = document.getElementById('toggleswitch1');
+    const toggleSwitch2 = document.getElementById('toggleswitch2');
+
+    // Check if all toggle switches are unchecked
+    if (!toggleSwitch0.checked && !toggleSwitch1.checked && !toggleSwitch2.checked) {
+        // Update the text content of responseMsg
+        document.getElementById('responseMsg').textContent =
+            "You must select at least one planning step to proceed.";
+
+        // Optionally show a modal or other feedback to the user
+        document.getElementById('msgBox').style.display = 'block';
+        return; // Exit the function to prevent fetching and navigation
+    }
+
     const url = "save_project_setup/" + project_id;
     const data = {
         page_setup: {
@@ -765,8 +892,12 @@ async function save_project_setup(project_id, href) {
             'start_date': "2022-01-01",
             'temporal_resolution': 1,
             'n_days': nDays.value,
+            'do_demand_estimation': toggleSwitch0.checked,
+            'do_grid_optimization': toggleSwitch1.checked,
+            'do_es_design_optimization': toggleSwitch2.checked,
         }
     };
+
     try {
         const response = await fetch(url, {
             method: 'POST',
@@ -778,11 +909,22 @@ async function save_project_setup(project_id, href) {
         if (!response.ok) {
             throw new Error("HTTP error " + response.status);
         }
-        window.location.href = href; // navigate after fetch request is complete
+        steps = [toggleSwitch0.checked, toggleSwitch1.checked, toggleSwitch2.checked];
+
+        // Check if 'href' is defined and is a string
+        if (typeof href === 'string') {
+            const stepsJson = encodeURIComponent(JSON.stringify(steps));
+            const separator = href.includes('?') ? '&' : '?';
+            const updatedHref = `${href}${separator}steps=${stepsJson}`;
+            window.location.href = updatedHref;
+        } else {
+            window.location.href = href;
+        }
     } catch (err) {
         console.log("An error occurred while saving the project setup:", err);
     }
 }
+
 
 async function save_grid_design(href) {
     try {
@@ -793,7 +935,7 @@ async function save_grid_design(href) {
             shs_max_grid_cost_value = document.getElementById('shs_max_grid_cost').value;
         }
 
-        await fetch("save_grid_design/", {
+        await fetch("save_grid_design/" + project_id, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -814,8 +956,16 @@ async function save_grid_design(href) {
                 }
             })
         });
-
-        window.location.href = href; // navigate after fetch request is complete
+        let updatedHref;
+        // Check if 'steps' and 'href' are defined
+        if (typeof steps !== 'undefined' && typeof href !== 'undefined') {
+            const stepsJson = encodeURIComponent(JSON.stringify(steps));
+            const separator = href.includes('?') ? '&' : '?';
+            updatedHref = `${href}${separator}steps=${stepsJson}`;
+        } else {
+            updatedHref = href;
+        }
+        window.location.href = updatedHref; // navigate after fetch request is complete
     } catch (err) {
         console.log('Fetch API error -', err);
     }
@@ -824,27 +974,52 @@ async function save_grid_design(href) {
 
 function save_demand_estimation(href) {
     let custom_calibration = document.getElementById("toggleswitch").checked;
-    let use_custom_shares = document.getElementById("use_custom_shares").checked;
-    fetch("save_demand_estimation/", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            demand_estimation: {
-                'household_option': selectedValue,
-                'maximum_peak_load': maximum_peak_load.value,
-                'average_daily_energy': average_daily_energy.value,
-                'custom_calibration': custom_calibration,
-                'use_custom_shares': use_custom_shares,
-                'custom_share_1': custom_share_1.value,
-                'custom_share_2': custom_share_2.value,
-                'custom_share_3': custom_share_3.value,
-                'custom_share_4': custom_share_4.value,
-                'custom_share_5': custom_share_5.value,
+    const toggleSwitch = document.getElementById('toggleswitch2');
+    const uploadStatus = document.getElementById('uploadStatus').textContent.trim();
+    const useCustomDemand = toggleSwitch.checked && uploadStatus === "Uploaded";
+    let updatedHref;
+
+    // Conditional check for forwarding or displaying a modal
+    if (!toggleSwitch.checked || useCustomDemand) {
+        fetch("save_demand_estimation/" + project_id, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                demand_estimation: {
+                    'household_option': selectedValue,
+                    'maximum_peak_load': maximum_peak_load.value,
+                    'average_daily_energy': average_daily_energy.value,
+                    'custom_calibration': custom_calibration,
+                    'use_custom_shares': true,
+                    'custom_share_1': custom_share_1.value,
+                    'custom_share_2': custom_share_2.value,
+                    'custom_share_3': custom_share_3.value,
+                    'custom_share_4': custom_share_4.value,
+                    'custom_share_5': custom_share_5.value,
+                    'use_custom_demand': useCustomDemand,
+                }
+            })
+        }).then(response => {
+            // Check if 'steps' and 'href' are defined
+            if (typeof steps !== 'undefined' && typeof href !== 'undefined') {
+                const stepsJson = encodeURIComponent(JSON.stringify(steps));
+                const separator = href.includes('?') ? '&' : '?';
+                updatedHref = `${href}${separator}steps=${stepsJson}`;
+            } else {
+                updatedHref = href;
             }
-        })
-    }).then(r => window.location.href = href)
+            window.location.href = updatedHref;
+        }).catch(error => {
+            console.error('Error:', error);
+        });
+    } else {
+        // Show modal with the translated and improved message
+        const message = "Custom demand time series was selected, but no time series was successfully uploaded. Please upload a time series or disable this option to automatically calculate the demand time series.";
+        document.getElementById('responseMsg').innerHTML = message;
+        document.getElementById('msgBox').style.display = 'block';
+    }
 }
 
 
@@ -858,7 +1033,6 @@ function load_previous_data(page_name) {
         xhr.onreadystatechange = function () {
 
             if (this.readyState == 4 && this.status == 200) {
-                // push nodes to the map
                 results = this.response;
                 if (results !== null && Object.keys(results).length > 1) {
                     document.getElementById("projectName").value = results['project_name'];
@@ -866,6 +1040,17 @@ function load_previous_data(page_name) {
                     document.getElementById("interestRate").value = results['interest_rate'];
                     document.getElementById("projectLifetime").value = results['project_lifetime'];
                     document.getElementById("nDays").value = results['n_days'];
+                    document.getElementById('toggleswitch0').checked = results['do_demand_estimation'];
+                    document.getElementById('toggleswitch1').checked = results['do_grid_optimization'];
+                    document.getElementById('toggleswitch2').checked = results['do_es_design_optimization'];
+                    const consumerSelectionHref = `consumer_selection?project_id=${project_id}`;
+                    const demandEstimationHref = `demand_estimation?project_id=${project_id}`;
+                    const func = `save_project_setup`;
+                    updateWizardStepVisibility(
+                        results['do_demand_estimation'],
+                        results['do_grid_optimization'],
+                        results['do_es_design_optimization']);
+                    updateNextButtonHref(project_id, func, consumerSelectionHref, demandEstimationHref);
                 }
             }
         };
@@ -908,44 +1093,42 @@ function load_previous_data(page_name) {
     } else if (page_name.includes("demand_estimation")) {
         xhr.onreadystatechange = function () {
             if (this.readyState == 4 && this.status == 200) {
-                // push nodes to the map
                 results = this.response;
                 if (results !== null && Object.keys(results).length > 1) {
-                    document.getElementById("maximum_peak_load").value = results['maximum_peak_load'];
-                    document.getElementById("average_daily_energy").value = results['average_daily_energy'];
-
-                    document.getElementById("toggleswitch").checked = results['custom_calibration'];
-                    document.getElementById("use_custom_shares").checked = results['use_custom_shares'];
-
-                    let accordionItem2 = new bootstrap.Collapse(document.getElementById('collapseTwo'),
-                        {toggle: false});
-                    if (results['custom_calibration'] == true) {
-                        accordionItem2.show();
-                        const radioButton2 = document.querySelector(`input[name="options2"][id="option${results['calibration_options'] + 6}"]`);
-                        if (radioButton2) {
-                            radioButton2.checked = true;
-                            if (results['calibration_options'] === 2) {
-                                document.getElementById("maximum_peak_load").disabled = false;
-                                document.getElementById("average_daily_energy").disabled = true;
+                    if (results['use_custom_demand'] === true) {
+                        document.getElementById("toggleswitch2").checked = true;
+                        // Trigger the 'change' event to execute the associated event listener
+                        document.getElementById("toggleswitch2").dispatchEvent(new Event('change'));
+                        document.getElementById('uploadStatus').textContent = 'Uploaded';
+                    } else {
+                        document.getElementById("maximum_peak_load").value = results['maximum_peak_load'];
+                        document.getElementById("average_daily_energy").value = results['average_daily_energy'];
+                        document.getElementById("toggleswitch").checked = results['custom_calibration'];
+                        let accordionItem2 = new bootstrap.Collapse(document.getElementById('collapseTwo'),
+                            {toggle: false});
+                        if (results['custom_calibration'] == true) {
+                            accordionItem2.show();
+                            const radioButton2 = document.querySelector(`input[name="options2"][id="option${results['calibration_options'] + 6}"]`);
+                            if (radioButton2) {
+                                radioButton2.checked = true;
+                                if (results['calibration_options'] === 2) {
+                                    document.getElementById("maximum_peak_load").disabled = false;
+                                    document.getElementById("average_daily_energy").disabled = true;
+                                }
                             }
+                        } else {
+                            accordionItem2.hide();
                         }
-                    } else {
-                        accordionItem2.hide();
-                    }
+                            document.getElementById("custom_share_1").value = results['custom_share_1'];
+                            document.getElementById("custom_share_2").value = results['custom_share_2'];
+                            document.getElementById("custom_share_3").value = results['custom_share_3'];
+                            document.getElementById("custom_share_4").value = results['custom_share_4'];
+                            document.getElementById("custom_share_5").value = results['custom_share_5'];
 
-                    if (results['use_custom_shares'] == true) {
-                        document.getElementById("custom_share_1").value = results['custom_share_1'];
-                        document.getElementById("custom_share_2").value = results['custom_share_2'];
-                        document.getElementById("custom_share_3").value = results['custom_share_3'];
-                        document.getElementById("custom_share_4").value = results['custom_share_4'];
-                        document.getElementById("custom_share_5").value = results['custom_share_5'];
-                    } else {
-
-                    }
-
-                    const radioButton = document.querySelector(`input[name="options"][id="option${results['household_option'] + 1}"]`);
-                    if (radioButton) {
-                        radioButton.checked = true;
+                        const radioButton = document.querySelector(`input[name="options"][id="option${results['household_option'] + 1}"]`);
+                        if (radioButton) {
+                            radioButton.checked = true;
+                        }
                     }
                 }
             }
@@ -1015,25 +1198,28 @@ function load_previous_data(page_name) {
 }
 
 
-function show_email_and_project_in_navbar(project_id = null) {
-    fetch("query_account_data/", {
-        method: "POST",
-        headers: {"Content-Type": "application/json",},
-        body: JSON.stringify({
-            'project_id': project_id
-        }),
-    })
-        .then(response => response.json())
-        .then(data => {
-            const showMailElement = document.getElementById("showMail");
-            const showProjectElement = document.getElementById("showProject");
-            if (showMailElement) {
-                showMailElement.innerHTML = data.email;
-            }
-            if (showProjectElement && data.project_name) {
-                showProjectElement.innerHTML = "     Project: " + data.project_name;
-            }
+async function show_email_and_project_in_navbar(project_id = null) {
+    try {
+        const response = await fetch("query_account_data/", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({'project_id': project_id}),
         });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        const showMailElement = document.getElementById("showMail");
+        const showProjectElement = document.getElementById("showProject");
+        if (showMailElement) {
+            showMailElement.innerHTML = data.email;
+        }
+        if (showProjectElement && data.project_name) {
+            showProjectElement.innerHTML = "     Project: " + data.project_name;
+        }
+    } catch (error) {
+        console.error("Error fetching account data:", error);
+    }
 }
 
 
@@ -1066,6 +1252,47 @@ async function redirect_if_cookie_is_missing(access_token, consent_cookie) {
         console.error("There was a problem with the fetch operation:", error.message);
     }
 }
+
+
+async function toggleDropdownMenuItems() {
+    try {
+        const response = await fetch("has_cookie/", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                'access_token': true,
+                'consent_cookie': false
+            })
+        });
+
+        const responseData = await response.json();
+
+        if (responseData === true) { // Ensuring it's exactly true
+            // Show hidden dropdown menu items
+            const hiddenItems = document.querySelectorAll('.dropdown-menu li[style*="display: none"]');
+            hiddenItems.forEach(item => {
+                item.style.display = 'list-item';
+            });
+
+            // Hide the login button
+            const loginButton = document.getElementById('login_button');
+            if (loginButton) {
+                loginButton.style.display = 'none';
+            }
+
+            // Hide the paragraph with ID 'paragraph_register_suggestion' if it exists
+            const registerSuggestionParagraph = document.getElementById('paragraph_register_suggestion');
+            if (registerSuggestionParagraph) {
+                registerSuggestionParagraph.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.error("Error checking login status:", error);
+    }
+}
+
+
+
 
 
 async function remove_project(project_id) {
@@ -1182,42 +1409,43 @@ function start_calculation(project_id) {
             "Content-Type": "application/json",
         }
     })
-    .then(response => response.json())
-    .then(res => {
-        if (res.redirect && res.redirect.length > 0) {
-            const msg = 'Input data is missing for the opt_models. It appears that you have not gone' +
-                ' through all the pages to enter the input data. You will be redirected to the ' +
-                ' corresponding page.';
-            console.log(msg);
-            document.getElementById('responseMsg').innerHTML = msg;
-            const baseURL = window.location.origin;
-            const redirectLink = baseURL + res.redirect;
-            console.log(redirectLink);
-            document.getElementById('redirectLink').href = redirectLink;
-            document.getElementById('msgBox').style.display = 'block';
-        } else {
-            if (typeof res.task_id === 'undefined') {
-                console.log('The task_id is not defined.');
-            } else if (res.task_id === '') {
-                console.log('The task_id is an empty string.');
+        .then(response => response.json())
+        .then(res => {
+            if (res.redirect && res.redirect.length > 0) {
+                const msg = 'Input data is missing for the opt_models. It appears that you have not gone' +
+                    ' through all the pages to enter the input data. You will be redirected to the ' +
+                    ' corresponding page.';
+                console.log(msg);
+                document.getElementById('responseMsg').innerHTML = msg;
+                const baseURL = window.location.origin;
+                const redirectLink = baseURL + res.redirect;
+                console.log(redirectLink);
+                document.getElementById('redirectLink').href = redirectLink;
+                document.getElementById('msgBox').style.display = 'block';
             } else {
-                console.log('The task_id is:', res.task_id);
+                if (typeof res.task_id === 'undefined') {
+                    console.log('The task_id is not defined.');
+                } else if (res.task_id === '') {
+                    console.log('The task_id is an empty string.');
+                } else {
+                    console.log('The task_id is:', res.task_id);
+                }
+                wait_for_results(project_id, res.task_id, 0, 'grid');
             }
-            wait_for_results(project_id, res.task_id, 0, 'grid');
-        }
-    })
-    .catch(error => {
-        console.error('There was an error!', error);
-        if (typeof res !== 'undefined' && typeof res.task_id !== 'undefined') {
-            console.log('The task_id at the time of error is:', res.task_id);
-        } else {
-            console.log('The task_id is not available or not defined at the time of error.');
-        }
-    });
+        })
+        .catch(error => {
+            console.error('There was an error!', error);
+            if (typeof res !== 'undefined' && typeof res.task_id !== 'undefined') {
+                console.log('The task_id at the time of error is:', res.task_id);
+            } else {
+                console.log('The task_id is not available or not defined at the time of error.');
+            }
+        });
 }
 
 
 async function forward_if_consumer_selection_exists(project_id) {
+    let href
     try {
         const response = await fetch("forward_if_consumer_selection_exists/" + project_id, {
             method: "POST",
@@ -1229,7 +1457,17 @@ async function forward_if_consumer_selection_exists(project_id) {
         if (response.ok) {
             const res = await response.json();
             if (res.forward === true) {
-                window.location.href = window.location.origin + '/demand_estimation?project_id=' + project_id;
+                href = window.location.origin + '/demand_estimation?project_id=' + project_id;
+                let updatedHref;
+                // Check if 'steps' and 'href' are defined
+                if (typeof steps !== 'undefined' && typeof href !== 'undefined') {
+                    const stepsJson = encodeURIComponent(JSON.stringify(steps));
+                    const separator = href.includes('?') ? '&' : '?';
+                    updatedHref = `${href}${separator}steps=${stepsJson}`;
+                } else {
+                    updatedHref = href;
+                }
+                window.location.href = updatedHref
             } else {
                 document.getElementById('responseMsg').innerHTML = 'No consumers are selected. You must select the geolocation of the consumers before you go to the next page.';
             }
@@ -1481,4 +1719,102 @@ async function sendMail() {
     } catch (error) {
         handleError();
     }
+}
+
+
+async function update_wizards_and_buttons_based_on_planning_step_selection(project_id, page_name) {
+    const nextButton = document.getElementById("nextButton");
+    const prevButton = document.getElementById("prevButton");
+    const wizardSection = document.getElementById('wizard');
+    let results
+
+    // Check if planning_steps is defined and is a dictionary
+    if (typeof steps === 'object' && steps !== null) {
+        results = {
+            do_demand_estimation: steps[0],
+            do_grid_optimization: steps[1],
+            do_es_design_optimization: steps[2]
+        };
+    } else {
+        const url = `load_previous_data/project_setup?project_id=${project_id}`;
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            results = await response.json();
+            steps = [results['do_demand_estimation'], results['do_grid_optimization'], results['do_es_design_optimization']]
+        } catch (error) {
+            console.error("Error fetching data:", error);
+            return; // Exit the function if fetching data fails
+        }
+    }
+    if (results !== null && Object.keys(results).length > 1) {
+        if (page_name.includes("demand_estimation")) {
+            if (results['do_grid_optimization'] === true && results['do_es_design_optimization'] === true) {
+            } else if (results['do_grid_optimization'] === false && results['do_es_design_optimization'] === true) {
+                nextButton.setAttribute('onclick', `save_demand_estimation(\`energy_system_design?project_id=${project_id}\`);`);
+                if (results['do_demand_estimation'] === false) {
+                    prevButton.setAttribute('onclick', `save_demand_estimation(\`project_setup?project_id=${project_id}\`);`);
+                }
+            } else if (results['do_grid_optimization'] === false && results['do_es_design_optimization'] === false) {
+                nextButton.setAttribute('onclick', `save_demand_estimation('/export_demand/` + project_id + '/' + document.getElementById('fileTypeDropdown').value + `/')`);
+                nextButton.textContent = 'Export Demand';
+            }
+            if (results['do_demand_estimation'] === false) {
+                document.getElementById("toggleswitch2").checked = true;
+                document.getElementById("toggleswitch2").dispatchEvent(new Event('change'));
+                }
+        } else if (page_name.includes("grid_design")) {
+            if (results['do_es_design_optimization'] === false) {
+                nextButton.setAttribute('onclick', `save_grid_design(); forward_if_no_task_is_pending(${project_id});`);
+                nextButton.textContent = 'Optimize';
+            }
+        } else if (page_name.includes("energy_system_design")) {
+            if (results['do_grid_optimization'] === false) {
+                prevButton.setAttribute('onclick', `save_energy_system_design(\`demand_estimation?project_id=${project_id}\`);`);
+            }
+        }
+    }
+    updateWizardStepVisibility(results['do_demand_estimation'], results['do_grid_optimization'], results['do_es_design_optimization']);
+    wizardSection.classList.add('show');
+}
+
+
+// Function to update the visibility and numbering of wizard steps
+function updateWizardStepVisibility(do_demand_estimation, do_grid_optimization, do_energy_system_design) {
+    const steps = [
+        {element: document.getElementById('wizElement1'), condition: true}, // Always visible
+        {element: document.getElementById('wizElement2'), condition: do_demand_estimation || do_grid_optimization},
+        {
+            element: document.getElementById('wizElement3'),
+            condition: do_demand_estimation || do_grid_optimization || do_energy_system_design
+        },
+        {element: document.getElementById('wizElement4'), condition: do_grid_optimization},
+        {element: document.getElementById('wizElement5'), condition: do_energy_system_design},
+        {element: document.getElementById('wizElement6'), condition: do_grid_optimization || do_energy_system_design}
+    ];
+
+    let visibleStepCount = 1;
+
+    steps.forEach((step, index) => {
+        if (step.condition) {
+            step.element.style.display = '';
+            step.element.setAttribute('data-step-number', visibleStepCount);
+            visibleStepCount++;
+        } else {
+            step.element.style.display = 'none';
+            step.element.removeAttribute('data-step-number');
+        }
+    });
+
+    // Update CSS to use data-step-number for numbering
+    const style = document.createElement('style');
+    style.textContent = `
+        .wizard__steps li[data-step-number]::before {
+            content: attr(data-step-number) !important;
+        }
+    `;
+    document.head.appendChild(style);
 }

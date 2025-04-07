@@ -216,6 +216,8 @@ async def _copy_project(user_from_id, user_to_id, project_from_id, project_to_id
             model_instance[0].created_at = time_now
             model_instance[0].updated_at = time_now
             model_instance[0].project_name = 'Copy of {}'.format(model_instance[0].project_name.replace("Exmaple","Example"))
+            if model_instance[0].project_name == "Copy of Example Project":
+                model_instance[0].project_name = "Example Project"
         for e in model_instance:
             data = {key: value for key, value in e.__dict__.items() if not key.startswith('_')}
             new_e = model_class(**data)

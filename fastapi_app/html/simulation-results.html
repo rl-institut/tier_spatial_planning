@@ -5,6 +5,7 @@
     {% include '_head.html' %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <link href="{{ url_for('css', path='pages/simulation_results.css') }}" rel="stylesheet"/>
     <style>
         .item__name {
@@ -19,14 +20,15 @@
     </style>
 </head>
 <body onload="redirect_if_cookie_is_missing(true, true);
-        load_results({{ project_id }});
-        show_email_and_project_in_navbar({{ project_id }});">
+              update_wizards_and_buttons_based_on_planning_step_selection({{ project_id }}, 'simulation_results');
+              load_results({{ project_id }});
+              show_email_and_project_in_navbar({{ project_id }});">
 {% include '_navbar.html' %}
 {% include '_wizard.html' %}
 <main>
     <section id="dashboard" class="dashboard">
         <div>
-            <div class="row">
+            <div class="row" id="firstRow">
                 <div class="col col-md-6">
                     <div class="chart">
                         <div class="chart__header">
@@ -37,7 +39,7 @@
                                 <button
                                         class="btn dropdown-toggle btn--transparent"
                                         type="button"
-                                        id="dropdownMenuButton1"
+                                        id="dropdownMenuButton0"
                                         data-bs-toggle="dropdown"
                                         aria-expanded="false"
                                 >
@@ -45,7 +47,7 @@
                                 </button>
                                 <ul
                                         class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton1"
+                                        aria-labelledby="dropdownMenuButton0"
                                 >
                                     <li>
                                         <a class="dropdown-item" href="#">Export as .xls</a>
@@ -62,7 +64,7 @@
                     </div>
                 </div>
                 <div class="col col-md-6" style="display: flex; justify-content: center;">
-                    <div class="chart">
+                    <div class="chart" id="summaryResultsChart">
                         <div class="chart__header">
                             <span class="title">Summary of Results</span>
                         </div>
@@ -128,30 +130,36 @@
                     </div>
                 </div>
             </div>
-            <div class="row" style="padding: 12px">
+            <div class="row" id="actionButtonsRow" style="padding: 12px">
                 <div style="display: flex; width: 100%; padding: 0; margin: 0;">
                     <a id="downloadCSV"
                        class="btn btn--medium"
                        style="height: 32px; display: flex; align-items: center; justify-content: center; width: 50%; margin-right: 10px;"
                        href="#">Download Results (xlsx-format)</a>
+                    <a id="downloadPDF"
+                       class="btn btn--medium"
+                       style="height: 32px; display: flex; align-items: center; justify-content: center; width: 50%; margin-right: 10px;"
+                       href="#">Download Results (PDF)</a>
                     <a id="rerunCalculation"
                        class="btn btn--medium"
-                       style="height: 32px; display: flex; align-items: center; justify-content: center; width: 50%; margin-left: 10px;"
+                       style="height: 32px; display: flex; align-items: center; justify-content: center; width: 50%; margin-right: 10px;
+                       margin-left: 10px"
                        href="javascript:void(0);"
                        onclick="forward_if_no_task_is_pending({{ project_id }});">Recalculate</a>
+                    <a class="btn btn--medium"
+                       style="height: 32px; display: flex; align-items: center; justify-content: center; width: 50%"
+                       href="/">My Projects</a>
                 </div>
-
-
             </div>
-            <div class="row">
+            <div class="row" id="resultsChart">
                 <div class="col" style="display: flex; justify-content: center;">
                     <div class="chart" style="height: auto;">
                         <div class="chart__header">
                             <span class="title">Results</span>
                         </div>
                         <div class="chart__content" style="height: auto;">
-                            <span class="subtitle">GRID</span>
-                            <div class="row">
+                            <span class="subtitle" id="gridTitle">GRID</span>
+                            <div class="row" id="gridResultsRow">
                                 <div class="item item--best">
                                     <div class="item__name">Number of grid-connected Consumers</div>
                                     <div id="nConsumers" class="item__value"></div>
@@ -327,7 +335,6 @@
                                     <div class="item__name">Annual Fuel Cost</div>
                                     <div id="fuelCost" class="item__value"></div>
                                     <div
-                                            id="averageLengthConnectionCable"
                                             class="item__value"
                                     ></div>
                                 </div>
@@ -369,7 +376,7 @@
                                 </div>
                                 <div class="item item--best">
                                     <div class="item__name">Levelized Cost of Electricity (w/o SHS)</div>
-                                    <div id="LCOE" class="item__value"></div>
+                                    <div id="LCOE2" class="item__value"></div>
                                 </div>
                             </div>
 
@@ -377,112 +384,12 @@
                     </div>
                 </div>
             </div>
-
-            <div class="row">
-                <div class="col">
-                    <div class="chart">
-                        <div class="chart__header">
-                            <div>
-                    <span class="title"
-                    >Demand Coverage by Renewable and Non-Renewable
-                      Resources</span
-                    >
-                            </div>
-                            <div class="dropdown">
-                                <button
-                                        class="btn dropdown-toggle btn--transparent"
-                                        type="button"
-                                        id="dropdownMenuButton1"
-                                        data-bs-toggle="dropdown"
-                                        aria-expanded="false"
-                                >
-                                    <span class="icon icon-more"></span>
-                                </button>
-                                <ul
-                                        class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton1"
-                                >
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as .xls</a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as PDF</a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="chart__plot">
-                            <div id="demandCoverage"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col">
-                    <div class="chart">
-                        <div class="chart__header">
-                            <div>
-                    <span class="title"
-                    >Annual Energy Flows with 1-Hour Resolution</span
-                    >
-                            </div>
-                            <div class="dropdown">
-                                <button
-                                        class="btn dropdown-toggle btn--transparent"
-                                        type="button"
-                                        id="dropdownMenuButton1"
-                                        data-bs-toggle="dropdown"
-                                        aria-expanded="false"
-                                >
-                                    <span class="icon icon-more"></span>
-                                </button>
-                                <ul
-                                        class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton1"
-                                >
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as .xls</a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as PDF</a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="chart__plot">
-                            <div id="energyFlows"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row">
+            <div class="row" id="capacityChart">
                 <div class="col col-md-6">
                     <div class="chart">
                         <div class="chart__header">
                             <div>
                                 <span class="title">Optimal Capacity of Components</span>
-                            </div>
-                            <div class="dropdown">
-                                <button
-                                        class="btn dropdown-toggle btn--transparent"
-                                        type="button"
-                                        id="dropdownMenuButton1"
-                                        data-bs-toggle="dropdown"
-                                        aria-expanded="false"
-                                >
-                                    <span class="icon icon-more"></span>
-                                </button>
-                                <ul
-                                        class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton1"
-                                >
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as .xls</a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as PDF</a>
-                                    </li>
-                                </ul>
                             </div>
                         </div>
                         <div class="chart__plot">
@@ -500,7 +407,7 @@
                                 <button
                                         class="btn dropdown-toggle btn--transparent"
                                         type="button"
-                                        id="dropdownMenuButton1"
+                                        id="dropdownMenuButton4"
                                         data-bs-toggle="dropdown"
                                         aria-expanded="false"
                                 >
@@ -508,7 +415,7 @@
                                 </button>
                                 <ul
                                         class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton1"
+                                        aria-labelledby="dropdownMenuButton4"
                                 >
                                     <li>
                                         <a class="dropdown-item" href="#">Export as .xls</a>
@@ -525,7 +432,76 @@
                     </div>
                 </div>
             </div>
-            <div class="row">
+            <div class="row" id="sankeyChart">
+                <div class="col">
+                    <div class="chart">
+                        <div class="chart__header">
+                            <div>
+                    <span class="title"
+                    >Sankey Diagram Representing the Energy Flow in the
+                      System</span
+                    >
+                            </div>
+                        </div>
+                        <div class="chart__plot">
+                            <div id="sankeyDiagram"></div>
+                        </div>
+                        <p style="font-size: 12px">
+                            *electricity surplus is not shown
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="row" id="demandtsChart">
+                <div class="col">
+                    <div class="chart">
+                        <div class="chart__header">
+                            <div>
+                    <span class="title"
+                    >Electricity Demand Profile Illustration: First Monday of Simulation Period</span
+                    >
+                            </div>
+                        </div>
+                        <div class="chart__plot">
+                            <div id="demandTs"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row" id="demandcoverageChart">
+                <div class="col">
+                    <div class="chart">
+                        <div class="chart__header">
+                            <div>
+                    <span class="title"
+                    >Demand Coverage by Renewable and Non-Renewable
+                      Resources</span
+                    >
+                            </div>
+                        </div>
+                        <div class="chart__plot">
+                            <div id="demandCoverage"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row" id="energyflowsChart">
+                <div class="col">
+                    <div class="chart">
+                        <div class="chart__header">
+                            <div>
+                    <span class="title"
+                    >Annual Energy Flows with 1-Hour Resolution</span
+                    >
+                            </div>
+                        </div>
+                        <div class="chart__plot">
+                            <div id="energyFlows"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row" id="durationcurveChart">
                 <div class="col col-md-6">
                     <div class="chart">
                         <div class="chart__header">
@@ -533,28 +509,6 @@
                     <span class="title"
                     >Duration Curves for All Components</span
                     >
-                            </div>
-                            <div class="dropdown">
-                                <button
-                                        class="btn dropdown-toggle btn--transparent"
-                                        type="button"
-                                        id="dropdownMenuButton1"
-                                        data-bs-toggle="dropdown"
-                                        aria-expanded="false"
-                                >
-                                    <span class="icon icon-more"></span>
-                                </button>
-                                <ul
-                                        class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton1"
-                                >
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as .xls</a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as PDF</a>
-                                    </li>
-                                </ul>
                             </div>
                         </div>
                         <div class="chart__plot">
@@ -568,75 +522,10 @@
                             <div>
                                 <span class="title">Cumulative CO<sub>2</sub> Emissions</span>
                             </div>
-                            <div class="dropdown">
-                                <button
-                                        class="btn dropdown-toggle btn--transparent"
-                                        type="button"
-                                        id="dropdownMenuButton1"
-                                        data-bs-toggle="dropdown"
-                                        aria-expanded="false"
-                                >
-                                    <span class="icon icon-more"></span>
-                                </button>
-                                <ul
-                                        class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton1"
-                                >
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as .xls</a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as PDF</a>
-                                    </li>
-                                </ul>
-                            </div>
                         </div>
                         <div class="chart__plot">
                             <div id="co2Emissions"></div>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col">
-                    <div class="chart">
-                        <div class="chart__header">
-                            <div>
-                    <span class="title"
-                    >Sankey Diagram Representing the Energy Flow in the
-                      System</span
-                    >
-                            </div>
-                            <div class="dropdown">
-                                <button
-                                        class="btn dropdown-toggle btn--transparent"
-                                        type="button"
-                                        id="dropdownMenuButton1"
-                                        data-bs-toggle="dropdown"
-                                        aria-expanded="false"
-                                >
-                                    <span class="icon icon-more"></span>
-                                </button>
-                                <ul
-                                        class="dropdown-menu"
-                                        aria-labelledby="dropdownMenuButton1"
-                                >
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as .xls</a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#">Export as PDF</a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="chart__plot">
-                            <div id="sankeyDiagram"></div>
-                        </div>
-                        <p style="font-size: 12px">
-                            *electricity surplus is not shown
-                        </p>
                     </div>
                 </div>
             </div>
@@ -686,6 +575,7 @@
 {% include '_footer.html' %}
 </body>
 {% include '_scripts.html' %}
+<script>let project_id = "{{ project_id }}";</script>
 <script src="{{ url_for('js', path='integrate_map.js') }}"></script>
 <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <script src="{{ url_for('js', path='third_party/plotly.js') }}"></script>

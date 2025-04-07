@@ -249,6 +249,15 @@ class GridOptimizer(BaseOptimizer):
         results.n_connection_links = int(self.links[self.links["link_type"] == "connection"].shape[0])
         results.id = self.user_id
         results.project_id = self.project_id
+        length_dist_cable = self.links[self.links['link_type'] == 'distribution']['length'].sum()
+        length_conn_cable = self.links[self.links['link_type'] == 'connection']['length'].sum()
+        num_households = len(self.nodes[(self.nodes['consumer_type'] == 'household') &
+                                             (self.nodes['is_connected'] == True)].index)
+        results.upfront_invest_grid \
+            = results.n_poles * self.project_setup["pole_capex"] + \
+              length_dist_cable * self.project_setup["distribution_cable_capex"] + \
+              length_conn_cable * self.project_setup["connection_cable_capex"] + \
+              num_households * self.project_setup["mg_connection_cost"]
         sync_inserts.merge_model(results)
 
     def _update_project_status_in_db(self):

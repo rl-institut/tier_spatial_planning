@@ -2,6 +2,7 @@ document.getElementById('myForm').addEventListener('submit', function (e) {
     e.preventDefault();
     document.getElementById('myButton').click();
 });
+
 $(window).scroll(function () {
     var scrollTop = $(this).scrollTop();
     $('.parallax').css('transform', 'translateY(' + -(scrollTop * 0.2) + 'px)');

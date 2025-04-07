@@ -81,9 +81,14 @@ async def get_model_instance(model, user_id, project_id, which='first'):
 
 async def get_input_df(user_id, project_id):
     user_id, project_id = int(user_id), int(project_id)
-    project_setup = await get_df(sa_tables.ProjectSetup, user_id, project_id, is_timeseries=False)
-    grid_design = await get_df(sa_tables.GridDesign, user_id, project_id, is_timeseries=False)
-    df = pd.concat([project_setup, grid_design], axis=1)
+    project_setup = await get_model_instance(sa_tables.ProjectSetup, user_id, project_id)
+    project_setup = project_setup.to_dict()
+    grid_design = await get_model_instance(sa_tables.GridDesign, user_id, project_id)
+    if grid_design is None:
+        grid_design = sa_tables.GridDesign()
+    grid_design = grid_design.to_dict()
+    project_setup.update(grid_design)
+    df = pd.DataFrame.from_records([project_setup]).drop(columns=['id', 'project_id'])
     return df
 
 
@@ -171,25 +176,30 @@ async def check_data_availability(user_id, project_id):
     nodes = await get_model_instance(sa_tables.Nodes, user_id, project_id)
     nodes_df = pd.read_json(nodes.data) if nodes is not None else None
     if nodes_df is None or nodes_df.empty or nodes_df[nodes_df['node_type'] == 'consumer'].index.__len__() == 0:
-        return False, '/consumer_selection/?project_id=' + str(project_id)
+        if project_setup.do_demand_estimation and project_setup.do_es_design_optimization:
+            return False, '/consumer_selection/?project_id=' + str(project_id)
     demand_opt_dict = await get_model_instance(sa_tables.Demand, user_id, project_id)
     if demand_opt_dict is None or pd.isna(demand_opt_dict.household_option):
         return False, '/demand_estimation/?project_id=' + str(project_id)
-    grid_design = await get_model_instance(sa_tables.GridDesign, user_id, project_id)
-    if grid_design is None or pd.isna(grid_design.pole_lifetime):
-        return False, '/grid_design/?project_id=' + str(project_id)
-    energy_system_design = await get_model_instance(sa_tables.EnergySystemDesign, user_id, project_id)
-    if energy_system_design is None or pd.isna(energy_system_design.battery__parameters__c_rate_in):
-        return False, '/energy_system_design/?project_id=' + str(project_id)
-    else:
-        return True, None
+    if project_setup.do_grid_optimization is True:
+        grid_design = await get_model_instance(sa_tables.GridDesign, user_id, project_id)
+        if grid_design is None or pd.isna(grid_design.pole_lifetime):
+            return False, '/grid_design/?project_id=' + str(project_id)
+    if project_setup.do_es_design_optimization is True:
+        energy_system_design = await get_model_instance(sa_tables.EnergySystemDesign, user_id, project_id)
+        if energy_system_design is None or pd.isna(energy_system_design.battery__parameters__c_rate_in):
+            return False, '/energy_system_design/?project_id=' + str(project_id)
+    return True, None
 
 
 async def pause_until_results_are_available(user_id, project_id, status):
+    project_setup = await get_model_instance(sa_tables.ProjectSetup, user_id, project_id)
     n_iter = 8 if status == 'unknown' else 6
     for i in range(n_iter):
         results = await get_model_instance(sa_tables.Results, user_id, project_id)
         if hasattr(results, 'lcoe') and results.lcoe is not None:
+            break
+        elif project_setup.do_es_design_optimization is False and hasattr(results, 'n_poles') and results.n_poles is not None:
             break
         elif hasattr(results, 'infeasible') and bool(results.infeasible) is True:
             break
